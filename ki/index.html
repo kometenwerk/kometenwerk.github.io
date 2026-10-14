@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kometen-KI</title>
+<meta name="description" content="Eine KI, die direkt auf deinem Gerät läuft – Testversion.">
+<meta name="theme-color" content="#0f766e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="KI">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/kw.css">
+<style>:root{--app:#0f766e;--app-soft:rgba(15,118,110,.14)}</style>
+<style>
+body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+.kw-main{flex:1;width:100%;display:flex;flex-direction:column}
+.start{max-width:560px;margin:10px auto 0;width:100%}
+.start h2{margin:6px 0 6px;font-size:1.4rem}
+.start>p{margin:0 0 14px;color:var(--muted)}
+.wahl{display:flex;flex-direction:column;gap:10px;margin:0 0 14px}
+.modell{display:flex;gap:12px;align-items:flex-start;padding:14px;cursor:pointer;border-width:2px}
+.modell input{margin:3px 0 0;width:18px;height:18px;accent-color:var(--app);flex:none}
+.modell b{display:block}
+.modell small{color:var(--muted)}
+.modell:has(input:checked){border-color:var(--app);background:var(--app-soft)}
+.info{padding:12px 14px;border-radius:12px;background:var(--soft);font-size:.9rem;margin:0 0 12px}
+.info.warn{background:rgba(201,58,58,.12)}
+.lade{margin:16px 0 0}
+.lade .bar{height:10px;border-radius:6px;background:var(--soft);overflow:hidden}
+.lade .bar i{display:block;height:100%;width:0;background:var(--app);transition:width .3s}
+.lade p{font-size:.82rem;color:var(--muted);margin:6px 0 0;overflow-wrap:anywhere}
+.chat{flex:1;display:flex;flex-direction:column;gap:12px;padding:6px 0 12px}
+.msg{max-width:88%;padding:10px 14px;border-radius:16px;line-height:1.5;overflow-wrap:anywhere}
+.msg p{margin:0 0 8px}
+.msg p:last-child{margin:0}
+.msg.ich{align-self:flex-end;background:var(--app);color:#fff;border-bottom-right-radius:6px;white-space:pre-wrap}
+.msg.ki{align-self:flex-start;background:var(--card);border:1px solid var(--line);border-bottom-left-radius:6px}
+.msg.ki.denkt::after{content:"▍";animation:blink 1s steps(1) infinite;margin-left:2px;color:var(--app)}
+@keyframes blink{50%{opacity:0}}
+.ideen{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 0}
+.ideen button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 12px;font-size:.88rem;cursor:pointer;text-align:left}
+.ideen button:hover{border-color:var(--app)}
+.eingabe{position:sticky;bottom:0;background:var(--bg);padding:8px 0 calc(10px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;align-items:flex-end}
+.eingabe textarea{flex:1;resize:none;min-height:46px;max-height:160px;border-radius:14px;padding:12px 14px}
+.eingabe .btn{height:46px;border-radius:14px}
+.unten{font-size:.75rem;color:var(--muted);text-align:center;margin:0 0 6px}
+.kw-foot{display:none}
+</style>
+</head>
+<body>
+<header class="kw-bar">
+  <a class="kw-home" href="../" aria-label="Zurück zu Kometenwerk"><svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="currentColor" stroke-opacity=".6" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)" fill="currentColor"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="15" fill="#ff8a3c"/></g></svg></a>
+  <h1>Kometen-KI</h1>
+  <span id="kwBarExtra" style="display:contents"></span>
+  <button class="kw-install" id="kwInstall" type="button" hidden>Als App installieren</button>
+</header>
+<main class="kw-main">
+  <section class="start" id="start">
+    <h2>Deine eigene KI – auf deinem Gerät</h2>
+    <p>Die Kometen-KI läuft komplett in deinem Browser. Nichts von dem, was du schreibst, wird irgendwohin geschickt. Dafür lädt sie einmal ein KI-Modell herunter.</p>
+    <div class="info warn" id="keinGPU" hidden></div>
+    <div class="wahl" id="wahl">
+      <label class="modell card"><input type="radio" name="m" value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC" checked><span><b>Klein und schnell</b><small>Läuft auf mehr Geräten. Download: einige hundert MB. Antwortet einfacher und macht öfter Fehler.</small></span></label>
+      <label class="modell card"><input type="radio" name="m" value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC"><span><b>Schlauer</b><small>Bessere Antworten, braucht aber ein stärkeres Gerät. Download: rund 1 GB.</small></span></label>
+    </div>
+    <div class="info">📶 Lade die KI am besten im WLAN. Danach ist sie gespeichert und startet beim nächsten Mal viel schneller, sogar ohne Internet.</div>
+    <button class="btn primary" type="button" id="laden" style="width:100%;padding:14px">KI laden</button>
+    <div class="lade" id="lade" hidden><div class="bar"><i id="ladeBar"></i></div><p id="ladeText">Wird vorbereitet …</p></div>
+    <p class="muted" style="font-size:.82rem;margin-top:16px">Das ist eine <b>Testversion</b>. Kleine KIs sind nicht so schlau wie die großen im Internet und können Dinge falsch sagen. Prüf wichtige Antworten immer nach.</p>
+  </section>
+
+  <section class="chat" id="chat" hidden aria-live="polite"></section>
+  <div id="ideen" class="ideen" hidden>
+    <button type="button">Erklär mir die Photosynthese so, dass ich sie verstehe.</button>
+    <button type="button">Stell mir 3 Quizfragen zu Brüchen.</button>
+    <button type="button">Hilf mir, einen Aufsatz über mein Hobby zu gliedern.</button>
+    <button type="button">Was ist der Unterschied zwischen Wetter und Klima?</button>
+  </div>
+  <form class="eingabe" id="form" hidden>
+    <label class="vh" for="text">Nachricht</label>
+    <textarea class="inp" id="text" rows="1" placeholder="Frag die Kometen-KI …" maxlength="2000" enterkeyhint="send"></textarea>
+    <button class="btn primary" type="submit" id="senden">Senden</button>
+  </form>
+  <p class="unten" id="unten" hidden>Läuft nur auf deinem Gerät · Kann Fehler machen · <a href="#" id="neuChat">Neues Gespräch</a></p>
+</main>
+
+<script src="../shared/kw.js"></script>
+<script type="module">
+"use strict";
+const WEBLLM = "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.84/lib/index.js";
+const SYSTEM = "Du bist die Kometen-KI von Kometenwerk, ein freundlicher Lernhelfer für Schülerinnen und Schüler. " +
+  "Antworte immer auf Deutsch, kurz, einfach und ehrlich. Wenn du dir nicht sicher bist, sag das offen. " +
+  "Bei Hausaufgaben erklärst du den Weg Schritt für Schritt, statt nur die Lösung zu verraten. " +
+  "Du schreibst nichts über Gewalt, Sex, Drogen oder gefährliche Dinge. Du fragst nie nach Namen, Adressen oder anderen persönlichen Daten. " +
+  "Wenn jemand Sorgen oder Probleme hat, sei freundlich und empfiehl, mit den Eltern, einer Lehrkraft oder der Nummer gegen Kummer (116 111, kostenlos) zu sprechen.";
+
+const $ = s => document.querySelector(s);
+const esc = KW.esc;
+let engine = null, verlauf = [], laeuft = false, abbruch = false;
+
+function format(text) {
+  return esc(text).split(/\n{2,}/).map(p => "<p>" + p.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>") + "</p>").join("");
+}
+function blase(wer, text) {
+  const d = document.createElement("div");
+  d.className = "msg " + wer;
+  if (wer === "ich") d.textContent = text; else d.innerHTML = format(text);
+  $("#chat").appendChild(d);
+  d.scrollIntoView({ block: "end", behavior: "smooth" });
+  return d;
+}
+
+async function gpuOk() {
+  if (!("gpu" in navigator)) return false;
+  try { return !!(await navigator.gpu.requestAdapter()); } catch (e) { return false; }
+}
+
+(async function () {
+  const gespeichert = KW.load("kw-ki-modell", null);
+  if (gespeichert) { const r = document.querySelector('#wahl input[value="' + gespeichert + '"]'); if (r) r.checked = true; $("#laden").textContent = "KI starten"; }
+  if (!(await gpuOk())) {
+    const w = $("#keinGPU");
+    w.hidden = false;
+    w.innerHTML = "<b>Dein Browser kann diese KI leider noch nicht starten.</b> Sie braucht <i>WebGPU</i>. Das haben aktuelle Versionen von Chrome und Edge auf dem PC und viele neuere Android-Handys. Probier es dort, oder aktualisiere deinen Browser.";
+    $("#laden").disabled = true;
+  }
+})();
+
+$("#laden").addEventListener("click", async () => {
+  const modell = document.querySelector('#wahl input:checked').value;
+  $("#laden").disabled = true; $("#lade").hidden = false;
+  document.querySelectorAll("#wahl input").forEach(i => i.disabled = true);
+  try {
+    const webllm = await import(WEBLLM);
+    engine = await webllm.CreateMLCEngine(modell, {
+      initProgressCallback: r => {
+        $("#ladeBar").style.width = Math.round((r.progress || 0) * 100) + "%";
+        $("#ladeText").textContent = (r.progress ? Math.round(r.progress * 100) + " % · " : "") + (r.text || "");
+      }
+    });
+    KW.save("kw-ki-modell", modell);
+    $("#start").hidden = true;
+    ["#chat", "#ideen", "#form", "#unten"].forEach(s => $(s).hidden = false);
+    blase("ki", "Hallo! Ich bin die Kometen-KI. 👋 Ich laufe nur auf deinem Gerät. Frag mich etwas, zum Beispiel zu einem Schulthema.");
+    $("#text").focus();
+  } catch (e) {
+    console.error(e);
+    $("#ladeText").textContent = "Das hat leider nicht geklappt: " + (e && e.message ? e.message : e) + ". Vielleicht hat dein Gerät zu wenig Speicher – probier das kleine Modell.";
+    $("#laden").disabled = false; $("#laden").textContent = "Nochmal versuchen";
+    document.querySelectorAll("#wahl input").forEach(i => i.disabled = false);
+  }
+});
+
+async function fragen(text) {
+  if (!engine || laeuft || !text.trim()) return;
+  laeuft = true; abbruch = false;
+  $("#ideen").hidden = true;
+  blase("ich", text);
+  verlauf.push({ role: "user", content: text });
+  const antwort = blase("ki", "");
+  antwort.classList.add("denkt");
+  $("#senden").textContent = "Stopp"; $("#senden").type = "button";
+  let voll = "";
+  try {
+    const nachrichten = [{ role: "system", content: SYSTEM }].concat(verlauf.slice(-10));
+    const stream = await engine.chat.completions.create({ messages: nachrichten, stream: true, temperature: 0.6, max_tokens: 700 });
+    for await (const teil of stream) {
+      if (abbruch) { try { engine.interruptGenerate(); } catch (e) {} break; }
+      voll += (teil.choices[0] && teil.choices[0].delta && teil.choices[0].delta.content) || "";
+      antwort.innerHTML = format(voll);
+      antwort.scrollIntoView({ block: "end" });
+    }
+  } catch (e) {
+    voll = voll || "Hoppla, da ist etwas schiefgelaufen. Versuch es nochmal.";
+    antwort.innerHTML = format(voll);
+  }
+  antwort.classList.remove("denkt");
+  verlauf.push({ role: "assistant", content: voll });
+  laeuft = false;
+  $("#senden").textContent = "Senden"; $("#senden").type = "submit";
+}
+
+$("#form").addEventListener("submit", e => { e.preventDefault(); const t = $("#text").value; $("#text").value = ""; groesse(); fragen(t); });
+$("#senden").addEventListener("click", e => { if (laeuft) { e.preventDefault(); abbruch = true; } });
+$("#text").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); $("#form").requestSubmit(); } });
+function groesse() { const t = $("#text"); t.style.height = "auto"; t.style.height = Math.min(160, t.scrollHeight) + "px"; }
+$("#text").addEventListener("input", groesse);
+$("#ideen").addEventListener("click", e => { const b = e.target.closest("button"); if (b) fragen(b.textContent); });
+$("#neuChat").addEventListener("click", async e => {
+  e.preventDefault();
+  if (laeuft) return;
+  verlauf = []; $("#chat").innerHTML = ""; $("#ideen").hidden = false;
+  try { await engine.resetChat(); } catch (x) {}
+  blase("ki", "Neues Gespräch. Was möchtest du wissen?");
+});
+</script>
+</body>
+</html>

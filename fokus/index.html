@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kometen-Fokus</title>
+<meta name="description" content="Lern-Timer mit Pausen und Statistik – konzentriert lernen.">
+<meta name="theme-color" content="#0369a1">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fokus">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/kw.css">
+<style>:root{--app:#0369a1;--app-soft:rgba(3,105,161,.14)}</style>
+<style>
+.kw-main{max-width:640px;padding-bottom:40px}
+.modi{display:flex;justify-content:center;gap:6px;margin:6px 0 4px}
+.modi span{font-size:.8rem;padding:5px 12px;border-radius:999px;background:var(--soft);color:var(--muted)}
+.modi span.akt{background:var(--app);color:#fff;font-weight:600}
+.uhr{position:relative;width:min(300px,78vw);aspect-ratio:1;margin:12px auto 6px}
+.uhr svg{width:100%;height:100%;transform:rotate(-90deg)}
+.uhr .bahn{stroke:var(--soft)}
+.uhr .rest{stroke:var(--app);transition:stroke-dashoffset .4s linear}
+.uhr.pause .rest{stroke:var(--accent)}
+.uhr .mitte{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.uhr .zeit{font-size:clamp(3rem,15vw,4.4rem);font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
+.uhr .was{font-size:.9rem;color:var(--muted);margin-top:8px;max-width:70%;overflow-wrap:anywhere}
+.knoepfe{display:flex;justify-content:center;gap:10px;margin:10px 0 18px}
+.knoepfe .gross{min-width:150px;padding:14px 22px;font-size:1.05rem}
+.voreinst{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
+.voreinst button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 14px;cursor:pointer;font-size:.88rem}
+.voreinst button[aria-pressed="true"]{background:var(--app);border-color:var(--app);color:#fff;font-weight:600}
+.pausetipp{text-align:center;padding:12px 14px;border-radius:12px;background:rgba(255,138,60,.14);margin:0 0 16px}
+.stat{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat div{padding:12px;text-align:center}
+.stat b{display:block;font-size:1.5rem;line-height:1.1}
+.stat span{font-size:.78rem;color:var(--muted)}
+.woche{display:flex;align-items:flex-end;gap:8px;height:120px;padding:14px 14px 8px;margin-top:10px}
+.woche div{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+.woche i{display:block;width:100%;max-width:34px;border-radius:6px 6px 2px 2px;background:var(--app);min-height:3px}
+.woche div.heute i{background:var(--accent)}
+.woche small{font-size:.72rem;color:var(--muted)}
+.woche em{font-style:normal;font-size:.7rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="kw-bar">
+  <a class="kw-home" href="../" aria-label="Zurück zu Kometenwerk"><svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="currentColor" stroke-opacity=".6" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)" fill="currentColor"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="15" fill="#ff8a3c"/></g></svg></a>
+  <h1>Kometen-Fokus</h1>
+  <span id="kwBarExtra" style="display:contents"></span>
+  <button class="kw-install" id="kwInstall" type="button" hidden>Als App installieren</button>
+</header>
+<main class="kw-main">
+  <div class="modi" aria-hidden="true"><span id="mLernen" class="akt">Lernen</span><span id="mPause">Pause</span><span id="mLang">Lange Pause</span></div>
+  <div class="uhr" id="uhr">
+    <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="bahn" cx="60" cy="60" r="54" fill="none" stroke-width="8"/><circle class="rest" id="ring" cx="60" cy="60" r="54" fill="none" stroke-width="8" stroke-linecap="round" stroke-dasharray="339.29" stroke-dashoffset="0"/></svg>
+    <div class="mitte"><div class="zeit" id="zeit" role="timer" aria-live="off">25:00</div><div class="was" id="was">Bereit zum Lernen</div></div>
+  </div>
+  <div class="knoepfe">
+    <button class="btn small" type="button" id="reset" aria-label="Zurücksetzen">↺</button>
+    <button class="btn primary gross" type="button" id="los">▶ Los geht’s</button>
+    <button class="btn small" type="button" id="skip" aria-label="Überspringen">⏭</button>
+  </div>
+  <div class="pausetipp" id="pausetipp" hidden></div>
+  <div class="voreinst" id="voreinst" role="group" aria-label="Zeiten">
+    <button type="button" data-p="25-5-15">25 / 5 Min · Klassisch</button>
+    <button type="button" data-p="45-10-20">45 / 10 · Schulstunde</button>
+    <button type="button" data-p="15-3-10">15 / 3 · Kurz</button>
+  </div>
+  <div class="row" style="margin-bottom:6px">
+    <label class="field"><span>Woran lernst du? (wenn du willst)</span><select class="inp" id="thema"></select></label>
+  </div>
+  <p style="text-align:center;margin:0 0 10px"><button class="btn small" type="button" id="erlauben" hidden>🔔 Bescheid geben, wenn die Zeit um ist</button></p>
+
+  <h2 class="sec">Deine Lernzeit</h2>
+  <div class="stat">
+    <div class="card"><b id="sHeute">0</b><span>Minuten heute</span></div>
+    <div class="card"><b id="sEinheiten">0</b><span>Einheiten heute</span></div>
+    <div class="card"><b id="sSerie">0</b><span>Tage in Folge</span></div>
+  </div>
+  <div class="card woche" id="woche" aria-label="Lernminuten der letzten 7 Tage"></div>
+</main>
+
+<script src="../shared/kw.js"></script>
+<script>
+(function () {
+  "use strict";
+  var esc = KW.esc, KEY = "kw-fokus";
+  var TIPPS = ["Steh kurz auf und streck dich. 🙆", "Trink ein Glas Wasser. 💧", "Schau aus dem Fenster in die Ferne – gut für die Augen. 👀", "Lüfte kurz das Zimmer. 🌬️", "Nicht ans Handy – sonst ist die Pause schneller vorbei, als du denkst. 😉", "Ein paar Hampelmänner bringen den Kopf wieder in Schwung. 🤸"];
+  var S = KW.load(KEY, null) || {};
+  S.einst = S.einst || { lernen: 25, pause: 5, lang: 15 };
+  S.tage = S.tage || {};           // "YYYY-MM-DD": { min, n }
+  S.lauf = S.lauf || null;          // { modus, ende, rest, laeuft, runde, thema }
+  function speichern() { KW.save(KEY, S); }
+  if (!S.lauf) S.lauf = { modus: "lernen", rest: S.einst.lernen * 60, laeuft: false, runde: 0, ende: 0, thema: "" };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var UMFANG = 339.29, tick = null;
+
+  function dauerVon(m) { return (m === "lernen" ? S.einst.lernen : m === "pause" ? S.einst.pause : S.einst.lang) * 60; }
+  function restJetzt() { return S.lauf.laeuft ? Math.max(0, Math.round((S.lauf.ende - Date.now()) / 1000)) : S.lauf.rest; }
+  function mmss(s) { return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); }
+
+  function anzeigen() {
+    var r = restJetzt(), ges = dauerVon(S.lauf.modus), m = S.lauf.modus;
+    $("zeit").textContent = mmss(r);
+    $("ring").style.strokeDashoffset = (UMFANG * (1 - r / ges)).toFixed(2);
+    $("uhr").classList.toggle("pause", m !== "lernen");
+    $("mLernen").classList.toggle("akt", m === "lernen"); $("mPause").classList.toggle("akt", m === "pause"); $("mLang").classList.toggle("akt", m === "lang");
+    $("los").textContent = S.lauf.laeuft ? "⏸ Pause machen" : (r < ges ? "▶ Weiter" : m === "lernen" ? "▶ Los geht’s" : "▶ Pause starten");
+    $("was").textContent = m === "lernen" ? (S.lauf.thema ? S.lauf.thema : (S.lauf.laeuft ? "Konzentriert lernen …" : "Bereit zum Lernen")) : (m === "pause" ? "Kurze Pause" : "Lange Pause – gut gemacht!");
+    var tippEl = $("pausetipp");
+    tippEl.hidden = m === "lernen";
+    if (m !== "lernen" && !tippEl.dataset.gesetzt) { tippEl.textContent = TIPPS[Math.floor(Math.random() * TIPPS.length)]; tippEl.dataset.gesetzt = "1"; }
+    if (m === "lernen") delete tippEl.dataset.gesetzt;
+    document.title = S.lauf.laeuft ? mmss(r) + " · " + (m === "lernen" ? "Lernen" : "Pause") : "Kometen-Fokus";
+    document.querySelectorAll("#voreinst button").forEach(function (b) {
+      var p = b.dataset.p.split("-").map(Number);
+      b.setAttribute("aria-pressed", p[0] === S.einst.lernen && p[1] === S.einst.pause ? "true" : "false");
+    });
+  }
+
+  function starten() {
+    audioEntsperren();
+    S.lauf.ende = Date.now() + restJetzt() * 1000; S.lauf.laeuft = true; speichern();
+    clearInterval(tick); tick = setInterval(schlag, 250); anzeigen();
+  }
+  function anhalten() { S.lauf.rest = restJetzt(); S.lauf.laeuft = false; speichern(); clearInterval(tick); anzeigen(); }
+  function schlag() { if (restJetzt() <= 0) fertig(); else anzeigen(); }
+  function fertig() {
+    clearInterval(tick);
+    var war = S.lauf.modus;
+    if (war === "lernen") {
+      var tag = KW.today(), t = S.tage[tag] || { min: 0, n: 0 };
+      t.min += S.einst.lernen; t.n += 1; S.tage[tag] = t;
+      S.lauf.runde += 1;
+      S.lauf.modus = S.lauf.runde % 4 === 0 ? "lang" : "pause";
+    } else {
+      S.lauf.modus = "lernen";
+    }
+    S.lauf.laeuft = false; S.lauf.rest = dauerVon(S.lauf.modus); speichern();
+    klingeln();
+    var text = war === "lernen" ? "Super, Lernzeit geschafft! Zeit für eine Pause." : "Pause vorbei – weiter geht’s!";
+    KW.toast(text);
+    melden(text);
+    anzeigen(); statistik();
+  }
+
+  /* Ton + Benachrichtigung */
+  var ac = null;
+  function audioEntsperren() { try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === "suspended") ac.resume(); } catch (e) {} }
+  function klingeln() {
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    if (!ac) return;
+    [0, 0.25, 0.5].forEach(function (d, i) {
+      var o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + d;
+      o.type = "sine"; o.frequency.value = [880, 1108.7, 1318.5][i];
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.3, t + 0.02); g.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
+      o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + 1);
+    });
+  }
+  function melden(text) {
+    try {
+      if ("Notification" in window && Notification.permission === "granted" && document.hidden) new Notification("Kometen-Fokus", { body: text, icon: "icons/icon-192.png" });
+    } catch (e) {}
+  }
+  if ("Notification" in window && Notification.permission === "default") $("erlauben").hidden = false;
+  $("erlauben").onclick = function () {
+    Notification.requestPermission().then(function (p) { $("erlauben").hidden = true; if (p === "granted") KW.toast("Alles klar, ich sag Bescheid, wenn die Zeit um ist."); });
+  };
+
+  /* Knöpfe */
+  $("los").onclick = function () { S.lauf.laeuft ? anhalten() : starten(); };
+  $("reset").onclick = function () { clearInterval(tick); S.lauf.laeuft = false; S.lauf.rest = dauerVon(S.lauf.modus); speichern(); anzeigen(); };
+  $("skip").onclick = function () {
+    clearInterval(tick);
+    S.lauf.modus = S.lauf.modus === "lernen" ? "pause" : "lernen";
+    S.lauf.laeuft = false; S.lauf.rest = dauerVon(S.lauf.modus); speichern(); anzeigen();
+  };
+  $("voreinst").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-p]"); if (!b) return;
+    if (S.lauf.laeuft) { KW.toast("Halte den Timer zuerst an."); return; }
+    var p = b.dataset.p.split("-").map(Number);
+    S.einst = { lernen: p[0], pause: p[1], lang: p[2] };
+    S.lauf.rest = dauerVon(S.lauf.modus); speichern(); anzeigen();
+  });
+
+  /* Themen aus dem Kometen-Planer holen (gleiches Gerät, gleiche Seite) */
+  function themen() {
+    var sel = $("thema"), opts = ['<option value="">Einfach lernen</option>'];
+    var planer = KW.load("kw-planer", null);
+    if (planer && Array.isArray(planer.eintraege)) {
+      var offen = planer.eintraege.filter(function (e) { return !e.erledigt && e.typ !== "termin"; })
+        .sort(function (a, b) { return a.datum.localeCompare(b.datum); }).slice(0, 15);
+      if (offen.length) {
+        opts.push('<optgroup label="Aus deinem Planer">');
+        offen.forEach(function (e) {
+          var t = (e.typ === "test" ? "Lernen für: " : "") + (e.fach ? e.fach + " – " : "") + e.titel;
+          opts.push('<option' + (S.lauf.thema === t ? " selected" : "") + '>' + esc(t) + '</option>');
+        });
+        opts.push('</optgroup>');
+      }
+    }
+    ["Vokabeln", "Mathe üben", "Lesen", "Für einen Test lernen", "Referat vorbereiten"].forEach(function (t) {
+      opts.push('<option' + (S.lauf.thema === t ? " selected" : "") + '>' + esc(t) + '</option>');
+    });
+    sel.innerHTML = opts.join("");
+    if (S.lauf.thema && sel.value !== S.lauf.thema) { sel.insertAdjacentHTML("beforeend", '<option selected>' + esc(S.lauf.thema) + '</option>'); }
+  }
+  $("thema").addEventListener("change", function () { S.lauf.thema = this.value; speichern(); anzeigen(); });
+
+  /* Statistik */
+  function statistik() {
+    var heute = KW.today(), t = S.tage[heute] || { min: 0, n: 0 };
+    $("sHeute").textContent = t.min; $("sEinheiten").textContent = t.n;
+    var serie = 0, tag = (S.tage[heute] && S.tage[heute].n) ? heute : KW.addDays(heute, -1);
+    while (S.tage[tag] && S.tage[tag].n) { serie++; tag = KW.addDays(tag, -1); }
+    $("sSerie").textContent = serie;
+    var tage = [], max = 1;
+    for (var i = 6; i >= 0; i--) { var d = KW.addDays(heute, -i), m = (S.tage[d] || {}).min || 0; tage.push([d, m]); if (m > max) max = m; }
+    var NAMEN = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+    $("woche").innerHTML = tage.map(function (x) {
+      return '<div class="' + (x[0] === heute ? "heute" : "") + '"><em>' + (x[1] ? x[1] : "") + '</em><i style="height:' + Math.round(x[1] / max * 70) + '%"></i><small>' + NAMEN[KW.parse(x[0]).getDay()] + '</small></div>';
+    }).join("");
+  }
+
+  KW.footer("fokus", function () { return S; }, function (d) { if (d && d.einst) { S = d; speichern(); themen(); anzeigen(); statistik(); } });
+  themen(); anzeigen(); statistik();
+  if (S.lauf.laeuft) { if (restJetzt() <= 0) fertig(); else tick = setInterval(schlag, 250); }
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) { themen(); if (S.lauf.laeuft) schlag(); statistik(); } });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kometen-Taschengeld</title>
+<meta name="description" content="Taschengeld im Blick: Einnahmen, Ausgaben und Sparziele.">
+<meta name="theme-color" content="#15803d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Taschengeld">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/kw.css">
+<style>:root{--app:#15803d;--app-soft:rgba(21,128,61,.14)}</style>
+<style>
+.kw-main{max-width:720px;padding-bottom:40px}
+.stand{text-align:center;padding:22px 16px 18px;margin-top:4px}
+.stand small{color:var(--muted);font-size:.85rem}
+.stand b{display:block;font-size:clamp(2.4rem,11vw,3.2rem);line-height:1.1;margin:4px 0 2px;font-variant-numeric:tabular-nums}
+.stand .minus{color:var(--bad)}
+.stand .neben{font-size:.82rem;color:var(--muted)}
+.aktionen{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 4px}
+.aktionen .btn{padding:14px;font-weight:600;font-size:1rem}
+.btn.rein{background:#1a8f4c;border-color:#1a8f4c;color:#fff}
+.btn.raus{background:#c93a3a;border-color:#c93a3a;color:#fff}
+.ziele{display:flex;flex-direction:column;gap:10px}
+.ziel{padding:14px}
+.ziel .kopf{display:flex;gap:10px;align-items:center}
+.ziel .kopf b{flex:1;overflow-wrap:anywhere}
+.ziel .em{font-size:1.5rem}
+.fort{height:12px;border-radius:7px;background:var(--soft);overflow:hidden;margin:10px 0 6px}
+.fort i{display:block;height:100%;background:var(--app);border-radius:7px}
+.ziel.geschafft .fort i{background:var(--accent)}
+.ziel .zahlen{display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted);gap:8px;flex-wrap:wrap}
+.ziel .knoepfe{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.monat{padding:14px}
+.monat .zeile{display:flex;justify-content:space-between;margin:2px 0;font-size:.95rem}
+.kat{display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;align-items:center;margin-top:12px;font-size:.85rem}
+.kat i{display:block;height:10px;border-radius:5px;background:var(--bad);opacity:.75}
+.buchungen{display:flex;flex-direction:column}
+.buchung{display:flex;gap:12px;align-items:center;padding:11px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.buchung:last-child{border-bottom:0}
+.buchung .ic{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--soft);flex:none}
+.buchung .t{flex:1;min-width:0}
+.buchung .t div{overflow-wrap:anywhere}
+.buchung .t small{color:var(--muted)}
+.buchung .betrag{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.betrag.plus{color:var(--good)}
+.betrag.minus{color:var(--bad)}
+.betrag.spar{color:var(--app)}
+.regel{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:12px 14px;margin-top:10px;flex-wrap:wrap}
+.regel span{font-size:.9rem}
+.seg{display:flex;gap:6px;margin:0 0 12px;flex-wrap:wrap}
+.seg button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 12px;cursor:pointer;font-size:.85rem}
+.seg button[aria-pressed="true"]{background:var(--app);border-color:var(--app);color:#fff;font-weight:600}
+.betragfeld{font-size:1.6rem;font-weight:600;text-align:center}
+</style>
+</head>
+<body>
+<header class="kw-bar">
+  <a class="kw-home" href="../" aria-label="Zurück zu Kometenwerk"><svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="currentColor" stroke-opacity=".6" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)" fill="currentColor"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="15" fill="#ff8a3c"/></g></svg></a>
+  <h1>Kometen-Taschengeld</h1>
+  <span id="kwBarExtra" style="display:contents"></span>
+  <button class="kw-install" id="kwInstall" type="button" hidden>Als App installieren</button>
+</header>
+<main class="kw-main">
+  <section class="card stand">
+    <small>Das kannst du ausgeben</small>
+    <b id="frei">0,00 €</b>
+    <div class="neben" id="neben"></div>
+  </section>
+  <div class="aktionen">
+    <button class="btn rein" type="button" id="plus">＋ Geld bekommen</button>
+    <button class="btn raus" type="button" id="minus">－ Geld ausgegeben</button>
+  </div>
+  <div class="card regel" id="regel"></div>
+
+  <h2 class="sec">Sparziele</h2>
+  <div class="ziele" id="ziele"></div>
+  <p style="margin:10px 0 0"><button class="btn small" type="button" id="zielNeu">＋ Neues Sparziel</button></p>
+
+  <h2 class="sec" id="monatTitel">Dieser Monat</h2>
+  <div class="card monat" id="monat"></div>
+
+  <h2 class="sec">Letzte Buchungen</h2>
+  <div class="card" style="padding:4px 12px"><div class="buchungen" id="buchungen"></div></div>
+</main>
+
+<dialog class="sheet" id="bDlg">
+  <form class="sheet-in" method="dialog" id="bForm">
+    <h2 id="bTitel">Geld bekommen</h2>
+    <label class="field"><span>Betrag in Euro</span><input class="inp betragfeld" id="bBetrag" inputmode="decimal" required placeholder="0,00" autocomplete="off"></label>
+    <div class="seg" id="bKat" role="group" aria-label="Kategorie"></div>
+    <label class="field"><span>Wofür / woher? (wenn du willst)</span><input class="inp" id="bText" maxlength="80" autocomplete="off"></label>
+    <label class="field"><span>Datum</span><input class="inp" type="date" id="bDatum" required></label>
+    <div class="sheet-foot">
+      <button type="button" class="btn danger" id="bLoeschen">Löschen</button>
+      <span class="sp"></span>
+      <button type="button" class="btn" id="bAbbruch">Abbrechen</button>
+      <button type="submit" class="btn primary">Speichern</button>
+    </div>
+  </form>
+</dialog>
+<dialog class="sheet" id="zDlg">
+  <form class="sheet-in" method="dialog" id="zForm">
+    <h2 id="zTitel">Neues Sparziel</h2>
+    <div class="row">
+      <label class="field" style="flex:0 0 80px;min-width:80px"><span>Symbol</span><select class="inp" id="zEm"><option>🎮</option><option>🚲</option><option>🎧</option><option>📱</option><option>👟</option><option>⚽</option><option>🎁</option><option>✈️</option><option>📚</option><option>⭐</option></select></label>
+      <label class="field"><span>Wofür sparst du?</span><input class="inp" id="zName" required maxlength="50" placeholder="z. B. Neues Fahrrad" autocomplete="off"></label>
+    </div>
+    <label class="field"><span>Wie viel brauchst du? (Euro)</span><input class="inp" id="zZiel" inputmode="decimal" required placeholder="z. B. 120" autocomplete="off"></label>
+    <div class="sheet-foot">
+      <button type="button" class="btn danger" id="zLoeschen">Ziel löschen</button>
+      <span class="sp"></span>
+      <button type="button" class="btn" id="zAbbruch">Abbrechen</button>
+      <button type="submit" class="btn primary">Speichern</button>
+    </div>
+  </form>
+</dialog>
+<dialog class="sheet" id="sDlg">
+  <form class="sheet-in" method="dialog" id="sForm">
+    <h2 id="sTitel">Geld zurücklegen</h2>
+    <p class="muted" id="sInfo" style="margin-top:-6px"></p>
+    <label class="field"><span>Betrag in Euro</span><input class="inp betragfeld" id="sBetrag" inputmode="decimal" required placeholder="0,00" autocomplete="off"></label>
+    <div class="sheet-foot">
+      <button type="button" class="btn" id="sAbbruch">Abbrechen</button>
+      <button type="submit" class="btn primary" id="sOk">Zurücklegen</button>
+    </div>
+  </form>
+</dialog>
+<dialog class="sheet" id="rDlg">
+  <form class="sheet-in" method="dialog" id="rForm">
+    <h2>Regelmäßiges Taschengeld</h2>
+    <p class="muted" style="margin-top:-6px">Wird automatisch eingetragen, wenn es fällig ist.</p>
+    <label class="field"><span>Betrag in Euro (0 = aus)</span><input class="inp" id="rBetrag" inputmode="decimal" placeholder="z. B. 5" autocomplete="off"></label>
+    <div class="row">
+      <label class="field"><span>Wie oft?</span><select class="inp" id="rTakt"><option value="woche">Jede Woche</option><option value="monat">Jeden Monat</option></select></label>
+      <label class="field"><span>Ab wann?</span><input class="inp" type="date" id="rStart"></label>
+    </div>
+    <div class="sheet-foot"><button type="button" class="btn" id="rAbbruch">Abbrechen</button><button class="btn primary" type="submit">Speichern</button></div>
+  </form>
+</dialog>
+
+<script src="../shared/kw.js"></script>
+<script>
+(function () {
+  "use strict";
+  var esc = KW.esc, KEY = "kw-geld";
+  var KAT_RAUS = [["essen", "🍫", "Essen & Trinken"], ["spiele", "🎮", "Spiele & Apps"], ["kleidung", "👕", "Kleidung"], ["freizeit", "🎬", "Freizeit"], ["schule", "✏️", "Schule"], ["geschenke", "🎁", "Geschenke"], ["sonst", "📦", "Sonstiges"]];
+  var KAT_REIN = [["taschengeld", "💶", "Taschengeld"], ["geschenk", "🎁", "Geschenk"], ["job", "🧹", "Geholfen / Job"], ["sonst", "💰", "Sonstiges"]];
+  var D = KW.load(KEY, null);
+  if (!D || !Array.isArray(D.buchungen)) D = { buchungen: [], ziele: [], regel: { betrag: 0, takt: "woche", start: KW.today(), bis: "" } };
+  function speichern() { KW.save(KEY, D); }
+
+  var EUR = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
+  function euro(c) { return EUR.format(c / 100); }
+  function cent(text) {
+    var t = String(text || "").trim().replace(/\s|€/g, "");
+    if (/^\d{1,3}(\.\d{3})+(,\d{1,2})?$/.test(t)) t = t.replace(/\./g, "");
+    t = t.replace(",", ".");
+    var v = parseFloat(t);
+    return isFinite(v) && v > 0 ? Math.round(v * 100) : 0;
+  }
+  function kat(liste, id) { for (var i = 0; i < liste.length; i++) if (liste[i][0] === id) return liste[i]; return liste[liste.length - 1]; }
+
+  /* Regelmäßiges Taschengeld nachtragen */
+  function regelNachtragen() {
+    var r = D.regel;
+    if (!r || !r.betrag || !r.start) return 0;
+    var naechst = r.bis ? schritt(r.bis, r.takt) : r.start, heute = KW.today(), n = 0;
+    while (naechst <= heute && n < 60) {
+      D.buchungen.push({ id: KW.id(), art: "rein", cent: r.betrag, kat: "taschengeld", text: "Regelmäßiges Taschengeld", datum: naechst, auto: true });
+      r.bis = naechst; naechst = schritt(naechst, r.takt); n++;
+    }
+    if (n) speichern();
+    return n;
+  }
+  function schritt(d, takt) {
+    if (takt === "woche") return KW.addDays(d, 7);
+    var x = KW.parse(d), tag = x.getDate();
+    var y = new Date(x.getFullYear(), x.getMonth() + 1, 1);
+    y.setDate(Math.min(tag, new Date(y.getFullYear(), y.getMonth() + 1, 0).getDate()));
+    return KW.ymd(y);
+  }
+  function proWoche() { var r = D.regel; if (!r || !r.betrag) return 0; return r.takt === "woche" ? r.betrag : r.betrag * 12 / 52; }
+
+  /* Rechnen */
+  function summen() {
+    var rein = 0, raus = 0, spar = 0;
+    D.buchungen.forEach(function (b) { if (b.art === "rein") rein += b.cent; else if (b.art === "raus") raus += b.cent; else if (b.art === "spar") spar += b.cent; else if (b.art === "entspar") spar -= b.cent; });
+    return { gesamt: rein - raus, frei: rein - raus - spar, gespart: spar };
+  }
+  function gespartFuer(zid) {
+    var s = 0;
+    D.buchungen.forEach(function (b) { if (b.ziel === zid) s += b.art === "spar" ? b.cent : b.art === "entspar" ? -b.cent : 0; });
+    return s;
+  }
+
+  /* Anzeige */
+  function zeigen() {
+    var s = summen();
+    var frei = document.getElementById("frei");
+    frei.textContent = euro(s.frei); frei.classList.toggle("minus", s.frei < 0);
+    document.getElementById("neben").textContent = s.gespart ? "Plus " + euro(s.gespart) + " für Sparziele zurückgelegt · zusammen " + euro(s.gesamt) : "";
+    var r = D.regel;
+    document.getElementById("regel").innerHTML = r && r.betrag
+      ? '<span>💶 Taschengeld: <b>' + euro(r.betrag) + '</b> ' + (r.takt === "woche" ? "jede Woche" : "jeden Monat") + (r.bis ? " · zuletzt am " + datum(r.bis) : " · ab " + datum(r.start)) + '</span><button class="btn small" type="button" id="regelBtn">Ändern</button>'
+      : '<span>Bekommst du regelmäßig Taschengeld? Dann trägt die App es automatisch ein.</span><button class="btn small" type="button" id="regelBtn">Einrichten</button>';
+    document.getElementById("regelBtn").onclick = regelOeffnen;
+
+    // Sparziele
+    var zh = D.ziele.map(function (z) {
+      var g = gespartFuer(z.id), p = Math.min(100, Math.round(g / z.ziel * 100)), rest = Math.max(0, z.ziel - g), pw = proWoche();
+      var prognose = rest <= 0 ? "Geschafft! 🎉" : pw ? "Mit deinem Taschengeld noch ca. " + Math.ceil(rest / pw) + (Math.ceil(rest / pw) === 1 ? " Woche" : " Wochen") : "Noch " + euro(rest);
+      return '<div class="card ziel' + (rest <= 0 ? " geschafft" : "") + '"><div class="kopf"><span class="em" aria-hidden="true">' + esc(z.em) + '</span><b>' + esc(z.name) + '</b><button class="btn small" type="button" data-ze="' + z.id + '">Bearbeiten</button></div>' +
+        '<div class="fort" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + p + '"><i style="width:' + p + '%"></i></div>' +
+        '<div class="zahlen"><span>' + euro(g) + ' von ' + euro(z.ziel) + ' (' + p + ' %)</span><span>' + esc(prognose) + '</span></div>' +
+        '<div class="knoepfe"><button class="btn small primary" type="button" data-zs="' + z.id + '">＋ Zurücklegen</button>' + (g > 0 ? '<button class="btn small" type="button" data-zr="' + z.id + '">Wieder rausnehmen</button>' : "") + '</div></div>';
+    }).join("");
+    document.getElementById("ziele").innerHTML = zh || '<div class="card empty" style="padding:22px"><b>Noch kein Sparziel</b>Worauf sparst du? Ein neues Spiel, ein Fahrrad, Kopfhörer?</div>';
+
+    // Monat
+    var heute = KW.today(), mon = heute.slice(0, 7), rein = 0, raus = 0, katSum = {};
+    D.buchungen.forEach(function (b) {
+      if (b.datum.slice(0, 7) !== mon) return;
+      if (b.art === "rein") rein += b.cent;
+      if (b.art === "raus") { raus += b.cent; katSum[b.kat] = (katSum[b.kat] || 0) + b.cent; }
+    });
+    var MONATE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+    document.getElementById("monatTitel").textContent = MONATE[+mon.slice(5) - 1] + " " + mon.slice(0, 4);
+    var mh = '<div class="zeile"><span>Bekommen</span><b class="betrag plus">' + euro(rein) + '</b></div><div class="zeile"><span>Ausgegeben</span><b class="betrag minus">' + euro(raus) + '</b></div>';
+    var ks = Object.keys(katSum).sort(function (a, b) { return katSum[b] - katSum[a]; });
+    if (ks.length) {
+      var max = katSum[ks[0]];
+      mh += '<div class="kat">' + ks.map(function (k) { var kk = kat(KAT_RAUS, k); return '<span>' + kk[1] + " " + esc(kk[2]) + '</span><i style="width:' + Math.max(4, Math.round(katSum[k] / max * 100)) + '%"></i><span>' + euro(katSum[k]) + '</span>'; }).join("") + '</div>';
+    } else mh += '<p class="muted" style="margin:10px 0 0;font-size:.88rem">Diesen Monat noch nichts ausgegeben. 💪</p>';
+    document.getElementById("monat").innerHTML = mh;
+
+    // Buchungen
+    var liste = D.buchungen.slice().sort(function (a, b) { return b.datum.localeCompare(a.datum) || 0; }).slice(0, 40);
+    document.getElementById("buchungen").innerHTML = liste.length ? liste.map(function (b) {
+      var icon, titel, cls, vz;
+      if (b.art === "rein") { var k1 = kat(KAT_REIN, b.kat); icon = k1[1]; titel = b.text || k1[2]; cls = "plus"; vz = "+"; }
+      else if (b.art === "raus") { var k2 = kat(KAT_RAUS, b.kat); icon = k2[1]; titel = b.text || k2[2]; cls = "minus"; vz = "−"; }
+      else { var z = D.ziele.find(function (q) { return q.id === b.ziel; }); icon = "🐷"; titel = (b.art === "spar" ? "Zurückgelegt für " : "Rausgenommen aus ") + (z ? z.name : "Sparziel"); cls = "spar"; vz = b.art === "spar" ? "→" : "←"; }
+      return '<div class="buchung" role="button" tabindex="0" data-b="' + b.id + '"><span class="ic" aria-hidden="true">' + icon + '</span><div class="t"><div>' + esc(titel) + '</div><small>' + datum(b.datum) + '</small></div><span class="betrag ' + cls + '">' + vz + " " + euro(b.cent) + '</span></div>';
+    }).join("") : '<div class="empty" style="padding:22px"><b>Noch keine Buchungen</b>Trag ein, wenn du Geld bekommst oder ausgibst.</div>';
+  }
+  function datum(d) { var x = KW.parse(d); return x.getDate() + "." + (x.getMonth() + 1) + "." + x.getFullYear(); }
+
+  /* Buchung eintragen / bearbeiten */
+  var bDlg = document.getElementById("bDlg"), bAkt = null, bArt = "rein", bKat = "taschengeld";
+  function katKnoepfe() {
+    var liste = bArt === "rein" ? KAT_REIN : KAT_RAUS;
+    document.getElementById("bKat").innerHTML = liste.map(function (k) { return '<button type="button" data-k="' + k[0] + '" aria-pressed="' + (k[0] === bKat) + '">' + k[1] + " " + esc(k[2]) + '</button>'; }).join("");
+  }
+  document.getElementById("bKat").addEventListener("click", function (e) { var b = e.target.closest("[data-k]"); if (b) { bKat = b.dataset.k; katKnoepfe(); } });
+  function buchungOeffnen(art, b) {
+    bAkt = b || null; bArt = b ? b.art : art; bKat = b ? b.kat : (bArt === "rein" ? "taschengeld" : "essen");
+    document.getElementById("bTitel").textContent = (b ? "Bearbeiten: " : "") + (bArt === "rein" ? "Geld bekommen" : "Geld ausgegeben");
+    document.getElementById("bBetrag").value = b ? (b.cent / 100).toFixed(2).replace(".", ",") : "";
+    document.getElementById("bText").value = b ? (b.text || "") : "";
+    document.getElementById("bText").placeholder = bArt === "rein" ? "z. B. von Oma" : "z. B. Eis mit Freunden";
+    document.getElementById("bDatum").value = b ? b.datum : KW.today();
+    document.getElementById("bLoeschen").hidden = !b;
+    katKnoepfe(); bDlg.showModal();
+    setTimeout(function () { document.getElementById("bBetrag").focus(); }, 50);
+  }
+  document.getElementById("plus").onclick = function () { buchungOeffnen("rein"); };
+  document.getElementById("minus").onclick = function () { buchungOeffnen("raus"); };
+  document.getElementById("bAbbruch").onclick = function () { bDlg.close(); };
+  document.getElementById("bForm").addEventListener("submit", function (e) {
+    var c = cent(document.getElementById("bBetrag").value);
+    if (!c) { e.preventDefault(); KW.toast("Bitte einen Betrag eintragen, z. B. 2,50"); return; }
+    var w = { art: bArt, cent: c, kat: bKat, text: document.getElementById("bText").value.trim(), datum: document.getElementById("bDatum").value || KW.today() };
+    if (bAkt) Object.assign(bAkt, w); else D.buchungen.push(Object.assign({ id: KW.id() }, w));
+    speichern(); zeigen();
+    if (!bAkt && bArt === "raus" && summen().frei < 0) KW.toast("Achtung: Du hast mehr ausgegeben, als du hattest.");
+  });
+  document.getElementById("bLoeschen").onclick = function () {
+    var b = bAkt, i = D.buchungen.indexOf(b); D.buchungen.splice(i, 1); speichern(); bDlg.close(); zeigen();
+    KW.toast("Buchung gelöscht.", "Rückgängig", function () { D.buchungen.splice(i, 0, b); speichern(); zeigen(); });
+  };
+  document.getElementById("buchungen").addEventListener("click", function (e) {
+    var el = e.target.closest("[data-b]"); if (!el) return;
+    var b = D.buchungen.find(function (x) { return x.id === el.dataset.b; });
+    if (!b) return;
+    if (b.art === "spar" || b.art === "entspar") {
+      if (confirm("Diese Spar-Buchung löschen?")) { D.buchungen = D.buchungen.filter(function (x) { return x !== b; }); speichern(); zeigen(); }
+      return;
+    }
+    buchungOeffnen(b.art, b);
+  });
+  document.getElementById("buchungen").addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target.dataset.b) e.target.click(); });
+
+  /* Sparziele */
+  var zDlg = document.getElementById("zDlg"), zAkt = null;
+  function zielOeffnen(z) {
+    zAkt = z || null;
+    document.getElementById("zTitel").textContent = z ? "Sparziel bearbeiten" : "Neues Sparziel";
+    document.getElementById("zEm").value = z ? z.em : "🎮";
+    document.getElementById("zName").value = z ? z.name : "";
+    document.getElementById("zZiel").value = z ? (z.ziel / 100).toFixed(2).replace(".", ",").replace(",00", "") : "";
+    document.getElementById("zLoeschen").hidden = !z;
+    zDlg.showModal();
+  }
+  document.getElementById("zielNeu").onclick = function () { zielOeffnen(null); };
+  document.getElementById("zAbbruch").onclick = function () { zDlg.close(); };
+  document.getElementById("zForm").addEventListener("submit", function (e) {
+    var c = cent(document.getElementById("zZiel").value), n = document.getElementById("zName").value.trim();
+    if (!c || !n) { e.preventDefault(); KW.toast("Bitte Name und Betrag eintragen."); return; }
+    var w = { em: document.getElementById("zEm").value, name: n, ziel: c };
+    if (zAkt) Object.assign(zAkt, w); else D.ziele.push(Object.assign({ id: KW.id() }, w));
+    speichern(); zeigen();
+  });
+  document.getElementById("zLoeschen").onclick = function () {
+    var z = zAkt, g = gespartFuer(z.id);
+    if (!confirm(g > 0 ? "Ziel löschen? Die " + euro(g) + " kommen zurück zu deinem freien Geld." : "Ziel löschen?")) return;
+    D.buchungen = D.buchungen.filter(function (b) { return b.ziel !== z.id; });
+    D.ziele = D.ziele.filter(function (x) { return x !== z; }); speichern(); zDlg.close(); zeigen();
+  };
+  var sDlg = document.getElementById("sDlg"), sZiel = null, sArt = "spar";
+  document.getElementById("ziele").addEventListener("click", function (e) {
+    var ed = e.target.closest("[data-ze]"), sp = e.target.closest("[data-zs]"), rz = e.target.closest("[data-zr]");
+    var id = (ed || sp || rz || {}).dataset; if (!id) return;
+    var z = D.ziele.find(function (q) { return q.id === (id.ze || id.zs || id.zr); });
+    if (ed) return zielOeffnen(z);
+    sZiel = z; sArt = sp ? "spar" : "entspar";
+    document.getElementById("sTitel").textContent = sp ? "Für „" + z.name + "“ zurücklegen" : "Aus „" + z.name + "“ rausnehmen";
+    document.getElementById("sInfo").textContent = sp ? "Frei verfügbar: " + euro(summen().frei) : "Gespart: " + euro(gespartFuer(z.id));
+    document.getElementById("sOk").textContent = sp ? "Zurücklegen" : "Rausnehmen";
+    document.getElementById("sBetrag").value = "";
+    sDlg.showModal(); setTimeout(function () { document.getElementById("sBetrag").focus(); }, 50);
+  });
+  document.getElementById("sAbbruch").onclick = function () { sDlg.close(); };
+  document.getElementById("sForm").addEventListener("submit", function (e) {
+    var c = cent(document.getElementById("sBetrag").value);
+    if (!c) { e.preventDefault(); return; }
+    if (sArt === "spar" && c > summen().frei) { e.preventDefault(); KW.toast("So viel freies Geld hast du gerade nicht."); return; }
+    if (sArt === "entspar" && c > gespartFuer(sZiel.id)) { e.preventDefault(); KW.toast("So viel ist in diesem Ziel nicht drin."); return; }
+    D.buchungen.push({ id: KW.id(), art: sArt, cent: c, ziel: sZiel.id, datum: KW.today() });
+    speichern(); zeigen();
+    if (sArt === "spar" && gespartFuer(sZiel.id) >= sZiel.ziel) KW.toast("Ziel erreicht! 🎉 Du hast genug für „" + sZiel.name + "“.");
+  });
+
+  /* Regel */
+  var rDlg = document.getElementById("rDlg");
+  function regelOeffnen() {
+    var r = D.regel || {};
+    document.getElementById("rBetrag").value = r.betrag ? (r.betrag / 100).toFixed(2).replace(".", ",").replace(",00", "") : "";
+    document.getElementById("rTakt").value = r.takt || "woche";
+    document.getElementById("rStart").value = r.bis ? schritt(r.bis, r.takt) : (r.start || KW.today());
+    rDlg.showModal();
+  }
+  document.getElementById("rAbbruch").onclick = function () { rDlg.close(); };
+  document.getElementById("rForm").addEventListener("submit", function () {
+    var c = cent(document.getElementById("rBetrag").value);
+    D.regel = { betrag: c, takt: document.getElementById("rTakt").value, start: document.getElementById("rStart").value || KW.today(), bis: "" };
+    var n = regelNachtragen(); speichern(); zeigen();
+    if (c && n) KW.toast(n === 1 ? "Taschengeld eingetragen." : n + "× Taschengeld eingetragen.");
+  });
+
+  KW.footer("geld", function () { return D; }, function (d) { if (d && Array.isArray(d.buchungen)) { D = d; speichern(); zeigen(); } });
+  var neu = regelNachtragen();
+  zeigen();
+  if (neu) KW.toast(neu === 1 ? "Dein Taschengeld wurde eingetragen. 💶" : neu + "× Taschengeld nachgetragen. 💶");
+  document.addEventListener("visibilitychange", function () { if (!document.hidden && regelNachtragen()) zeigen(); });
+})();
+</script>
+</body>
+</html>

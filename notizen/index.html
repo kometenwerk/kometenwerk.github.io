@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kometen-Notizen</title>
+<meta name="description" content="Notizen und Listen zum Abhaken – schnell aufgeschrieben, schnell gefunden.">
+<meta name="theme-color" content="#a36b00">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Notizen">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/kw.css">
+<style>:root{--app:#a36b00;--app-soft:rgba(163,107,0,.14)}</style>
+<style>
+:root{--n-weiss:#ffffff;--n-gelb:#fff4c2;--n-gruen:#dcf5e1;--n-blau:#dde9fe;--n-lila:#ece4ff;--n-rosa:#ffe1ec;--n-orange:#ffe7d3}
+@media (prefers-color-scheme:dark){:root{--n-weiss:#172133;--n-gelb:#3a3216;--n-gruen:#173828;--n-blau:#18304f;--n-lila:#2c2450;--n-rosa:#3d2032;--n-orange:#3d2b18}}
+.kw-main{padding-bottom:96px}
+.suche{position:relative;margin:2px 0 10px}
+.suche input{padding-left:42px;border-radius:999px}
+.suche svg{position:absolute;left:14px;top:50%;width:18px;height:18px;transform:translateY(-50%);color:var(--muted)}
+.filter{display:flex;gap:6px;margin:0 0 14px;flex-wrap:wrap}
+.filter button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:.85rem;cursor:pointer}
+.filter button[aria-pressed="true"]{background:var(--app);border-color:var(--app);color:#fff;font-weight:600}
+.grid{columns:2 170px;column-gap:10px}
+.note{break-inside:avoid;margin:0 0 10px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);cursor:pointer;position:relative;display:block;width:100%;text-align:left}
+.note:hover{border-color:var(--muted)}
+.note:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.note h3{margin:0 22px 4px 0;font-size:1rem;font-weight:600;overflow-wrap:anywhere}
+.note .body{font-size:.9rem;white-space:pre-wrap;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:8;-webkit-box-orient:vertical;overflow:hidden}
+.note .pin{position:absolute;right:10px;top:10px;font-size:.9rem}
+.note .li{display:flex;gap:8px;align-items:flex-start;font-size:.9rem;padding:2px 0}
+.note .li input{margin:3px 0 0;width:16px;height:16px;accent-color:var(--app);flex:none}
+.note .li.ok span{text-decoration:line-through;color:var(--muted)}
+.note .mehr,.note .zeit{font-size:.75rem;color:var(--muted);margin-top:6px}
+.fab{position:fixed;right:max(18px,calc((100vw - 860px)/2 + 18px));bottom:calc(22px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:flex-end;gap:10px;z-index:20}
+.fab button{border:0;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.22)}
+.fab .haupt{width:60px;height:60px;border-radius:50%;background:var(--accent);color:#101826;font-size:2rem;line-height:1}
+.fab .klein{background:var(--card);color:var(--ink);border-radius:999px;padding:10px 16px;font-weight:600;border:1px solid var(--line)}
+.ed-kopf{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.ed-kopf .inp{font-size:1.15rem;font-weight:600;border-color:transparent;background:transparent;padding-left:4px}
+.ed-kopf .inp:focus{border-color:var(--line)}
+.ed-text{min-height:200px;border-color:transparent;background:transparent;padding-left:4px}
+.farben{display:flex;gap:8px;margin:8px 0 12px;flex-wrap:wrap}
+.farben button{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}
+.farben button[aria-pressed="true"]{border-color:var(--app);box-shadow:0 0 0 2px var(--app-soft)}
+.punkte{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
+.punkt{display:flex;gap:8px;align-items:center}
+.punkt input[type=checkbox]{width:20px;height:20px;accent-color:var(--app);flex:none}
+.punkt .inp{border-color:transparent;background:transparent;padding:6px 4px}
+.punkt .inp:focus{border-color:var(--line)}
+.punkt.ok .inp{text-decoration:line-through;color:var(--muted)}
+.punkt button{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px 6px}
+.sheet-in.note-ed{transition:background .2s}
+.ico-btn{border:1px solid var(--line);background:var(--card);border-radius:10px;width:40px;height:40px;cursor:pointer;flex:none;font-size:1.05rem}
+.ico-btn[aria-pressed="true"]{background:var(--app);border-color:var(--app)}
+</style>
+</head>
+<body>
+<header class="kw-bar">
+  <a class="kw-home" href="../" aria-label="Zurück zu Kometenwerk"><svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="currentColor" stroke-opacity=".6" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)" fill="currentColor"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="15" fill="#ff8a3c"/></g></svg></a>
+  <h1>Kometen-Notizen</h1>
+  <span id="kwBarExtra" style="display:contents"></span>
+  <button class="kw-install" id="kwInstall" type="button" hidden>Als App installieren</button>
+</header>
+<main class="kw-main">
+  <div class="suche">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+    <input class="inp" id="q" type="search" placeholder="Notizen durchsuchen" aria-label="Notizen durchsuchen" autocomplete="off">
+  </div>
+  <div class="filter" id="filter">
+    <button type="button" data-f="alle" aria-pressed="true">Alle</button>
+    <button type="button" data-f="pin" aria-pressed="false">📌 Angepinnt</button>
+    <button type="button" data-f="liste" aria-pressed="false">☑️ Listen</button>
+  </div>
+  <div id="view"></div>
+</main>
+<div class="fab" id="fab">
+  <button type="button" class="klein" id="neuListe" hidden>☑️ Neue Liste</button>
+  <button type="button" class="klein" id="neuText" hidden>📝 Neue Notiz</button>
+  <button type="button" class="haupt" id="fabBtn" aria-label="Neu" aria-expanded="false">+</button>
+</div>
+
+<dialog class="sheet" id="ed">
+  <form class="sheet-in note-ed" method="dialog" id="edForm">
+    <div class="ed-kopf">
+      <input class="inp" id="eTitel" placeholder="Titel" maxlength="120" autocomplete="off" aria-label="Titel">
+      <button type="button" class="ico-btn" id="ePin" aria-pressed="false" aria-label="Anpinnen" title="Anpinnen">📌</button>
+    </div>
+    <textarea class="inp ed-text" id="eText" placeholder="Schreib etwas …" aria-label="Text"></textarea>
+    <div class="punkte" id="ePunkte" hidden></div>
+    <button type="button" class="btn small" id="ePlus" hidden>+ Punkt</button>
+    <div class="farben" id="eFarben" role="group" aria-label="Farbe"></div>
+    <div class="sheet-foot">
+      <button type="button" class="btn danger" id="eLoeschen">Löschen</button>
+      <button type="button" class="btn" id="eTyp">In Liste umwandeln</button>
+      <span class="sp"></span>
+      <button type="submit" class="btn primary">Fertig</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="../shared/kw.js"></script>
+<script>
+(function () {
+  "use strict";
+  var esc = KW.esc, KEY = "kw-notizen";
+  var FARBEN = ["weiss", "gelb", "gruen", "blau", "lila", "rosa", "orange"];
+  var FARB_NAMEN = { weiss: "Weiß", gelb: "Gelb", gruen: "Grün", blau: "Blau", lila: "Lila", rosa: "Rosa", orange: "Orange" };
+  var D = KW.load(KEY, null);
+  if (!D || !Array.isArray(D.notizen)) {
+    D = { notizen: [{ id: KW.id(), titel: "Willkommen bei Kometen-Notizen 👋", typ: "text", farbe: "gelb", pin: true, geaendert: new Date().toISOString(),
+      text: "Tippe auf + um eine Notiz oder eine Liste anzulegen.\nMit 📌 bleibt eine Notiz immer oben.\nDeine Notizen bleiben nur auf diesem Gerät.", punkte: [] }] };
+  }
+  function speichern() { KW.save(KEY, D); }
+
+  var filter = "alle", suche = "";
+  var norm = function (s) { return String(s || "").toLowerCase(); };
+
+  function karte(n) {
+    var h = '<div class="note" role="button" tabindex="0" data-id="' + n.id + '" style="background:var(--n-' + n.farbe + ')">' + (n.pin ? '<span class="pin" aria-label="angepinnt">📌</span>' : "");
+    if (n.titel) h += '<h3>' + esc(n.titel) + '</h3>';
+    if (n.typ === "liste") {
+      var offen = n.punkte.filter(function (p) { return !p.ok; }), fertig = n.punkte.filter(function (p) { return p.ok; });
+      var zeigen = offen.concat(fertig).slice(0, 6);
+      h += zeigen.map(function (p) {
+        return '<div class="li' + (p.ok ? " ok" : "") + '"><input type="checkbox" data-p="' + p.id + '"' + (p.ok ? " checked" : "") + ' aria-label="' + esc(p.t) + '"><span>' + esc(p.t) + '</span></div>';
+      }).join("");
+      if (n.punkte.length > 6) h += '<div class="mehr">+ ' + (n.punkte.length - 6) + ' weitere</div>';
+      if (n.punkte.length) h += '<div class="mehr">' + fertig.length + ' von ' + n.punkte.length + ' erledigt</div>';
+    } else if (n.text) {
+      h += '<div class="body">' + esc(n.text) + '</div>';
+    }
+    if (!n.titel && !n.text && !(n.punkte || []).length) h += '<div class="muted">Leere Notiz</div>';
+    return h + '</div>';
+  }
+
+  function zeigen() {
+    var q = norm(suche.trim());
+    var liste = D.notizen.filter(function (n) {
+      if (filter === "pin" && !n.pin) return false;
+      if (filter === "liste" && n.typ !== "liste") return false;
+      if (!q) return true;
+      return norm(n.titel + " " + n.text + " " + (n.punkte || []).map(function (p) { return p.t; }).join(" ")).indexOf(q) >= 0;
+    }).sort(function (a, b) { return (b.pin - a.pin) || String(b.geaendert).localeCompare(String(a.geaendert)); });
+    var v = document.getElementById("view");
+    if (!liste.length) {
+      v.innerHTML = '<div class="empty"><b>' + (q ? "Nichts gefunden" : "Noch keine Notizen") + '</b>' + (q ? "Probier ein anderes Wort." : "Tippe unten rechts auf +, um loszulegen.") + '</div>';
+      return;
+    }
+    var pins = liste.filter(function (n) { return n.pin; }), rest = liste.filter(function (n) { return !n.pin; });
+    var h = "";
+    if (pins.length && rest.length && filter === "alle") {
+      h += '<h2 class="sec">Angepinnt</h2><div class="grid">' + pins.map(karte).join("") + '</div><h2 class="sec">Andere</h2><div class="grid">' + rest.map(karte).join("") + '</div>';
+    } else {
+      h += '<div class="grid">' + liste.map(karte).join("") + '</div>';
+    }
+    v.innerHTML = h;
+  }
+
+  document.getElementById("q").addEventListener("input", function () { suche = this.value; zeigen(); });
+  document.getElementById("filter").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    filter = b.dataset.f;
+    this.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+    zeigen();
+  });
+  document.getElementById("view").addEventListener("keydown", function (e) {
+    if ((e.key === "Enter" || e.key === " ") && e.target.classList.contains("note")) { e.preventDefault(); e.target.click(); }
+  });
+  document.getElementById("view").addEventListener("click", function (e) {
+    var cb = e.target.closest("input[data-p]");
+    var card = e.target.closest(".note");
+    if (!card) return;
+    var n = D.notizen.find(function (x) { return x.id === card.dataset.id; });
+    if (!n) return;
+    if (cb) {
+      e.stopPropagation();
+      var p = n.punkte.find(function (x) { return x.id === cb.dataset.p; });
+      if (p) { p.ok = cb.checked; n.geaendert = new Date().toISOString(); speichern(); setTimeout(zeigen, 250); }
+      return;
+    }
+    oeffnen(n);
+  });
+
+  /* ---------- Neu-Knopf ---------- */
+  var fabBtn = document.getElementById("fabBtn");
+  function fabAuf(auf) {
+    document.getElementById("neuText").hidden = !auf;
+    document.getElementById("neuListe").hidden = !auf;
+    fabBtn.setAttribute("aria-expanded", auf ? "true" : "false");
+    fabBtn.textContent = auf ? "×" : "+";
+  }
+  fabBtn.onclick = function (e) { e.stopPropagation(); fabAuf(fabBtn.getAttribute("aria-expanded") !== "true"); };
+  document.addEventListener("click", function (e) { if (!e.target.closest("#fab")) fabAuf(false); });
+  function neu(typ) {
+    fabAuf(false);
+    var n = { id: KW.id(), titel: "", text: "", typ: typ, punkte: typ === "liste" ? [{ id: KW.id(), t: "", ok: false }] : [], farbe: "weiss", pin: false, geaendert: new Date().toISOString(), neu: true };
+    D.notizen.push(n);
+    oeffnen(n);
+  }
+  document.getElementById("neuText").onclick = function () { neu("text"); };
+  document.getElementById("neuListe").onclick = function () { neu("liste"); };
+
+  /* ---------- Bearbeiten ---------- */
+  var ed = document.getElementById("ed"), akt = null;
+  var eTitel = document.getElementById("eTitel"), eText = document.getElementById("eText"), ePunkte = document.getElementById("ePunkte");
+  function farbKnoepfe() {
+    document.getElementById("eFarben").innerHTML = FARBEN.map(function (f) {
+      return '<button type="button" data-c="' + f + '" style="background:var(--n-' + f + ')" aria-label="' + FARB_NAMEN[f] + '" aria-pressed="' + (akt.farbe === f) + '"></button>';
+    }).join("");
+    document.querySelector("#edForm").style.background = "var(--n-" + akt.farbe + ")";
+  }
+  function punkteZeigen(fokusId) {
+    ePunkte.innerHTML = akt.punkte.map(function (p) {
+      return '<div class="punkt' + (p.ok ? " ok" : "") + '" data-p="' + p.id + '"><input type="checkbox"' + (p.ok ? " checked" : "") + ' aria-label="Erledigt">' +
+        '<input class="inp" value="' + esc(p.t) + '" placeholder="Punkt" maxlength="200" aria-label="Punkt"><button type="button" aria-label="Punkt entfernen">✕</button></div>';
+    }).join("");
+    if (fokusId) { var el = ePunkte.querySelector('[data-p="' + fokusId + '"] .inp'); if (el) el.focus(); }
+  }
+  function typAnzeigen() {
+    var liste = akt.typ === "liste";
+    eText.hidden = liste; ePunkte.hidden = !liste; document.getElementById("ePlus").hidden = !liste;
+    document.getElementById("eTyp").textContent = liste ? "In Text umwandeln" : "In Liste umwandeln";
+    if (liste) punkteZeigen();
+  }
+  function oeffnen(n) {
+    akt = n;
+    eTitel.value = n.titel; eText.value = n.text;
+    document.getElementById("ePin").setAttribute("aria-pressed", n.pin ? "true" : "false");
+    farbKnoepfe(); typAnzeigen();
+    ed.showModal();
+    setTimeout(function () {
+      if (n.neu) { if (n.typ === "liste") { var f = ePunkte.querySelector(".inp"); if (f) f.focus(); } else eText.focus(); }
+    }, 60);
+  }
+  function geaendert() { akt.geaendert = new Date().toISOString(); speichern(); }
+  eTitel.addEventListener("input", function () { akt.titel = this.value; geaendert(); });
+  eTitel.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (akt.typ === "liste") { var f = ePunkte.querySelector(".inp"); if (f) f.focus(); } else eText.focus();
+  });
+  eText.addEventListener("input", function () { akt.text = this.value; geaendert(); });
+  document.getElementById("ePin").onclick = function () { akt.pin = !akt.pin; this.setAttribute("aria-pressed", akt.pin ? "true" : "false"); geaendert(); };
+  document.getElementById("eFarben").addEventListener("click", function (e) { var b = e.target.closest("[data-c]"); if (b) { akt.farbe = b.dataset.c; farbKnoepfe(); geaendert(); } });
+  ePunkte.addEventListener("input", function (e) {
+    var row = e.target.closest(".punkt"); if (!row) return;
+    var p = akt.punkte.find(function (x) { return x.id === row.dataset.p; }); if (!p) return;
+    if (e.target.type === "checkbox") { p.ok = e.target.checked; row.classList.toggle("ok", p.ok); }
+    else p.t = e.target.value;
+    geaendert();
+  });
+  ePunkte.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" || !e.target.classList.contains("inp")) return;
+    e.preventDefault();
+    var row = e.target.closest(".punkt"), i = akt.punkte.findIndex(function (x) { return x.id === row.dataset.p; });
+    var np = { id: KW.id(), t: "", ok: false };
+    akt.punkte.splice(i + 1, 0, np); geaendert(); punkteZeigen(np.id);
+  });
+  ePunkte.addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    var row = b.closest(".punkt");
+    akt.punkte = akt.punkte.filter(function (x) { return x.id !== row.dataset.p; }); geaendert(); punkteZeigen();
+  });
+  document.getElementById("ePlus").onclick = function () { var np = { id: KW.id(), t: "", ok: false }; akt.punkte.push(np); geaendert(); punkteZeigen(np.id); };
+  document.getElementById("eTyp").onclick = function () {
+    if (akt.typ === "text") {
+      akt.punkte = akt.text.split("\n").map(function (z) { return z.replace(/^\s*[-*•]\s*/, "").trim(); }).filter(Boolean).map(function (t) { return { id: KW.id(), t: t, ok: false }; });
+      if (!akt.punkte.length) akt.punkte = [{ id: KW.id(), t: "", ok: false }];
+      akt.typ = "liste"; akt.text = "";
+    } else {
+      akt.text = akt.punkte.map(function (p) { return (p.ok ? "✓ " : "") + p.t; }).filter(function (z) { return z.trim(); }).join("\n");
+      akt.typ = "text"; akt.punkte = []; eText.value = akt.text;
+    }
+    geaendert(); typAnzeigen();
+  };
+  document.getElementById("eLoeschen").onclick = function () {
+    var n = akt, i = D.notizen.indexOf(n);
+    D.notizen.splice(i, 1); speichern(); akt = null; ed.close(); zeigen();
+    if (n.titel || n.text || n.punkte.some(function (p) { return p.t; }))
+      KW.toast("Notiz gelöscht.", "Rückgängig", function () { D.notizen.splice(i, 0, n); speichern(); zeigen(); });
+  };
+  ed.addEventListener("close", function () {
+    if (akt) {
+      delete akt.neu;
+      akt.punkte = (akt.punkte || []).filter(function (p) { return p.t.trim(); });
+      var leer = !akt.titel.trim() && !akt.text.trim() && !akt.punkte.length;
+      if (leer) D.notizen = D.notizen.filter(function (x) { return x !== akt; });
+      speichern();
+    }
+    akt = null; zeigen();
+  });
+
+  KW.footer("notizen", function () { return D; }, function (d) { if (d && Array.isArray(d.notizen)) { D = d; speichern(); zeigen(); } });
+  zeigen();
+})();
+</script>
+</body>
+</html>

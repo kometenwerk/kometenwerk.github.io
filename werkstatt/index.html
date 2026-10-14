@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kometen-Werkstatt</title>
+<meta name="description" content="Technik-Projekte zum Nachbauen – mit Bauteilen, Schaltplan und Code.">
+<meta name="theme-color" content="#d4561a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Werkstatt">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/kw.css">
+<style>:root{--app:#d4561a;--app-soft:rgba(212,86,26,.14)}</style>
+<style>
+.kw-main{padding-bottom:40px}
+.intro{margin:6px 2px 16px}
+.intro p{margin:0;color:var(--muted)}
+.projs{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.proj{padding:16px;cursor:pointer;display:flex;flex-direction:column;gap:6px;text-decoration:none}
+.proj:hover{border-color:var(--app)}
+.proj .em{font-size:2rem;line-height:1}
+.proj b{font-size:1.05rem}
+.proj p{margin:0;color:var(--muted);font-size:.9rem}
+.proj .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.fertig-chip{background:rgba(26,143,76,.15)}
+.zurueck{display:inline-flex;margin:4px 0 10px}
+.p-kopf{display:flex;gap:14px;align-items:center;margin:4px 0 6px}
+.p-kopf .em{font-size:2.6rem}
+.p-kopf h2{margin:0;font-size:1.45rem;line-height:1.2}
+.abschnitt{margin:18px 0 0;padding:16px}
+.abschnitt h3{margin:0 0 10px;font-size:1.05rem}
+.abschnitt p{margin:0 0 8px}
+.teile{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.teile label{display:flex;gap:10px;align-items:center;cursor:pointer}
+.teile input{width:20px;height:20px;accent-color:var(--app);flex:none}
+table.kabel{width:100%;border-collapse:collapse;font-size:.92rem}
+table.kabel th,table.kabel td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+table.kabel th{color:var(--muted);font-weight:600;font-size:.8rem}
+ol.schritte{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
+.code{position:relative;margin-top:6px}
+.code pre{margin:0;background:#0b111c;color:#e6edf7;border-radius:12px;padding:14px;overflow:auto;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;max-height:520px}
+.code .kopier{position:absolute;right:8px;top:8px;background:#1d2940;color:#fff;border:1px solid #2a3650}
+.tipp{padding:12px 14px;border-radius:12px;background:var(--app-soft);margin-top:10px;font-size:.92rem}
+.tipp a{color:var(--app);font-weight:600}
+ul.ideen{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.spiel{text-align:center}
+.feld{height:220px;border-radius:18px;display:grid;place-items:center;cursor:pointer;user-select:none;-webkit-user-select:none;font-size:1.25rem;font-weight:600;color:#fff;background:#334155;transition:background .1s;touch-action:manipulation}
+.feld.warten{background:#7f1d1d}
+.feld.jetzt{background:var(--good)}
+.feld:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.zeiten{display:flex;justify-content:center;gap:24px;margin-top:12px}
+.zeiten b{display:block;font-size:1.4rem}
+.zeiten span{font-size:.8rem;color:var(--muted)}
+.done-row{display:flex;justify-content:center;margin-top:22px}
+@media (prefers-color-scheme:dark){.tipp a{color:#ffb27d}}
+</style>
+</head>
+<body>
+<header class="kw-bar">
+  <a class="kw-home" href="../" aria-label="Zurück zu Kometenwerk"><svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="currentColor" stroke-opacity=".6" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)" fill="currentColor"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="15" fill="#ff8a3c"/></g></svg></a>
+  <h1>Kometen-Werkstatt</h1>
+  <span id="kwBarExtra" style="display:contents"></span>
+  <button class="kw-install" id="kwInstall" type="button" hidden>Als App installieren</button>
+</header>
+<main class="kw-main" id="view"></main>
+
+<script src="../shared/kw.js"></script>
+<script>
+(function () {
+  "use strict";
+  var esc = KW.esc, KEY = "kw-werkstatt";
+  var WOKWI = "https://wokwi.com/projects/new/arduino-uno";
+  var TINKERCAD = "https://www.tinkercad.com/circuits";
+
+  var PROJEKTE = [
+    {
+      id: "reaktionstester", em: "⚡", titel: "Reaktionstester", stufe: "Anfänger", dauer: "ca. 45 Min",
+      kurz: "Wie schnell bist du? Eine LED geht an, und du drückst so schnell du kannst. Der Arduino misst deine Zeit.",
+      lernst: ["LED und Taster anschließen", "Zeit messen mit millis()", "Zufall mit random()", "Ausgaben im Seriellen Monitor"],
+      teile: ["Arduino Uno (oder Nano)", "Steckbrett (Breadboard)", "1 LED (z. B. rot)", "1 Widerstand 220 Ω", "1 Taster", "4 Steckkabel", "USB-Kabel"],
+      kabel: [["LED, langes Bein (+)", "über den 220-Ω-Widerstand an Pin 8"], ["LED, kurzes Bein (−)", "GND"], ["Taster, ein Bein", "Pin 2"], ["Taster, gegenüberliegendes Bein", "GND"]],
+      schritte: [
+        "Stecke die LED ins Steckbrett. Das lange Bein ist Plus.",
+        "Verbinde das lange Bein über den 220-Ω-Widerstand mit Pin 8 und das kurze Bein mit GND.",
+        "Stecke den Taster über die Mittelrille des Steckbretts. Verbinde ein Bein mit Pin 2 und das schräg gegenüberliegende Bein mit GND.",
+        "Kopiere den Code unten in die Arduino-IDE und lade ihn auf den Arduino hoch.",
+        "Öffne den Seriellen Monitor (Lupe oben rechts, 9600 Baud).",
+        "Drück den Taster zum Starten. Warte, bis die LED angeht, und drück dann so schnell du kannst. Wer zu früh drückt, muss nochmal!"
+      ],
+      erklaerung: "Der Taster braucht keinen eigenen Widerstand: Mit INPUT_PULLUP schaltet der Arduino intern einen ein. Dadurch ist der Pin normal HIGH und beim Drücken LOW.",
+      code: [
+        "// Reaktionstester – Kometen-Werkstatt",
+        "const int LED_PIN = 8;",
+        "const int TASTER_PIN = 2;",
+        "unsigned long bestzeit = 0;",
+        "",
+        "bool gedrueckt() {",
+        "  return digitalRead(TASTER_PIN) == LOW;  // mit INPUT_PULLUP: gedrückt = LOW",
+        "}",
+        "",
+        "void warteAufLoslassen() {",
+        "  while (gedrueckt()) {}",
+        "  delay(50);  // Entprellen",
+        "}",
+        "",
+        "void blinken(int mal) {",
+        "  for (int i = 0; i < mal; i++) {",
+        "    digitalWrite(LED_PIN, HIGH); delay(150);",
+        "    digitalWrite(LED_PIN, LOW);  delay(150);",
+        "  }",
+        "}",
+        "",
+        "void setup() {",
+        "  pinMode(LED_PIN, OUTPUT);",
+        "  pinMode(TASTER_PIN, INPUT_PULLUP);",
+        "  Serial.begin(9600);",
+        "  randomSeed(analogRead(A0));  // offener Pin = Zufall",
+        "  Serial.println(\"Reaktionstester bereit! Druecke den Taster zum Starten.\");",
+        "}",
+        "",
+        "void loop() {",
+        "  while (!gedrueckt()) {}      // auf Start warten",
+        "  warteAufLoslassen();",
+        "  Serial.println(\"Achtung ... warte auf das Licht!\");",
+        "",
+        "  unsigned long warten = random(2000, 5000);  // 2 bis 5 Sekunden",
+        "  unsigned long start = millis();",
+        "  while (millis() - start < warten) {",
+        "    if (gedrueckt()) {           // Fruehstart!",
+        "      Serial.println(\"Zu frueh gedrueckt! Nochmal von vorne.\");",
+        "      blinken(3);",
+        "      warteAufLoslassen();",
+        "      return;",
+        "    }",
+        "  }",
+        "",
+        "  digitalWrite(LED_PIN, HIGH);",
+        "  unsigned long anZeit = millis();",
+        "  while (!gedrueckt()) {}",
+        "  unsigned long reaktion = millis() - anZeit;",
+        "  digitalWrite(LED_PIN, LOW);",
+        "  warteAufLoslassen();",
+        "",
+        "  Serial.print(\"Deine Reaktionszeit: \");",
+        "  Serial.print(reaktion);",
+        "  Serial.println(\" ms\");",
+        "  if (bestzeit == 0 || reaktion < bestzeit) {",
+        "    bestzeit = reaktion;",
+        "    Serial.println(\"Neuer Rekord!\");",
+        "  }",
+        "  Serial.print(\"Bestzeit: \");",
+        "  Serial.print(bestzeit);",
+        "  Serial.println(\" ms\");",
+        "  Serial.println(\"Druecke den Taster fuer die naechste Runde.\");",
+        "}"
+      ].join("\n"),
+      ideen: ["Einen Piezo-Summer an Pin 9 anschließen und mit tone() piepen, wenn die LED angeht.", "Zwei Taster: Wer ist schneller, Spieler 1 oder Spieler 2?", "Die Zeit auf einem kleinen LCD- oder OLED-Display anzeigen.", "Den Durchschnitt aus 5 Runden ausrechnen."],
+      spiel: true
+    },
+    {
+      id: "ampel", em: "🚦", titel: "Fußgängerampel", stufe: "Anfänger", dauer: "ca. 45 Min",
+      kurz: "Eine Autoampel und eine Fußgängerampel. Wer den Knopf drückt, bekommt nach kurzer Zeit Grün, genau wie an der Straße.",
+      lernst: ["Mehrere LEDs steuern", "Abläufe mit delay() planen", "Eigene Funktionen schreiben"],
+      teile: ["Arduino Uno", "Steckbrett", "2 rote LEDs", "1 gelbe LED", "2 grüne LEDs", "5 Widerstände 220 Ω", "1 Taster", "Steckkabel"],
+      kabel: [["Auto rot", "Pin 12 (über 220 Ω)"], ["Auto gelb", "Pin 11 (über 220 Ω)"], ["Auto grün", "Pin 10 (über 220 Ω)"], ["Fußgänger rot", "Pin 9 (über 220 Ω)"], ["Fußgänger grün", "Pin 8 (über 220 Ω)"], ["Alle kurzen LED-Beine (−)", "GND"], ["Taster", "Pin 2 und GND"]],
+      schritte: [
+        "Baue die Autoampel aus rot, gelb und grün übereinander auf, daneben die Fußgängerampel aus rot und grün.",
+        "Jede LED bekommt ihren eigenen 220-Ω-Widerstand zum Pin. Alle kurzen Beine kommen an die blaue GND-Leiste.",
+        "Schließe den Taster an Pin 2 und GND an.",
+        "Code hochladen. Am Anfang haben die Autos Grün und die Fußgänger Rot.",
+        "Drück den Knopf und beobachte den Ablauf."
+      ],
+      erklaerung: "Die Reihenfolge ist wie an einer echten deutschen Ampel: Grün, Gelb, Rot, und vor dem nächsten Grün kommt Rot und Gelb zusammen.",
+      code: [
+        "// Fussgaengerampel – Kometen-Werkstatt",
+        "const int AUTO_ROT = 12, AUTO_GELB = 11, AUTO_GRUEN = 10;",
+        "const int FUSS_ROT = 9, FUSS_GRUEN = 8;",
+        "const int TASTER = 2;",
+        "",
+        "void setze(int pin, bool an) {",
+        "  digitalWrite(pin, an ? HIGH : LOW);",
+        "}",
+        "",
+        "void setup() {",
+        "  int leds[] = {AUTO_ROT, AUTO_GELB, AUTO_GRUEN, FUSS_ROT, FUSS_GRUEN};",
+        "  for (int i = 0; i < 5; i++) pinMode(leds[i], OUTPUT);",
+        "  pinMode(TASTER, INPUT_PULLUP);",
+        "  setze(AUTO_GRUEN, true);   // Autos fahren",
+        "  setze(FUSS_ROT, true);     // Fussgaenger warten",
+        "}",
+        "",
+        "void loop() {",
+        "  if (digitalRead(TASTER) == LOW) {   // Knopf gedrueckt",
+        "    delay(2000);                                  // kurz warten",
+        "    setze(AUTO_GRUEN, false); setze(AUTO_GELB, true);  delay(2000);",
+        "    setze(AUTO_GELB, false);  setze(AUTO_ROT, true);   delay(1000);",
+        "    setze(FUSS_ROT, false);   setze(FUSS_GRUEN, true); delay(5000);  // Fussgaenger gehen",
+        "    setze(FUSS_GRUEN, false); setze(FUSS_ROT, true);   delay(2000);",
+        "    setze(AUTO_GELB, true);                            delay(1500);  // Rot + Gelb",
+        "    setze(AUTO_ROT, false);   setze(AUTO_GELB, false); setze(AUTO_GRUEN, true);",
+        "    delay(5000);  // Sperrzeit: Autos haben mindestens 5 Sekunden Gruen",
+        "  }",
+        "}"
+      ].join("\n"),
+      ideen: ["Einen Summer piepen lassen, solange die Fußgänger Grün haben (Blindenampel).", "Eine zweite Kreuzung bauen, die mit der ersten abgestimmt ist.", "Nachts nur gelb blinken, wenn ein Lichtsensor Dunkelheit misst."]
+    },
+    {
+      id: "nachtlicht", em: "🌙", titel: "Automatisches Nachtlicht", stufe: "Mittel", dauer: "ca. 30 Min",
+      kurz: "Ein Lichtsensor merkt, wenn es dunkel wird, und eine LED geht langsam an: je dunkler, desto heller.",
+      lernst: ["Analoge Werte mit analogRead() messen", "Spannungsteiler verstehen", "Helligkeit mit analogWrite() (PWM) steuern", "Werte mit map() umrechnen"],
+      teile: ["Arduino Uno", "Steckbrett", "1 Fotowiderstand (LDR)", "1 Widerstand 10 kΩ", "1 LED (z. B. weiß oder gelb)", "1 Widerstand 220 Ω", "Steckkabel"],
+      kabel: [["Fotowiderstand, Bein 1", "5V"], ["Fotowiderstand, Bein 2", "A0 und über 10 kΩ an GND"], ["LED, langes Bein (+)", "über 220 Ω an Pin 9 (Pin mit ~)"], ["LED, kurzes Bein (−)", "GND"]],
+      schritte: [
+        "Baue den Spannungsteiler: 5V → Fotowiderstand → A0, und von A0 der 10-kΩ-Widerstand nach GND.",
+        "Schließe die LED über 220 Ω an Pin 9 an. Pin 9 hat ein ~, er kann also dimmen.",
+        "Code hochladen und den Seriellen Monitor öffnen.",
+        "Halte die Hand über den Sensor und schau, wie sich die Zahl ändert.",
+        "Stelle die Zahl bei „schwelle“ so ein, dass das Licht genau bei der Dunkelheit angeht, die du willst."
+      ],
+      erklaerung: "Ein Fotowiderstand hat bei Licht wenig Widerstand und im Dunkeln viel. Mit dem 10-kΩ-Widerstand zusammen entsteht an A0 eine Spannung, die der Arduino als Zahl von 0 (dunkel) bis 1023 (hell) misst.",
+      code: [
+        "// Automatisches Nachtlicht – Kometen-Werkstatt",
+        "const int SENSOR = A0;",
+        "const int LED = 9;        // Pin mit ~ (PWM) zum Dimmen",
+        "int schwelle = 400;       // ab hier wird es \"dunkel\" – ausprobieren!",
+        "",
+        "void setup() {",
+        "  pinMode(LED, OUTPUT);",
+        "  Serial.begin(9600);",
+        "}",
+        "",
+        "void loop() {",
+        "  int hell = analogRead(SENSOR);   // 0 = ganz dunkel, 1023 = ganz hell",
+        "  Serial.println(hell);",
+        "",
+        "  if (hell < schwelle) {",
+        "    int staerke = map(hell, 0, schwelle, 255, 30);  // dunkler = heller",
+        "    analogWrite(LED, constrain(staerke, 0, 255));",
+        "  } else {",
+        "    analogWrite(LED, 0);   // hell genug: Licht aus",
+        "  }",
+        "  delay(100);",
+        "}"
+      ].join("\n"),
+      ideen: ["Statt einer LED einen RGB-Streifen nehmen und die Farbe ändern.", "Eine Bewegungsmelder-Erweiterung (PIR-Sensor): Licht nur an, wenn jemand da ist.", "Das Licht nach 10 Minuten langsam ausgehen lassen."]
+    }
+  ];
+
+  var S = KW.load(KEY, { fertig: {}, teile: {}, rekord: 0 });
+  S.fertig = S.fertig || {}; S.teile = S.teile || {};
+  function speichern() { KW.save(KEY, S); }
+  var view = document.getElementById("view");
+
+  function liste() {
+    var f = Object.keys(S.fertig).filter(function (k) { return S.fertig[k]; }).length;
+    return '<div class="intro"><h2 style="margin:0 0 4px">Technik zum Nachbauen</h2><p>Jedes Projekt hat eine Bauteile-Liste, einen Schaltplan zum Abhaken und fertigen Code. ' +
+      'Keine Bauteile? Probier alles kostenlos im Simulator aus.' + (f ? " Du hast schon " + f + " von " + PROJEKTE.length + " gebaut. 💪" : "") + '</p></div>' +
+      '<div class="projs">' + PROJEKTE.map(function (p) {
+        return '<a class="proj card" href="#/p/' + p.id + '"><span class="em" aria-hidden="true">' + p.em + '</span><b>' + esc(p.titel) + '</b><p>' + esc(p.kurz) + '</p>' +
+          '<span class="chips"><span class="chip">' + esc(p.stufe) + '</span><span class="chip">' + esc(p.dauer) + '</span>' + (S.fertig[p.id] ? '<span class="chip fertig-chip">✓ Gebaut</span>' : "") + '</span></a>';
+      }).join("") + '</div>' +
+      '<div class="tipp" style="margin-top:16px">🖥️ <b>Ohne Bauteile ausprobieren:</b> Im kostenlosen Simulator <a href="' + WOKWI + '" target="_blank" rel="noopener">Wokwi</a> oder bei <a href="' + TINKERCAD + '" target="_blank" rel="noopener">Tinkercad Circuits</a> kannst du jede Schaltung am Bildschirm zusammenstecken. Den Code kopierst du einfach hinein.</div>';
+  }
+
+  function projekt(p) {
+    var h = '<a class="btn small zurueck" href="#/">‹ Alle Projekte</a>' +
+      '<div class="p-kopf"><span class="em" aria-hidden="true">' + p.em + '</span><div><h2>' + esc(p.titel) + '</h2><span class="chips"><span class="chip">' + esc(p.stufe) + '</span> <span class="chip">' + esc(p.dauer) + '</span></span></div></div>' +
+      '<p>' + esc(p.kurz) + '</p>';
+    if (p.spiel) {
+      h += '<section class="abschnitt card spiel"><h3>Erst mal im Browser testen</h3><div class="feld" id="feld" role="button" tabindex="0">Tippen zum Starten</div>' +
+        '<div class="zeiten"><div><b id="letzte">–</b><span>Letzte Zeit</span></div><div><b id="beste">' + (S.rekord ? S.rekord + " ms" : "–") + '</b><span>Deine Bestzeit</span></div></div>' +
+        '<p class="muted" style="margin-top:8px;font-size:.85rem">Warte, bis das Feld grün wird, dann tippe so schnell du kannst. Gleich baust du dasselbe mit echtem Arduino.</p></section>';
+    }
+    h += '<section class="abschnitt card"><h3>Das lernst du</h3><ul class="ideen">' + p.lernst.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join("") + '</ul></section>';
+    h += '<section class="abschnitt card"><h3>Bauteile</h3><ul class="teile">' + p.teile.map(function (t, i) {
+      var k = p.id + "-" + i;
+      return '<li><label><input type="checkbox" data-t="' + k + '"' + (S.teile[k] ? " checked" : "") + '> ' + esc(t) + '</label></li>';
+    }).join("") + '</ul></section>';
+    h += '<section class="abschnitt card"><h3>So wird verkabelt</h3><table class="kabel"><thead><tr><th>Bauteil</th><th>kommt an</th></tr></thead><tbody>' +
+      p.kabel.map(function (k) { return '<tr><td>' + esc(k[0]) + '</td><td>' + esc(k[1]) + '</td></tr>'; }).join("") + '</tbody></table>' +
+      '<div class="tipp">💡 ' + esc(p.erklaerung) + '</div></section>';
+    h += '<section class="abschnitt card"><h3>Schritt für Schritt</h3><ol class="schritte">' + p.schritte.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join("") + '</ol></section>';
+    h += '<section class="abschnitt card"><h3>Der Code</h3><div class="code"><button class="btn small kopier" type="button" id="kopier">Kopieren</button><pre><code id="code">' + esc(p.code) + '</code></pre></div>' +
+      '<div class="tipp">🖥️ Keine Bauteile da? Öffne <a href="' + WOKWI + '" target="_blank" rel="noopener">Wokwi</a>, füge den Code ein und stecke die Schaltung mit dem „+“ zusammen.</div></section>';
+    h += '<section class="abschnitt card"><h3>Ideen zum Weiterbauen</h3><ul class="ideen">' + p.ideen.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join("") + '</ul></section>';
+    h += '<div class="done-row"><button class="btn ' + (S.fertig[p.id] ? "" : "primary") + '" type="button" id="fertig">' + (S.fertig[p.id] ? "✓ Gebaut (zurücknehmen)" : "Ich hab’s gebaut! ✓") + '</button></div>';
+    return h;
+  }
+
+  function route() {
+    var m = location.hash.match(/^#\/p\/([\w-]+)/);
+    var p = m && PROJEKTE.find(function (x) { return x.id === m[1]; });
+    view.innerHTML = p ? projekt(p) : liste();
+    document.querySelector(".kw-bar h1").textContent = p ? p.titel : "Kometen-Werkstatt";
+    window.scrollTo(0, 0);
+    if (p) verbinden(p);
+  }
+
+  function verbinden(p) {
+    view.querySelectorAll("[data-t]").forEach(function (cb) { cb.onchange = function () { S.teile[cb.dataset.t] = cb.checked; speichern(); }; });
+    document.getElementById("kopier").onclick = function () {
+      var txt = p.code;
+      (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { KW.toast("Code kopiert! Jetzt in die Arduino-IDE einfügen."); })
+        .catch(function () {
+          var r = document.createRange(); r.selectNodeContents(document.getElementById("code"));
+          var s = getSelection(); s.removeAllRanges(); s.addRange(r); KW.toast("Code markiert – jetzt kopieren.");
+        });
+    };
+    document.getElementById("fertig").onclick = function () {
+      S.fertig[p.id] = !S.fertig[p.id]; speichern(); route();
+      if (S.fertig[p.id]) KW.toast("Stark! " + p.titel + " ist gebaut. 🎉");
+    };
+    if (p.spiel) spiel();
+  }
+
+  /* Reaktionstest im Browser */
+  function spiel() {
+    var feld = document.getElementById("feld"), zustand = "start", timer = null, an = 0;
+    function setze(z, text) { zustand = z; feld.className = "feld" + (z === "warten" ? " warten" : z === "jetzt" ? " jetzt" : ""); feld.textContent = text; }
+    function druck(e) {
+      if (e) e.preventDefault();
+      if (zustand === "start" || zustand === "ergebnis") {
+        setze("warten", "Warte auf Grün …");
+        timer = setTimeout(function () { an = performance.now(); setze("jetzt", "JETZT!"); }, 2000 + Math.random() * 3000);
+      } else if (zustand === "warten") {
+        clearTimeout(timer); setze("ergebnis", "Zu früh! Tippen für neuen Versuch");
+      } else if (zustand === "jetzt") {
+        var ms = Math.round(performance.now() - an);
+        document.getElementById("letzte").textContent = ms + " ms";
+        if (!S.rekord || ms < S.rekord) { S.rekord = ms; speichern(); document.getElementById("beste").textContent = ms + " ms"; setze("ergebnis", ms + " ms – neuer Rekord! 🏆"); }
+        else setze("ergebnis", ms + " ms – nochmal?");
+      }
+    }
+    feld.addEventListener("pointerdown", druck);
+    feld.addEventListener("keydown", function (e) { if (e.key === " " || e.key === "Enter") druck(e); });
+  }
+
+  window.addEventListener("hashchange", route);
+  KW.footer("werkstatt", function () { return S; }, function (d) { if (d && d.fertig) { S = d; S.teile = S.teile || {}; speichern(); route(); } });
+  route();
+})();
+</script>
+</body>
+</html>

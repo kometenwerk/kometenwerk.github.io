@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kometen-Quiz</title>
+<meta name="description" content="Lernkarten selbst erstellen und Wissen testen.">
+<meta name="theme-color" content="#6d3fd6">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Quiz">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/kw.css">
+<style>:root{--app:#6d3fd6;--app-soft:rgba(109,63,214,.14)}</style>
+<style>
+.kw-main{padding-bottom:60px}
+.decks{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.deck{display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer}
+.deck:hover{border-color:var(--muted)}
+.deck .ic{width:44px;height:44px;border-radius:12px;background:var(--app-soft);display:grid;place-items:center;font-size:1.3rem;flex:none}
+.deck .txt{flex:1;min-width:0}
+.deck b{display:block;overflow-wrap:anywhere}
+.deck small{color:var(--muted)}
+.topline{display:flex;gap:8px;align-items:center;margin:14px 0 6px;flex-wrap:wrap}
+.topline h2{margin:0;font-size:1.2rem;flex:1;min-width:150px;overflow-wrap:anywhere}
+.cards{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.crd{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:center;padding:10px 12px;cursor:pointer}
+.crd span{overflow-wrap:anywhere;font-size:.92rem}
+.crd span+span{color:var(--muted)}
+.box{font-size:.72rem;color:var(--muted);white-space:nowrap}
+.lern{max-width:560px;margin:18px auto 0;text-align:center}
+.bar{height:6px;border-radius:4px;background:var(--soft);overflow:hidden;margin:0 0 16px}
+.bar i{display:block;height:100%;background:var(--app);transition:width .3s}
+.flip{perspective:1200px;margin:0 0 16px;cursor:pointer;user-select:none}
+.flip .in{position:relative;min-height:230px;transition:transform .45s;transform-style:preserve-3d}
+.flip.um .in{transform:rotateY(180deg)}
+.flip .seite{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;border-radius:18px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);backface-visibility:hidden;-webkit-backface-visibility:hidden;font-size:1.35rem;font-weight:500;overflow-wrap:anywhere}
+.flip .seite small{position:absolute;top:12px;left:0;right:0;font-size:.75rem;color:var(--muted);font-weight:500;letter-spacing:.08em;text-transform:uppercase}
+.flip .hinten{transform:rotateY(180deg);background:var(--app-soft)}
+.antw{display:flex;gap:10px;justify-content:center}
+.antw .btn{flex:1;max-width:200px;padding:14px}
+.gut{background:var(--good)!important;border-color:var(--good)!important;color:#fff!important}
+.frage{font-size:1.2rem;font-weight:600;margin:6px 0 16px;line-height:1.35}
+.opts{display:flex;flex-direction:column;gap:8px;text-align:left}
+.opt{border:2px solid var(--line);background:var(--card);border-radius:12px;padding:14px 16px;cursor:pointer;font-size:1rem;text-align:left}
+.opt:hover:not(:disabled){border-color:var(--app)}
+.opt.richtig{border-color:var(--good);background:rgba(26,143,76,.12)}
+.opt.falsch{border-color:var(--bad);background:rgba(201,58,58,.12)}
+.opt:disabled{cursor:default}
+.erkl{margin:14px 0 0;padding:12px 14px;border-radius:12px;background:var(--soft);text-align:left;font-size:.92rem}
+.erkl a{color:var(--app);font-weight:600}
+.weiter{margin-top:16px}
+.ergebnis{font-size:3rem;font-weight:600;margin:10px 0 0;line-height:1}
+.bereiche{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.bereiche button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:9px 14px;cursor:pointer;font-size:.9rem}
+.bereiche button:hover{border-color:var(--app)}
+.bereiche button.alle{background:var(--app);color:#fff;border-color:var(--app);font-weight:600}
+.rek{font-size:.8rem;color:var(--muted);margin-left:4px}
+</style>
+</head>
+<body>
+<header class="kw-bar">
+  <a class="kw-home" href="../" aria-label="Zurück zu Kometenwerk"><svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="currentColor" stroke-opacity=".6" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)" fill="currentColor"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="15" fill="#ff8a3c"/></g></svg></a>
+  <h1>Kometen-Quiz</h1>
+  <span id="kwBarExtra" style="display:contents"></span>
+  <button class="kw-install" id="kwInstall" type="button" hidden>Als App installieren</button>
+</header>
+<main class="kw-main">
+  <div class="tabs" role="tablist" id="tabs">
+    <button role="tab" data-v="karten" aria-selected="true">Meine Lernkarten</button>
+    <button role="tab" data-v="wissen" aria-selected="false">Wissens-Quiz</button>
+  </div>
+  <div id="view"></div>
+</main>
+
+<dialog class="sheet" id="kDlg">
+  <form class="sheet-in" method="dialog" id="kForm">
+    <h2 id="kTitel">Neue Karte</h2>
+    <label class="field"><span>Vorderseite (Frage, Wort …)</span><textarea class="inp" id="kV" rows="2" required maxlength="400"></textarea></label>
+    <label class="field"><span>Rückseite (Antwort)</span><textarea class="inp" id="kR" rows="2" required maxlength="400"></textarea></label>
+    <div class="sheet-foot">
+      <button type="button" class="btn danger" id="kLoeschen">Löschen</button>
+      <span class="sp"></span>
+      <button type="button" class="btn" id="kNochEine">Speichern + nächste</button>
+      <button type="submit" class="btn primary">Speichern</button>
+    </div>
+  </form>
+</dialog>
+<dialog class="sheet" id="sDlg">
+  <form class="sheet-in" method="dialog" id="sForm">
+    <h2 id="sTitel">Neuer Stapel</h2>
+    <label class="field"><span>Name</span><input class="inp" id="sName" required maxlength="60" placeholder="z. B. Englisch Unit 3" autocomplete="off"></label>
+    <div class="sheet-foot">
+      <button type="button" class="btn danger" id="sLoeschen">Stapel löschen</button>
+      <span class="sp"></span>
+      <button type="button" class="btn" id="sAbbruch">Abbrechen</button>
+      <button type="submit" class="btn primary">Speichern</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="../shared/kw.js"></script>
+<script>
+(function () {
+  "use strict";
+  var esc = KW.esc, KEY = "kw-quiz";
+  var ABSTAND = [0, 1, 3, 7, 14, 30]; // Tage bis zur nächsten Wiederholung je Fach (Box)
+  var D = KW.load(KEY, null);
+  if (!D || !Array.isArray(D.stapel)) {
+    var bsp = [["the weather", "das Wetter"], ["to remember", "sich erinnern"], ["although", "obwohl"], ["the neighbour", "der Nachbar"], ["to borrow", "(sich etwas) ausleihen"], ["enough", "genug"]];
+    D = { stapel: [{ id: KW.id(), name: "Beispiel: Englisch-Vokabeln", karten: bsp.map(function (k) { return { id: KW.id(), v: k[0], r: k[1], box: 0, faellig: KW.today() }; }) }], rekorde: {} };
+  }
+  function speichern() { KW.save(KEY, D); }
+  function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function faellige(s) { var h = KW.today(); return s.karten.filter(function (k) { return !k.faellig || k.faellig <= h; }); }
+
+  var tab = "karten", modus = "liste", stapel = null, sitzung = null;
+  var view = document.getElementById("view");
+
+  /* ---------- Stapel-Übersicht ---------- */
+  function stapelListe() {
+    var h = '<div class="topline"><h2>Deine Stapel</h2><button class="btn primary small" type="button" data-a="neuStapel">+ Neuer Stapel</button></div>';
+    if (!D.stapel.length) return h + '<div class="empty"><b>Noch keine Lernkarten</b>Lege einen Stapel an, zum Beispiel für Vokabeln oder Geschichtsdaten.</div>';
+    h += '<div class="decks">' + D.stapel.map(function (s) {
+      var f = faellige(s).length;
+      return '<div class="deck card" role="button" tabindex="0" data-s="' + s.id + '"><span class="ic" aria-hidden="true">🗂️</span><div class="txt"><b>' + esc(s.name) + '</b><small>' +
+        s.karten.length + (s.karten.length === 1 ? " Karte" : " Karten") + (s.karten.length ? " · " + (f ? f + " heute dran" : "heute alles gelernt ✓") : "") + '</small></div><span aria-hidden="true">›</span></div>';
+    }).join("") + '</div>';
+    return h + '<p class="muted" style="font-size:.85rem;margin:18px 4px 0">So lernst du klug: Karten, die du weißt, kommen erst nach ein paar Tagen wieder. Karten, die du nicht weißt, kommen sofort nochmal. So lernst du nur, was du noch nicht kannst.</p>';
+  }
+  function stapelAnsicht() {
+    var s = stapel, f = faellige(s).length;
+    var h = '<div class="topline"><button class="btn small" type="button" data-a="zurueck" aria-label="Zurück">‹</button><h2>' + esc(s.name) + '</h2><button class="btn small" type="button" data-a="stapelEdit">Umbenennen</button></div>';
+    h += '<div class="row" style="margin:10px 0">' +
+      '<button class="btn primary" type="button" data-a="lernen"' + (s.karten.length ? "" : " disabled") + '>▶ Lernen' + (f ? " (" + f + ")" : "") + '</button>' +
+      '<button class="btn" type="button" data-a="mc"' + (s.karten.length >= 4 ? "" : " disabled title=\"Ab 4 Karten\"") + '>❓ Quiz mit Auswahl</button>' +
+      '<button class="btn" type="button" data-a="neuKarte">+ Karte</button></div>';
+    if (s.karten.length < 4) h += '<p class="muted" style="font-size:.85rem;margin:0 2px">Das Quiz mit Auswahl geht ab 4 Karten.</p>';
+    if (!s.karten.length) return h + '<div class="empty"><b>Noch leer</b>Füge mit „+ Karte“ deine erste Lernkarte hinzu.</div>';
+    h += '<div class="cards">' + s.karten.map(function (k) {
+      return '<div class="crd card" role="button" tabindex="0" data-k="' + k.id + '"><span>' + esc(k.v) + '</span><span>' + esc(k.r) + '</span><span class="box" title="Lernstufe">' + "●".repeat(k.box || 0) + "○".repeat(5 - Math.min(5, k.box || 0)) + '</span></div>';
+    }).join("") + '</div>';
+    return h;
+  }
+
+  /* ---------- Lernen (Karteikarten) ---------- */
+  function lernStart() {
+    var karten = faellige(stapel);
+    if (!karten.length) karten = stapel.karten.slice();
+    sitzung = { art: "lernen", rest: shuffle(karten), gesamt: karten.length, gewusst: 0, nochmal: 0, um: false };
+    modus = "lernen"; zeigen();
+  }
+  function lernAnsicht() {
+    var s = sitzung;
+    if (!s.rest.length) {
+      return '<div class="lern"><div class="ergebnis">🎉</div><h2>Geschafft!</h2><p>' + s.gewusst + ' gewusst, ' + s.nochmal + ' mal nochmal geübt.</p>' +
+        '<p class="muted">Die Karten, die du wusstest, kommen in ein paar Tagen wieder dran.</p><button class="btn primary" type="button" data-a="zumStapel">Fertig</button></div>';
+    }
+    var k = s.rest[0], fertig = s.gesamt - s.rest.length;
+    return '<div class="lern"><div class="bar"><i style="width:' + Math.round(fertig / s.gesamt * 100) + '%"></i></div>' +
+      '<div class="flip' + (s.um ? " um" : "") + '" id="flip" role="button" tabindex="0" aria-label="Karte umdrehen"><div class="in">' +
+      '<div class="seite vorne"><small>Frage</small>' + esc(k.v) + '</div><div class="seite hinten"><small>Antwort</small>' + esc(k.r) + '</div></div></div>' +
+      (s.um ? '<div class="antw"><button class="btn" type="button" data-a="nochmal">🔁 Nochmal</button><button class="btn gut" type="button" data-a="gewusst">✓ Gewusst</button></div>'
+            : '<p class="muted">Überleg dir die Antwort, dann tippe auf die Karte.</p>') +
+      '<p style="margin-top:18px"><button class="btn small" type="button" data-a="zumStapel">Beenden</button></p></div>';
+  }
+  function bewerten(gewusst) {
+    var s = sitzung, k = s.rest.shift();
+    if (gewusst) {
+      k.box = Math.min(5, (k.box || 0) + 1);
+      k.faellig = KW.addDays(KW.today(), ABSTAND[k.box]);
+      s.gewusst++;
+    } else {
+      k.box = 0; k.faellig = KW.today(); s.nochmal++;
+      s.rest.splice(Math.min(s.rest.length, 2), 0, k); // kommt gleich nochmal
+    }
+    s.um = false; speichern(); zeigen();
+  }
+
+  /* ---------- Quiz mit Auswahl (aus eigenen Karten oder Wissensartikeln) ---------- */
+  function mcAusStapel() {
+    var fragen = shuffle(stapel.karten).slice(0, 10).map(function (k) {
+      var falsch = shuffle(stapel.karten.filter(function (x) { return x.id !== k.id && x.r !== k.r; })).slice(0, 3).map(function (x) { return x.r; });
+      var opts = shuffle([k.r].concat(falsch));
+      return { frage: k.v, optionen: opts, richtig: opts.indexOf(k.r) };
+    });
+    quizStart(fragen, "stapel-" + stapel.id, "zumStapel");
+  }
+  function quizStart(fragen, rekordKey, zurueck) {
+    sitzung = { art: "quiz", fragen: fragen, i: 0, punkte: 0, gewaehlt: null, key: rekordKey, zurueck: zurueck };
+    modus = "quiz"; zeigen();
+  }
+  function quizAnsicht() {
+    var s = sitzung;
+    if (s.i >= s.fragen.length) {
+      var alt = D.rekorde[s.key] || 0, neu = s.punkte > alt;
+      if (neu) { D.rekorde[s.key] = s.punkte; speichern(); }
+      var proz = s.punkte / s.fragen.length;
+      return '<div class="lern"><div class="ergebnis">' + s.punkte + ' / ' + s.fragen.length + '</div><h2>' +
+        (proz === 1 ? "Perfekt! 🏆" : proz >= .7 ? "Stark! 💪" : proz >= .4 ? "Gut gemacht!" : "Weiter üben, das wird! 🙂") + '</h2>' +
+        (neu && alt ? '<p>Neuer Rekord! Vorher: ' + alt + '</p>' : alt ? '<p class="muted">Dein Rekord: ' + alt + '</p>' : "") +
+        '<div class="row" style="justify-content:center"><button class="btn" type="button" data-a="' + s.zurueck + '">Zurück</button>' +
+        '<button class="btn primary" type="button" data-a="nochmalQuiz">Nochmal spielen</button></div></div>';
+    }
+    var f = s.fragen[s.i], beantwortet = s.gewaehlt !== null;
+    var h = '<div class="lern"><div class="bar"><i style="width:' + Math.round(s.i / s.fragen.length * 100) + '%"></i></div>' +
+      '<p class="muted" style="margin:0">Frage ' + (s.i + 1) + ' von ' + s.fragen.length + (f.thema ? " · " + esc(f.thema) : "") + '</p>' +
+      '<div class="frage">' + esc(f.frage) + '</div><div class="opts">' + f.optionen.map(function (o, i) {
+        var cls = beantwortet ? (i === f.richtig ? " richtig" : i === s.gewaehlt ? " falsch" : "") : "";
+        return '<button class="opt' + cls + '" type="button" data-o="' + i + '"' + (beantwortet ? " disabled" : "") + '>' + esc(o) + '</button>';
+      }).join("") + '</div>';
+    if (beantwortet) {
+      var ok = s.gewaehlt === f.richtig;
+      h += '<div class="erkl"><b>' + (ok ? "✓ Richtig!" : "✗ Leider falsch.") + '</b> ' + esc(f.erklaerung || ("Richtig ist: " + f.optionen[f.richtig])) +
+        (f.link ? ' <a href="' + esc(f.link) + '">Ganzen Artikel lesen ›</a>' : "") + '</div>' +
+        '<button class="btn primary weiter" type="button" data-a="weiter">' + (s.i + 1 < s.fragen.length ? "Weiter" : "Ergebnis") + '</button>';
+    }
+    return h + '<p style="margin-top:18px"><button class="btn small" type="button" data-a="' + s.zurueck + '">Beenden</button></p></div>';
+  }
+
+  /* ---------- Wissens-Quiz ---------- */
+  var WISSEN = null, wissenFehler = false;
+  function wissenUrls() {
+    var u = [], h = location.hostname;
+    if (/\.github\.io$/.test(h)) u.push("https://raw.githubusercontent.com/" + h.split(".")[0] + "/ND/main/data/wissen.json");
+    u.push("../ND/data/wissen.json");
+    return u;
+  }
+  function wissenLaden() {
+    if (WISSEN) return Promise.resolve(WISSEN);
+    var urls = wissenUrls(), i = 0;
+    function next() {
+      if (i >= urls.length) return Promise.reject(new Error("weg"));
+      return fetch(urls[i++], { cache: "no-cache" }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).catch(next);
+    }
+    return next().then(function (d) {
+      WISSEN = [];
+      ((d && d.stuecke) || []).forEach(function (st) {
+        (st.quiz || []).forEach(function (q) {
+          if (!q || !q.frage || !Array.isArray(q.optionen) || typeof q.richtig !== "number") return;
+          WISSEN.push({ frage: q.frage, optionen: q.optionen, richtig: q.richtig, erklaerung: q.erklaerung, thema: st.bereich, titel: st.titel,
+            link: "../ND/?app=wissen#/wissen/" + encodeURIComponent(st.id) });
+        });
+      });
+      return WISSEN;
+    });
+  }
+  function wissenAnsicht() {
+    if (wissenFehler) return '<div class="empty"><b>Gerade nicht erreichbar</b>Die Fragen kommen aus „Warum eigentlich?“. Prüfe deine Internetverbindung und versuch es nochmal.<p><button class="btn" type="button" data-a="wissenNeu">Nochmal versuchen</button></p></div>';
+    if (!WISSEN) {
+      wissenLaden().then(zeigen).catch(function () { wissenFehler = true; zeigen(); });
+      return '<div class="empty">Fragen werden geladen …</div>';
+    }
+    var bereiche = {};
+    WISSEN.forEach(function (q) { bereiche[q.thema] = (bereiche[q.thema] || 0) + 1; });
+    var h = '<p style="margin:16px 2px 4px">Teste dein Wissen mit Fragen aus den Artikeln von <b>„Warum eigentlich?“</b>. Jede Runde hat bis zu 10 Fragen.</p>';
+    h += '<div class="bereiche"><button type="button" class="alle" data-b="">🎲 Alles gemischt<span class="rek">' + rekord("wissen-") + '</span></button>' +
+      Object.keys(bereiche).sort().map(function (b) {
+        return '<button type="button" data-b="' + esc(b) + '">' + esc(b) + ' <span class="rek">' + bereiche[b] + ' Fragen' + rekord("wissen-" + b) + '</span></button>';
+      }).join("") + '</div>';
+    return h;
+  }
+  function rekord(k) { var r = D.rekorde[k]; return r ? " · Rekord " + r : ""; }
+  function wissenStart(bereich) {
+    var pool = WISSEN.filter(function (q) { return !bereich || q.thema === bereich; });
+    var fragen = shuffle(pool).slice(0, 10).map(function (q) {
+      var idx = shuffle(q.optionen.map(function (_, i) { return i; }));
+      return Object.assign({}, q, { optionen: idx.map(function (i) { return q.optionen[i]; }), richtig: idx.indexOf(q.richtig) });
+    });
+    quizStart(fragen, "wissen-" + (bereich || ""), "zumWissen");
+  }
+
+  /* ---------- Anzeigen + Klicks ---------- */
+  function zeigen() {
+    if (modus === "lernen") view.innerHTML = lernAnsicht();
+    else if (modus === "quiz") view.innerHTML = quizAnsicht();
+    else if (tab === "wissen") view.innerHTML = wissenAnsicht();
+    else view.innerHTML = stapel ? stapelAnsicht() : stapelListe();
+    document.getElementById("tabs").hidden = modus !== "liste";
+  }
+  document.getElementById("tabs").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-v]"); if (!b) return;
+    tab = b.dataset.v;
+    this.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-selected", x === b ? "true" : "false"); });
+    zeigen();
+  });
+  view.addEventListener("keydown", function (e) {
+    if ((e.key === "Enter" || e.key === " ") && e.target.getAttribute("role") === "button") { e.preventDefault(); e.target.click(); }
+  });
+  view.addEventListener("click", function (e) {
+    var t = e.target;
+    var deck = t.closest("[data-s]"); if (deck) { stapel = D.stapel.find(function (s) { return s.id === deck.dataset.s; }); zeigen(); return; }
+    var kk = t.closest("[data-k]"); if (kk) { karteOeffnen(stapel.karten.find(function (k) { return k.id === kk.dataset.k; })); return; }
+    if (t.closest("#flip")) { if (!sitzung.um) { sitzung.um = true; zeigen(); } else { sitzung.um = false; zeigen(); } return; }
+    var o = t.closest("[data-o]"); if (o && sitzung.gewaehlt === null) {
+      sitzung.gewaehlt = +o.dataset.o;
+      if (sitzung.gewaehlt === sitzung.fragen[sitzung.i].richtig) sitzung.punkte++;
+      zeigen(); return;
+    }
+    var bb = t.closest("[data-b]"); if (bb) { wissenStart(bb.dataset.b); return; }
+    var a = t.closest("[data-a]"); if (!a) return;
+    switch (a.dataset.a) {
+      case "neuStapel": stapelOeffnen(null); break;
+      case "stapelEdit": stapelOeffnen(stapel); break;
+      case "zurueck": stapel = null; zeigen(); break;
+      case "neuKarte": karteOeffnen(null); break;
+      case "lernen": lernStart(); break;
+      case "mc": mcAusStapel(); break;
+      case "gewusst": bewerten(true); break;
+      case "nochmal": bewerten(false); break;
+      case "weiter": sitzung.i++; sitzung.gewaehlt = null; zeigen(); window.scrollTo(0, 0); break;
+      case "nochmalQuiz": if (sitzung.key.indexOf("stapel-") === 0) mcAusStapel(); else wissenStart(sitzung.key.slice(7)); break;
+      case "zumStapel": modus = "liste"; sitzung = null; zeigen(); break;
+      case "zumWissen": modus = "liste"; sitzung = null; tab = "wissen"; zeigen(); break;
+      case "wissenNeu": wissenFehler = false; zeigen(); break;
+    }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (modus !== "lernen" || !sitzung || !sitzung.rest.length || document.querySelector("dialog[open]")) return;
+    if (e.key === " " && e.target === document.body) { e.preventDefault(); sitzung.um = !sitzung.um; zeigen(); }
+    if (sitzung.um && e.key === "ArrowRight") bewerten(true);
+    if (sitzung.um && e.key === "ArrowLeft") bewerten(false);
+  });
+
+  /* ---------- Karten + Stapel bearbeiten ---------- */
+  var kDlg = document.getElementById("kDlg"), kAkt = null, kWeiter = false;
+  function karteOeffnen(k) {
+    kAkt = k; kWeiter = false;
+    document.getElementById("kTitel").textContent = k ? "Karte bearbeiten" : "Neue Karte";
+    document.getElementById("kV").value = k ? k.v : ""; document.getElementById("kR").value = k ? k.r : "";
+    document.getElementById("kLoeschen").hidden = !k; document.getElementById("kNochEine").hidden = !!k;
+    kDlg.showModal(); setTimeout(function () { document.getElementById("kV").focus(); }, 50);
+  }
+  function karteSpeichern() {
+    var v = document.getElementById("kV").value.trim(), r = document.getElementById("kR").value.trim();
+    if (!v || !r) return false;
+    if (kAkt) { kAkt.v = v; kAkt.r = r; }
+    else stapel.karten.push({ id: KW.id(), v: v, r: r, box: 0, faellig: KW.today() });
+    speichern(); return true;
+  }
+  document.getElementById("kForm").addEventListener("submit", function (e) { if (!karteSpeichern()) e.preventDefault(); else zeigen(); });
+  document.getElementById("kNochEine").onclick = function () {
+    if (!document.getElementById("kForm").reportValidity() || !karteSpeichern()) return;
+    zeigen(); KW.toast("Karte gespeichert.");
+    document.getElementById("kV").value = ""; document.getElementById("kR").value = ""; document.getElementById("kV").focus();
+  };
+  document.getElementById("kLoeschen").onclick = function () {
+    var i = stapel.karten.indexOf(kAkt), k = kAkt, s = stapel;
+    s.karten.splice(i, 1); speichern(); kDlg.close(); zeigen();
+    KW.toast("Karte gelöscht.", "Rückgängig", function () { s.karten.splice(i, 0, k); speichern(); zeigen(); });
+  };
+  var sDlg = document.getElementById("sDlg"), sAkt = null;
+  function stapelOeffnen(s) {
+    sAkt = s;
+    document.getElementById("sTitel").textContent = s ? "Stapel umbenennen" : "Neuer Stapel";
+    document.getElementById("sName").value = s ? s.name : "";
+    document.getElementById("sLoeschen").hidden = !s;
+    sDlg.showModal(); setTimeout(function () { document.getElementById("sName").focus(); }, 50);
+  }
+  document.getElementById("sAbbruch").onclick = function () { sDlg.close(); };
+  document.getElementById("sForm").addEventListener("submit", function (e) {
+    var n = document.getElementById("sName").value.trim();
+    if (!n) { e.preventDefault(); return; }
+    if (sAkt) sAkt.name = n;
+    else { var neu = { id: KW.id(), name: n, karten: [] }; D.stapel.push(neu); stapel = neu; }
+    speichern(); zeigen();
+  });
+  document.getElementById("sLoeschen").onclick = function () {
+    var s = sAkt, i = D.stapel.indexOf(s);
+    D.stapel.splice(i, 1); speichern(); sDlg.close(); stapel = null; zeigen();
+    KW.toast("Stapel „" + s.name + "“ gelöscht.", "Rückgängig", function () { D.stapel.splice(i, 0, s); speichern(); zeigen(); });
+  };
+
+  KW.footer("quiz", function () { return D; }, function (d) { if (d && Array.isArray(d.stapel)) { D = d; D.rekorde = D.rekorde || {}; stapel = null; modus = "liste"; speichern(); zeigen(); } });
+  zeigen();
+})();
+</script>
+</body>
+</html>

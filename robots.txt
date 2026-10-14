@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /team/
+
+Sitemap: https://kometenwerk.github.io/sitemap.xml

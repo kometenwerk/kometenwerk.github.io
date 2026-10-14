@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kometen-Planer</title>
+<meta name="description" content="Hausaufgaben, Tests, Termine und Stundenplan – alles an einem Ort.">
+<meta name="theme-color" content="#1f4fd1">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Planer">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/kw.css">
+<style>:root{--app:#1f4fd1;--app-soft:rgba(31,79,209,.14)}</style>
+<style>
+.kw-main{padding-bottom:96px}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0 4px}
+.sum div{padding:12px 14px}
+.sum b{display:block;font-size:1.6rem;line-height:1.1}
+.sum span{font-size:.8rem;color:var(--muted)}
+.hinweis{margin:12px 0 0;padding:12px 14px;border-radius:12px;background:var(--app-soft);display:flex;gap:10px;align-items:flex-start}
+.hinweis .i{font-size:1.2rem;line-height:1.2}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;gap:12px;align-items:center;padding:12px 12px 12px 10px;cursor:pointer}
+.item:hover{border-color:var(--muted)}
+.item .dot{width:6px;align-self:stretch;border-radius:4px;flex:none}
+.item .txt{flex:1;min-width:0}
+.item .t{font-weight:500;overflow-wrap:anywhere}
+.item .m{font-size:.82rem;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:2px}
+.item.done .t{text-decoration:line-through;color:var(--muted)}
+.item.spaet .when{color:var(--bad);font-weight:600}
+.check{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);background:transparent;flex:none;cursor:pointer;display:grid;place-items:center;padding:0}
+.check svg{width:16px;height:16px;opacity:0}
+.item.done .check{background:var(--good);border-color:var(--good);color:#fff}
+.item.done .check svg{opacity:1}
+.typ-test{background:rgba(201,58,58,.14)}
+.typ-termin{background:var(--app-soft)}
+.fab{position:fixed;right:max(18px,calc((100vw - 860px)/2 + 18px));bottom:calc(22px + env(safe-area-inset-bottom,0px));width:60px;height:60px;border-radius:50%;border:0;background:var(--accent);color:#101826;font-size:2rem;line-height:1;box-shadow:0 8px 22px rgba(0,0,0,.25);cursor:pointer;z-index:20}
+.fab:focus-visible{outline:3px solid var(--app);outline-offset:3px}
+.weeknav{display:flex;align-items:center;gap:8px;margin:14px 0 8px}
+.weeknav b{flex:1;text-align:center}
+.day{margin:0 0 10px;padding:12px 14px}
+.day h3{margin:0 0 6px;font-size:.95rem;display:flex;gap:8px;align-items:baseline}
+.day h3 small{color:var(--muted);font-weight:400}
+.day.heute{border-color:var(--app);box-shadow:0 0 0 2px var(--app-soft)}
+.day .faecher{display:flex;gap:4px;flex-wrap:wrap;margin:2px 0 6px}
+.day .leer{font-size:.85rem;color:var(--muted)}
+.day .mini{display:flex;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line);cursor:pointer;font-size:.92rem}
+.day .mini:first-of-type{border-top:0}
+.day .mini .d{width:9px;height:9px;border-radius:50%;flex:none}
+.day .mini.done span{text-decoration:line-through;color:var(--muted)}
+.plan{width:100%;border-collapse:separate;border-spacing:4px;table-layout:fixed;margin-top:12px}
+.plan th{font-size:.8rem;color:var(--muted);font-weight:600;padding:4px 0}
+.plan th.nr{width:30px}
+.plan td{height:52px;border-radius:10px;background:var(--card);border:1px solid var(--line);text-align:center;font-size:.8rem;cursor:pointer;padding:3px;overflow:hidden;line-height:1.2;vertical-align:middle}
+.plan td.voll{color:#fff;border-color:transparent;font-weight:600}
+.plan td small{display:block;font-weight:400;opacity:.85;font-size:.72rem}
+.plan td.heute-sp{box-shadow:inset 0 0 0 2px var(--app)}
+.seg{display:flex;gap:6px;margin:0 0 12px}
+.seg button{flex:1;border:1px solid var(--line);background:var(--card);padding:10px 6px;border-radius:10px;cursor:pointer;font-size:.9rem}
+.seg button[aria-pressed="true"]{background:var(--app);border-color:var(--app);color:#fff;font-weight:600}
+.quick{display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 12px}
+.fachliste{display:flex;flex-direction:column;gap:6px;margin:0 0 12px}
+.fachliste div{display:flex;gap:8px;align-items:center}
+.fachliste input[type=color]{width:38px;height:34px;border:1px solid var(--line);border-radius:8px;background:none;padding:2px;cursor:pointer}
+.fachliste .inp{padding:7px 10px}
+details.erledigt summary{cursor:pointer;color:var(--muted);margin:22px 4px 8px;font-size:.85rem}
+</style>
+</head>
+<body>
+<header class="kw-bar">
+  <a class="kw-home" href="../" aria-label="Zurück zu Kometenwerk"><svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="currentColor" stroke-opacity=".6" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)" fill="currentColor"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="15" fill="#ff8a3c"/></g></svg></a>
+  <h1>Kometen-Planer</h1>
+  <span id="kwBarExtra" style="display:contents"></span>
+  <button class="kw-install" id="kwInstall" type="button" hidden>Als App installieren</button>
+</header>
+<main class="kw-main">
+  <div class="tabs" role="tablist" id="tabs">
+    <button role="tab" data-v="uebersicht" aria-selected="true">Übersicht</button>
+    <button role="tab" data-v="woche" aria-selected="false">Woche</button>
+    <button role="tab" data-v="plan" aria-selected="false">Stundenplan</button>
+  </div>
+  <div id="view"></div>
+</main>
+<button class="fab" id="neu" aria-label="Neuer Eintrag">+</button>
+
+<dialog class="sheet" id="edit">
+  <form class="sheet-in" id="editForm" method="dialog">
+    <h2 id="editTitel">Neuer Eintrag</h2>
+    <div class="seg" id="typSeg" role="group" aria-label="Art">
+      <button type="button" data-t="hausaufgabe">📝 Hausaufgabe</button>
+      <button type="button" data-t="test">✏️ Test</button>
+      <button type="button" data-t="termin">📅 Termin</button>
+    </div>
+    <label class="field"><span>Fach</span><select class="inp" id="fFach"></select></label>
+    <label class="field"><span>Was?</span><input class="inp" id="fTitel" required maxlength="140" placeholder="z. B. Buch S. 42, Nr. 3–5" autocomplete="off"></label>
+    <div class="row">
+      <label class="field"><span>Bis wann / wann?</span><input class="inp" type="date" id="fDatum" required></label>
+      <label class="field"><span>Uhrzeit (wenn du willst)</span><input class="inp" type="time" id="fZeit"></label>
+    </div>
+    <div class="quick" id="quick"></div>
+    <label class="field"><span>Notiz</span><textarea class="inp" id="fNotiz" rows="2" maxlength="1000" placeholder="Optional"></textarea></label>
+    <div class="sheet-foot">
+      <button type="button" class="btn danger" id="fLoeschen">Löschen</button>
+      <span class="sp"></span>
+      <button type="button" class="btn" id="fAbbruch">Abbrechen</button>
+      <button type="submit" class="btn primary" id="fOk">Speichern</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="sheet" id="zelle">
+  <form class="sheet-in" method="dialog" id="zelleForm">
+    <h2 id="zelleTitel">Stunde</h2>
+    <label class="field"><span>Fach</span><select class="inp" id="zFach"></select></label>
+    <label class="field"><span>Raum (wenn du willst)</span><input class="inp" id="zRaum" maxlength="20" autocomplete="off"></label>
+    <div class="sheet-foot">
+      <button type="button" class="btn" id="zAbbruch">Abbrechen</button>
+      <button type="submit" class="btn primary">Speichern</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="sheet" id="faecherDlg">
+  <form class="sheet-in" method="dialog" id="faecherForm">
+    <h2>Deine Fächer</h2>
+    <div class="fachliste" id="fachliste"></div>
+    <button type="button" class="btn small" id="fachPlus">+ Fach hinzufügen</button>
+    <div class="sheet-foot" style="margin-top:16px">
+      <button type="submit" class="btn primary">Fertig</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="../shared/kw.js"></script>
+<script>
+(function () {
+  "use strict";
+  var esc = KW.esc, KEY = "kw-planer";
+  var TAGE = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+  var TAGE_LANG = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+  var TYP = {
+    hausaufgabe: { name: "Hausaufgabe", icon: "📝" },
+    test: { name: "Test", icon: "✏️" },
+    termin: { name: "Termin", icon: "📅" }
+  };
+  var START_FAECHER = [
+    ["Deutsch", "#d64545"], ["Mathe", "#1f4fd1"], ["Englisch", "#c98a00"], ["Französisch", "#9b51e0"],
+    ["Biologie", "#1a8f4c"], ["Chemie", "#0f766e"], ["Physik", "#2563eb"], ["NWT", "#d4561a"],
+    ["Informatik", "#334155"], ["Geschichte", "#8b5e34"], ["Erdkunde", "#4d7c0f"], ["Gemeinschaftskunde", "#be185d"],
+    ["Religion / Ethik", "#7c3aed"], ["Kunst", "#db2777"], ["Musik", "#0891b2"], ["Sport", "#16a34a"]
+  ];
+
+  var D = KW.load(KEY, null);
+  if (!D || !Array.isArray(D.eintraege)) {
+    D = { eintraege: [], faecher: START_FAECHER.map(function (f) { return { name: f[0], farbe: f[1] }; }), plan: { stunden: 8, zellen: {} } };
+  }
+  function speichern() { KW.save(KEY, D); }
+
+  function fach(name) { for (var i = 0; i < D.faecher.length; i++) if (D.faecher[i].name === name) return D.faecher[i]; return null; }
+  function farbe(name) { var f = fach(name); return f ? f.farbe : "#9aa7bd"; }
+
+  function wann(datum) {
+    var heute = KW.today(), n = KW.days(heute, datum), d = KW.parse(datum);
+    var kurz = TAGE[d.getDay()] + ", " + d.getDate() + "." + (d.getMonth() + 1) + ".";
+    if (n === 0) return "Heute";
+    if (n === 1) return "Morgen";
+    if (n === -1) return "Gestern";
+    if (n > 1 && n < 7) return TAGE_LANG[d.getDay()];
+    return kurz;
+  }
+
+  /* ---------- Ansichten ---------- */
+  var ansicht = "uebersicht", wochenStart = montag(KW.today());
+  function montag(s) { var d = KW.parse(s), wd = (d.getDay() + 6) % 7; return KW.addDays(s, -wd); }
+
+  function itemHtml(e) {
+    var heute = KW.today(), spaet = !e.erledigt && e.datum < heute;
+    var meta = '<span class="when">' + esc(wann(e.datum)) + (e.zeit ? " · " + esc(e.zeit) + " Uhr" : "") + '</span>' +
+      (e.fach ? '<span>· ' + esc(e.fach) + '</span>' : "") +
+      '<span class="chip typ-' + e.typ + '">' + TYP[e.typ].icon + " " + TYP[e.typ].name + '</span>';
+    return '<div class="item card' + (e.erledigt ? " done" : "") + (spaet ? " spaet" : "") + '" data-id="' + e.id + '">' +
+      '<button class="check" type="button" data-check="' + e.id + '" aria-label="' + (e.erledigt ? "Wieder offen" : "Erledigt") + '">' +
+      '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3L13 4.5"/></svg></button>' +
+      '<span class="dot" style="background:' + esc(farbe(e.fach)) + '"></span>' +
+      '<div class="txt"><div class="t">' + esc(e.titel) + '</div><div class="m">' + meta + '</div></div></div>';
+  }
+
+  function sortiert(liste) {
+    return liste.slice().sort(function (a, b) { return a.datum.localeCompare(b.datum) || (a.zeit || "99").localeCompare(b.zeit || "99"); });
+  }
+
+  function uebersicht() {
+    var heute = KW.today(), morgen = KW.addDays(heute, 1), woche = KW.addDays(heute, 7);
+    var offen = D.eintraege.filter(function (e) { return !e.erledigt; });
+    var gruppen = [
+      ["Überfällig", offen.filter(function (e) { return e.datum < heute; })],
+      ["Heute", offen.filter(function (e) { return e.datum === heute; })],
+      ["Morgen", offen.filter(function (e) { return e.datum === morgen; })],
+      ["Diese Woche", offen.filter(function (e) { return e.datum > morgen && e.datum <= woche; })],
+      ["Später", offen.filter(function (e) { return e.datum > woche; })]
+    ];
+    var ha = offen.filter(function (e) { return e.typ === "hausaufgabe"; }).length;
+    var tests = offen.filter(function (e) { return e.typ === "test" && e.datum >= heute && e.datum <= woche; }).length;
+    var termine = offen.filter(function (e) { return e.typ === "termin" && e.datum >= heute && e.datum <= woche; }).length;
+    var h = '<div class="sum"><div class="card"><b>' + ha + '</b><span>offene Hausaufgaben</span></div>' +
+      '<div class="card"><b>' + tests + '</b><span>Tests in 7 Tagen</span></div>' +
+      '<div class="card"><b>' + termine + '</b><span>Termine in 7 Tagen</span></div></div>';
+
+    var morgenTests = offen.filter(function (e) { return e.typ === "test" && e.datum === morgen; });
+    if (morgenTests.length) {
+      h += '<div class="hinweis"><span class="i">⏰</span><div><b>Morgen ist ein Test:</b> ' +
+        morgenTests.map(function (e) { return esc(e.fach ? e.fach + " – " + e.titel : e.titel); }).join(", ") + '. Viel Erfolg beim Lernen!</div></div>';
+    }
+    var stunden = planFuer(heute);
+    if (stunden.length) {
+      h += '<div class="hinweis"><span class="i">🏫</span><div><b>Heute im Stundenplan:</b> ' + stunden.map(esc).join(", ") + '</div></div>';
+    }
+
+    var irgendwas = false;
+    gruppen.forEach(function (g) {
+      if (!g[1].length) return;
+      irgendwas = true;
+      h += '<h2 class="sec">' + g[0] + '</h2><div class="list">' + sortiert(g[1]).map(itemHtml).join("") + '</div>';
+    });
+    if (!irgendwas) {
+      h += '<div class="empty"><b>Alles erledigt! 🎉</b>Tippe unten rechts auf +, um eine Hausaufgabe, einen Test oder einen Termin einzutragen.</div>';
+    }
+    var fertig = D.eintraege.filter(function (e) { return e.erledigt; }).sort(function (a, b) { return (b.erledigtAm || "").localeCompare(a.erledigtAm || ""); });
+    if (fertig.length) {
+      h += '<details class="erledigt"><summary>Erledigt (' + fertig.length + ')</summary><div class="list">' + fertig.slice(0, 30).map(itemHtml).join("") +
+        '</div>' + (fertig.length > 1 ? '<p style="text-align:right"><button class="btn small" type="button" id="aufraeumen">Erledigte löschen</button></p>' : "") + '</details>';
+    }
+    return h;
+  }
+
+  function planFuer(datum) {
+    var wd = KW.parse(datum).getDay();
+    if (wd === 0 || wd === 6) return [];
+    var out = [];
+    for (var s = 1; s <= D.plan.stunden; s++) {
+      var z = D.plan.zellen[wd + "-" + s];
+      if (z && z.fach && out[out.length - 1] !== z.fach) out.push(z.fach);
+    }
+    return out;
+  }
+
+  function woche() {
+    var ende = KW.addDays(wochenStart, 6), heute = KW.today();
+    var a = KW.parse(wochenStart), b = KW.parse(ende);
+    var h = '<div class="weeknav"><button class="btn small" type="button" data-w="-1" aria-label="Vorige Woche">‹</button><b>' +
+      a.getDate() + "." + (a.getMonth() + 1) + ". – " + b.getDate() + "." + (b.getMonth() + 1) + "." + b.getFullYear() +
+      '</b><button class="btn small" type="button" data-w="1" aria-label="Nächste Woche">›</button></div>';
+    if (wochenStart !== montag(heute)) h += '<p style="text-align:center;margin:-2px 0 10px"><button class="btn small" type="button" data-w="0">Zur aktuellen Woche</button></p>';
+    for (var i = 0; i < 7; i++) {
+      var tag = KW.addDays(wochenStart, i), d = KW.parse(tag);
+      var es = sortiert(D.eintraege.filter(function (e) { return e.datum === tag; }));
+      var faecher = planFuer(tag);
+      if ((d.getDay() === 0 || d.getDay() === 6) && !es.length) continue;
+      h += '<div class="day card' + (tag === heute ? " heute" : "") + '"><h3>' + TAGE_LANG[d.getDay()] + ' <small>' + d.getDate() + "." + (d.getMonth() + 1) + '.</small></h3>';
+      if (faecher.length) h += '<div class="faecher">' + faecher.map(function (f) { return '<span class="chip" style="background:' + esc(farbe(f)) + ';color:#fff">' + esc(f) + '</span>'; }).join("") + '</div>';
+      if (es.length) {
+        h += es.map(function (e) {
+          return '<div class="mini' + (e.erledigt ? " done" : "") + '" data-id="' + e.id + '"><span class="d" style="background:' + esc(farbe(e.fach)) + '"></span><span>' +
+            TYP[e.typ].icon + " " + esc((e.fach ? e.fach + ": " : "") + e.titel) + (e.zeit ? " (" + esc(e.zeit) + ")" : "") + '</span></div>';
+        }).join("");
+      } else {
+        h += '<div class="leer">Nichts eingetragen.</div>';
+      }
+      h += '</div>';
+    }
+    return h;
+  }
+
+  function stundenplan() {
+    var heuteWd = new Date().getDay();
+    var h = '<p class="muted" style="margin:14px 2px 0;font-size:.9rem">Tippe auf ein Feld, um ein Fach einzutragen. Der Planer schlägt dann beim Eintragen automatisch die nächste Stunde vor.</p>';
+    h += '<table class="plan"><thead><tr><th class="nr"></th>';
+    for (var t = 1; t <= 5; t++) h += '<th>' + TAGE[t] + '</th>';
+    h += '</tr></thead><tbody>';
+    for (var s = 1; s <= D.plan.stunden; s++) {
+      h += '<tr><th class="nr">' + s + '</th>';
+      for (var w = 1; w <= 5; w++) {
+        var z = D.plan.zellen[w + "-" + s];
+        var cls = (z && z.fach ? "voll" : "") + (w === heuteWd ? " heute-sp" : "");
+        h += '<td class="' + cls + '" data-z="' + w + "-" + s + '" style="' + (z && z.fach ? "background:" + esc(farbe(z.fach)) : "") + '">' +
+          (z && z.fach ? esc(kurzname(z.fach)) + (z.raum ? "<small>" + esc(z.raum) + "</small>" : "") : "") + '</td>';
+      }
+      h += '</tr>';
+    }
+    h += '</tbody></table><div class="row" style="justify-content:center;margin-top:10px">' +
+      '<button class="btn small" type="button" data-st="-1">− Stunde</button><button class="btn small" type="button" data-st="1">+ Stunde</button>' +
+      '<button class="btn small" type="button" id="faecherBtn">Fächer bearbeiten</button></div>';
+    return h;
+  }
+  function kurzname(n) { return n.length > 10 ? n.slice(0, 9) + "." : n; }
+
+  function zeigen() {
+    var v = document.getElementById("view");
+    v.innerHTML = ansicht === "uebersicht" ? uebersicht() : ansicht === "woche" ? woche() : stundenplan();
+    document.getElementById("neu").hidden = ansicht === "plan";
+  }
+
+  /* ---------- Klicks ---------- */
+  document.getElementById("tabs").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-v]");
+    if (!b) return;
+    ansicht = b.dataset.v;
+    document.querySelectorAll("#tabs button").forEach(function (x) { x.setAttribute("aria-selected", x === b ? "true" : "false"); });
+    zeigen();
+  });
+
+  document.getElementById("view").addEventListener("click", function (e) {
+    var c = e.target.closest("[data-check]");
+    if (c) { e.stopPropagation(); abhaken(c.dataset.check); return; }
+    var it = e.target.closest("[data-id]");
+    if (it) { bearbeiten(it.dataset.id); return; }
+    var w = e.target.closest("[data-w]");
+    if (w) { var n = +w.dataset.w; wochenStart = n === 0 ? montag(KW.today()) : KW.addDays(wochenStart, 7 * n); zeigen(); return; }
+    var z = e.target.closest("[data-z]");
+    if (z) { zelleBearbeiten(z.dataset.z); return; }
+    var st = e.target.closest("[data-st]");
+    if (st) { D.plan.stunden = Math.max(4, Math.min(12, D.plan.stunden + (+st.dataset.st))); speichern(); zeigen(); return; }
+    if (e.target.id === "faecherBtn") { faecherOeffnen(); return; }
+    if (e.target.id === "aufraeumen") {
+      var weg = D.eintraege.filter(function (x) { return x.erledigt; });
+      D.eintraege = D.eintraege.filter(function (x) { return !x.erledigt; });
+      speichern(); zeigen();
+      KW.toast(weg.length + " erledigte Einträge gelöscht.", "Rückgängig", function () { D.eintraege = D.eintraege.concat(weg); speichern(); zeigen(); });
+    }
+  });
+
+  function abhaken(id) {
+    var e = D.eintraege.find(function (x) { return x.id === id; });
+    if (!e) return;
+    e.erledigt = !e.erledigt;
+    e.erledigtAm = e.erledigt ? new Date().toISOString() : "";
+    speichern(); zeigen();
+    if (e.erledigt) KW.toast("Erledigt: " + e.titel, "Rückgängig", function () { e.erledigt = false; speichern(); zeigen(); });
+  }
+
+  /* ---------- Eintrag bearbeiten ---------- */
+  var dlg = document.getElementById("edit"), aktuell = null, typ = "hausaufgabe";
+  function fachOptionen(sel, wert, leerText) {
+    sel.innerHTML = '<option value="">' + leerText + '</option>' + D.faecher.map(function (f) {
+      return '<option' + (f.name === wert ? " selected" : "") + '>' + esc(f.name) + '</option>';
+    }).join("");
+    if (wert && !fach(wert)) sel.insertAdjacentHTML("beforeend", '<option selected>' + esc(wert) + '</option>');
+  }
+  function setTyp(t) {
+    typ = t;
+    document.querySelectorAll("#typSeg button").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.t === t ? "true" : "false"); });
+    document.getElementById("fTitel").placeholder = t === "test" ? "z. B. Vokabeltest Unit 3" : t === "termin" ? "z. B. Zahnarzt, Training, Ausflug" : "z. B. Buch S. 42, Nr. 3–5";
+  }
+  document.getElementById("typSeg").addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) setTyp(b.dataset.t); });
+
+  function naechsteStunde(fachName) {
+    if (!fachName) return null;
+    for (var i = 1; i <= 14; i++) {
+      var tag = KW.addDays(KW.today(), i), wd = KW.parse(tag).getDay();
+      for (var s = 1; s <= D.plan.stunden; s++) {
+        var z = D.plan.zellen[wd + "-" + s];
+        if (z && z.fach === fachName) return tag;
+      }
+    }
+    return null;
+  }
+  function schnellKnoepfe() {
+    var q = document.getElementById("quick"), f = document.getElementById("fFach").value;
+    var opts = [["Morgen", KW.addDays(KW.today(), 1)], ["In 1 Woche", KW.addDays(KW.today(), 7)]];
+    var ns = naechsteStunde(f);
+    if (ns) opts.unshift(["Nächste " + f + "-Stunde (" + wann(ns) + ")", ns]);
+    q.innerHTML = opts.map(function (o) { return '<button type="button" class="btn small" data-d="' + o[1] + '">' + esc(o[0]) + '</button>'; }).join("");
+  }
+  document.getElementById("quick").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-d]"); if (b) document.getElementById("fDatum").value = b.dataset.d;
+  });
+  document.getElementById("fFach").addEventListener("change", function () {
+    schnellKnoepfe();
+    var ns = naechsteStunde(this.value);
+    if (ns && !aktuell && typ === "hausaufgabe") document.getElementById("fDatum").value = ns;
+  });
+
+  function oeffnen(e) {
+    aktuell = e || null;
+    document.getElementById("editTitel").textContent = e ? "Eintrag bearbeiten" : "Neuer Eintrag";
+    setTyp(e ? e.typ : (typ || "hausaufgabe"));
+    fachOptionen(document.getElementById("fFach"), e ? e.fach : "", "Kein Fach");
+    document.getElementById("fTitel").value = e ? e.titel : "";
+    document.getElementById("fDatum").value = e ? e.datum : KW.addDays(KW.today(), 1);
+    document.getElementById("fZeit").value = e ? (e.zeit || "") : "";
+    document.getElementById("fNotiz").value = e ? (e.notiz || "") : "";
+    document.getElementById("fLoeschen").hidden = !e;
+    schnellKnoepfe();
+    dlg.showModal();
+    if (!e) setTimeout(function () { document.getElementById("fTitel").focus(); }, 50);
+  }
+  function bearbeiten(id) { var e = D.eintraege.find(function (x) { return x.id === id; }); if (e) oeffnen(e); }
+  document.getElementById("neu").onclick = function () { oeffnen(null); };
+  document.getElementById("fAbbruch").onclick = function () { dlg.close(); };
+  document.getElementById("editForm").addEventListener("submit", function (ev) {
+    var titel = document.getElementById("fTitel").value.trim(), datum = document.getElementById("fDatum").value;
+    if (!titel || !datum) { ev.preventDefault(); return; }
+    var werte = { typ: typ, fach: document.getElementById("fFach").value, titel: titel, datum: datum,
+      zeit: document.getElementById("fZeit").value, notiz: document.getElementById("fNotiz").value.trim() };
+    if (aktuell) Object.assign(aktuell, werte);
+    else D.eintraege.push(Object.assign({ id: KW.id(), erledigt: false, erstellt: new Date().toISOString() }, werte));
+    speichern(); zeigen();
+    KW.toast(aktuell ? "Gespeichert." : TYP[typ].name + " eingetragen.");
+  });
+  document.getElementById("fLoeschen").onclick = function () {
+    if (!aktuell) return;
+    var e = aktuell, i = D.eintraege.indexOf(e);
+    D.eintraege.splice(i, 1); speichern(); dlg.close(); zeigen();
+    KW.toast("Gelöscht.", "Rückgängig", function () { D.eintraege.splice(i, 0, e); speichern(); zeigen(); });
+  };
+
+  /* ---------- Stundenplan ---------- */
+  var zDlg = document.getElementById("zelle"), zKey = null;
+  function zelleBearbeiten(k) {
+    zKey = k;
+    var p = k.split("-"), z = D.plan.zellen[k] || {};
+    document.getElementById("zelleTitel").textContent = TAGE_LANG[+p[0]] + ", " + p[1] + ". Stunde";
+    fachOptionen(document.getElementById("zFach"), z.fach || "", "Frei");
+    document.getElementById("zRaum").value = z.raum || "";
+    zDlg.showModal();
+  }
+  document.getElementById("zAbbruch").onclick = function () { zDlg.close(); };
+  document.getElementById("zelleForm").addEventListener("submit", function () {
+    var f = document.getElementById("zFach").value, r = document.getElementById("zRaum").value.trim();
+    if (f) D.plan.zellen[zKey] = { fach: f, raum: r }; else delete D.plan.zellen[zKey];
+    speichern(); zeigen();
+  });
+
+  /* ---------- Fächer ---------- */
+  var fDlg = document.getElementById("faecherDlg");
+  function fachListe() {
+    document.getElementById("fachliste").innerHTML = D.faecher.map(function (f, i) {
+      return '<div><input type="color" value="' + esc(f.farbe) + '" data-i="' + i + '" aria-label="Farbe für ' + esc(f.name) + '">' +
+        '<input class="inp" value="' + esc(f.name) + '" data-n="' + i + '" maxlength="30" aria-label="Name">' +
+        '<button type="button" class="btn small danger" data-x="' + i + '" aria-label="' + esc(f.name) + ' entfernen">✕</button></div>';
+    }).join("");
+  }
+  function faecherOeffnen() { fachListe(); fDlg.showModal(); }
+  document.getElementById("fachliste").addEventListener("input", function (e) {
+    var t = e.target;
+    if (t.dataset.i != null) D.faecher[+t.dataset.i].farbe = t.value;
+    if (t.dataset.n != null) {
+      var alt = D.faecher[+t.dataset.n].name, neu = t.value.trim();
+      if (!neu) return;
+      D.faecher[+t.dataset.n].name = neu;
+      D.eintraege.forEach(function (x) { if (x.fach === alt) x.fach = neu; });
+      Object.keys(D.plan.zellen).forEach(function (k) { if (D.plan.zellen[k].fach === alt) D.plan.zellen[k].fach = neu; });
+    }
+    speichern();
+  });
+  document.getElementById("fachliste").addEventListener("click", function (e) {
+    var x = e.target.closest("[data-x]"); if (!x) return;
+    D.faecher.splice(+x.dataset.x, 1); speichern(); fachListe();
+  });
+  document.getElementById("fachPlus").onclick = function () {
+    D.faecher.push({ name: "Neues Fach", farbe: "#64748b" }); speichern(); fachListe();
+    var ins = document.querySelectorAll("#fachliste .inp"); var last = ins[ins.length - 1]; if (last) { last.focus(); last.select(); }
+  };
+  fDlg.addEventListener("close", zeigen);
+
+  KW.footer("planer", function () { return D; }, function (d) {
+    if (d && Array.isArray(d.eintraege)) { D = d; speichern(); zeigen(); }
+  });
+  zeigen();
+  // Um Mitternacht oder wenn man die App wieder öffnet: neu sortieren
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) zeigen(); });
+})();
+</script>
+</body>
+</html>

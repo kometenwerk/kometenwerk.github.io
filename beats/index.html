@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kometen-Beats</title>
+<meta name="description" content="Eigene Beats und Melodien bauen – direkt im Browser.">
+<meta name="theme-color" content="#b8235a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Beats">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/kw.css">
+<style>:root{--app:#b8235a;--app-soft:rgba(184,35,90,.14)}</style>
+<style>
+.kw-main{max-width:980px;padding-bottom:40px}
+.steuer{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:4px 0 14px}
+.play{width:64px;height:64px;border-radius:50%;border:0;background:var(--accent);color:#101826;font-size:1.6rem;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.18);flex:none}
+.play:focus-visible{outline:3px solid var(--app);outline-offset:3px}
+.tempo{display:flex;flex-direction:column;gap:2px;min-width:170px;flex:1;max-width:300px}
+.tempo span{font-size:.8rem;color:var(--muted)}
+.tempo input{accent-color:var(--app);width:100%}
+.steuer select{width:auto}
+.werkzeuge{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+.rasterbox{overflow-x:auto;padding:12px;-webkit-overflow-scrolling:touch}
+.raster{display:grid;grid-template-columns:72px repeat(16,minmax(28px,1fr));gap:4px;min-width:640px;max-width:860px}
+.wisch{display:none;font-size:.8rem;color:var(--muted);margin:0 2px 6px}
+@media (max-width:700px){.wisch{display:block}}
+.raster .lbl{font-size:.8rem;font-weight:600;display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden}
+.raster .trenn{grid-column:1/-1;height:6px}
+.zelle{aspect-ratio:1;min-height:28px;border-radius:7px;border:0;background:var(--soft);cursor:pointer;padding:0;transition:transform .05s}
+.zelle:nth-child(17n+6),.zelle:nth-child(17n+10),.zelle:nth-child(17n+14){margin-left:0}
+.zelle.takt{background:color-mix(in srgb,var(--soft) 82%,var(--muted) 18%)}
+.zelle.an{background:var(--app)}
+.zelle.an.mel{background:var(--accent)}
+.zelle.jetzt{outline:2px solid var(--ink);outline-offset:-2px}
+.zelle.an.jetzt{transform:scale(1.08)}
+.zelle:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.kopfzeile{display:contents}
+.kopfzeile span{font-size:.7rem;color:var(--muted);text-align:center}
+.songs{display:flex;flex-direction:column;gap:6px;margin:0 0 12px}
+.songs div{display:flex;gap:8px;align-items:center;padding:10px 12px}
+.songs b{flex:1;font-weight:500;overflow-wrap:anywhere}
+.tipp{font-size:.85rem;color:var(--muted);margin:12px 2px 0}
+</style>
+</head>
+<body>
+<header class="kw-bar">
+  <a class="kw-home" href="../" aria-label="Zurück zu Kometenwerk"><svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="currentColor" stroke-opacity=".6" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)" fill="currentColor"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="15" fill="#ff8a3c"/></g></svg></a>
+  <h1>Kometen-Beats</h1>
+  <span id="kwBarExtra" style="display:contents"></span>
+  <button class="kw-install" id="kwInstall" type="button" hidden>Als App installieren</button>
+</header>
+<main class="kw-main">
+  <div class="steuer">
+    <button class="play" id="play" type="button" aria-label="Abspielen">▶</button>
+    <label class="tempo"><span>Tempo: <b id="bpmWert">100</b> Schläge pro Minute</span><input type="range" id="bpm" min="60" max="160" value="100"></label>
+    <label class="field" style="margin:0"><span>Klang der Melodie</span>
+      <select class="inp" id="klang"><option value="triangle">Weich</option><option value="square">Retro</option><option value="sine">Glocke</option><option value="sawtooth">Scharf</option></select></label>
+    <label class="field" style="margin:0"><span>Vorlage</span>
+      <select class="inp" id="vorlage"><option value="">Wählen …</option><option value="hiphop">Hip-Hop</option><option value="techno">Techno</option><option value="pop">Pop</option></select></label>
+  </div>
+  <div class="werkzeuge">
+    <button class="btn small" type="button" id="zufall">🎲 Zufall</button>
+    <button class="btn small" type="button" id="leeren">🧹 Leeren</button>
+    <button class="btn small" type="button" id="speichern">💾 Speichern</button>
+    <button class="btn small" type="button" id="meine">📂 Meine Songs</button>
+    <button class="btn small" type="button" id="teilen">🔗 Link teilen</button>
+    <button class="btn small" type="button" id="datei">⬇️ Als Musikdatei</button>
+  </div>
+  <p class="wisch">👉 Wische im Raster nach links, um alle 16 Schritte zu sehen.</p>
+  <div class="card rasterbox"><div class="raster" id="raster" role="grid" aria-label="Beat-Raster"></div></div>
+  <p class="tipp">Tippe Kästchen an, um Töne einzuschalten. Oben sind die Trommeln, unten die Melodie. Die Melodie-Töne passen immer zusammen, du kannst also nichts falsch machen.</p>
+</main>
+
+<dialog class="sheet" id="songsDlg">
+  <form class="sheet-in" method="dialog">
+    <h2>Meine Songs</h2>
+    <div class="songs" id="songListe"></div>
+    <div class="sheet-foot"><button class="btn primary">Schließen</button></div>
+  </form>
+</dialog>
+<dialog class="sheet" id="nameDlg">
+  <form class="sheet-in" method="dialog" id="nameForm">
+    <h2>Song speichern</h2>
+    <label class="field"><span>Name</span><input class="inp" id="songName" maxlength="40" required autocomplete="off"></label>
+    <div class="sheet-foot"><button type="button" class="btn" id="nameAbbruch">Abbrechen</button><button class="btn primary" type="submit">Speichern</button></div>
+  </form>
+</dialog>
+
+<script src="../shared/kw.js"></script>
+<script>
+(function () {
+  "use strict";
+  var esc = KW.esc, KEY = "kw-beats";
+  var SPUREN = [
+    { id: "kick", name: "Bass", em: "🥁" }, { id: "snare", name: "Snare", em: "🪘" },
+    { id: "clap", name: "Klatsch", em: "👏" }, { id: "hihat", name: "Hi-Hat", em: "✨" }
+  ];
+  // Pentatonik: diese Töne klingen immer gut zusammen (oben hoch, unten tief)
+  var TOENE = [["E", 659.25], ["D", 587.33], ["C", 523.25], ["A", 440.0], ["G", 392.0], ["E", 329.63], ["D", 293.66], ["C", 261.63]];
+  var ZEILEN = SPUREN.length + TOENE.length, SCHRITTE = 16;
+
+  function leer() { var a = []; for (var i = 0; i < ZEILEN; i++) { a.push(new Array(SCHRITTE).fill(false)); } return a; }
+  var S = KW.load(KEY, null) || {};
+  var song = S.aktuell || { muster: null, bpm: 100, klang: "triangle" };
+  if (!song.muster) song.muster = vorlageMuster("pop");
+  S.songs = S.songs || [];
+  function merken() { S.aktuell = song; KW.save(KEY, S); }
+
+  /* ---------- Vorlagen ---------- */
+  function vorlageMuster(name) {
+    var m = leer();
+    function an(z, liste) { liste.forEach(function (s) { m[z][s] = true; }); }
+    var M = SPUREN.length; // erste Melodie-Zeile
+    if (name === "hiphop") {
+      an(0, [0, 7, 10]); an(1, [4, 12]); an(3, [0, 2, 4, 6, 8, 10, 12, 14]);
+      an(M + 5, [0]); an(M + 4, [3]); an(M + 3, [6]); an(M + 4, [10]); an(M + 7, [12]);
+    } else if (name === "techno") {
+      an(0, [0, 4, 8, 12]); an(2, [4, 12]); an(3, [2, 6, 10, 14]);
+      an(M + 7, [0, 8]); an(M + 5, [2, 10]); an(M + 4, [4, 12]); an(M + 2, [6]); an(M + 3, [14]);
+    } else {
+      an(0, [0, 8, 10]); an(1, [4, 12]); an(3, [0, 2, 4, 6, 8, 10, 12, 14]);
+      an(M + 2, [0]); an(M + 3, [2]); an(M + 4, [4]); an(M + 3, [6]); an(M + 5, [8]); an(M + 4, [10]); an(M + 3, [12]); an(M + 4, [14]);
+    }
+    return m;
+  }
+  var VORLAGE_BPM = { hiphop: 90, techno: 126, pop: 110 };
+
+  /* ---------- Klang ---------- */
+  var ctx = null, master = null;
+  function audio() {
+    if (!ctx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      ctx = new AC();
+      master = baueAusgang(ctx);
+    }
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+  function baueAusgang(c) {
+    var comp = c.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
+    var g = c.createGain(); g.gain.value = 0.8;
+    g.connect(comp); comp.connect(c.destination);
+    return g;
+  }
+  var rauschCache = new WeakMap();
+  function rauschen(c) {
+    if (rauschCache.has(c)) return rauschCache.get(c);
+    var b = c.createBuffer(1, c.sampleRate, c.sampleRate), d = b.getChannelData(0);
+    for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    rauschCache.set(c, b); return b;
+  }
+  function huellkurve(c, start, wert, ende) {
+    var g = c.createGain();
+    g.gain.setValueAtTime(wert, start);
+    g.gain.exponentialRampToValueAtTime(0.001, ende);
+    return g;
+  }
+  function trommel(c, out, id, t) {
+    if (id === "kick") {
+      var o = c.createOscillator(), g = huellkurve(c, t, 1, t + 0.35);
+      o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+      o.connect(g); g.connect(out); o.start(t); o.stop(t + 0.4);
+    } else if (id === "snare" || id === "hihat" || id === "clap") {
+      var n = c.createBufferSource(); n.buffer = rauschen(c);
+      var f = c.createBiquadFilter(), g2;
+      if (id === "snare") { f.type = "highpass"; f.frequency.value = 1000; g2 = huellkurve(c, t, 0.6, t + 0.18); }
+      else if (id === "hihat") { f.type = "highpass"; f.frequency.value = 7000; g2 = huellkurve(c, t, 0.3, t + 0.05); }
+      else {
+        f.type = "bandpass"; f.frequency.value = 1500; f.Q.value = 0.8;
+        g2 = c.createGain();
+        g2.gain.setValueAtTime(0.7, t); g2.gain.setValueAtTime(0.15, t + 0.01);
+        g2.gain.setValueAtTime(0.7, t + 0.012); g2.gain.setValueAtTime(0.15, t + 0.022);
+        g2.gain.setValueAtTime(0.7, t + 0.024); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+      }
+      n.connect(f); f.connect(g2); g2.connect(out); n.start(t); n.stop(t + 0.25);
+      if (id === "snare") {
+        var o2 = c.createOscillator(), g3 = huellkurve(c, t, 0.4, t + 0.1);
+        o2.type = "triangle"; o2.frequency.value = 180; o2.connect(g3); g3.connect(out); o2.start(t); o2.stop(t + 0.12);
+      }
+    }
+  }
+  function ton(c, out, freq, t, typ, dauer) {
+    var o = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter();
+    o.type = typ; o.frequency.value = freq;
+    f.type = "lowpass"; f.frequency.value = typ === "sawtooth" || typ === "square" ? 2200 : 6000;
+    var lang = typ === "sine" ? 0.9 : dauer;
+    var laut = typ === "square" || typ === "sawtooth" ? 0.12 : 0.22;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(laut, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.001, t + lang);
+    o.connect(f); f.connect(g); g.connect(out); o.start(t); o.stop(t + lang + 0.05);
+  }
+  function schrittSpielen(c, out, s, t, schritt) {
+    for (var z = 0; z < SPUREN.length; z++) if (song.muster[z][s]) trommel(c, out, SPUREN[z].id, t);
+    for (var m = 0; m < TOENE.length; m++) if (song.muster[SPUREN.length + m][s]) ton(c, out, TOENE[m][1], t, song.klang, schritt * 1.8);
+  }
+
+  /* ---------- Abspielen (vorausplanen, damit es genau im Takt bleibt) ---------- */
+  var laeuft = false, schritt = 0, naechste = 0, timer = null, anzeige = [], rafId = 0;
+  function dauer() { return 60 / song.bpm / 4; }
+  function planen() {
+    while (naechste < ctx.currentTime + 0.12) {
+      schrittSpielen(ctx, master, schritt, naechste, dauer());
+      anzeige.push({ s: schritt, t: naechste });
+      naechste += dauer();
+      schritt = (schritt + 1) % SCHRITTE;
+    }
+  }
+  function malen() {
+    var jetzt = ctx.currentTime, akt = null;
+    while (anzeige.length && anzeige[0].t <= jetzt) akt = anzeige.shift().s;
+    if (akt !== null) markieren(akt);
+    if (laeuft) rafId = requestAnimationFrame(malen);
+  }
+  function start() {
+    audio(); laeuft = true; schritt = 0; naechste = ctx.currentTime + 0.06; anzeige = [];
+    timer = setInterval(planen, 25); planen(); malen();
+    var b = document.getElementById("play"); b.textContent = "■"; b.setAttribute("aria-label", "Stopp");
+  }
+  function stopp() {
+    laeuft = false; clearInterval(timer); cancelAnimationFrame(rafId); markieren(-1);
+    var b = document.getElementById("play"); b.textContent = "▶"; b.setAttribute("aria-label", "Abspielen");
+  }
+  document.getElementById("play").onclick = function () { laeuft ? stopp() : start(); };
+  document.addEventListener("keydown", function (e) {
+    if (e.code === "Space" && !e.target.closest("input,select,textarea,dialog")) { e.preventDefault(); laeuft ? stopp() : start(); }
+  });
+
+  /* ---------- Raster ---------- */
+  var raster = document.getElementById("raster"), zellen = [];
+  function bauen() {
+    var h = '<span></span>';
+    for (var k = 0; k < SCHRITTE; k++) h += '<span style="font-size:.7rem;color:var(--muted);text-align:center">' + (k % 4 === 0 ? (k / 4 + 1) : "") + '</span>';
+    for (var z = 0; z < ZEILEN; z++) {
+      if (z === SPUREN.length) h += '<span class="trenn"></span>';
+      var mel = z >= SPUREN.length;
+      var name = mel ? "🎵 " + TOENE[z - SPUREN.length][0] : SPUREN[z].em + " " + SPUREN[z].name;
+      h += '<span class="lbl">' + esc(name) + '</span>';
+      for (var s = 0; s < SCHRITTE; s++) {
+        h += '<button type="button" class="zelle' + (mel ? " mel" : "") + (Math.floor(s / 4) % 2 === 1 ? " takt" : "") + '" data-z="' + z + '" data-s="' + s + '" aria-label="' +
+          esc((mel ? "Ton " + TOENE[z - SPUREN.length][0] : SPUREN[z].name) + ", Schritt " + (s + 1)) + '" aria-pressed="false"></button>';
+      }
+    }
+    raster.innerHTML = h;
+    zellen = [].slice.call(raster.querySelectorAll(".zelle"));
+    zeigen();
+  }
+  function zeigen() {
+    zellen.forEach(function (b) {
+      var an = song.muster[+b.dataset.z][+b.dataset.s];
+      b.classList.toggle("an", an); b.setAttribute("aria-pressed", an ? "true" : "false");
+    });
+    document.getElementById("bpm").value = song.bpm; document.getElementById("bpmWert").textContent = song.bpm;
+    document.getElementById("klang").value = song.klang;
+  }
+  var letzte = -1;
+  function markieren(s) {
+    if (s === letzte) return;
+    zellen.forEach(function (b) { var bs = +b.dataset.s; if (bs === letzte || bs === s) b.classList.toggle("jetzt", bs === s); });
+    letzte = s;
+  }
+  raster.addEventListener("click", function (e) {
+    var b = e.target.closest(".zelle"); if (!b) return;
+    var z = +b.dataset.z, s = +b.dataset.s;
+    song.muster[z][s] = !song.muster[z][s];
+    zeigen(); merken();
+    if (song.muster[z][s] && !laeuft) {
+      var c = audio(), t = c.currentTime + 0.01;
+      if (z < SPUREN.length) trommel(c, master, SPUREN[z].id, t); else ton(c, master, TOENE[z - SPUREN.length][1], t, song.klang, 0.35);
+    }
+  });
+
+  /* ---------- Werkzeuge ---------- */
+  document.getElementById("bpm").addEventListener("input", function () { song.bpm = +this.value; document.getElementById("bpmWert").textContent = song.bpm; merken(); });
+  document.getElementById("klang").addEventListener("change", function () { song.klang = this.value; merken(); });
+  document.getElementById("vorlage").addEventListener("change", function () {
+    if (!this.value) return;
+    song.muster = vorlageMuster(this.value); song.bpm = VORLAGE_BPM[this.value]; this.value = ""; zeigen(); merken();
+    KW.toast("Vorlage geladen – jetzt nach deinem Geschmack ändern!");
+  });
+  document.getElementById("zufall").onclick = function () {
+    var m = leer(), r = Math.random;
+    m[0][0] = true; for (var s = 1; s < SCHRITTE; s++) if (r() < 0.18) m[0][s] = true;
+    m[1][4] = m[1][12] = r() < 0.7; if (!m[1][4]) { m[2][4] = m[2][12] = true; }
+    for (var h = 0; h < SCHRITTE; h += 2) m[3][h] = r() < 0.85;
+    for (var t = 0; t < SCHRITTE; t += 2) if (r() < 0.55) m[SPUREN.length + Math.floor(r() * TOENE.length)][t] = true;
+    song.muster = m; zeigen(); merken();
+  };
+  document.getElementById("leeren").onclick = function () {
+    var alt = song.muster; song.muster = leer(); zeigen(); merken();
+    KW.toast("Alles geleert.", "Rückgängig", function () { song.muster = alt; zeigen(); merken(); });
+  };
+
+  /* Speichern + Meine Songs */
+  var nameDlg = document.getElementById("nameDlg");
+  document.getElementById("speichern").onclick = function () { document.getElementById("songName").value = "Mein Beat " + (S.songs.length + 1); nameDlg.showModal(); };
+  document.getElementById("nameAbbruch").onclick = function () { nameDlg.close(); };
+  document.getElementById("nameForm").addEventListener("submit", function () {
+    var n = document.getElementById("songName").value.trim() || "Mein Beat";
+    S.songs.unshift({ id: KW.id(), name: n, muster: JSON.parse(JSON.stringify(song.muster)), bpm: song.bpm, klang: song.klang });
+    merken(); KW.toast("„" + n + "“ gespeichert.");
+  });
+  var songsDlg = document.getElementById("songsDlg");
+  function songListe() {
+    document.getElementById("songListe").innerHTML = S.songs.length ? S.songs.map(function (x) {
+      return '<div class="card"><b>' + esc(x.name) + '</b><button class="btn small" type="button" data-l="' + x.id + '">Laden</button><button class="btn small danger" type="button" data-x="' + x.id + '" aria-label="Löschen">✕</button></div>';
+    }).join("") : '<p class="muted">Noch keine Songs gespeichert. Tippe auf „Speichern“, wenn dir ein Beat gefällt.</p>';
+  }
+  document.getElementById("meine").onclick = function () { songListe(); songsDlg.showModal(); };
+  document.getElementById("songListe").addEventListener("click", function (e) {
+    var l = e.target.closest("[data-l]"), x = e.target.closest("[data-x]");
+    if (l) { var s = S.songs.find(function (q) { return q.id === l.dataset.l; }); song = { muster: JSON.parse(JSON.stringify(s.muster)), bpm: s.bpm, klang: s.klang }; zeigen(); merken(); songsDlg.close(); KW.toast("„" + s.name + "“ geladen."); }
+    if (x) { S.songs = S.songs.filter(function (q) { return q.id !== x.dataset.x; }); merken(); songListe(); }
+  });
+
+  /* Teilen als Link: Muster wird in die Adresse gepackt */
+  var KL = ["triangle", "square", "sine", "sawtooth"];
+  function kodieren() {
+    return "b=" + song.bpm + "-" + KL.indexOf(song.klang) + "-" + song.muster.map(function (z) {
+      var v = 0; z.forEach(function (an, i) { if (an) v |= (1 << i); }); return v.toString(16).padStart(4, "0");
+    }).join("");
+  }
+  function dekodieren(h) {
+    var m = /b=(\d{2,3})-(\d)-([0-9a-f]+)/.exec(h);
+    if (!m || m[3].length !== ZEILEN * 4) return false;
+    var mu = [];
+    for (var z = 0; z < ZEILEN; z++) {
+      var v = parseInt(m[3].substr(z * 4, 4), 16), row = [];
+      for (var i = 0; i < SCHRITTE; i++) row.push(!!(v & (1 << i)));
+      mu.push(row);
+    }
+    song = { muster: mu, bpm: Math.max(60, Math.min(160, +m[1])), klang: KL[+m[2]] || "triangle" };
+    return true;
+  }
+  document.getElementById("teilen").onclick = function () {
+    var url = location.origin + location.pathname + "#" + kodieren();
+    if (navigator.share) { navigator.share({ title: "Mein Beat", text: "Hör dir meinen Beat an – gemacht mit Kometen-Beats!", url: url }).catch(function () {}); return; }
+    (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function () { KW.toast("Link kopiert! Schick ihn deinen Freunden."); })
+      .catch(function () { prompt("Diesen Link kannst du teilen:", url); });
+  };
+
+  /* Als WAV-Datei speichern */
+  document.getElementById("datei").onclick = function () {
+    var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    if (!OAC) { KW.toast("Dein Browser kann leider keine Musikdatei erstellen."); return; }
+    var rate = 44100, d = dauer(), laenge = d * SCHRITTE * 2 + 1.2;
+    var oc = new OAC(2, Math.ceil(rate * laenge), rate), out = baueAusgang(oc);
+    for (var i = 0; i < SCHRITTE * 2; i++) schrittSpielen(oc, out, i % SCHRITTE, 0.05 + i * d, d);
+    KW.toast("Musikdatei wird erstellt …");
+    oc.startRendering().then(function (buf) {
+      var blob = wav(buf), a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = "kometen-beat.wav"; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
+      KW.toast("Fertig! Die Datei heißt kometen-beat.wav.");
+    });
+  };
+  function wav(buf) {
+    var ch = buf.numberOfChannels, n = buf.length, bytes = 44 + n * ch * 2, ab = new ArrayBuffer(bytes), v = new DataView(ab), p = 0;
+    function str(s) { for (var i = 0; i < s.length; i++) v.setUint8(p++, s.charCodeAt(i)); }
+    function u32(x) { v.setUint32(p, x, true); p += 4; } function u16(x) { v.setUint16(p, x, true); p += 2; }
+    str("RIFF"); u32(bytes - 8); str("WAVE"); str("fmt "); u32(16); u16(1); u16(ch); u32(buf.sampleRate); u32(buf.sampleRate * ch * 2); u16(ch * 2); u16(16);
+    str("data"); u32(n * ch * 2);
+    var daten = []; for (var c = 0; c < ch; c++) daten.push(buf.getChannelData(c));
+    for (var i = 0; i < n; i++) for (var k = 0; k < ch; k++) { var s = Math.max(-1, Math.min(1, daten[k][i])); v.setInt16(p, s < 0 ? s * 0x8000 : s * 0x7fff, true); p += 2; }
+    return new Blob([ab], { type: "audio/wav" });
+  }
+
+  if (location.hash && dekodieren(location.hash)) { KW.toast("Beat aus dem Link geladen – tippe auf ▶"); merken(); history.replaceState(null, "", location.pathname); }
+  KW.footer("beats", function () { return S; }, function (d) { if (d && d.songs) { S = d; song = S.aktuell || song; zeigen(); merken(); } });
+  bauen();
+  document.addEventListener("visibilitychange", function () { if (document.hidden && laeuft) stopp(); });
+})();
+</script>
+</body>
+</html>

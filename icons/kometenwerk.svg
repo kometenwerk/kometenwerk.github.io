@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="1000" height="1000"><defs>
+<linearGradient id="a" x1="190" y1="128" x2="50" y2="250" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<linearGradient id="b" x1="212" y1="150" x2="120" y2="246" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ff8a3c"/><stop offset="1" stop-color="#ff8a3c" stop-opacity="0"/></linearGradient>
+<linearGradient id="c" x1="180" y1="106" x2="96" y2="162" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9aa7bd"/><stop offset="1" stop-color="#9aa7bd" stop-opacity="0"/></linearGradient></defs>
+<rect width="320" height="320" fill="#101826"/>
+<g transform="translate(-10 14)">
+<path d="M64 62 l3 8 l8 3 l-8 3 l-3 8 l-3 -8 l-8 -3 l8 -3 z" fill="#9aa7bd"/><circle cx="108" cy="40" r="2.5" fill="#9aa7bd"/>
+<ellipse cx="220" cy="110" rx="92" ry="32" transform="rotate(-24 220 110)" fill="none" stroke="#9aa7bd" stroke-width="2.5" stroke-dasharray="2 7" stroke-linecap="round"/>
+<path d="M180 106 L96 162" stroke="url(#c)" stroke-width="6" stroke-linecap="round"/>
+<path d="M190 128 L50 250" stroke="url(#a)" stroke-width="22" stroke-linecap="round"/>
+<path d="M212 150 L120 246" stroke="url(#b)" stroke-width="9" stroke-linecap="round"/>
+<g transform="translate(220 110)" fill="#fff"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="30" fill="none" stroke="#101826" stroke-width="3"/><circle r="15" fill="#ff8a3c"/><circle cx="-5" cy="-5" r="4" fill="#ffd2b0"/></g>
+<circle cx="303" cy="76" r="5" fill="#ff8a3c"/></g></svg>
