@@ -201,8 +201,12 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
 
 <dialog class="sheet" id="rundeDlg"><form class="sheet-in" method="dialog" id="rundeForm">
   <h2>🤖 KI-Runde starten</h2>
-  <p class="muted" style="margin-top:-6px">Das KI-Team sammelt Ideen, prüft sie gegenseitig und erarbeitet mit dir einen fertigen Bauauftrag. Den kopierst du am Ende und schickst ihn an Claude.</p>
+  <p class="muted" style="margin-top:-6px">Das KI-Team sammelt Ideen, prüft sie gegenseitig und erarbeitet mit dir einen fertigen Bauauftrag. Du antwortest einfach im Chat, das KI-Team antwortet automatisch. Wenn alles passt, schreib „fertig“. Den Auftrag kopierst du dann und schickst ihn an Claude.</p>
   <label class="field"><span>Worum geht es?</span><textarea class="inp" id="rundeThema" rows="3" maxlength="600" required placeholder="z. B. Ein neues Tier für Krawallzoo, das Spieler überrascht"></textarea></label>
+  <div class="field"><span>Tempo</span>
+    <label style="display:flex;gap:8px;align-items:flex-start;margin:4px 0"><input type="radio" name="tempo" value="schnell" checked style="margin-top:4px"><span><b>⚡ Schnell</b> – 3 KIs (Ideen, Prüfer, Planer), kurze Antworten, kleinere KI</span></label>
+    <label style="display:flex;gap:8px;align-items:flex-start;margin:4px 0"><input type="radio" name="tempo" value="gruendlich" style="margin-top:4px"><span><b>🧠 Gründlich</b> – alle 5 KIs, längere Antworten, schlauere KI (langsamer)</span></label>
+  </div>
   <p class="muted" style="font-size:.82rem">Die KI läuft auf diesem Gerät (am besten PC mit Chrome oder Edge). Beim ersten Mal lädt sie einmalig rund 1 GB – am besten im WLAN. Sie ist klein und kann sich irren – du entscheidest.</p>
   <div class="sheet-foot"><button type="button" class="btn" id="rundeAbbruch">Abbrechen</button><button class="btn primary" type="submit">Runde starten</button></div>
 </form></dialog>
@@ -322,6 +326,7 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
   /* ---------- Chat ---------- */
   function chatStarten() {
     zeige("sChat");
+    setTimeout(vorladen, 3000);
     var p = db.ref("team/presence/" + uid);
     p.set({ on: true, t: TS() }); p.onDisconnect().remove();
     hoeren(db.ref("team/members"), "value", function (s) { mitglieder = s.val() || {}; onlineAnzeigen(); if ($("teamDlg").open) teamFenster(); });
@@ -406,6 +411,7 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
       nachrichten = Object.keys(v).map(function (id) { var m = v[id]; m.id = id; return m; }).sort(function (a, b) { return (a.t || 0) - (b.t || 0) || (a.id < b.id ? -1 : 1); });
       nachrichtenZeigen();
       if (!document.hidden) gelesenSetzen(k);
+      if (typeof rundeBeobachten === "function") rundeBeobachten(k);
     };
     msgRef.on("value", msgCb);
     if (!stumm) $("text").focus();
@@ -624,56 +630,74 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
     "(zum Beispiel das Tier-Kampfspiel Krawallzoo, das Nachrichten-Heft, den Kometen-Planer). Der Chef entscheidet. " +
     "Regeln von Kometenwerk: nichts darf Geld kosten (GitHub Pages und Firebase im kostenlosen Spark-Plan, etwa 100 Nutzer gleichzeitig), " +
     "keine echten Namen oder E-Mails öffentlich, nichts von anderen Spielen oder Firmen kopieren, kindersicher (keine Chats mit Fremden, keine Datensammelei, keine Werbung). " +
-    "Antworte immer auf Deutsch, kurz und konkret, höchstens 6 Sätze oder 5 Stichpunkte. Erfinde keine Fakten. Wenn du unsicher bist, sag es.";
+    "Ihr schreibt in einem Gruppenchat wie ein Team von Freunden: locker, auf Deutsch, in Du-Form, kurz (2 bis 5 Sätze), ohne Überschriften, ab und zu ein Emoji. " +
+    "Reagiere auf das, was die anderen vorher geschrieben haben, und sprich sie mit Namen an (zum Beispiel: Gute Idee, Mia, aber ...). Widersprich ruhig, wenn du etwas anders siehst. " +
+    "Erfinde keine Fakten. Wenn du unsicher bist, sag es. Du bist eine KI und tust nicht so, als wärst du ein Mensch.";
   var ROLLEN = {
-    ideen:   { name: "🤖 Ideen", em: "💡", auftrag: "Deine Rolle: Ideen-Sammler (Game-Designer und Designer). Schlage genau 3 kurze, konkrete Ideen zum Thema vor. Nummeriere sie 1., 2., 3. Jede Idee in 1 bis 2 Sätzen." },
-    prog:    { name: "🤖 Programmierer", em: "💻", auftrag: "Deine Rolle: Programmierer. Sag zu jeder Idee kurz, ob sie kostenlos im Browser machbar ist, wie viel Arbeit sie ungefähr ist (klein, mittel oder groß) und was technisch schwierig wird." },
-    sicher:  { name: "🤖 Sicherheit", em: "🛡️", auftrag: "Deine Rolle: Sicherheit. Nenne kurz die Risiken: Daten von Kindern, Kontakt mit Fremden, Kosten, geheime Schlüssel, Urheberrecht. Wenn eine Idee problematisch ist, sag welche und warum. Höchstens 4 Stichpunkte." },
-    tester:  { name: "🤖 Tester", em: "🐞", auftrag: "Deine Rolle: Tester. Nenne die 3 bis 5 wichtigsten Dinge, die später getestet werden müssen, und was Nutzer nerven könnte." },
-    planer:  { name: "🤖 Planer", em: "📋", auftrag: "Deine Rolle: Planer. Sag kurz, welche Idee du am besten findest und warum. Stell dem Chef dann genau 2 oder 3 nummerierte Fragen, die er entscheiden muss." }
+    ideen:   { name: "🤖 Mia · Ideen", em: "💡", auftrag: "Du bist Mia, die Ideen-Sammlerin im Team (Game-Design und Design). Du bist begeistert, kreativ und denkst gern mal verrückt. Schlage genau 3 kurze, konkrete Ideen zum Thema vor, nummeriert 1., 2., 3., jede in 1 bis 2 Sätzen." },
+    prog:    { name: "🤖 Tom · Programmierer", em: "💻", auftrag: "Du bist Tom, der Programmierer im Team. Du bist entspannt und praktisch und sagst ehrlich, was geht. Sag zu jeder Idee kurz, ob sie kostenlos im Browser machbar ist, wie viel Arbeit sie ungefähr ist (klein, mittel oder groß) und was technisch schwierig wird." },
+    sicher:  { name: "🤖 Sam · Sicherheit", em: "🛡️", auftrag: "Du bist Sam, zuständig für Sicherheit. Du bist vorsichtig, aber kein Spielverderber. Nenne kurz die Risiken: Daten von Kindern, Kontakt mit Fremden, Kosten, geheime Schlüssel, Urheberrecht. Wenn eine Idee problematisch ist, sag welche und warum. Höchstens 4 Stichpunkte." },
+    tester:  { name: "🤖 Kai · Tester", em: "🐞", auftrag: "Du bist Kai, der Tester. Du bist ein bisschen frech und findest jeden Haken. Nenne die 3 bis 5 wichtigsten Dinge, die später getestet werden müssen, und was Nutzer nerven könnte." },
+    pruefer: { name: "🤖 Ben · Prüfer", em: "🔍", auftrag: "Du bist Ben, der Prüfer (Programmierung, Sicherheit und Testen in einem). Du bist ruhig und ehrlich. Sag zu den Ideen ganz kurz: kostenlos machbar? Aufwand klein, mittel oder groß? Größtes Risiko? Höchstens 4 Stichpunkte." },
+    planer:  { name: "🤖 Lea · Planerin", em: "📋", auftrag: "Du bist Lea, die Planerin. Du behältst den Überblick und bringst alles auf den Punkt. Sag kurz, welche Idee du am besten findest und warum. Stell dem Chef dann genau 2 oder 3 nummerierte Fragen, die er entscheiden muss." }
   };
-  var ABLAUF = { start: ["ideen", "prog", "sicher", "tester", "planer"], weiter: ["prog", "sicher", "planer"] };
+  var ABLAEUFE = {
+    schnell:    { start: ["ideen", "pruefer", "planer"], weiter: ["planer"], tokens: 220, verlauf: 12, zeichen: 400, modelle: ["Qwen2.5-0.5B-Instruct-q4f16_1-MLC", "Qwen2.5-1.5B-Instruct-q4f16_1-MLC"] },
+    gruendlich: { start: ["ideen", "prog", "sicher", "tester", "planer"], weiter: ["prog", "sicher", "planer"], tokens: 450, verlauf: 24, zeichen: 700, modelle: ["Qwen2.5-1.5B-Instruct-q4f16_1-MLC", "Qwen2.5-0.5B-Instruct-q4f16_1-MLC"] }
+  };
+  function tempo() { return ABLAEUFE[(runde && runde.tempo) || "schnell"]; }
   var ZUSATZ = {
     weiter: { prog: "Der Chef hat geantwortet. Prüfe seine Antworten: Ist das so kostenlos machbar? Was müsste man anpassen?",
               sicher: "Prüfe die Antworten des Chefs auf Risiken. Wenn alles okay ist, sag das in einem Satz.",
+              pruefer: "Prüfe kurz die Antworten des Chefs: machbar und sicher?",
               planer: "Fasse zusammen, was jetzt feststeht. Wenn noch etwas Wichtiges offen ist, stell höchstens 2 Fragen. Sonst schreib: Bereit für das Endergebnis." }
   };
-  var engine = null, engineLaden = null, runde = KW.load("kw-team-runde", null), rundeBusy = false;
+  var engine = null, engineModell = null, engineLaden = null, runde = KW.load("kw-team-runde", null), rundeBusy = false;
 
   function gpuDa() { if (!("gpu" in navigator)) return Promise.resolve(false); return navigator.gpu.requestAdapter().then(function (a) { return !!a; }).catch(function () { return false; }); }
   function balken(p, txt) { $("rundeBar").hidden = p >= 1; $("rundeBarI").style.width = Math.round(p * 100) + "%"; if (txt) $("rundeText").textContent = txt; }
   function kiLaden() {
-    if (engine) return Promise.resolve(engine);
+    var wunsch = tempo().modelle;
+    if (engine && wunsch.indexOf(engineModell) === 0) return Promise.resolve(engine);
+    if (engine && !engineLaden) {
+      // anderes Tempo gewählt: passende KI nachladen
+      engineLaden = engine.reload(wunsch[0]).then(function () { engineModell = wunsch[0]; engineLaden = null; balken(1); return engine; })
+        .catch(function () { engineLaden = null; return engine; });
+      return engineLaden;
+    }
     if (engineLaden) return engineLaden;
     engineLaden = gpuDa().then(function (ok) {
       if (!ok) throw new Error("Dieses Gerät kann die KI-Runde nicht starten (es fehlt WebGPU). Öffne den Chat am PC mit einem aktuellen Chrome oder Edge.");
       return import(WEBLLM);
     }).then(function (webllm) {
+      var liste = wunsch;
       var versuch = function (i) {
-        return webllm.CreateMLCEngine(MODELLE[i], { initProgressCallback: function (r) { balken(r.progress || 0, "🤖 KI lädt … " + Math.round((r.progress || 0) * 100) + " %"); } })
-          .catch(function (e) { if (i + 1 < MODELLE.length) return versuch(i + 1); throw e; });
+        engineModell = liste[i];
+        return webllm.CreateMLCEngine(liste[i], { initProgressCallback: function (r) { balken(r.progress || 0, "🤖 KI lädt … " + Math.round((r.progress || 0) * 100) + " %"); } })
+          .catch(function (e) { if (i + 1 < liste.length) return versuch(i + 1); throw e; });
       };
       return versuch(0);
-    }).then(function (e) { engine = e; balken(1); return e; })
+    }).then(function (e) { engine = e; engineLaden = null; balken(1); KW.save("kw-team-ki-genutzt", true); return e; })
       .catch(function (e) { engineLaden = null; throw e; });
     return engineLaden;
   }
 
   function verlauf() {
     // Thema + alles, was seit dem Start der Runde in diesem Kanal geschrieben wurde
-    var zeilen = nachrichten.filter(function (m) { return (m.t || 0) >= runde.start - 1000; }).slice(-24).map(function (m) {
+    var tp = tempo();
+    var zeilen = nachrichten.filter(function (m) { return (m.t || 0) >= runde.start - 1000; }).slice(-tp.verlauf).map(function (m) {
       var wer = m.rolle && ROLLEN[m.rolle] ? ROLLEN[m.rolle].name.replace("🤖 ", "") : "Chef/Team (" + (mitglieder[m.uid] ? mitglieder[m.uid].name : m.name) + ")";
-      return wer + ": " + String(m.text).slice(0, 700);
+      return wer + ": " + String(m.text).slice(0, tp.zeichen);
     });
     return "Thema der Runde: " + runde.thema + "\n\nBisheriges Gespräch:\n" + (zeilen.join("\n\n") || "(noch nichts)");
   }
   function kiSchreiben(rolle, aufgabe) {
     var r = ROLLEN[rolle], ref = db.ref("team/msgs/" + runde.kanal).push(), t0 = Date.now();
     var basis = { uid: uid, name: r.name, t: TS(), runde: runde.id, rolle: rolle };
-    return ref.set(Object.assign({ text: "… denkt nach …" }, basis)).then(function () {
+    return ref.set(Object.assign({ text: "… tippt …" }, basis)).then(function () {
       return engine.chat.completions.create({
         messages: [{ role: "system", content: GRUND + " " + r.auftrag }, { role: "user", content: verlauf() + "\n\nDeine Aufgabe jetzt: " + aufgabe }],
-        stream: true, temperature: 0.6, max_tokens: rolle === "planer" && aufgabe.indexOf("Bauauftrag") >= 0 ? 900 : 450
+        stream: true, temperature: 0.6, max_tokens: rolle === "planer" && aufgabe.indexOf("Bauauftrag") >= 0 ? 800 : tempo().tokens
       });
     }).then(async function (stream) {
       var voll = "", zuletzt = 0;
@@ -690,16 +714,16 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
     try {
       await kiLaden();
       if (art === "ende") {
-        $("rundeText").textContent = "🤖 Planer schreibt das Endergebnis …";
+        $("rundeText").textContent = "🤖 Lea schreibt das Endergebnis …";
         await kiSchreiben("planer", "Schreibe jetzt den fertigen Bauauftrag für Claude, der ihn bauen soll. Nutze genau diese Gliederung:\n" +
           "## Auftrag: <kurzer Titel>\n**Ziel:** <1 Satz>\n**Muss können:**\n- <Punkt>\n**Kann später kommen:**\n- <Punkt>\n**Aussehen:** <1-2 Sätze>\n" +
           "**Regeln:** kostenlos, keine echten Namen, nichts kopieren, kindersicher\n**Fertig ist es, wenn:**\n- <prüfbarer Punkt>\n" +
-          "Übernimm alles, was der Chef entschieden hat. Keine Fragen mehr stellen.");
+          "Übernimm alles, was der Chef entschieden hat. Keine Fragen mehr stellen. Für den Bauauftrag schreibst du ausnahmsweise sachlich und genau, nicht locker.");
       } else {
-        var liste = ABLAUF[art];
+        var liste = tempo()[art];
         for (var i = 0; i < liste.length; i++) {
           if (!runde) break;
-          $("rundeText").textContent = "🤖 " + ROLLEN[liste[i]].name.replace("🤖 ", "") + " schreibt … (" + (i + 1) + "/" + liste.length + ")";
+          $("rundeText").textContent = ROLLEN[liste[i]].em + " " + ROLLEN[liste[i]].name.replace("🤖 ", "").split(" · ")[0] + " schreibt … (" + (i + 1) + "/" + liste.length + ")";
           await kiSchreiben(liste[i], (ZUSATZ[art] && ZUSATZ[art][liste[i]]) || "Antworte jetzt in deiner Rolle auf das Thema und das bisherige Gespräch.");
         }
       }
@@ -707,13 +731,32 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
       KW.toast((e && e.message) || "Die KI-Runde hat nicht geklappt.");
     }
     rundeBusy = false; rundeKnoepfe();
+    if (rundeWartet && runde) { var w = rundeWartet; rundeWartet = null; setTimeout(function () { rundeLaufen(w); }, 500); }
   }
+  // Automatisch antworten: Sobald jemand in der laufenden Runde schreibt, legt das KI-Team los.
+  var ENDE_WORT = /\b(fertig|endergebnis|passt so|so machen wir es)\b/i, rundeTimer = null, rundeWartet = null;
+  function rundeBeobachten(k) {
+    if (!runde || runde.kanal !== k) return;
+    var menschen = nachrichten.filter(function (m) { return !m.rolle && !m.runde && (m.t || 0) >= runde.start; });
+    var letzte = menschen[menschen.length - 1];
+    if (!letzte) return;
+    if (runde.zuletzt === undefined) { runde.zuletzt = letzte.id; KW.save("kw-team-runde", runde); return; } // alte Nachrichten nicht nochmal beantworten
+    if (letzte.id === runde.zuletzt) return;
+    runde.zuletzt = letzte.id; KW.save("kw-team-runde", runde);
+    var art = ENDE_WORT.test(letzte.text) ? "ende" : "weiter";
+    clearTimeout(rundeTimer);
+    rundeTimer = setTimeout(function () {
+      if (rundeBusy) { rundeWartet = art; return; }
+      rundeLaufen(art);
+    }, 1200);
+  }
+
   function rundeKnoepfe() {
     var aktiv = runde && runde.kanal === aktKanal;
     $("rundeLeiste").hidden = !aktiv;
     if (!aktiv) return;
     ["rundeWeiter", "rundeEnde"].forEach(function (b) { $(b).disabled = rundeBusy; });
-    if (!rundeBusy) $("rundeText").textContent = "🤖 KI-Runde: " + runde.thema.slice(0, 60) + (runde.thema.length > 60 ? "…" : "") + " – antworte unten, dann „Weiter“ oder „Endergebnis“.";
+    if (!rundeBusy) $("rundeText").textContent = "🤖 KI-Runde: " + runde.thema.slice(0, 60) + (runde.thema.length > 60 ? "…" : "") + " – antworte einfach unten, das KI-Team antwortet von selbst. Schreib „fertig“ für das Endergebnis.";
   }
   $("rundeBtn").onclick = function () {
     if (runde && runde.kanal === aktKanal) { KW.toast("Hier läuft schon eine KI-Runde."); return; }
@@ -722,7 +765,8 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
   $("rundeAbbruch").onclick = function () { $("rundeDlg").close(); };
   $("rundeForm").addEventListener("submit", function (e) {
     var th = $("rundeThema").value.trim(); if (!th) { e.preventDefault(); return; }
-    runde = { id: KW.id(), thema: th, start: Date.now(), kanal: aktKanal };
+    var tw = document.querySelector('#rundeForm input[name="tempo"]:checked');
+    runde = { id: KW.id(), thema: th, start: Date.now(), kanal: aktKanal, zuletzt: "", tempo: tw ? tw.value : "schnell" };
     KW.save("kw-team-runde", runde);
     db.ref("team/msgs/" + aktKanal).push({ uid: uid, name: ich.name, text: "🤖 KI-Runde gestartet: " + th, t: TS(), runde: runde.id }).then(function () {
       rundeKnoepfe(); setTimeout(function () { rundeLaufen("start"); }, 300);
@@ -738,6 +782,13 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
     (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { KW.toast("Kopiert! Jetzt bei Claude einfügen."); })
       .catch(function () { window.prompt("Kopiere diesen Text:", txt); });
   });
+
+  // Wurde die KI auf diesem Gerät schon benutzt? Dann still im Hintergrund vorladen, damit die nächste Runde sofort startet.
+  function vorladen() {
+    if (!KW.load("kw-team-ki-genutzt", false) || engine || engineLaden) return;
+    var los = function () { kiLaden().catch(function () {}); };
+    if ("requestIdleCallback" in window) requestIdleCallback(los, { timeout: 8000 }); else setTimeout(los, 4000);
+  }
 
   KW.footer("team", function () { return { hinweis: "Die Nachrichten liegen im Team-Chat, nicht auf diesem Gerät." }; }, function () {});
   start();

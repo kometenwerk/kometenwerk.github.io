@@ -1,5 +1,5 @@
 // Offline-Speicher für Kometen-Team
-const V = "kw-team-30a4ef55";
+const V = "kw-team-08b0354d";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "../shared/kw.css", "../shared/kw.js"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
