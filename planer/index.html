@@ -473,7 +473,10 @@ details.erledigt summary{cursor:pointer;color:var(--muted);margin:22px 4px 8px;f
   });
   zeigen();
   // Um Mitternacht oder wenn man die App wieder öffnet: neu sortieren
-  document.addEventListener("visibilitychange", function () { if (!document.hidden) zeigen(); });
+  // Andere Kometenwerk-Apps (z. B. Sofie im Kometen-Team) können Termine eintragen → frisch laden
+  function neuLaden() { if (dlg.open) return; var d = KW.load(KEY, null); if (d && Array.isArray(d.eintraege)) D = d; }
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) { neuLaden(); zeigen(); } });
+  window.addEventListener("storage", function (e) { if (e.key === KEY) { neuLaden(); zeigen(); } });
 })();
 </script>
 </body>

@@ -1,5 +1,5 @@
 // Offline-Speicher für Kometen-Planer
-const V = "kw-planer-0bc594d7";
+const V = "kw-planer-1683afd4";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "../shared/kw.css", "../shared/kw.js"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

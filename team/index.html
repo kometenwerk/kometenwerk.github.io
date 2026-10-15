@@ -109,6 +109,10 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
 .abtwahl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:2px 12px;margin-top:4px}
 .abtwahl label{display:flex;gap:8px;align-items:flex-start;font-size:.9rem;padding:4px 0}
 .abtwahl small{display:block;color:var(--muted);font-size:.75rem}
+.sofie{margin-top:10px;background:var(--soft);border-radius:12px;padding:10px 12px;font-size:.88rem;line-height:1.45}
+.sofie:empty{display:none}
+.sofie ul{margin:4px 0 0;padding-left:18px}
+.sofie .btn{margin-top:6px}
 .akte{border-bottom:1px solid var(--line);padding:10px 0}
 .akte:last-child{border-bottom:0}
 .akte .txt{white-space:pre-wrap;font-size:.9rem;margin:6px 0;max-height:320px;overflow:auto;overflow-wrap:anywhere}
@@ -225,10 +229,12 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
   <label class="field"><span>Projekt (für die Projektakte, freiwillig)</span><input class="inp" id="aProjekt" maxlength="40" list="projektListe" placeholder="z. B. Krawallzoo"></label>
   <datalist id="projektListe"></datalist>
   <div class="field"><span>Welche Abteilungen? <small class="muted">(Vorschlag passt sich deinem Text an)</small></span><div class="abtwahl" id="abtWahl"></div></div>
-  <div class="row" style="gap:16px;flex-wrap:wrap;align-items:flex-end">
-    <label class="field" style="margin:0"><span>🏛️ Konferenz um</span><input class="inp" type="time" id="aZeit" value="17:00" required style="width:auto"></label>
-    <span class="muted" id="aZeitHinweis" style="font-size:.85rem;padding-bottom:10px"></span>
+  <div class="row" style="gap:12px;flex-wrap:wrap;align-items:flex-end">
+    <label class="field" style="margin:0"><span>🏛️ Konferenz am</span><input class="inp" type="date" id="aDatum" required style="width:auto"></label>
+    <label class="field" style="margin:0"><span>um</span><input class="inp" type="time" id="aZeit" value="17:00" required style="width:auto"></label>
   </div>
+  <div class="sofie" id="aSofie" aria-live="polite"></div>
+  <label style="display:flex;gap:8px;align-items:flex-start;margin:8px 0 4px" id="aPlanerZeile"><input type="checkbox" id="aPlaner" checked style="margin-top:4px"><span>📅 Konferenz in meinen Kometen-Planer eintragen</span></label>
   <div class="field"><span>Tempo</span>
     <label style="display:flex;gap:8px;align-items:flex-start;margin:4px 0"><input type="radio" name="atempo" value="schnell" checked style="margin-top:4px"><span><b>⚡ Schnell</b> – pro Abteilung 1 Experte + Vorsitz, kleinere KI</span></label>
     <label style="display:flex;gap:8px;align-items:flex-start;margin:4px 0"><input type="radio" name="atempo" value="gruendlich" style="margin-top:4px"><span><b>🧠 Gründlich</b> – pro Abteilung bis zu 3 Experten, schlauere KI (dauert länger)</span></label>
@@ -250,6 +256,7 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
   <p class="muted" style="font-size:.85rem">Benachrichtigungen kommen, solange der Chat offen oder im Hintergrund ist.</p>
   <h2 class="sec">KI-Team</h2>
   <label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="eRechner" style="margin-top:4px"><span>🤖 <b>Dieses Gerät macht die KI-Arbeit</b> für das Team<br><small class="muted">Nur an einem Gerät mit WebGPU (PC mit Chrome oder Edge). Die KI arbeitet nur, solange der Chat hier offen ist.</small></span></label>
+  <label style="display:flex;gap:8px;align-items:flex-start;margin-top:10px"><input type="checkbox" id="ePlaner" style="margin-top:4px"><span>📅 <b>Sofie darf in meinen Kometen-Planer schauen</b><br><small class="muted">Nur auf diesem Gerät. Sofie nutzt deine Termine zum Planen und schreibt sie nie in den Chat. Das KI-Team erfährt nur, wie voll deine Woche ist (Anzahl Tests und Hausaufgaben).</small></span></label>
   <label class="field" style="margin-top:10px"><span>👤 Dein Chef-Profil – danach richtet sich Nova, deine KI-Vertretung</span><textarea class="inp" id="eProfil" rows="7" maxlength="2000"></textarea></label>
   <h2 class="sec">Chat-Regeln</h2>
   <ul style="margin:0;padding-left:20px;color:var(--muted);font-size:.9rem;display:flex;flex-direction:column;gap:4px">
@@ -673,6 +680,7 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
     $("austreten").hidden = !meta || meta.owner === uid;
     $("benachrichtigung").hidden = !("Notification" in window) || Notification.permission !== "default";
     $("eRechner").checked = rechneHier();
+    $("ePlaner").checked = planerErlaubt();
     $("eProfil").value = chefProfil(uid);
     seiteZu(); $("einstDlg").showModal();
   };
@@ -682,6 +690,7 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
     var p = $("eProfil").value.trim();
     if (p && p !== chefProfil(uid)) db.ref("team/msgs/chefprofil/" + uid).set({ uid: uid, name: ich.name, text: p.slice(0, 2000), t: TS() }).then(function () { KW.toast("Chef-Profil gespeichert. Nova weiß Bescheid."); }).catch(function () { KW.toast("Chef-Profil speichern ging nicht."); });
     if ($("eRechner").checked !== rechneHier()) rechnerSetzen($("eRechner").checked);
+    KW.save("kw-team-planer-ok", $("ePlaner").checked);
   });
   $("benachrichtigung").onclick = function () { Notification.requestPermission().then(function () { $("benachrichtigung").hidden = true; }); };
   $("austreten").onclick = function () {
@@ -1058,6 +1067,7 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
   function promptBauen(A, st, f) {
     var B = function (n) { return Math.round(n * (f || 1)); };
     var sys = GRUND + "\n\n" + WISSEN + "\n\n" + persona(st.kid);
+    if (["sofie", "paul", "nova", "lea"].indexOf(st.kid) >= 0) { var woche = wocheText(A); if (woche) sys += "\n\n" + woche; }
     if (st.kid === "nova") sys += "\n\nCHEF-PROFIL (das ist dem Chef wichtig):\n" + kurz(chefProfil(A.uid), B(900));
     var u = "AUFTRAG VOM CHEF: „" + A.titel + "“\n" + kurz(A.text, B(1100));
     var akte = akteText(A, B(600));
@@ -1362,11 +1372,83 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
         '<small>Vorsitz: ' + esc(KI[a.leiter].name) + (fest ? " · immer dabei" : "") + '</small></span></label>';
     }).join("");
   }
-  function zeitHinweis() { $("aZeitHinweis").textContent = "→ " + wann(naechsteZeit($("aZeit").value)); }
+  /* Sofie und der Kometen-Planer: Beide Apps liegen auf kometenwerk.github.io und teilen sich den Gerätespeicher */
+  function planerErlaubt() { return KW.load("kw-team-planer-ok", true) !== false; }
+  function planerLesen() { if (!planerErlaubt()) return null; var d = KW.load("kw-planer", null); return d && Array.isArray(d.eintraege) ? d : null; }
+  function minuten(hhmm) { var p = String(hhmm || "").split(":"); return p.length < 2 || p[0] === "" ? null : (+p[0]) * 60 + (+p[1]); }
+  function anz(n, eins, viele) { return n + " " + (n === 1 ? eins : viele); }
+  function zweistellig(n) { return String(n).padStart(2, "0"); }
+  function planerPruefen(ts) {
+    var P = planerLesen(); if (!P) return null;
+    var d = new Date(ts), tag = KW.ymd(d), danach = KW.addDays(tag, 1), m = d.getHours() * 60 + d.getMinutes(), probleme = [];
+    var offen = P.eintraege.filter(function (e) { return !e.erledigt; });
+    offen.forEach(function (e) {
+      var name = (e.fach ? e.fach + ": " : "") + e.titel;
+      if (e.typ === "termin" && e.datum === tag) {
+        var em = minuten(e.zeit);
+        if (em === null) probleme.push("📅 An dem Tag hast du einen Termin: " + name);
+        else if (Math.abs(em - m) < 120) probleme.push("📅 Um " + e.zeit + " hast du schon: " + name);
+      }
+      if (e.typ === "test" && (e.datum === tag || e.datum === danach)) probleme.push("✏️ " + (e.datum === tag ? "An dem Tag" : "Am Tag danach") + " schreibst du: " + name);
+    });
+    var ha = offen.filter(function (e) { return e.typ === "hausaufgabe" && e.datum === danach; }).length;
+    if (ha >= 3) probleme.push("📝 Bis zum Tag danach hast du " + ha + " Hausaufgaben auf.");
+    return probleme;
+  }
+  function planerVorschlag(ts) {
+    for (var i = 1; i <= 7; i++) { var d = new Date(ts); d.setDate(d.getDate() + i); var p = planerPruefen(d.getTime()); if (p && !p.length) return d.getTime(); }
+    return null;
+  }
+  function planerEintragen(aid, titel, ts) {
+    var P = KW.load("kw-planer", null); if (!P || !Array.isArray(P.eintraege)) return false;
+    var d = new Date(ts);
+    P.eintraege.push({ id: KW.id(), erledigt: false, erstellt: new Date().toISOString(), typ: "termin", fach: "", titel: "🏛️ Kometen-Konferenz: " + titel,
+      datum: KW.ymd(d), zeit: zweistellig(d.getHours()) + ":" + zweistellig(d.getMinutes()), notiz: "Kometen-Team: Die Vorsitzenden stellen vor, Sofie, Paul und Nova tragen dir das Ergebnis vor.", kwAuftrag: aid });
+    return KW.save("kw-planer", P);
+  }
+  // Das KI-Team erfährt nur, wie voll die Woche ist – nie Einzelheiten. Nur auf dem eigenen Gerät des Chefs.
+  function wocheText(A) {
+    if (A.uid !== uid) return "";
+    var P = planerLesen(); if (!P) return "";
+    var h = KW.today(), bis = KW.addDays(h, 7);
+    var bald = P.eintraege.filter(function (e) { return !e.erledigt && e.datum >= h && e.datum <= bis; });
+    var tests = bald.filter(function (e) { return e.typ === "test"; }).length;
+    var ha = P.eintraege.filter(function (e) { return !e.erledigt && e.typ === "hausaufgabe"; }).length;
+    var termine = bald.filter(function (e) { return e.typ === "termin" && !e.kwAuftrag; }).length;
+    return "SO VOLL IST DIE WOCHE DES CHEFS (nächste 7 Tage, aus seinem Planer): " + anz(tests, "Test", "Tests") + ", " + anz(ha, "offene Hausaufgabe", "offene Hausaufgaben") + ", " + anz(termine, "Termin", "Termine") + ". " +
+      (tests >= 2 || ha >= 6 ? "Die Woche ist voll mit Schule – plant lieber eine kleine Version 1 und sagt das kurz. " : "") + "Nenne nie Einzelheiten aus seinem Kalender, nur ob die Woche voll oder entspannt ist.";
+  }
+  function aUm() {
+    var d = $("aDatum").value, z = ($("aZeit").value || "17:00").split(":");
+    if (!d) return naechsteZeit($("aZeit").value);
+    var p = d.split("-");
+    return new Date(+p[0], +p[1] - 1, +p[2], +z[0] || 0, +z[1] || 0).getTime();
+  }
+  function zeitHinweis() {
+    var ts = aUm(), box = $("aSofie"), P = planerLesen();
+    $("aPlanerZeile").hidden = !P;
+    var h = "📎 <b>Sofie:</b> Konferenz " + esc(wann(ts)) + ". ";
+    if (ts < Date.now()) h += "<b>Diese Zeit ist schon vorbei</b> – dann startet die Konferenz sofort, wenn die Abteilungen fertig sind. ";
+    if (!planerErlaubt()) { box.innerHTML = h; return; }
+    if (!P) { box.innerHTML = h + "Auf diesem Gerät finde ich keinen Kometen-Planer. Öffne ihn einmal hier, dann achte ich beim Planen auf deine Termine."; return; }
+    var pr = planerPruefen(ts);
+    if (!pr.length) h += "✅ Laut deinem Planer passt das.";
+    else {
+      h += "Achtung, laut deinem Planer:<ul>" + pr.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>";
+      var v = planerVorschlag(ts);
+      if (v) h += '<button class="btn small" type="button" id="aVorschlag" data-ts="' + v + '">Besser ' + esc(wann(v)) + ' – übernehmen</button>';
+    }
+    box.innerHTML = h;
+  }
+  $("aSofie").addEventListener("click", function (e) {
+    var b = e.target.closest("#aVorschlag"); if (!b) return;
+    $("aDatum").value = KW.ymd(new Date(+b.dataset.ts)); zeitHinweis();
+  });
   function auftragDialog() {
     if (!ich) return;
     abtManuell = false;
     $("aTitel").value = ""; $("aInhalt").value = ""; $("aZeit").value = "17:00";
+    $("aDatum").value = KW.ymd(new Date(naechsteZeit("17:00"))); $("aDatum").min = KW.today(); $("aPlaner").checked = true;
     var k = kanaele[aktKanal] && kanaele[aktKanal].name;
     $("aProjekt").value = k && k !== "allgemein" && k !== "ideen" && k !== "bugs" ? (APP_NAMEN.filter(function (n) { return norm(n) === norm(k); })[0] || "") : "";
     var proj = APP_NAMEN.slice();
@@ -1380,6 +1462,7 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
   $("auftragBtn").onclick = auftragDialog;
   $("auftragAbbruch").onclick = function () { $("auftragDlg").close(); };
   $("aZeit").addEventListener("input", zeitHinweis);
+  $("aDatum").addEventListener("input", zeitHinweis);
   ["aTitel", "aInhalt", "aProjekt"].forEach(function (id) {
     $(id).addEventListener("input", function () { if (!abtManuell) abtWahlZeigen(vorschlagAbt($("aTitel").value + " " + $("aInhalt").value + " " + $("aProjekt").value)); });
   });
@@ -1390,7 +1473,8 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
     if (!titel || !text || !ich) return;
     var gewaehlt = Array.prototype.map.call(document.querySelectorAll('#abtWahl input:checked'), function (x) { return x.value; });
     var tw = document.querySelector('#auftragForm input[name="atempo"]:checked');
-    var A = { uid: uid, name: ich.name, text: text, t: TS(), titel: titel, projekt: $("aProjekt").value.trim().slice(0, 40), abt: abtListe(gewaehlt.join(",")).join(","), tempo: tw ? tw.value : "schnell", um: naechsteZeit($("aZeit").value), aktiv: true };
+    var A = { uid: uid, name: ich.name, text: text, t: TS(), titel: titel, projekt: $("aProjekt").value.trim().slice(0, 40), abt: abtListe(gewaehlt.join(",")).join(","), tempo: tw ? tw.value : "schnell", um: aUm(), aktiv: true };
+    var inPlaner = $("aPlaner").checked && !$("aPlanerZeile").hidden;
     var ref = db.ref("team/msgs/auftraege").push(), aid = ref.key;
     var knopf = $("auftragForm").querySelector('button[type="submit"]'); knopf.disabled = true;
     ref.set(A).then(function () {
@@ -1408,7 +1492,8 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
       offenA = aid; KW.save("kw-team-offen", aid);
       oeffneNach = rk(aid, "konferenz");
       if (kanalInfo(oeffneNach)) { kanalOeffnen(oeffneNach); oeffneNach = null; }
-      KW.toast("📝 Auftrag ausgehändigt!");
+      if (inPlaner && planerEintragen(aid, titel, A.um)) KW.toast("📝 Auftrag ausgehändigt! Sofie hat die Konferenz in deinen Planer eingetragen.");
+      else KW.toast("📝 Auftrag ausgehändigt!");
       if (!rechneHier() && !anderRechner()) gpuDa().then(function (ok) {
         if (ok) rechnerSetzen(true);
         else KW.toast("Dieses Gerät kann die KI nicht ausführen. Öffne den Team-Chat am PC (Chrome oder Edge) – dort arbeitet das Team weiter.");
