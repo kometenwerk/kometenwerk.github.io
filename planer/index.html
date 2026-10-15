@@ -113,6 +113,19 @@ details.erledigt summary{cursor:pointer;color:var(--muted);margin:22px 4px 8px;f
   </form>
 </dialog>
 
+<dialog class="sheet" id="kundeDlg">
+  <form class="sheet-in" method="dialog" id="kundeForm">
+    <h2>📥 Kundenanfrage übernehmen</h2>
+    <p class="muted" style="margin-top:-6px;font-size:.9rem">Kopier die E-Mail von der Kunden-Seite und füg sie hier ein. Die Zeile mit <b>KW-TERMIN</b> reicht auch. Alles bleibt auf diesem Gerät.</p>
+    <label class="field"><span>E-Mail-Text</span><textarea class="inp" id="kundeText" rows="6" placeholder="… KW-TERMIN: 2026-10-20 16:00 | Neue Webseite | SV Musterstadt | Videoanruf"></textarea></label>
+    <div id="kundeVorschau" class="hinweis" style="margin:0" aria-live="polite"></div>
+    <div class="sheet-foot">
+      <button type="button" class="btn" id="kundeAbbruch">Abbrechen</button>
+      <button type="submit" class="btn primary" id="kundeOk" disabled>Eintragen</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog class="sheet" id="zelle">
   <form class="sheet-in" method="dialog" id="zelleForm">
     <h2 id="zelleTitel">Stunde</h2>
@@ -230,6 +243,7 @@ details.erledigt summary{cursor:pointer;color:var(--muted);margin:22px 4px 8px;f
     if (!irgendwas) {
       h += '<div class="empty"><b>Alles erledigt! 🎉</b>Tippe unten rechts auf +, um eine Hausaufgabe, einen Test oder einen Termin einzutragen.</div>';
     }
+    h += kundenHtml();
     var fertig = D.eintraege.filter(function (e) { return e.erledigt; }).sort(function (a, b) { return (b.erledigtAm || "").localeCompare(a.erledigtAm || ""); });
     if (fertig.length) {
       h += '<details class="erledigt"><summary>Erledigt (' + fertig.length + ')</summary><div class="list">' + fertig.slice(0, 30).map(itemHtml).join("") +
@@ -467,6 +481,57 @@ details.erledigt summary{cursor:pointer;color:var(--muted);margin:22px 4px 8px;f
     var ins = document.querySelectorAll("#fachliste .inp"); var last = ins[ins.length - 1]; if (last) { last.focus(); last.select(); }
   };
   fDlg.addEventListener("close", zeigen);
+
+  /* Kunden: Anfragen von der Kunden-Seite übernehmen (bleiben nur auf diesem Gerät) */
+  var KUNDEN_KEY = "kw-kunden";
+  function kundenLaden() { var k = KW.load(KUNDEN_KEY, []); return Array.isArray(k) ? k : []; }
+  function kundeLesen(text) {
+    var m = String(text || "").match(/KW-TERMIN:\s*(-|(\d{4}-\d{2}-\d{2})\s+(\d{1,2}:\d{2}))\s*\|\s*([^|\n]*?)\s*\|\s*([^|\n]*?)\s*(?:\|\s*([^|\n]*?))?\s*$/m);
+    if (!m) return null;
+    return { datum: m[2] || "", zeit: m[3] ? m[3].padStart(5, "0") : "", anliegen: (m[4] || "Anfrage").slice(0, 60), name: (m[5] && m[5] !== "–" ? m[5] : "").slice(0, 80), art: (m[6] || "").slice(0, 40) };
+  }
+  function kundenHtml() {
+    var k = kundenLaden(), h = '<h2 class="sec">👤 Kunden</h2>';
+    if (k.length) {
+      var zaehl = {};
+      k.forEach(function (x) { zaehl[x.anliegen] = (zaehl[x.anliegen] || 0) + 1; });
+      var heute = KW.today();
+      var naechste = D.eintraege.filter(function (e) { return e.kunde && !e.erledigt && e.datum >= heute; }).sort(function (a, b) { return (a.datum + a.zeit).localeCompare(b.datum + b.zeit); })[0];
+      h += '<div class="hinweis"><span class="i">📊</span><div><b>' + k.length + (k.length === 1 ? " Anfrage" : " Anfragen") + ' bisher.</b> Die Kunden wollen: ' +
+        Object.keys(zaehl).sort(function (a, b) { return zaehl[b] - zaehl[a]; }).map(function (a) { return zaehl[a] + "× " + esc(a); }).join(", ") + '.' +
+        (naechste ? '<br>Nächster Kundentermin: <b>' + esc(wann(naechste.datum)) + (naechste.zeit ? " um " + esc(naechste.zeit) : "") + '</b> – ' + esc(naechste.titel.replace(/^👤 Kunde: /, "")) : "") + '</div></div>';
+    }
+    return h + '<p style="text-align:center;margin:8px 0 0"><button class="btn small" type="button" id="kundeBtn">📥 Kundenanfrage aus E-Mail übernehmen</button></p>';
+  }
+  var kundeDaten = null;
+  function kundeVorschau() {
+    kundeDaten = kundeLesen(document.getElementById("kundeText").value);
+    var v = document.getElementById("kundeVorschau"), ok = document.getElementById("kundeOk");
+    if (!document.getElementById("kundeText").value.trim()) { v.textContent = ""; ok.disabled = true; return; }
+    if (!kundeDaten) { v.innerHTML = "🤔 Ich finde keine Zeile mit <b>KW-TERMIN</b>. Kopier die ganze E-Mail von der Kunden-Seite."; ok.disabled = true; return; }
+    var doppelt = kundenLaden().some(function (x) { return x.datum === kundeDaten.datum && x.zeit === kundeDaten.zeit && x.name === kundeDaten.name && x.anliegen === kundeDaten.anliegen; });
+    v.innerHTML = (doppelt ? "⚠️ Diese Anfrage hast du schon übernommen.<br>" : "") + "👤 <b>" + esc(kundeDaten.anliegen) + "</b>" + (kundeDaten.name ? " von " + esc(kundeDaten.name) : "") +
+      (kundeDaten.datum ? "<br>📅 " + esc(wann(kundeDaten.datum)) + ", " + esc(kundeDaten.zeit) + " Uhr" + (kundeDaten.art ? " · " + esc(kundeDaten.art) : "") : "<br>✉️ Ohne festen Termin – kommt in die Kunden-Übersicht.");
+    ok.disabled = doppelt;
+  }
+  document.addEventListener("click", function (e) {
+    if (e.target && e.target.id === "kundeBtn") { document.getElementById("kundeText").value = ""; kundeVorschau(); document.getElementById("kundeDlg").showModal(); }
+  });
+  document.getElementById("kundeText").addEventListener("input", kundeVorschau);
+  document.getElementById("kundeAbbruch").onclick = function () { document.getElementById("kundeDlg").close(); };
+  document.getElementById("kundeForm").addEventListener("submit", function (ev) {
+    if (!kundeDaten) { ev.preventDefault(); return; }
+    var k = kundenLaden(), x = kundeDaten;
+    k.push({ id: KW.id(), datum: x.datum, zeit: x.zeit, anliegen: x.anliegen, name: x.name, art: x.art, erstellt: new Date().toISOString() });
+    KW.save(KUNDEN_KEY, k.slice(-300));
+    if (x.datum) {
+      D.eintraege.push({ id: KW.id(), erledigt: false, erstellt: new Date().toISOString(), typ: "termin", fach: "", titel: "👤 Kunde: " + x.anliegen + (x.name ? " (" + x.name + ")" : ""),
+        datum: x.datum, zeit: x.zeit, notiz: "Kundenanfrage" + (x.art ? " · " + x.art : "") + " · Termin per E-Mail bestätigen!", kunde: true });
+      speichern();
+    }
+    zeigen();
+    KW.toast(x.datum ? "👤 Kundentermin eingetragen. Vergiss nicht, ihn per E-Mail zu bestätigen!" : "👤 Anfrage in der Kunden-Übersicht gespeichert.");
+  });
 
   KW.footer("planer", function () { return D; }, function (d) {
     if (d && Array.isArray(d.eintraege)) { D = d; speichern(); zeigen(); }
