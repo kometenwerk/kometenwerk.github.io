@@ -20,6 +20,7 @@
 body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;padding-bottom:0}
 .kw-foot{display:none}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#101826}
+#auftragBtn{white-space:nowrap}
 .kanal.akt{background:rgba(255,138,60,.16)}
 .m .txt pre{border:1px solid var(--line)}
 .m.ki .av{background:var(--soft)!important;font-size:1.1rem}
@@ -92,6 +93,25 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
 .mitglied .nm small{display:block;color:var(--muted);font-size:.75rem}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--line);margin-right:4px}
 .dot.an{background:var(--good)}
+/* Aufträge, Abteilungen, Konferenz */
+.kanaele h3.mk{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.kanaele h3 .neuA{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:4px 9px;font-size:.75rem;letter-spacing:0;text-transform:none;cursor:pointer;font-weight:600}
+.kanal.auf{color:var(--ink)}
+.kanal.auf .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.kanal.auf.offen{font-weight:600}
+.kanal.sub{padding:6px 10px 6px 28px;font-size:.88rem}
+.kanal .st{margin-left:auto;font-size:.72rem;color:var(--muted);font-weight:500;white-space:nowrap}
+.leerA{font-size:.8rem;color:var(--muted);margin:2px 10px 8px}
+.m.zf .txt{border:1px solid var(--app)}
+.m.ende .txt{border:2px solid var(--accent)}
+.m.warn .txt{background:rgba(245,158,11,.18)}
+.m .kib{display:inline-block;font-size:.62rem;font-weight:700;letter-spacing:.06em;border:1px solid currentColor;border-radius:5px;padding:0 4px;margin-left:6px;vertical-align:1px;opacity:.8}
+.abtwahl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:2px 12px;margin-top:4px}
+.abtwahl label{display:flex;gap:8px;align-items:flex-start;font-size:.9rem;padding:4px 0}
+.abtwahl small{display:block;color:var(--muted);font-size:.75rem}
+.akte{border-bottom:1px solid var(--line);padding:10px 0}
+.akte:last-child{border-bottom:0}
+.akte .txt{white-space:pre-wrap;font-size:.9rem;margin:6px 0;max-height:320px;overflow:auto;overflow-wrap:anywhere}
 .qr{display:flex;justify-content:center;margin:10px 0}
 .qr svg,.qr img{width:180px;height:180px;background:#fff;padding:8px;border-radius:12px}
 @media (max-width:760px){
@@ -157,16 +177,14 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
     <div class="hkopf">
       <button class="kwahl" type="button" id="kwahl"># allgemein ▾</button>
       <h2 id="kanalTitel"># allgemein</h2>
-      <button class="btn small" type="button" id="rundeBtn" title="KI-Runde: Ideen sammeln und einen Bauauftrag ausarbeiten">🤖 KI-Runde</button>
+      <button class="btn small primary" type="button" id="auftragBtn" title="Neuer Auftrag an das KI-Team">📝 Auftrag</button>
       <button class="online" type="button" id="onlineBtn">1 online</button>
     </div>
     <div class="liste" id="liste" aria-live="polite"></div>
     <div class="eingabe">
-      <div class="runde" id="rundeLeiste" hidden>
-        <b id="rundeText">🤖 KI-Runde</b>
-        <button class="btn small" type="button" id="rundeWeiter">💬 Weiter diskutieren</button>
-        <button class="btn small primary" type="button" id="rundeEnde">✅ Endergebnis</button>
-        <button class="btn small" type="button" id="rundeStopp" aria-label="KI-Runde beenden">✕</button>
+      <div class="runde" id="aLeiste" hidden>
+        <b id="aStatus">📝 Auftrag</b>
+        <span id="aKnoepfe" style="display:flex;gap:6px;flex-wrap:wrap"></span>
         <div class="bar" id="rundeBar" hidden><i id="rundeBarI"></i></div>
       </div>
       <div class="edit" id="editLeiste" hidden><span>✏️ Nachricht bearbeiten</span><button type="button" id="editAbbruch">Abbrechen</button></div>
@@ -199,16 +217,30 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
   <div class="sheet-foot" style="margin-top:14px"><button class="btn primary">Schließen</button></div>
 </form></dialog>
 
-<dialog class="sheet" id="rundeDlg"><form class="sheet-in" method="dialog" id="rundeForm">
-  <h2>🤖 KI-Runde starten</h2>
-  <p class="muted" style="margin-top:-6px">Das KI-Team sammelt Ideen, prüft sie gegenseitig und erarbeitet mit dir einen fertigen Bauauftrag. Du antwortest einfach im Chat, das KI-Team antwortet automatisch. Wenn alles passt, schreib „fertig“. Den Auftrag kopierst du dann und schickst ihn an Claude.</p>
-  <label class="field"><span>Worum geht es?</span><textarea class="inp" id="rundeThema" rows="3" maxlength="600" required placeholder="z. B. Ein neues Tier für Krawallzoo, das Spieler überrascht"></textarea></label>
-  <div class="field"><span>Tempo</span>
-    <label style="display:flex;gap:8px;align-items:flex-start;margin:4px 0"><input type="radio" name="tempo" value="schnell" checked style="margin-top:4px"><span><b>⚡ Schnell</b> – 3 KIs (Ideen, Prüfer, Planer), kurze Antworten, kleinere KI</span></label>
-    <label style="display:flex;gap:8px;align-items:flex-start;margin:4px 0"><input type="radio" name="tempo" value="gruendlich" style="margin-top:4px"><span><b>🧠 Gründlich</b> – alle 5 KIs, längere Antworten, schlauere KI (langsamer)</span></label>
+<dialog class="sheet" id="auftragDlg"><form class="sheet-in" method="dialog" id="auftragForm">
+  <h2>📝 Neuer Auftrag</h2>
+  <p class="muted" style="margin-top:-6px">Die Abteilungen bekommen deinen Auftrag und besprechen, wie sie es machen würden. Du kannst jederzeit in jeden Abteilungs-Chat reinschreiben. Zur Konferenz-Zeit stellen die Vorsitzenden alles vor, und Sofie, Paul und Nova tragen dir das fertige Ergebnis vor.</p>
+  <label class="field"><span>Kurzer Titel</span><input class="inp" id="aTitel" maxlength="60" required placeholder="z. B. Neues Tier für Krawallzoo"></label>
+  <label class="field"><span>Der Auftrag</span><textarea class="inp" id="aInhalt" rows="5" maxlength="3000" required placeholder="Was soll entstehen? Für wen? Was ist dir besonders wichtig?"></textarea></label>
+  <label class="field"><span>Projekt (für die Projektakte, freiwillig)</span><input class="inp" id="aProjekt" maxlength="40" list="projektListe" placeholder="z. B. Krawallzoo"></label>
+  <datalist id="projektListe"></datalist>
+  <div class="field"><span>Welche Abteilungen? <small class="muted">(Vorschlag passt sich deinem Text an)</small></span><div class="abtwahl" id="abtWahl"></div></div>
+  <div class="row" style="gap:16px;flex-wrap:wrap;align-items:flex-end">
+    <label class="field" style="margin:0"><span>🏛️ Konferenz um</span><input class="inp" type="time" id="aZeit" value="17:00" required style="width:auto"></label>
+    <span class="muted" id="aZeitHinweis" style="font-size:.85rem;padding-bottom:10px"></span>
   </div>
-  <p class="muted" style="font-size:.82rem">Die KI läuft auf diesem Gerät (am besten PC mit Chrome oder Edge). Beim ersten Mal lädt sie einmalig rund 1 GB – am besten im WLAN. Sie ist klein und kann sich irren – du entscheidest.</p>
-  <div class="sheet-foot"><button type="button" class="btn" id="rundeAbbruch">Abbrechen</button><button class="btn primary" type="submit">Runde starten</button></div>
+  <div class="field"><span>Tempo</span>
+    <label style="display:flex;gap:8px;align-items:flex-start;margin:4px 0"><input type="radio" name="atempo" value="schnell" checked style="margin-top:4px"><span><b>⚡ Schnell</b> – pro Abteilung 1 Experte + Vorsitz, kleinere KI</span></label>
+    <label style="display:flex;gap:8px;align-items:flex-start;margin:4px 0"><input type="radio" name="atempo" value="gruendlich" style="margin-top:4px"><span><b>🧠 Gründlich</b> – pro Abteilung bis zu 3 Experten, schlauere KI (dauert länger)</span></label>
+  </div>
+  <p class="muted" style="font-size:.82rem">Die KI läuft auf einem Gerät mit WebGPU (am besten PC mit Chrome oder Edge) und nur, solange der Team-Chat dort offen ist. Beim ersten Mal lädt sie einmalig rund 1 GB – am besten im WLAN. Nova kennt dein Chef-Profil (⚙️ Einstellungen). Die KI kann sich irren – du entscheidest.</p>
+  <div class="sheet-foot"><button type="button" class="btn" id="auftragAbbruch">Abbrechen</button><button class="btn primary" type="submit">Aushändigen</button></div>
+</form></dialog>
+
+<dialog class="sheet" id="akteDlg"><form class="sheet-in" method="dialog">
+  <h2 id="akteTitel">📁 Projektakte</h2>
+  <div id="akteInhalt"></div>
+  <div class="sheet-foot" style="margin-top:14px"><button class="btn primary">Schließen</button></div>
 </form></dialog>
 
 <dialog class="sheet" id="einstDlg"><form class="sheet-in" method="dialog" id="einstForm">
@@ -216,6 +248,9 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
   <label class="field"><span>Dein Name im Chat</span><input class="inp" id="eName" maxlength="30"></label>
   <p><button class="btn small" type="button" id="benachrichtigung">🔔 Benachrichtigungen erlauben</button></p>
   <p class="muted" style="font-size:.85rem">Benachrichtigungen kommen, solange der Chat offen oder im Hintergrund ist.</p>
+  <h2 class="sec">KI-Team</h2>
+  <label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="eRechner" style="margin-top:4px"><span>🤖 <b>Dieses Gerät macht die KI-Arbeit</b> für das Team<br><small class="muted">Nur an einem Gerät mit WebGPU (PC mit Chrome oder Edge). Die KI arbeitet nur, solange der Chat hier offen ist.</small></span></label>
+  <label class="field" style="margin-top:10px"><span>👤 Dein Chef-Profil – danach richtet sich Nova, deine KI-Vertretung</span><textarea class="inp" id="eProfil" rows="7" maxlength="2000"></textarea></label>
   <h2 class="sec">Chat-Regeln</h2>
   <ul style="margin:0;padding-left:20px;color:var(--muted);font-size:.9rem;display:flex;flex-direction:column;gap:4px">
     <li>Freundlich bleiben – auch wenn ein Bug nervt.</li>
@@ -333,11 +368,12 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
     hoeren(db.ref("team/presence"), "value", function (s) { praesenz = s.val() || {}; onlineAnzeigen(); if ($("teamDlg").open) teamFenster(); });
     hoeren(db.ref("team/channels"), "value", function (s) {
       kanaele = s.val() || {};
-      if (!kanaele[aktKanal]) aktKanal = Object.keys(kanaele)[0] || "allgemein";
+      if (!kanalInfo(aktKanal) && !(raumTeile(aktKanal) && !auftraegeGeladen)) aktKanal = kanaele.allgemein ? "allgemein" : (Object.keys(kanaele)[0] || "allgemein");
       kanalHoeren(); kanalListe(); kanalOeffnen(aktKanal, true);
       if ($("teamDlg").open) teamFenster();
     });
     if (istAdmin()) anfragenHoeren();
+    kiTeamStarten();
   }
   function ichAktualisiert() { if (istAdmin()) anfragenHoeren(); nachrichtenZeigen(); if ($("teamDlg").open) teamFenster(); }
   var anfragenAktiv = false;
@@ -355,7 +391,7 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
   function chatStoppen() {
     refs.forEach(function (r) { r[0].off(r[1], r[2]); }); refs = [];
     if (msgRef) { msgRef.off("value", msgCb); msgRef = null; }
-    anfragenAktiv = false; kanalHoerer = {};
+    anfragenAktiv = false; kanalHoerer = {}; raumHoerer = {}; raeume = {}; auftraegeGeladen = false;
   }
 
   // Für jeden Kanal nur die neueste Nachricht beobachten (für "ungelesen")
@@ -389,19 +425,44 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
     $("kanaele").innerHTML = '<h3>Kanäle</h3>' + sortierteKanaele().map(function (k) {
       var neu = k !== aktKanal && ungelesen(k);
       return '<button class="kanal' + (k === aktKanal ? " akt" : "") + (neu ? " neu" : "") + '" type="button" data-k="' + esc(k) + '"># ' + esc(kanaele[k].name) + (neu ? '<span class="n">neu</span>' : "") + '</button>';
-    }).join("");
+    }).join("") + auftragsListe();
   }
-  $("kanaele").addEventListener("click", function (e) { var b = e.target.closest("[data-k]"); if (b) { kanalOeffnen(b.dataset.k); seiteZu(); } });
+  var listeBald = false;
+  function kanalListeBald() { if (listeBald) return; listeBald = true; requestAnimationFrame(function () { listeBald = false; kanalListe(); }); }
+  $("kanaele").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-k],[data-aufz],[data-neua],[data-erl]"); if (!b) return;
+    if (b.dataset.k) { kanalOeffnen(b.dataset.k); seiteZu(); }
+    else if (b.dataset.aufz) {
+      if (offenA === b.dataset.aufz) { offenA = null; KW.save("kw-team-offen", null); kanalListe(); }
+      else { offenA = b.dataset.aufz; KW.save("kw-team-offen", offenA); kanalOeffnen(rk(offenA, "konferenz")); kanalListe(); seiteZu(); }
+    }
+    else if (b.dataset.neua) { seiteZu(); auftragDialog(); }
+    else if (b.dataset.erl) { erlOffen = !erlOffen; kanalListe(); }
+  });
+
+  // Kanal = normaler Kanal (#allgemein) oder ein Raum eines Auftrags ("a-<auftrag>-<raum>")
+  function raumTeile(k) { if (!k || k.indexOf("a-") !== 0) return null; var i = k.lastIndexOf("-"); if (i < 3) return null; return { aid: k.slice(2, i), raum: k.slice(i + 1) }; }
+  function rk(aid, raum) { return "a-" + aid + "-" + raum; }
+  function kanalInfo(k) {
+    if (kanaele[k]) return { titel: "# " + kanaele[k].name, kurz: "# " + kanaele[k].name, platz: "Nachricht an #" + kanaele[k].name };
+    var t = raumTeile(k), A = t && auftraege[t.aid];
+    if (!A) return null;
+    if (t.raum === "konferenz") return { titel: "🏛️ Konferenz · " + A.titel, kurz: "🏛️ " + A.titel, platz: "Schreib in die Konferenz …", A: A, raum: t.raum };
+    var ab = ABT_MAP[t.raum]; if (!ab) return null;
+    return { titel: ab.em + " " + ab.name + " · " + A.titel, kurz: ab.em + " " + ab.name, platz: "Schreib " + ab.name + ", was dir fehlt …", A: A, raum: t.raum };
+  }
 
   function kanalOeffnen(k, stumm) {
-    if (!kanaele[k]) return;
+    var info = kanalInfo(k);
+    if (!info) return;
     var wechsel = k !== aktKanal || !msgRef;
     aktKanal = k; KW.save("kw-team-kanal", k);
-    $("kanalTitel").textContent = "# " + kanaele[k].name;
-    $("kwahl").textContent = "# " + kanaele[k].name + " ▾";
-    $("text").placeholder = "Nachricht an #" + kanaele[k].name;
+    if (info.A) offenA = info.A.id;
+    $("kanalTitel").textContent = info.titel;
+    $("kwahl").textContent = info.kurz + " ▾";
+    $("text").placeholder = info.platz;
     kanalListe();
-    if (typeof rundeKnoepfe === "function") rundeKnoepfe();
+    auftragLeiste();
     if (!wechsel) return;
     if (msgRef) msgRef.off("value", msgCb);
     nachrichten = []; $("liste").innerHTML = '<p class="leer">Lädt …</p>';
@@ -411,7 +472,6 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
       nachrichten = Object.keys(v).map(function (id) { var m = v[id]; m.id = id; return m; }).sort(function (a, b) { return (a.t || 0) - (b.t || 0) || (a.id < b.id ? -1 : 1); });
       nachrichtenZeigen();
       if (!document.hidden) gelesenSetzen(k);
-      if (typeof rundeBeobachten === "function") rundeBeobachten(k);
     };
     msgRef.on("value", msgCb);
     if (!stumm) $("text").focus();
@@ -441,7 +501,10 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
   function uhr(ts) { return new Date(ts).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }); }
   function nachrichtenZeigen() {
     var l = $("liste"), unten = l.scrollHeight - l.scrollTop - l.clientHeight < 80;
-    if (!nachrichten.length) { l.innerHTML = '<p class="leer">Noch keine Nachrichten in #' + esc(kanaele[aktKanal] ? kanaele[aktKanal].name : aktKanal) + '. Schreib die erste! 👋</p>'; return; }
+    if (!nachrichten.length) {
+      var inf = kanalInfo(aktKanal);
+      l.innerHTML = '<p class="leer">' + (inf && inf.A ? "Hier ist noch nichts. Die KI legt los, sobald ein Gerät für das Team rechnet." : "Noch keine Nachrichten in " + esc(inf ? inf.kurz : aktKanal) + ". Schreib die erste! 👋") + '</p>'; return;
+    }
     var h = "", letzterTag = "", vorher = null, meinName = ich ? ich.name : "";
     nachrichten.forEach(function (m) {
       var ts = m.t || Date.now(), tag = tagText(ts);
@@ -449,13 +512,16 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
       var folge = vorher && vorher.uid === m.uid && ts - (vorher.t || 0) < 5 * 60000;
       var name = mitglieder[m.uid] ? mitglieder[m.uid].name : m.name;
       var darf = m.uid === uid || istAdmin();
-      var ki = m.rolle && ROLLEN[m.rolle];
-      if (ki) { name = m.name; folge = vorher && vorher.rolle === m.rolle && ts - (vorher.t || 0) < 5 * 60000; }
+      var ki = m.rolle ? kiInfo(m.rolle) : null;
+      if (ki) { name = ki.name || m.name; folge = vorher && vorher.rolle === m.rolle && ts - (vorher.t || 0) < 5 * 60000; }
       else if (vorher && vorher.rolle) folge = false;
-      h += '<div class="m' + (folge ? " folge" : "") + (ki ? " ki" : "") + '" data-id="' + esc(m.id) + '">' +
+      var text = m.text;
+      if (m.laeuft && Date.now() - ts > 4 * 60000 && !(kiJetzt && kiJetzt.ref === m.id)) text = "(abgebrochen – kommt gleich nochmal)";
+      var warn = m.rolle === "sam" && /⛔|⚠️/.test(String(m.text).slice(0, 80));
+      h += '<div class="m' + (folge ? " folge" : "") + (ki ? " ki" : "") + (m.zf && !m.laeuft ? " zf" : "") + (m.ende ? " ende" : "") + (warn ? " warn" : "") + '" data-id="' + esc(m.id) + '">' +
         '<div class="av" style="background:' + farbe(m.uid) + '" aria-hidden="true">' + (ki ? ki.em : esc((name || "?").charAt(0).toUpperCase())) + '</div><div class="inh">' +
-        (folge ? "" : '<div class="wer">' + esc(name) + (ki ? '<small>KI · gestartet von ' + esc(mitglieder[m.uid] ? mitglieder[m.uid].name : "?") + " · " + uhr(ts) + '</small>' : '<small>' + uhr(ts) + '</small>') + '</div>') +
-        '<div class="txt">' + format(m.text, meinName) + (m.edited && !ki ? ' <span class="bearb">(bearbeitet)</span>' : "") + '</div>' +
+        (folge ? "" : '<div class="wer">' + esc(name) + (ki ? '<span class="kib" title="Das ist eine KI, kein Mensch">KI</span><small>' + esc(ki.titel) + " · " + uhr(ts) + '</small>' : '<small>' + uhr(ts) + '</small>') + '</div>') +
+        '<div class="txt">' + format(text, meinName) + (m.edited && !ki ? ' <span class="bearb">(bearbeitet)</span>' : "") + '</div>' +
         (m.ende ? '<button class="btn small primary kopie" type="button" data-kopie="' + esc(m.id) + '">📋 Für Claude kopieren</button>' : "") + '</div>' +
         (darf ? '<button class="mehr" type="button" data-mehr="' + esc(m.id) + '" aria-label="Aktionen">⋯</button>' : "") + '</div>';
       vorher = m;
@@ -592,6 +658,7 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
     } else if (t.id === "kanalPlus") {
       var name = $("neuKanal").value.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9äöüß-]/g, "").slice(0, 24);
       if (!name) return;
+      if (/^a-/.test(name) || ["auftraege", "akten", "chefprofil", "kirechner"].indexOf(name) >= 0) { KW.toast("Dieser Name ist für das KI-Team reserviert."); return; }
       var key = name.replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss");
       if (kanaele[key]) { KW.toast("Den Kanal gibt es schon."); return; }
       db.ref("team/channels/" + key).set({ name: name, pos: Object.keys(kanaele).length }).then(function () { $("neuKanal").value = ""; KW.toast("#" + name + " ist da."); }).catch(function () { KW.toast("Das ging nicht."); });
@@ -605,11 +672,16 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
     $("eName").value = ich ? ich.name : "";
     $("austreten").hidden = !meta || meta.owner === uid;
     $("benachrichtigung").hidden = !("Notification" in window) || Notification.permission !== "default";
+    $("eRechner").checked = rechneHier();
+    $("eProfil").value = chefProfil(uid);
     seiteZu(); $("einstDlg").showModal();
   };
   $("einstForm").addEventListener("submit", function () {
     var n = $("eName").value.trim();
     if (n && ich && n !== ich.name) db.ref("team/members/" + uid).set({ name: n, rolle: ich.rolle }).catch(function () { KW.toast("Name ändern ging nicht."); });
+    var p = $("eProfil").value.trim();
+    if (p && p !== chefProfil(uid)) db.ref("team/msgs/chefprofil/" + uid).set({ uid: uid, name: ich.name, text: p.slice(0, 2000), t: TS() }).then(function () { KW.toast("Chef-Profil gespeichert. Nova weiß Bescheid."); }).catch(function () { KW.toast("Chef-Profil speichern ging nicht."); });
+    if ($("eRechner").checked !== rechneHier()) rechnerSetzen($("eRechner").checked);
   });
   $("benachrichtigung").onclick = function () { Notification.requestPermission().then(function () { $("benachrichtigung").hidden = true; }); };
   $("austreten").onclick = function () {
@@ -623,172 +695,727 @@ body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidd
   }
   document.addEventListener("visibilitychange", function () { if (!document.hidden) { ungelesenTitel = 0; titel(); gelesenSetzen(aktKanal); kanalListe(); } });
 
-  /* ---------- KI-Runde: Ideen sammeln, prüfen, Bauauftrag erarbeiten ---------- */
+  /* ---------- KI-Team: Auftrag → Abteilungen → Konferenz → Ergebnis ---------- */
   var WEBLLM = "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.84/lib/index.js";
-  var MODELLE = ["Qwen2.5-1.5B-Instruct-q4f16_1-MLC", "Qwen2.5-0.5B-Instruct-q4f16_1-MLC"];
-  var GRUND = "Du bist Teil des KI-Teams von Kometenwerk, einem kleinen Studio von Schülern, das Spiele, Apps und Technik baut " +
-    "(zum Beispiel das Tier-Kampfspiel Krawallzoo, das Nachrichten-Heft, den Kometen-Planer). Der Chef entscheidet. " +
-    "Regeln von Kometenwerk: nichts darf Geld kosten (GitHub Pages und Firebase im kostenlosen Spark-Plan, etwa 100 Nutzer gleichzeitig), " +
-    "keine echten Namen oder E-Mails öffentlich, nichts von anderen Spielen oder Firmen kopieren, kindersicher (keine Chats mit Fremden, keine Datensammelei, keine Werbung). " +
-    "Ihr schreibt in einem Gruppenchat wie ein Team von Freunden: locker, auf Deutsch, in Du-Form, kurz (2 bis 5 Sätze), ohne Überschriften, ab und zu ein Emoji. " +
-    "Reagiere auf das, was die anderen vorher geschrieben haben, und sprich sie mit Namen an (zum Beispiel: Gute Idee, Mia, aber ...). Widersprich ruhig, wenn du etwas anders siehst. " +
-    "Erfinde keine Fakten. Wenn du unsicher bist, sag es. Du bist eine KI und tust nicht so, als wärst du ein Mensch.";
-  var ROLLEN = {
-    ideen:   { name: "🤖 Mia · Ideen", em: "💡", auftrag: "Du bist Mia, die Ideen-Sammlerin im Team (Game-Design und Design). Du bist begeistert, kreativ und denkst gern mal verrückt. Schlage genau 3 kurze, konkrete Ideen zum Thema vor, nummeriert 1., 2., 3., jede in 1 bis 2 Sätzen." },
-    prog:    { name: "🤖 Tom · Programmierer", em: "💻", auftrag: "Du bist Tom, der Programmierer im Team. Du bist entspannt und praktisch und sagst ehrlich, was geht. Sag zu jeder Idee kurz, ob sie kostenlos im Browser machbar ist, wie viel Arbeit sie ungefähr ist (klein, mittel oder groß) und was technisch schwierig wird." },
-    sicher:  { name: "🤖 Sam · Sicherheit", em: "🛡️", auftrag: "Du bist Sam, zuständig für Sicherheit. Du bist vorsichtig, aber kein Spielverderber. Nenne kurz die Risiken: Daten von Kindern, Kontakt mit Fremden, Kosten, geheime Schlüssel, Urheberrecht. Wenn eine Idee problematisch ist, sag welche und warum. Höchstens 4 Stichpunkte." },
-    tester:  { name: "🤖 Kai · Tester", em: "🐞", auftrag: "Du bist Kai, der Tester. Du bist ein bisschen frech und findest jeden Haken. Nenne die 3 bis 5 wichtigsten Dinge, die später getestet werden müssen, und was Nutzer nerven könnte." },
-    pruefer: { name: "🤖 Ben · Prüfer", em: "🔍", auftrag: "Du bist Ben, der Prüfer (Programmierung, Sicherheit und Testen in einem). Du bist ruhig und ehrlich. Sag zu den Ideen ganz kurz: kostenlos machbar? Aufwand klein, mittel oder groß? Größtes Risiko? Höchstens 4 Stichpunkte." },
-    planer:  { name: "🤖 Lea · Planerin", em: "📋", auftrag: "Du bist Lea, die Planerin. Du behältst den Überblick und bringst alles auf den Punkt. Sag kurz, welche Idee du am besten findest und warum. Stell dem Chef dann genau 2 oder 3 nummerierte Fragen, die er entscheiden muss." }
+  var M_KLEIN = "Qwen2.5-0.5B-Instruct-q4f16_1-MLC", M_GROSS = "Qwen2.5-1.5B-Instruct-q4f16_1-MLC";
+  var TEMPO = {
+    schnell:    { modelle: [M_KLEIN, M_GROSS], tokens: 200, experten: 1, eroeffnung: false },
+    gruendlich: { modelle: [M_GROSS, M_KLEIN], tokens: 340, experten: 3, eroeffnung: true }
   };
-  var ABLAEUFE = {
-    schnell:    { start: ["ideen", "pruefer", "planer"], weiter: ["planer"], tokens: 220, verlauf: 12, zeichen: 400, modelle: ["Qwen2.5-0.5B-Instruct-q4f16_1-MLC", "Qwen2.5-1.5B-Instruct-q4f16_1-MLC"] },
-    gruendlich: { start: ["ideen", "prog", "sicher", "tester", "planer"], weiter: ["prog", "sicher", "planer"], tokens: 450, verlauf: 24, zeichen: 700, modelle: ["Qwen2.5-1.5B-Instruct-q4f16_1-MLC", "Qwen2.5-0.5B-Instruct-q4f16_1-MLC"] }
-  };
-  function tempo() { return ABLAEUFE[(runde && runde.tempo) || "schnell"]; }
-  var ZUSATZ = {
-    weiter: { prog: "Der Chef hat geantwortet. Prüfe seine Antworten: Ist das so kostenlos machbar? Was müsste man anpassen?",
-              sicher: "Prüfe die Antworten des Chefs auf Risiken. Wenn alles okay ist, sag das in einem Satz.",
-              pruefer: "Prüfe kurz die Antworten des Chefs: machbar und sicher?",
-              planer: "Fasse zusammen, was jetzt feststeht. Wenn noch etwas Wichtiges offen ist, stell höchstens 2 Fragen. Sonst schreib: Bereit für das Endergebnis." }
-  };
-  var engine = null, engineModell = null, engineLaden = null, runde = KW.load("kw-team-runde", null), rundeBusy = false;
+  var VERPASST = 20 * 60000; // Konferenz startet nur automatisch, wenn der Chat höchstens 20 Minuten nach der Zeit offen ist
 
+  // Reihenfolge = Reihenfolge in der Konferenz (Sicherheit spricht zuletzt)
+  var ABT = [
+    { id: "ideen", name: "Ideen & Planung", em: "💡", leiter: "mia" },
+    { id: "design", name: "Design & Ton", em: "🎨", leiter: "nora" },
+    { id: "technik", name: "Technik", em: "💻", leiter: "tom" },
+    { id: "qualitaet", name: "Qualität", em: "✅", leiter: "kai" },
+    { id: "finanzen", name: "Finanzen", em: "💶", leiter: "max" },
+    { id: "werbung", name: "Werbung", em: "📣", leiter: "jana" },
+    { id: "kundendienst", name: "Kundendienst", em: "🙋", leiter: "finn" },
+    { id: "forschung", name: "Forschung & Zukunft", em: "🔬", leiter: "theo" },
+    { id: "sicherheit", name: "Sicherheit", em: "🛡️", leiter: "sam" }
+  ];
+  var ABT_MAP = {}; ABT.forEach(function (a, i) { a.pos = i; ABT_MAP[a.id] = a; });
+  var IMMER = ["ideen", "design", "technik", "qualitaet", "sicherheit"];
+  var ABT_STICH = {
+    finanzen: /geld|preis|kosten|verdien|verkauf|euro|€|kunde|angebot|wettbewerb|förder/,
+    werbung: /werbung|bekannt|marketing|slogan|\bname\b|store|trailer|video|google|veröffentlich|launch/,
+    kundendienst: /nutzer|kunde|hilfe|anleitung|feedback|rückmeld|einsteiger|support/,
+    forschung: /zukunft|betriebssystem|forschung|experiment|neue technik|\bki\b|künstliche/
+  };
+
+  // id: [Name, Emoji, Abteilung, Thema, Stichwörter, Standard-Experte (1/0), w/m, Art]
+  var KI_DATEN = {
+    sofie: ["Sofie", "📎", "leitung", "Zusammenfasserin", "", 0, "w"],
+    paul: ["Paul", "🧭", "leitung", "Berater", "", 0, "m"],
+    nova: ["Nova", "🌟", "leitung", "Chef-Vertretung", "", 0, "w"],
+    mia: ["Mia", "💡", "ideen", "Ideen sammeln", "", 0, "w", "Du bist begeistert und kreativ und denkst auch mal verrückt."],
+    lea: ["Lea", "📋", "ideen", "Planung in Schritten und Versionen", "plan|schritt|version|zeit|reihenfolge", 1, "w"],
+    jonas: ["Jonas", "🎲", "ideen", "Spielideen und Spielspaß", "spiel|game|level|krawallzoo|roblox|tier|kampf|punkte|belohn", 0, "m"],
+    ronja: ["Ronja", "📱", "ideen", "App-Ideen: welches Problem lösen wir für wen", "app|alltag|schule|hausaufgab|planer|notiz|werkzeug|tool|helfen", 1, "w"],
+    vincent: ["Vincent", "🔎", "ideen", "Markt: was gibt es schon, was fehlt den Leuten (ohne zu kopieren)", "markt|konkurrenz|gibt es schon|besser als|whatsapp|google|youtube|andere apps", 0, "m"],
+    nora: ["Nora", "🎨", "design", "Aussehen und Gefühl", "", 0, "w", "Du hast ein gutes Auge und magst klare, schöne Sachen."],
+    moritz: ["Moritz", "🖱️", "design", "Bedienung: versteht man jeden Knopf?", "bedien|knopf|menü|einfach|übersicht|steuerung", 1, "m"],
+    zoe: ["Zoe", "✏️", "design", "Grafik, Icons, Farben und eigene Figuren", "grafik|icon|logo|figur|bild|farbe|aussehen|skin|charakter", 1, "w"],
+    anton: ["Anton", "🎞️", "design", "Animation und Effekte", "animation|bewegung|effekt|übergang|intro|flüssig", 0, "m"],
+    emil: ["Emil", "🎵", "design", "Musik", "musik|song|melodie|beat|soundtrack|lied", 0, "m"],
+    frieda: ["Frieda", "🔊", "design", "Geräusche und Soundeffekte", "sound|geräusch|\\bton\\b|klang|knall|soundeffekt", 0, "w"],
+    tom: ["Tom", "💻", "technik", "Gesamtaufbau der Technik", "", 0, "m", "Du bist entspannt und praktisch und sagst ehrlich, was geht."],
+    ida: ["Ida", "🌐", "technik", "Web und Apps (HTML, CSS, JavaScript, installierbare Web-Apps)", "app|web|seite|html|browser|pwa|javascript", 1, "w"],
+    luca: ["Luca", "🎮", "technik", "Roblox Studio und Luau", "roblox|luau|notruf|lindau", 0, "m"],
+    niklas: ["Niklas", "🗄️", "technik", "Datenbank und Firebase", "speicher|daten|online|firebase|konto|login|mehrspieler|multiplayer|team|freund|rangliste|chat", 0, "m"],
+    elias: ["Elias", "🤖", "technik", "KI-Technik", "\\bki\\b|künstlich|\\bbot|assistent|webllm", 0, "m"],
+    mats: ["Mats", "🔌", "technik", "Hardware und Arduino", "arduino|sensor|\\bled|hardware|bauteil|nwt|roboter|löten", 0, "m"],
+    lina: ["Lina", "📲", "technik", "Handy, Installieren und Offline", "handy|offline|install|benachrichtig|push|smartphone", 1, "w"],
+    kai: ["Kai", "🐞", "qualitaet", "Testen", "", 0, "m", "Du bist ein bisschen frech und findest jeden Haken."],
+    ben: ["Ben", "🔍", "qualitaet", "Endkontrolle: passt alles zu den Vorgaben?", "", 1, "m"],
+    nele: ["Nele", "📱", "qualitaet", "Tests auf verschiedenen Handys und Tablets", "handy|iphone|android|tablet|smartphone", 1, "w"],
+    jakob: ["Jakob", "♿", "qualitaet", "Barrierefreiheit (große Schrift, Farben, Vorlesen)", "lesen|schrift|farbe|blind|vorlesen|barriere|alle kinder", 0, "m"],
+    oskar: ["Oskar", "⚡", "qualitaet", "Tempo, Ladezeit und Akku", "schnell|langsam|laden|akku|tempo|video", 0, "m"],
+    max: ["Max", "💶", "finanzen", "Einnahmen und Ausgaben", "", 0, "m", "Du rechnest gern genau nach. Echte Steuern und Rechnungen prüfen aber die Eltern oder ein Steuerberater."],
+    lotte: ["Lotte", "🏷️", "finanzen", "Preise und Angebote", "preis|kosten|verkauf|euro|€|angebot|kunde|verein|geld", 1, "w"],
+    henry: ["Henry", "🆓", "finanzen", "Gratis-Wächter: bleibt alles kostenlos?", "", 1, "m"],
+    johanna: ["Johanna", "🏆", "finanzen", "Wettbewerbe und Förderung", "wettbewerb|jugend forscht|förder|preisgeld|schule", 0, "w"],
+    jana: ["Jana", "📣", "werbung", "faire Werbung", "", 0, "w", "Du weißt, wie Leute von etwas erfahren – aber nur mit fairer Werbung, ohne Druck und ohne erfundene Bewertungen."],
+    ole: ["Ole", "✍️", "werbung", "Namen, Texte und Slogans", "name|slogan|text|beschreibung|titel", 1, "m"],
+    mila: ["Mila", "🔍", "werbung", "Gefunden werden (Google, Store, Startseite)", "google|suche|finden|store|bekannt|startseite", 1, "w"],
+    tim: ["Tim", "🎬", "werbung", "Videos und Trailer", "video|trailer|youtube|clip|film", 0, "m"],
+    finn: ["Finn", "🙋", "kundendienst", "Sicht der Nutzer", "", 0, "m", "Du denkst wie ein 12-Jähriger, der die App zum ersten Mal öffnet."],
+    ella: ["Ella", "💬", "kundendienst", "Hilfe-Texte", "hilfe|anleitung|faq|erklär", 1, "w"],
+    lukas: ["Lukas", "📨", "kundendienst", "Rückmeldungen auswerten (ohne Chat mit Fremden)", "feedback|rückmeld|bewert|melden|fehler|wunsch", 0, "m"],
+    sara: ["Sara", "🚀", "kundendienst", "Erste Schritte und Anleitung", "start|anfang|tutorial|einstieg", 1, "w"],
+    paula: ["Paula", "🌍", "kundendienst", "Übersetzung und Sprachen", "englisch|sprache|übersetz|international", 0, "w"],
+    theo: ["Theo", "🔬", "forschung", "Forschung und Zukunft", "", 0, "m", "Du bist neugierig auf neue Technik."],
+    malte: ["Malte", "🖥️", "forschung", "Betriebssystem", "betriebssystem|\\bos\\b|computer|linux", 1, "m"],
+    lia: ["Lia", "🧠", "forschung", "neue KI-Technik", "\\bki\\b|künstlich|zukunft", 1, "w"],
+    sam: ["Sam", "🛡️", "sicherheit", "Sicherheit (darf Nein sagen)", "", 0, "m", "Du bist vorsichtig, aber kein Spielverderber. Die Sicherheit darf Nein sagen."],
+    leon: ["Leon", "🔐", "sicherheit", "Schutz vor Angriffen (denkt wie ein Angreifer, aber nur für die eigenen Apps)", "", 1, "m"],
+    hanna: ["Hanna", "🧒", "sicherheit", "Kinderschutz (kein Kontakt mit Fremden, nichts Gefährliches)", "", 1, "w"],
+    clara: ["Clara", "📜", "sicherheit", "Datenschutz und Regeln (Impressum, Alter, keine Daten sammeln)", "daten|name|impressum|alter|foto|standort|konto|kamera", 0, "w"],
+    felix: ["Felix", "🔑", "sicherheit", "Konten, Schlüssel und Passwörter", "passwort|schlüssel|key|login|konto|firebase|token|anmeld", 0, "m"]
+  };
+  var KI = {};
+  Object.keys(KI_DATEN).forEach(function (id) {
+    var d = KI_DATEN[id];
+    KI[id] = { id: id, name: d[0], em: d[1], abt: d[2], thema: d[3], stich: d[4] ? new RegExp(d[4]) : null, standard: !!d[5], g: d[6], art: d[7] || "" };
+  });
+  // Prüflisten: Jede KI geht ihre Liste im Kopf durch und schreibt nur, was für den Auftrag wichtig ist
+  var PRUEF = {
+    sofie: ["Nichts Wichtiges weglassen", "Bedingungen der Sicherheit immer übernehmen", "Streitpunkte klar benennen", "Kurz und verständlich für einen Schüler"],
+    paul: ["Lohnt sich der Aufwand für den Nutzen?", "Was ist das Kleinste, das schon hilft oder Spaß macht (Version 1)?", "Passt es zu den anderen Kometenwerk-Apps?", "Was kann man weglassen?"],
+    nova: ["Passt es zum Chef-Profil?", "Bleibt es kostenlos und kindersicher?", "Ist das Ergebnis so klar, dass der Chef nichts nachbessern muss?", "Wo sollte der Chef selbst entscheiden?"],
+    mia: ["Mindestens eine mutige, ungewöhnliche Idee", "Ist es eine eigene Idee und nicht kopiert?", "Was macht es besonders für Kinder und Jugendliche?"],
+    lea: ["Was ist Version 1, was kommt später?", "In welcher Reihenfolge baut man es?", "Was hängt wovon ab?", "Aufwand ungefähr: klein, mittel oder groß?"],
+    jonas: ["Was ist das Ziel für den Spieler?", "Warum spielt man es morgen wieder?", "Ist es fair (keine Vorteile gegen Geld)?", "Verstehen es auch Anfänger?"],
+    ronja: ["Welches Problem löst es genau?", "Für wen ist es?", "Würde man es oft benutzen?", "Gibt es das schon in einer Kometenwerk-App?"],
+    vincent: ["Was gibt es so ähnlich schon (nur grob, nichts kopieren)?", "Was fehlt den Leuten dort?", "Wie hebt sich Kometenwerk ab (kostenlos, kindersicher, ohne Werbung)?", "Sag ehrlich, dass du keine aktuellen Marktdaten hast, und nenne, was der Chef nachprüfen oder echte Nutzer fragen sollte"],
+    nora: ["Passt es zum Kometenwerk-Stil (Weltraum, klar, freundlich)?", "Gut lesbar auf dem Handy?", "Heller und dunkler Modus?", "Wirkt alles einheitlich?"],
+    moritz: ["Versteht man es ohne Anleitung?", "Wie viele Klicks bis zum Ziel?", "Sind Knöpfe groß genug für Finger?", "Was passiert bei Fehlern?"],
+    zoe: ["Eigene Figuren und Icons statt fremder Bilder", "Genug Kontrast?", "Erkennt man das App-Icon auch klein?", "Keine Marken oder Figuren von anderen"],
+    anton: ["Hilft die Animation oder lenkt sie ab?", "Kurz halten (unter einer Sekunde)", "Kann man Animationen ausschalten?", "Läuft es flüssig auf alten Handys?"],
+    emil: ["Passt die Musik zur Stimmung?", "Nur eigene oder freie Musik, nichts Fremdes", "Kann man den Ton ausschalten?", "Nervt sie nicht, wenn sie sich wiederholt?"],
+    frieda: ["Gibt es Geräusch-Feedback bei wichtigen Aktionen?", "Nicht zu laut oder schrill", "Ton ausschaltbar", "Eigene oder freie Sounds"],
+    tom: ["Geht es kostenlos mit GitHub Pages und Firebase Spark?", "Wie teilt man es in Teile auf?", "Was ist technisch am schwierigsten?", "Geht es auch ohne Internet?"],
+    ida: ["Läuft es in allen Browsern?", "Als App installierbar?", "Lädt es schnell?", "Daten lieber auf dem Gerät speichern statt auf einem Server"],
+    luca: ["Geht es in Roblox Studio mit Luau?", "Wichtige Logik auf dem Server (gegen Schummeln)", "Roblox-Regeln beachten", "Läuft es auch auf Handy und Tablet?"],
+    niklas: ["Welche Daten braucht man wirklich (so wenig wie möglich)?", "Reicht der kostenlose Spark-Plan?", "Wer darf was lesen und schreiben (Regeln)?", "Was, wenn viele gleichzeitig online sind?"],
+    elias: ["Kann die KI im Browser laufen (WebGPU)?", "Was, wenn das Gerät zu schwach ist?", "Wo muss ein Mensch die KI prüfen?", "Keine geheimen Schlüssel im Code"],
+    mats: ["Welche Bauteile, was kosten sie ungefähr?", "Ist es sicher (keine hohen Spannungen)?", "Kann man es in der Schule nachbauen?", "Was, wenn etwas falsch angeschlossen ist?"],
+    lina: ["Funktioniert es offline?", "Installierbar auf Android und iPhone?", "Benachrichtigungen nur, wenn wirklich nötig", "Wenig Akku und wenig Daten"],
+    kai: ["Was kann schiefgehen?", "Was passiert bei falschen Eingaben?", "Was nervt Nutzer?", "Wie testet man es Schritt für Schritt?"],
+    ben: ["Sind alle Wünsche des Chefs drin?", "Werden alle Kometenwerk-Regeln eingehalten?", "Ist es klar genug zum Bauen?", "Gibt es prüfbare Punkte für „fertig“?"],
+    nele: ["Kleine und große Bildschirme", "Android und iPhone", "Hoch- und Querformat", "Langsames Internet"],
+    jakob: ["Große, gut lesbare Schrift", "Genug Kontrast, Farbe nie als einziger Hinweis", "Bedienbar mit Tastatur und Vorlesefunktion", "Einfache Sprache"],
+    oskar: ["Wie schnell lädt es beim ersten Mal?", "Große Bilder und Dateien vermeiden", "Flüssig auf alten Handys?", "Akku schonen"],
+    max: ["Welche Kosten entstehen (sollten null sein)?", "Gibt es Einnahmen, und wie?", "Wie viel Zeit kostet es?", "Echte Steuerfragen klären die Eltern oder ein Steuerberater"],
+    lotte: ["Was wäre ein fairer Preis, falls wir es verkaufen?", "Wer würde bezahlen?", "Kein Druck und keine Abo-Fallen", "In Spielen keine Vorteile gegen Geld für Kinder"],
+    henry: ["Kostet irgendein Dienst Geld?", "Welche Grenzen hat der Gratis-Plan (Speicher, Nutzer)?", "Was passiert, wenn die Grenze erreicht ist?", "Nie eine Kreditkarte hinterlegen müssen"],
+    johanna: ["Passt es zu einem Wettbewerb, z. B. Jugend forscht?", "Gibt es Förderung oder Preise dafür?", "Was bräuchte man für eine Bewerbung?", "Termine muss der Chef nachprüfen"],
+    jana: ["Wer soll davon erfahren?", "Wo erreicht man diese Leute (Schule, Startseite)?", "Faire Werbung: keine erfundenen Bewertungen, kein Druck", "Keine Werbung direkt an kleine Kinder"],
+    ole: ["Kurzer, eigener Name (nicht von anderen)", "Ein Satz, der sagt, was es ist", "Einfache Sprache", "Passt es zu Kometenwerk?"],
+    mila: ["Wie findet man es auf der Kometenwerk-Startseite?", "Welche Suchwörter würden Leute benutzen?", "Gute Beschreibung und Vorschaubild", "Kein Spam"],
+    tim: ["Was zeigt man in 30 Sekunden?", "Nur eigene Bilder und Musik", "Keine Kinder mit Gesicht zeigen", "Untertitel"],
+    finn: ["Versteht ein 12-Jähriger es sofort?", "Was würde ihn langweilen?", "Was würde er falsch machen?", "Würde er es Freunden zeigen?"],
+    ella: ["Kurze Hilfe direkt in der App", "Antworten auf die 3 häufigsten Fragen", "Einfache Sprache", "Hilfe ohne Chat mit Fremden"],
+    lukas: ["Wie melden Nutzer Ideen oder Fehler – ohne Namen und ohne Chat?", "Was macht das Team mit den Meldungen?", "Wie erfahren Nutzer, dass etwas behoben ist?", "Kein Missbrauch des Melde-Knopfs"],
+    sara: ["Was sieht man beim allerersten Öffnen?", "Wie schnell kommt der erste Erfolg?", "Anleitung kurz und überspringbar", "Beispiel-Inhalte zum Ausprobieren"],
+    paula: ["Sollte es auch auf Englisch geben?", "Texte so schreiben, dass man sie leicht übersetzen kann", "Datum und Zahlen richtig anzeigen", "Einfache Sprache"],
+    theo: ["Welche neue Technik könnte helfen?", "Ist sie stabil genug?", "Was können wir ohne Risiko ausprobieren?", "Was ist eher etwas für später?"],
+    malte: ["Was davon wäre später für ein eigenes Betriebssystem nützlich?", "Was müsste man dafür lernen?", "Realistisch bleiben: ein Ziel für viel später"],
+    lia: ["Welche KI-Technik gibt es kostenlos im Browser?", "Was kann sie, was nicht?", "KI-Daten bleiben auf dem Gerät", "Ehrlich sagen, wo KI Fehler macht"],
+    sam: ["Kann jemand das missbrauchen?", "Sind die Firebase-Regeln dicht?", "Kommen Kinder mit Fremden in Kontakt?", "Werden Daten gesammelt, die wir nicht brauchen?"],
+    leon: ["Wie würde ein Angreifer es ausnutzen (Schummeln, Spam, fremde Daten lesen)?", "Was passiert bei sehr vielen Anfragen?", "Werden Eingaben geprüft?", "Nur die eigenen Apps prüfen, nie fremde"],
+    hanna: ["Kann man Fremde anschreiben oder finden?", "Werden Fotos, Standort oder echte Namen gezeigt oder gespeichert?", "Gibt es gemeine, gruselige oder gefährliche Inhalte?", "Gibt es Druck (Zeit, Geld, Belohnungen), der Kindern schadet?"],
+    clara: ["Welche Daten werden gespeichert und warum?", "Braucht es Impressum oder Datenschutzerklärung?", "Für welches Alter ist es gedacht?", "Rechtliche Fragen muss ein Erwachsener prüfen"],
+    felix: ["Stehen geheime Schlüssel oder Passwörter im Code?", "Anmeldung möglichst ohne Passwort (z. B. anonym)?", "Was, wenn jemand ein Konto übernimmt?", "Schlüssel nie in den Chat oder auf GitHub"]
+  };
+  function pruefText(id) {
+    var l = PRUEF[id]; if (!l) return "";
+    return "\nDeine Prüfliste – geh sie im Kopf durch und schreib nur, was für diesen Auftrag wirklich wichtig ist:\n- " + l.join("\n- ");
+  }
+  var LEITUNG = {
+    sofie: "Du bist Sofie, die Zusammenfasserin und Assistentin des Chefs. Du bist ordentlich und freundlich und bringst alles auf den Punkt.",
+    paul: "Du bist Paul, der Berater des Chefs. Du denkst ans große Ganze: Lohnt sich das? Was kommt zuerst, was später, was lassen wir lieber weg?",
+    nova: "Du bist Nova, die KI-Vertretung des Chefs. Du kennst sein Chef-Profil und vertrittst seine Interessen, solange er nicht selbst da ist. Das letzte Wort hat aber immer der Chef."
+  };
+  var ALT_ROLLEN = { ideen: "💡", prog: "💻", sicher: "🛡️", tester: "🐞", pruefer: "🔍", planer: "📋" }; // alte KI-Runde
+
+  var GRUND = "Du bist Teil des KI-Teams von Kometenwerk, einem kleinen Studio, das Spiele, Apps und Technik baut. Der Chef ist ein Schüler und entscheidet am Ende. " +
+    "Das Team ist in Abteilungen aufgeteilt: Jede Abteilung bespricht einen Auftrag, danach stellen die Vorsitzenden alles in einer Konferenz vor. " +
+    "Ihr baut nichts selbst. Ihr sammelt Ideen, prüft, ob es machbar ist, und erarbeitet einen perfekten Bauauftrag. Den gibt der Chef an Claude, der ihn baut.\n" +
+    "Regeln von Kometenwerk: Nichts darf Geld kosten (GitHub Pages, Firebase im kostenlosen Spark-Plan). Keine echten Namen oder E-Mails öffentlich. " +
+    "Nichts von anderen Spielen oder Firmen kopieren. Kindersicher: kein Chat mit Fremden, keine Datensammelei, keine Werbung in den Apps.\n" +
+    "Schreib wie in einem Team-Chat: auf Deutsch, locker, in Du-Form, kurz, ohne Überschriften (außer die Aufgabe verlangt eine Gliederung). " +
+    "Sprich Kollegen mit Namen an und reagiere auf sie, widersprich ruhig. Erfinde keine Fakten und sag ehrlich, wenn du unsicher bist. Du bist eine KI und tust nicht so, als wärst du ein Mensch.";
+  var WISSEN = "Was Kometenwerk schon hat (alles kostenlos auf kometenwerk.github.io): Krawallzoo (Tier-Kampfspiel, online mit Freunden über Firebase), " +
+    "Nachrichten-Heft (neutrale Nachrichten für Schüler), Kometen-Planer (Hausaufgaben und Stundenplan), Kometen-Notizen, Kometen-Quiz (Karteikarten), " +
+    "Kometen-Werkstatt (Arduino-Projekte), Kometen-KI (Chat-KI im Browser), Kometen-Beats (Musik-Baukasten), Kometen-Fokus (Lern-Timer), " +
+    "Kometen-Taschengeld (Sparziele), Kometen-Team (dieser Team-Chat). In Arbeit: Notruf Lindau (Roblox-Rollenspiel mit Einsatzkräften). " +
+    "Technik: installierbare Web-Apps mit HTML, CSS und JavaScript auf GitHub Pages, Firebase im Spark-Plan. Nutze dieses Wissen und erfinde nichts dazu.";
+  var STANDARD_PROFIL = "- Alles muss kostenlos bleiben.\n- Kindersicher: kein Chat mit Fremden, keine Daten sammeln, keine Werbung.\n" +
+    "- Nichts von anderen Spielen oder Firmen kopieren – eigene Ideen.\n- Keine echten Namen oder E-Mails öffentlich.\n" +
+    "- Lieber eine einfache Version 1, die richtig gut funktioniert, als viel Halbes.\n- Weltraum-Stil passt zu Kometenwerk.\n" +
+    "- Ich möchte am Ende ein fertiges Ergebnis, das ich nicht ständig nachbessern muss.";
+  var VORLAGE = "## Auftrag: <kurzer Titel>\n**Ziel:** <1 Satz>\n**Version 1 – muss können:**\n- <Punkt>\n**Kommt später:**\n- <Punkt>\n" +
+    "**Aussehen und Ton:** <1–2 Sätze>\n**Technik:** <1–2 Sätze>\n**Sicherheit (Pflicht):**\n- <Bedingung>\n" +
+    "**Regeln:** kostenlos, keine echten Namen, nichts kopieren, kindersicher\n**Fertig ist es, wenn:**\n- <prüfbarer Punkt>\n**Offene Fragen an den Chef:** <höchstens 2, oder „keine“>";
+  var APP_NAMEN = ["Krawallzoo", "Nachrichten-Heft", "Notruf Lindau", "Startseite", "Kometen-Planer", "Kometen-Notizen", "Kometen-Quiz", "Kometen-Werkstatt", "Kometen-KI", "Kometen-Beats", "Kometen-Fokus", "Kometen-Taschengeld", "Kometen-Team"];
+
+  var auftraege = {}, auftraegeGeladen = false, raeume = {}, raumHoerer = {}, akten = {}, profile = {}, rechner = {}, zeitVersatz = 0;
+  var offenA = KW.load("kw-team-offen", null), erlOffen = false, oeffneNach = null, endeGesehen = {};
+  var engine = null, engineModell = null, engineLaden = null;
+  var kiBusy = false, kiJetzt = null, kiFehler = "", pauseBis = 0, fertigeSchritte = {}, arbeitTimer = null;
+  var TAB = Math.random().toString(36).slice(2, 10);
+  function noop() {}
+  function warte(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function jetzt() { return Date.now() + zeitVersatz; }
+  function kurz(s, n) { s = String(s || "").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+  function tempoVon(A) { return TEMPO[A.tempo] ? A.tempo : "schnell"; }
+  function norm(s) { return String(s || "").trim().toLowerCase(); }
+  function wann(ts) {
+    var d = new Date(ts), s = KW.ymd(d), h = KW.today();
+    var tag = s === h ? "heute" : s === KW.addDays(h, 1) ? "morgen" : s === KW.addDays(h, -1) ? "gestern" : d.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" });
+    return tag + " um " + uhr(ts);
+  }
+  function kiTitel(id) {
+    var k = KI[id]; if (!k) return "KI";
+    if (k.abt === "leitung") return k.thema;
+    var ab = ABT_MAP[k.abt];
+    return ab.leiter === id ? (k.g === "w" ? "Leiterin " : "Leiter ") + ab.name : ab.name + " · " + k.thema.split(/ \(|:/)[0];
+  }
+  function kiInfo(r) {
+    if (KI[r]) return { em: KI[r].em, name: KI[r].name, titel: kiTitel(r) };
+    if (ALT_ROLLEN[r]) return { em: ALT_ROLLEN[r], name: null, titel: "KI-Runde" };
+    return null;
+  }
+  function leuteVon(abt) { return Object.keys(KI).filter(function (id) { return KI[id].abt === abt; }); }
+  function namen(ids) { return ids.map(function (id) { return KI[id].name; }).join(", "); }
+  function chefProfil(u) { return (profile[u] && profile[u].text) || STANDARD_PROFIL; }
+
+  /* Welche Abteilungen und welche Experten passen zum Auftrag? */
+  function vorschlagAbt(txt) {
+    txt = norm(txt);
+    return ABT.map(function (a) { return a.id; }).filter(function (id) { return IMMER.indexOf(id) >= 0 || (ABT_STICH[id] && ABT_STICH[id].test(txt)); });
+  }
+  function expertenFuer(A, abt) {
+    var txt = norm(A.titel + " " + A.text + " " + (A.projekt || "")), ab = ABT_MAP[abt];
+    var liste = leuteVon(abt).filter(function (id) { return id !== ab.leiter; }).map(function (id, i) {
+      var k = KI[id]; return { id: id, i: i, p: (k.stich && k.stich.test(txt) ? 2 : 0) + (k.standard ? 1 : 0) };
+    });
+    liste.sort(function (a, b) { return b.p - a.p || a.i - b.i; });
+    return liste.slice(0, TEMPO[tempoVon(A)].experten).map(function (x) { return x.id; });
+  }
+  function abtListe(s) {
+    var l = String(s || "").split(",").filter(function (d) { return ABT_MAP[d]; });
+    if (l.indexOf("sicherheit") < 0) l.push("sicherheit");
+    return l.filter(function (d, i) { return l.indexOf(d) === i; }).sort(function (a, b) { return ABT_MAP[a].pos - ABT_MAP[b].pos; });
+  }
+  function persona(id) {
+    var k = KI[id];
+    if (k.abt === "leitung") return LEITUNG[id] + pruefText(id);
+    var ab = ABT_MAP[k.abt], leiter = ab.leiter === id;
+    var s = "Du bist " + k.name + ", " + (leiter
+      ? (k.g === "w" ? "Leiterin" : "Leiter") + " der Abteilung " + ab.name + " und ihr Vorsitz in der Konferenz. In deiner Abteilung sind: " +
+        leuteVon(ab.id).filter(function (x) { return x !== id; }).map(function (x) { return KI[x].name + " (" + KI[x].thema + ")"; }).join(", ") + "."
+      : (k.g === "w" ? "Expertin" : "Experte") + " für " + k.thema + " in der Abteilung " + ab.name + ". Du schaust vor allem durch die Brille deines Themas.");
+    return s + (k.art ? " " + k.art : "") + pruefText(id);
+  }
+
+  /* Räume und Schritte */
+  function msgsIn(A, raum) { return raeume[rk(A.id, raum)] || []; }
+  function raeumeGeladen(A) { return ["konferenz"].concat(A.abtListe).every(function (r) { return raeume[rk(A.id, r)] !== undefined; }); }
+  function erledigt(A, raum, schritt) {
+    var key = rk(A.id, raum);
+    return !!fertigeSchritte[key + "|" + schritt] || (raeume[key] || []).some(function (m) { return m.schritt === schritt && !m.laeuft; });
+  }
+  function letzteMit(L, feld) { for (var i = L.length - 1; i >= 0; i--) if (L[i][feld] && !L[i].laeuft) return L[i]; return null; }
+  function kGestartet(A) { return msgsIn(A, "konferenz").some(function (m) { return m.schritt && m.schritt.indexOf("k:") === 0; }); }
+  function startGewuenscht(A) { return msgsIn(A, "konferenz").some(function (m) { return m.start && !m.rolle; }); }
+  function konfFaellig(A) { var n = jetzt(); return startGewuenscht(A) || (n >= A.um && n - A.um < VERPASST); }
+  function verpasst(A) { return !kGestartet(A) && !startGewuenscht(A) && jetzt() - A.um >= VERPASST; }
+  function hatErgebnis(A) { return !!letzteMit(msgsIn(A, "konferenz"), "ende"); }
+  function abtFertig(A, d) { return !!letzteMit(msgsIn(A, d), "zf"); }
+  function erwaehnt(abt, text) {
+    var t = " " + norm(text) + " ";
+    var ids = leuteVon(abt);
+    for (var i = 0; i < ids.length; i++) if (new RegExp("[^a-zäöüß]" + KI[ids[i]].name.toLowerCase() + "[^a-zäöüß]").test(t)) return ids[i];
+    return null;
+  }
+  function abtSchritte(A, d) {
+    var ab = ABT_MAP[d], s = [];
+    if (TEMPO[tempoVon(A)].eroeffnung) s.push({ raum: d, kid: ab.leiter, schritt: "start", art: "abtStart" });
+    expertenFuer(A, d).forEach(function (e) { s.push({ raum: d, kid: e, schritt: "e:" + e, art: "experte" }); });
+    s.push({ raum: d, kid: ab.leiter, schritt: "zf", art: "zf", zf: true });
+    return s;
+  }
+  function konfSchritte(A) {
+    var s = [{ raum: "konferenz", kid: "sofie", schritt: "k:start", art: "kStart", fix: true }];
+    A.abtListe.forEach(function (d) { s.push({ raum: "konferenz", kid: ABT_MAP[d].leiter, schritt: "k:" + d, art: "kAbt", abt: d }); });
+    s.push({ raum: "konferenz", kid: "sofie", schritt: "k:zusammen", art: "kZusammen", tokens: 360 });
+    s.push({ raum: "konferenz", kid: "paul", schritt: "k:berater", art: "kBerater" });
+    s.push({ raum: "konferenz", kid: "nova", schritt: "k:nova", art: "kNova" });
+    s.push({ raum: "konferenz", kid: "sofie", schritt: "k:ergebnis", art: "kErgebnis", ende: true, tokens: 720 });
+    return s;
+  }
+  // Was ist bei diesem Auftrag als Nächstes dran? (null = nichts zu tun)
+  function naechsteFuer(A) {
+    if (A.aktiv === false || !raeumeGeladen(A)) return null;
+    var i, K = msgsIn(A, "konferenz");
+    // Vor der Konferenz: erst auf den Chef antworten, damit seine Wünsche in die Konferenz kommen
+    if (!kGestartet(A)) { var vorher = abtAntwort(A); if (vorher) return vorher; }
+    if (kGestartet(A) || konfFaellig(A)) {
+      var ks = konfSchritte(A);
+      for (i = 0; i < ks.length; i++) if (!erledigt(A, "konferenz", ks[i].schritt)) return ks[i];
+      var e = letzteMit(K, "ende");
+      if (e) {
+        var nach = K.slice(K.indexOf(e) + 1).filter(function (m) { return !m.rolle && !m.start; });
+        if (nach.length) {
+          var x = nach[nach.length - 1];
+          if (!erledigt(A, "konferenz", "r:" + x.id + ":nova")) return { raum: "konferenz", kid: "nova", schritt: "r:" + x.id + ":nova", art: "rNova" };
+          if (!erledigt(A, "konferenz", "r:" + x.id + ":ergebnis")) return { raum: "konferenz", kid: "sofie", schritt: "r:" + x.id + ":ergebnis", art: "rErgebnis", ende: true, tokens: 720 };
+        }
+      }
+    }
+    var antwort = abtAntwort(A); if (antwort) return antwort;
+    // Abteilungen arbeiten (nur vor der Konferenz)
+    if (!kGestartet(A) && !konfFaellig(A)) {
+      for (i = 0; i < A.abtListe.length; i++) {
+        var as = abtSchritte(A, A.abtListe[i]);
+        for (var j = 0; j < as.length; j++) if (!erledigt(A, as[j].raum, as[j].schritt)) return as[j];
+      }
+    }
+    return null;
+  }
+  // Der Chef hat in eine fertige Abteilung geschrieben → die Abteilung antwortet (angesprochener Experte, dann der Vorsitz)
+  function abtAntwort(A) {
+    for (var i = 0; i < A.abtListe.length; i++) {
+      var d = A.abtListe[i], L = msgsIn(A, d), z = letzteMit(L, "zf");
+      if (!z) continue;
+      var neu = L.slice(L.indexOf(z) + 1).filter(function (m) { return !m.rolle; });
+      if (!neu.length) continue;
+      var y = neu[neu.length - 1], wer = erwaehnt(d, y.text);
+      if (wer && wer !== ABT_MAP[d].leiter && !erledigt(A, d, "c:" + y.id)) return { raum: d, kid: wer, schritt: "c:" + y.id, art: "cExperte" };
+      if (!erledigt(A, d, "cz:" + y.id)) return { raum: d, kid: ABT_MAP[d].leiter, schritt: "cz:" + y.id, art: "cz", zf: true };
+    }
+    return null;
+  }
+  function aktiveAuftraege() {
+    return Object.keys(auftraege).map(function (k) { return auftraege[k]; }).filter(function (A) { return A.aktiv !== false; }).sort(function (a, b) { return (a.t || 0) - (b.t || 0); });
+  }
+  function naechsteAufgabe() {
+    var l = aktiveAuftraege();
+    for (var i = 0; i < l.length; i++) { var st = naechsteFuer(l[i]); if (st) return { A: l[i], st: st }; }
+    return null;
+  }
+
+  /* Prompts */
+  function werIst(A, m) {
+    if (m.rolle && KI[m.rolle]) return KI[m.rolle].name + " (" + kiTitel(m.rolle) + ")";
+    if (m.rolle) return "KI";
+    var n = mitglieder[m.uid] ? mitglieder[m.uid].name : m.name;
+    return (m.uid === A.uid ? "CHEF " : "Teammitglied ") + n;
+  }
+  function verlaufText(A, liste, budget, pro) {
+    var out = [], summe = 0;
+    for (var i = liste.length - 1; i >= 0; i--) {
+      var m = liste[i];
+      if (m.laeuft || m.schritt === "auftrag" || m.start) continue;
+      var z = werIst(A, m) + ": " + kurz(m.text, pro);
+      if (summe + z.length > budget && out.length) break;
+      out.unshift(z); summe += z.length;
+    }
+    return out.join("\n\n") || "(noch nichts)";
+  }
+  function akteText(A, budget) {
+    if (!A.projekt) return "";
+    var l = Object.keys(akten).map(function (k) { return akten[k]; }).filter(function (a) { return norm(a.projekt) === norm(A.projekt) && a.auftrag !== A.id; })
+      .sort(function (a, b) { return (b.t || 0) - (a.t || 0); }).slice(0, 2);
+    return l.map(function (a) { return "- " + a.titel + ": " + kurz(a.text, Math.round(budget / Math.max(1, l.length))); }).join("\n");
+  }
+  function aufgabeText(A, st) {
+    var ab = ABT_MAP[st.abt || st.raum];
+    switch (st.art) {
+      case "abtStart": return "Eröffne die Besprechung deiner Abteilung. Sag in 2 bis 3 Sätzen, worauf es aus Sicht von " + ab.name + " bei diesem Auftrag ankommt, und sprich deine Leute (" + namen(expertenFuer(A, ab.id)) + ") mit Namen an.";
+      case "experte": return "Überlege aus Sicht deines Themas (" + KI[st.kid].thema + "), wie ihr den Auftrag umsetzen würdet. Geh dafür deine Prüfliste durch. Schreib 2 bis 4 kurze, konkrete Punkte. Geh auf das ein, was Kollegen oder der Chef schon geschrieben haben. Sag ehrlich, wenn etwas schwierig ist oder Geld kosten würde.";
+      case "zf": return ab.id === "sicherheit"
+        ? "Fasse das Ergebnis der Sicherheit zusammen. Beginne genau mit „📌 Ergebnis Sicherheit:“ und dann ✅ OK, ⚠️ BEDINGUNG oder ⛔ NEIN. Danach höchstens 5 Stichpunkte: Risiken und Bedingungen, die unbedingt eingehalten werden müssen."
+        : "Fasse als Leitung das Ergebnis deiner Abteilung zusammen. Beginne genau mit „📌 Ergebnis " + ab.name + ":“. Danach höchstens 5 Stichpunkte: unser Vorschlag, was schwierig ist, offene Fragen an den Chef.";
+      case "cExperte": return "Der Chef hat dich in der Abteilung angesprochen (letzte CHEF-Nachricht). Antworte ihm direkt und konkret in 2 bis 4 Sätzen.";
+      case "cz": return "Der Chef hat in deiner Abteilung geschrieben (letzte CHEF-Nachricht). Antworte ihm zuerst in 1 bis 2 Sätzen direkt. Schreib danach das aktualisierte Ergebnis deiner Abteilung, beginnend mit „📌 Ergebnis " + ab.name + ":“, höchstens 5 Stichpunkte, und berücksichtige, was der Chef will.";
+      case "kAbt": return st.abt === "sicherheit"
+        ? "Du sitzt als Vorsitz der Sicherheit in der Konferenz und sprichst als Letzter. Gib das Urteil der Sicherheit zu allem, was am Tisch vorgeschlagen wurde. Beginne genau mit ✅ OK, ⚠️ BEDINGUNG oder ⛔ NEIN. Nenne danach kurz die Bedingungen, die ins Ergebnis müssen. Die Sicherheit darf Nein sagen."
+        : "Du sitzt als Vorsitz deiner Abteilung (" + ab.name + ") in der Konferenz. Stelle in 2 bis 4 Sätzen vor, was deine Abteilung vorschlägt. Wenn deine Abteilung nicht fertig geworden ist, sag das ehrlich und nenne den Stand. Geh kurz auf das ein, was die anderen am Tisch gesagt haben.";
+      case "kZusammen": return "Du bist die Zusammenfasserin. Komprimiere alles, was am Tisch gesagt wurde, auf das Wichtigste. Gliedere so: 1) Darin sind sich alle einig 2) Hier gibt es verschiedene Meinungen 3) Bedingungen der Sicherheit (müssen rein). Höchstens 8 kurze Stichpunkte.";
+      case "kBerater": return "Berate den Chef zu Sofies Zusammenfassung: Was gehört in Version 1, was kommt später, was lassen wir lieber weg? Begründe kurz. Höchstens 5 Stichpunkte.";
+      case "kNova": return "Prüfe Sofies Zusammenfassung und Pauls Rat mit dem Chef-Profil. Sag, was zum Chef passt und was er laut Profil nicht wollen würde. Entscheide die offenen Punkte so, wie der Chef es wahrscheinlich will, als klare Vorschläge (Ich schlage vor: …). Höchstens 5 Stichpunkte.";
+      case "kErgebnis": return "Schreibe jetzt zusammen mit Paul und Nova das Endergebnis und trag es dem Chef vor. Übernimm Pauls Rat, Novas Vorschläge und ALLE Bedingungen der Sicherheit. Beginne mit einem kurzen Satz an den Chef. Danach genau diese Gliederung, sachlich und genau (hier ausnahmsweise mit Überschriften):\n" + VORLAGE;
+      case "rNova": return "Der Chef hat auf das Endergebnis geantwortet (CHEF-Nachricht). Sag in 1 bis 2 Sätzen, was ihr deshalb ändert. Wenn sein Wunsch gegen eine Regel von Kometenwerk oder eine Bedingung der Sicherheit verstößt, sag das freundlich.";
+      case "rErgebnis": return "Schreibe das komplette Endergebnis neu und übernimm die Änderungen des Chefs (und Novas Hinweis). Beginne mit einem kurzen Satz an den Chef, was sich geändert hat. Danach genau diese Gliederung:\n" + VORLAGE;
+    }
+    return "Antworte in deiner Rolle.";
+  }
+  function promptBauen(A, st, f) {
+    var B = function (n) { return Math.round(n * (f || 1)); };
+    var sys = GRUND + "\n\n" + WISSEN + "\n\n" + persona(st.kid);
+    if (st.kid === "nova") sys += "\n\nCHEF-PROFIL (das ist dem Chef wichtig):\n" + kurz(chefProfil(A.uid), B(900));
+    var u = "AUFTRAG VOM CHEF: „" + A.titel + "“\n" + kurz(A.text, B(1100));
+    var akte = akteText(A, B(600));
+    if (akte) u += "\n\nFRÜHERE BESCHLÜSSE ZUM PROJEKT „" + A.projekt + "“:\n" + akte;
+    var K = msgsIn(A, "konferenz");
+    if (st.raum !== "konferenz") {
+      u += "\n\nBESPRECHUNG IN DER ABTEILUNG " + ABT_MAP[st.raum].name.toUpperCase() + ":\n" + verlaufText(A, msgsIn(A, st.raum), B(2600), B(500));
+    } else if (st.art === "kAbt") {
+      var L = msgsIn(A, st.abt), z = letzteMit(L, "zf"), chef = L.filter(function (m) { return !m.rolle; }).slice(-3);
+      u += "\n\nERGEBNIS DEINER ABTEILUNG:\n" + (z ? kurz(z.text, B(900)) : "(noch nicht fertig) " + verlaufText(A, L, B(700), B(300)));
+      if (chef.length) u += "\n\nHINWEISE VOM CHEF IN DEINER ABTEILUNG:\n" + chef.map(function (m) { return "- " + kurz(m.text, B(250)); }).join("\n");
+      u += "\n\nBISHER IN DER KONFERENZ:\n" + verlaufText(A, K, B(1800), B(400));
+    } else if (st.art === "rNova" || st.art === "rErgebnis") {
+      var e = letzteMit(K, "ende");
+      u += "\n\nBISHERIGES ENDERGEBNIS:\n" + kurz(e ? e.text : "", B(1800)) + "\n\nSEITDEM IN DER KONFERENZ:\n" + verlaufText(A, K.slice(K.indexOf(e) + 1), B(900), B(450));
+    } else {
+      var urteil = K.filter(function (m) { return m.schritt === "k:sicherheit" && !m.laeuft; })[0];
+      var rest = urteil ? K.filter(function (m) { return m !== urteil; }) : K;
+      if (st.art === "kErgebnis" && urteil) u += "\n\nURTEIL DER SICHERHEIT:\n" + kurz(urteil.text, B(500));
+      u += "\n\nBISHER IN DER KONFERENZ:\n" + verlaufText(A, st.art === "kErgebnis" ? rest : K, B(st.art === "kErgebnis" ? 2600 : 3000), B(st.art === "kErgebnis" ? 800 : 450));
+    }
+    u += "\n\nDEINE AUFGABE JETZT: " + aufgabeText(A, st);
+    return { sys: sys, user: u };
+  }
+  function festText(A, st) {
+    if (st.art === "kStart") return "🏛️ **Die Konferenz beginnt!**\nAm Tisch sitzen: " + A.abtListe.map(function (d) { return KI[ABT_MAP[d].leiter].name + " (" + ABT_MAP[d].name + ")"; }).join(", ") +
+      " – und ich, Sofie. Paul und Nova sind auch dabei.\nJede Abteilung stellt kurz vor, was sie herausgefunden hat. Danach fassen Paul, Nova und ich alles zusammen und tragen dem Chef das Ergebnis vor.";
+    return "…";
+  }
+
+  /* Die KI laden (läuft im Browser über WebGPU) */
   function gpuDa() { if (!("gpu" in navigator)) return Promise.resolve(false); return navigator.gpu.requestAdapter().then(function (a) { return !!a; }).catch(function () { return false; }); }
-  function balken(p, txt) { $("rundeBar").hidden = p >= 1; $("rundeBarI").style.width = Math.round(p * 100) + "%"; if (txt) $("rundeText").textContent = txt; }
-  function kiLaden() {
-    var wunsch = tempo().modelle;
+  function balken(p, txt) {
+    $("rundeBar").hidden = p >= 1; $("rundeBarI").style.width = Math.round(p * 100) + "%";
+    if (txt && kiJetzt) kiJetzt.text = txt;
+    auftragLeiste();
+  }
+  function kiLaden(tempo) {
+    var wunsch = TEMPO[tempo].modelle;
     if (engine && wunsch.indexOf(engineModell) === 0) return Promise.resolve(engine);
-    if (engine && !engineLaden) {
-      // anderes Tempo gewählt: passende KI nachladen
+    if (engineLaden) return engineLaden;
+    if (engine) {
       engineLaden = engine.reload(wunsch[0]).then(function () { engineModell = wunsch[0]; engineLaden = null; balken(1); return engine; })
         .catch(function () { engineLaden = null; return engine; });
       return engineLaden;
     }
-    if (engineLaden) return engineLaden;
     engineLaden = gpuDa().then(function (ok) {
-      if (!ok) throw new Error("Dieses Gerät kann die KI-Runde nicht starten (es fehlt WebGPU). Öffne den Chat am PC mit einem aktuellen Chrome oder Edge.");
+      if (!ok) { var e = new Error("Dieses Gerät kann die KI nicht ausführen (es fehlt WebGPU). Öffne den Team-Chat am PC mit einem aktuellen Chrome oder Edge."); e.keinGpu = true; throw e; }
       return import(WEBLLM);
     }).then(function (webllm) {
-      var liste = wunsch;
       var versuch = function (i) {
-        engineModell = liste[i];
-        return webllm.CreateMLCEngine(liste[i], { initProgressCallback: function (r) { balken(r.progress || 0, "🤖 KI lädt … " + Math.round((r.progress || 0) * 100) + " %"); } })
-          .catch(function (e) { if (i + 1 < liste.length) return versuch(i + 1); throw e; });
+        engineModell = wunsch[i];
+        return webllm.CreateMLCEngine(wunsch[i], { initProgressCallback: function (r) { balken(r.progress || 0, "🤖 KI lädt … " + Math.round((r.progress || 0) * 100) + " %"); } })
+          .catch(function (e) { if (i + 1 < wunsch.length) return versuch(i + 1); throw e; });
       };
       return versuch(0);
-    }).then(function (e) { engine = e; engineLaden = null; balken(1); KW.save("kw-team-ki-genutzt", true); return e; })
+    }).then(function (e) { engine = e; engineLaden = null; balken(1); KW.save("kw-team-ki-genutzt", true); KW.save("kw-team-ki-tempo", tempo); return e; })
       .catch(function (e) { engineLaden = null; throw e; });
     return engineLaden;
   }
-
-  function verlauf() {
-    // Thema + alles, was seit dem Start der Runde in diesem Kanal geschrieben wurde
-    var tp = tempo();
-    var zeilen = nachrichten.filter(function (m) { return (m.t || 0) >= runde.start - 1000; }).slice(-tp.verlauf).map(function (m) {
-      var wer = m.rolle && ROLLEN[m.rolle] ? ROLLEN[m.rolle].name.replace("🤖 ", "") : "Chef/Team (" + (mitglieder[m.uid] ? mitglieder[m.uid].name : m.name) + ")";
-      return wer + ": " + String(m.text).slice(0, tp.zeichen);
-    });
-    return "Thema der Runde: " + runde.thema + "\n\nBisheriges Gespräch:\n" + (zeilen.join("\n\n") || "(noch nichts)");
-  }
-  function kiSchreiben(rolle, aufgabe) {
-    var r = ROLLEN[rolle], ref = db.ref("team/msgs/" + runde.kanal).push(), t0 = Date.now();
-    var basis = { uid: uid, name: r.name, t: TS(), runde: runde.id, rolle: rolle };
-    return ref.set(Object.assign({ text: "… tippt …" }, basis)).then(function () {
-      return engine.chat.completions.create({
-        messages: [{ role: "system", content: GRUND + " " + r.auftrag }, { role: "user", content: verlauf() + "\n\nDeine Aufgabe jetzt: " + aufgabe }],
-        stream: true, temperature: 0.6, max_tokens: rolle === "planer" && aufgabe.indexOf("Bauauftrag") >= 0 ? 800 : tempo().tokens
-      });
-    }).then(async function (stream) {
-      var voll = "", zuletzt = 0;
-      for await (var teil of stream) {
-        voll += (teil.choices[0] && teil.choices[0].delta && teil.choices[0].delta.content) || "";
-        if (Date.now() - zuletzt > 900 && voll.trim()) { zuletzt = Date.now(); ref.update({ text: voll.slice(0, 3900) }); }
-      }
-      return ref.update(Object.assign({ text: (voll.trim() || "(Keine Antwort – versuch es nochmal.)").slice(0, 3900) }, rolle === "planer" && aufgabe.indexOf("Bauauftrag") >= 0 ? { ende: true } : {}));
-    });
-  }
-  async function rundeLaufen(art) {
-    if (rundeBusy || !runde) return;
-    rundeBusy = true; rundeKnoepfe();
-    try {
-      await kiLaden();
-      if (art === "ende") {
-        $("rundeText").textContent = "🤖 Lea schreibt das Endergebnis …";
-        await kiSchreiben("planer", "Schreibe jetzt den fertigen Bauauftrag für Claude, der ihn bauen soll. Nutze genau diese Gliederung:\n" +
-          "## Auftrag: <kurzer Titel>\n**Ziel:** <1 Satz>\n**Muss können:**\n- <Punkt>\n**Kann später kommen:**\n- <Punkt>\n**Aussehen:** <1-2 Sätze>\n" +
-          "**Regeln:** kostenlos, keine echten Namen, nichts kopieren, kindersicher\n**Fertig ist es, wenn:**\n- <prüfbarer Punkt>\n" +
-          "Übernimm alles, was der Chef entschieden hat. Keine Fragen mehr stellen. Für den Bauauftrag schreibst du ausnahmsweise sachlich und genau, nicht locker.");
-      } else {
-        var liste = tempo()[art];
-        for (var i = 0; i < liste.length; i++) {
-          if (!runde) break;
-          $("rundeText").textContent = ROLLEN[liste[i]].em + " " + ROLLEN[liste[i]].name.replace("🤖 ", "").split(" · ")[0] + " schreibt … (" + (i + 1) + "/" + liste.length + ")";
-          await kiSchreiben(liste[i], (ZUSATZ[art] && ZUSATZ[art][liste[i]]) || "Antworte jetzt in deiner Rolle auf das Thema und das bisherige Gespräch.");
-        }
-      }
-    } catch (e) {
-      KW.toast((e && e.message) || "Die KI-Runde hat nicht geklappt.");
-    }
-    rundeBusy = false; rundeKnoepfe();
-    if (rundeWartet && runde) { var w = rundeWartet; rundeWartet = null; setTimeout(function () { rundeLaufen(w); }, 500); }
-  }
-  // Automatisch antworten: Sobald jemand in der laufenden Runde schreibt, legt das KI-Team los.
-  var ENDE_WORT = /\b(fertig|endergebnis|passt so|so machen wir es)\b/i, rundeTimer = null, rundeWartet = null;
-  function rundeBeobachten(k) {
-    if (!runde || runde.kanal !== k) return;
-    var menschen = nachrichten.filter(function (m) { return !m.rolle && !m.runde && (m.t || 0) >= runde.start; });
-    var letzte = menschen[menschen.length - 1];
-    if (!letzte) return;
-    if (runde.zuletzt === undefined) { runde.zuletzt = letzte.id; KW.save("kw-team-runde", runde); return; } // alte Nachrichten nicht nochmal beantworten
-    if (letzte.id === runde.zuletzt) return;
-    runde.zuletzt = letzte.id; KW.save("kw-team-runde", runde);
-    var art = ENDE_WORT.test(letzte.text) ? "ende" : "weiter";
-    clearTimeout(rundeTimer);
-    rundeTimer = setTimeout(function () {
-      if (rundeBusy) { rundeWartet = art; return; }
-      rundeLaufen(art);
-    }, 1200);
-  }
-
-  function rundeKnoepfe() {
-    var aktiv = runde && runde.kanal === aktKanal;
-    $("rundeLeiste").hidden = !aktiv;
-    if (!aktiv) return;
-    ["rundeWeiter", "rundeEnde"].forEach(function (b) { $(b).disabled = rundeBusy; });
-    if (!rundeBusy) $("rundeText").textContent = "🤖 KI-Runde: " + runde.thema.slice(0, 60) + (runde.thema.length > 60 ? "…" : "") + " – antworte einfach unten, das KI-Team antwortet von selbst. Schreib „fertig“ für das Endergebnis.";
-  }
-  $("rundeBtn").onclick = function () {
-    if (runde && runde.kanal === aktKanal) { KW.toast("Hier läuft schon eine KI-Runde."); return; }
-    $("rundeThema").value = ""; $("rundeDlg").showModal(); setTimeout(function () { $("rundeThema").focus(); }, 50);
-  };
-  $("rundeAbbruch").onclick = function () { $("rundeDlg").close(); };
-  $("rundeForm").addEventListener("submit", function (e) {
-    var th = $("rundeThema").value.trim(); if (!th) { e.preventDefault(); return; }
-    var tw = document.querySelector('#rundeForm input[name="tempo"]:checked');
-    runde = { id: KW.id(), thema: th, start: Date.now(), kanal: aktKanal, zuletzt: "", tempo: tw ? tw.value : "schnell" };
-    KW.save("kw-team-runde", runde);
-    db.ref("team/msgs/" + aktKanal).push({ uid: uid, name: ich.name, text: "🤖 KI-Runde gestartet: " + th, t: TS(), runde: runde.id }).then(function () {
-      rundeKnoepfe(); setTimeout(function () { rundeLaufen("start"); }, 300);
-    }).catch(function () { KW.toast("Starten ging nicht."); });
-  });
-  $("rundeWeiter").onclick = function () { rundeLaufen("weiter"); };
-  $("rundeEnde").onclick = function () { rundeLaufen("ende"); };
-  $("rundeStopp").onclick = function () { if (rundeBusy) { KW.toast("Warte kurz, bis die KI fertig ist."); return; } runde = null; KW.save("kw-team-runde", null); rundeKnoepfe(); };
-  $("liste").addEventListener("click", function (e) {
-    var b = e.target.closest("[data-kopie]"); if (!b) return;
-    var m = nachrichten.find(function (x) { return x.id === b.dataset.kopie; }); if (!m) return;
-    var txt = "Auftrag aus der KI-Runde im Kometen-Team:\n\n" + m.text + "\n\nBitte mit dem Kometenwerk-KI-Team bauen.";
-    (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { KW.toast("Kopiert! Jetzt bei Claude einfügen."); })
-      .catch(function () { window.prompt("Kopiere diesen Text:", txt); });
-  });
-
-  // Wurde die KI auf diesem Gerät schon benutzt? Dann still im Hintergrund vorladen, damit die nächste Runde sofort startet.
   function vorladen() {
-    if (!KW.load("kw-team-ki-genutzt", false) || engine || engineLaden) return;
-    var los = function () { kiLaden().catch(function () {}); };
+    if (!rechneHier() || !KW.load("kw-team-ki-genutzt", false) || engine || engineLaden) return;
+    var los = function () { kiLaden(KW.load("kw-team-ki-tempo", "schnell")).catch(noop); };
     if ("requestIdleCallback" in window) requestIdleCallback(los, { timeout: 8000 }); else setTimeout(los, 4000);
   }
+
+  /* Wer rechnet? Nur ein Gerät gleichzeitig (Herzschlag alle 15 Sekunden) */
+  function rechneHier() { return !!KW.load("kw-team-rechner", false); }
+  function rechnerSetzen(an) {
+    if (!an) { KW.save("kw-team-rechner", false); auftragLeiste(); return; }
+    gpuDa().then(function (ok) {
+      if (!ok) { KW.save("kw-team-rechner", false); KW.toast("Dieses Gerät kann die KI nicht ausführen (es fehlt WebGPU). Nimm am besten einen PC mit Chrome oder Edge."); auftragLeiste(); return; }
+      KW.save("kw-team-rechner", true); KW.toast("🤖 Dieses Gerät rechnet jetzt für das KI-Team."); pauseBis = 0; auftragLeiste(); arbeitenBald(200);
+    });
+  }
+  function anderRechner() {
+    var n = jetzt();
+    for (var k in rechner) { var r = rechner[k]; if (r && (r.uid !== uid || r.tab !== TAB) && n - (r.t || 0) < 45000) return r; }
+    return null;
+  }
+  function herzschlag() {
+    var ref = db.ref("team/msgs/kirechner/" + uid);
+    ref.set({ uid: uid, name: ich ? ich.name : "?", text: "rechnet", t: TS(), tab: TAB }).catch(noop);
+    try { ref.onDisconnect().remove(); } catch (e) {}
+  }
+  function herzschlagEnde() { if (rechner[uid] && rechner[uid].tab === TAB) db.ref("team/msgs/kirechner/" + uid).remove().catch(noop); }
+
+  function arbeitenBald(ms) { clearTimeout(arbeitTimer); arbeitTimer = setTimeout(arbeiten, ms == null ? 500 : ms); }
+  async function arbeiten() {
+    if (kiBusy || !rechneHier() || !ich || Date.now() < pauseBis) return;
+    var job = naechsteAufgabe();
+    if (!job) return;
+    if (anderRechner()) { auftragLeiste(); return; }
+    kiBusy = true; kiFehler = "";
+    herzschlag(); var hz = setInterval(herzschlag, 15000);
+    try {
+      while (job && rechneHier()) {
+        kiJetzt = { aid: job.A.id, text: "🤖 KI lädt …" }; auftragLeiste();
+        if (!job.st.fix) await kiLaden(tempoVon(job.A));
+        await schrittAusfuehren(job.A, job.st);
+        fertigeSchritte[rk(job.A.id, job.st.raum) + "|" + job.st.schritt] = true;
+        await warte(250);
+        job = naechsteAufgabe();
+      }
+    } catch (e) {
+      kiFehler = (e && e.message) || "Die KI hat nicht geklappt.";
+      KW.toast(kiFehler);
+      if (e && e.keinGpu) KW.save("kw-team-rechner", false);
+      pauseBis = Date.now() + 60000; arbeitenBald(61000);
+    }
+    clearInterval(hz); kiBusy = false; kiJetzt = null; herzschlagEnde(); auftragLeiste(); kanalListeBald();
+  }
+  async function schrittAusfuehren(A, st) {
+    var key = rk(A.id, st.raum), k = KI[st.kid];
+    (raeume[key] || []).forEach(function (m) { if (m.laeuft && m.uid === uid) db.ref("team/msgs/" + key + "/" + m.id).remove().catch(noop); });
+    kiJetzt = { aid: A.id, text: k.em + " " + k.name + " schreibt " + (st.raum === "konferenz" ? "in der Konferenz" : "in " + ABT_MAP[st.raum].name) + " …" };
+    auftragLeiste();
+    var basis = { uid: uid, name: k.name + " · " + kiTitel(st.kid), t: TS(), rolle: st.kid, auftrag: A.id, schritt: st.schritt };
+    if (st.fix) { await db.ref("team/msgs/" + key).push(Object.assign({ text: festText(A, st) }, basis)); return; }
+    var ref = db.ref("team/msgs/" + key).push();
+    kiJetzt.ref = ref.key;
+    await ref.set(Object.assign({ text: "… schreibt …", laeuft: true }, basis));
+    var voll = "";
+    for (var versuch = 0; versuch < 2; versuch++) {
+      try {
+        var p = promptBauen(A, st, versuch ? 0.5 : 1);
+        var stream = await engine.chat.completions.create({
+          messages: [{ role: "system", content: p.sys }, { role: "user", content: p.user }],
+          stream: true, temperature: 0.6, max_tokens: st.tokens || TEMPO[tempoVon(A)].tokens
+        });
+        voll = ""; var zuletzt = 0;
+        for await (var teil of stream) {
+          voll += (teil.choices[0] && teil.choices[0].delta && teil.choices[0].delta.content) || "";
+          if (Date.now() - zuletzt > 900 && voll.trim()) { zuletzt = Date.now(); ref.update({ text: voll.slice(0, 3900) }).catch(noop); }
+        }
+        break;
+      } catch (e) {
+        if (versuch === 0 && /context|token|length|prompt/i.test(String(e && e.message))) continue; // zu lang → mit halb so viel Text nochmal
+        await ref.remove().catch(noop); throw e;
+      }
+    }
+    if (!voll.trim()) { await ref.remove().catch(noop); throw new Error("Die KI hat nichts geschrieben. Ich versuche es gleich nochmal."); }
+    var fertig = { text: voll.trim().slice(0, 3900), laeuft: null };
+    if (st.zf) fertig.zf = true;
+    if (st.ende) fertig.ende = true;
+    await ref.update(fertig);
+    if (st.ende) akteSpeichern(A, fertig.text);
+  }
+  function akteSpeichern(A, text) {
+    if (!A.projekt) return;
+    var alt = Object.keys(akten).filter(function (k) { return akten[k].auftrag === A.id && akten[k].uid === uid; })[0];
+    var daten = { uid: uid, name: ich.name, text: text, t: TS(), projekt: A.projekt, titel: A.titel, auftrag: A.id };
+    (alt ? db.ref("team/msgs/akten/" + alt).set(daten) : db.ref("team/msgs/akten").push(daten)).catch(noop);
+  }
+
+  /* Daten hören */
+  function kiTeamStarten() {
+    hoeren(db.ref(".info/serverTimeOffset"), "value", function (s) { zeitVersatz = Number(s.val()) || 0; }, noop);
+    hoeren(db.ref("team/msgs/auftraege").limitToLast(60), "value", function (s) {
+      var v = s.val() || {};
+      auftraege = {};
+      Object.keys(v).forEach(function (id) { var A = v[id]; if (!A || !A.titel) return; A.id = id; A.abtListe = abtListe(A.abt); A.um = Number(A.um) || 0; auftraege[id] = A; });
+      auftraegeGeladen = true;
+      raeumeHoeren();
+      if (oeffneNach && kanalInfo(oeffneNach)) { var o = oeffneNach; oeffneNach = null; kanalOeffnen(o); }
+      else if (raumTeile(aktKanal) && !msgRef) { if (kanalInfo(aktKanal)) kanalOeffnen(aktKanal, true); else if (kanaele.allgemein) kanalOeffnen("allgemein", true); }
+      else if (kanalInfo(aktKanal)) { var inf = kanalInfo(aktKanal); $("kanalTitel").textContent = inf.titel; }
+      kanalListeBald(); auftragLeiste(); arbeitenBald();
+    });
+    hoeren(db.ref("team/msgs/akten").limitToLast(100), "value", function (s) { var v = s.val() || {}; akten = {}; Object.keys(v).forEach(function (k) { v[k].id = k; akten[k] = v[k]; }); });
+    hoeren(db.ref("team/msgs/chefprofil"), "value", function (s) { profile = s.val() || {}; });
+    hoeren(db.ref("team/msgs/kirechner"), "value", function (s) { rechner = s.val() || {}; auftragLeiste(); if (!anderRechner()) arbeitenBald(); });
+    vorladen();
+  }
+  function raeumeHoeren() {
+    aktiveAuftraege().forEach(function (A) {
+      ["konferenz"].concat(A.abtListe).forEach(function (raum) {
+        var key = rk(A.id, raum);
+        if (raumHoerer[key]) return;
+        raumHoerer[key] = true;
+        hoeren(db.ref("team/msgs/" + key).limitToLast(200), "value", function (s) {
+          var v = s.val() || {};
+          var L = Object.keys(v).map(function (id) { var m = v[id]; m.id = id; return m; }).sort(function (a, b) { return (a.t || 0) - (b.t || 0) || (a.id < b.id ? -1 : 1); });
+          var ersteMal = raeume[key] === undefined;
+          raeume[key] = L;
+          if (raum === "konferenz") L.forEach(function (m) {
+            if (!m.ende || m.laeuft || endeGesehen[m.id]) return;
+            endeGesehen[m.id] = true;
+            if (!ersteMal) { KW.toast("✅ Das Ergebnis für „" + A.titel + "“ ist fertig!"); melden("✅ Ergebnis fertig", A.titel); }
+          });
+          kanalListeBald(); if (key === aktKanal) auftragLeiste(); arbeitenBald();
+        });
+      });
+    });
+  }
+  setInterval(function () { if (!kiBusy) arbeiten(); auftragLeiste(); }, 20000);
+
+  /* Seitenleiste: Aufträge mit Konferenz und Abteilungen */
+  function abtZeichen(A, d) {
+    var L = msgsIn(A, d);
+    if (L.some(function (m) { return m.laeuft && Date.now() - (m.t || 0) < 4 * 60000; })) return "✍️";
+    if (abtFertig(A, d)) return "✔";
+    if (L.some(function (m) { return m.rolle && m.schritt && m.schritt !== "auftrag"; })) return "…";
+    return "";
+  }
+  function konfZeichen(A) { if (hatErgebnis(A)) return "✅"; if (kGestartet(A)) return "läuft"; return uhr(A.um); }
+  function auftragsListe() {
+    if (!auftraegeGeladen) return "";
+    var h = '<h3 class="mk">Aufträge<button type="button" class="neuA" data-neua="1">+ Neu</button></h3>';
+    var akt = aktiveAuftraege().reverse(), erl = Object.keys(auftraege).map(function (k) { return auftraege[k]; }).filter(function (A) { return A.aktiv === false; });
+    if (!akt.length) h += '<p class="leerA">Noch kein Auftrag. Tipp auf „+ Neu“.</p>';
+    var sub = function (k, label, st) {
+      return '<button class="kanal sub' + (k === aktKanal ? " akt" : "") + '" type="button" data-k="' + esc(k) + '">' + esc(label) + (st ? '<span class="st">' + esc(st) + '</span>' : "") + '</button>';
+    };
+    akt.forEach(function (A) {
+      var offen = offenA === A.id;
+      h += '<button class="kanal auf' + (offen ? " offen" : "") + '" type="button" data-aufz="' + esc(A.id) + '" aria-expanded="' + offen + '">' + (offen ? "▾" : "▸") + ' 📝 <span class="nm">' + esc(A.titel) + '</span></button>';
+      if (offen) {
+        h += sub(rk(A.id, "konferenz"), "🏛️ Konferenz", konfZeichen(A));
+        A.abtListe.forEach(function (d) { h += sub(rk(A.id, d), ABT_MAP[d].em + " " + ABT_MAP[d].name, abtZeichen(A, d)); });
+      }
+    });
+    if (erl.length) {
+      h += '<button class="kanal" type="button" data-erl="1" aria-expanded="' + erlOffen + '">' + (erlOffen ? "▾" : "▸") + " Erledigte Aufträge (" + erl.length + ")</button>";
+      if (erlOffen) erl.sort(function (a, b) { return (b.t || 0) - (a.t || 0); }).forEach(function (A) { h += sub(rk(A.id, "konferenz"), "✓ " + A.titel, ""); });
+    }
+    return h;
+  }
+
+  /* Leiste über dem Eingabefeld */
+  function arbeitOffen(A) { return A.aktiv !== false && (!!naechsteFuer(A) || !hatErgebnis(A)); }
+  function auftragLeiste() {
+    var t = raumTeile(aktKanal), A = t && auftraege[t.aid];
+    $("aLeiste").hidden = !A;
+    if (!A) return;
+    var s, fertig = A.abtListe.filter(function (d) { return abtFertig(A, d); }).length;
+    if (A.aktiv === false) s = "✓ Dieser Auftrag ist abgeschlossen.";
+    else if (hatErgebnis(A) && !naechsteFuer(A)) s = "✅ Das Ergebnis ist fertig. Willst du etwas ändern? Schreib es einfach in die Konferenz.";
+    else if (kGestartet(A)) s = "🏛️ Die Konferenz läuft …";
+    else if (startGewuenscht(A)) s = "🏛️ Die Konferenz startet gleich …";
+    else s = "Abteilungen: " + fertig + " von " + A.abtListe.length + " fertig · 🏛️ Konferenz " + wann(A.um) + (verpasst(A) ? " (verpasst – starte sie per Knopf)" : "");
+    var r = "";
+    var ander = anderRechner();
+    if (kiBusy && kiJetzt && kiJetzt.aid === A.id) r = kiJetzt.text;
+    else if (ander) r = "🤖 Die KI rechnet auf dem Gerät von " + ander.name + ".";
+    else if (A.aktiv !== false && kiFehler && rechneHier()) r = "⚠️ " + kiFehler;
+    else if (arbeitOffen(A) && !rechneHier()) r = "Gerade rechnet kein Gerät für das KI-Team.";
+    $("aStatus").textContent = s + (r ? " · " + r : "");
+    var b = "";
+    if (A.aktiv !== false && !kGestartet(A) && !startGewuenscht(A)) b += '<button class="btn small primary" type="button" data-aa="konf">🏛️ Konferenz jetzt</button>';
+    if (A.aktiv !== false && !rechneHier() && !ander && arbeitOffen(A)) b += '<button class="btn small" type="button" data-aa="hier">🤖 Hier rechnen lassen</button>';
+    if (A.projekt) b += '<button class="btn small" type="button" data-aa="akte">📁 Akte</button>';
+    if (A.uid === uid && A.aktiv !== false) b += '<button class="btn small" type="button" data-aa="fertig">✓ Abschließen</button>';
+    if ($("aKnoepfe").innerHTML !== b) $("aKnoepfe").innerHTML = b;
+  }
+  $("aKnoepfe").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-aa]"); if (!b) return;
+    var t = raumTeile(aktKanal), A = t && auftraege[t.aid]; if (!A) return;
+    var was = b.dataset.aa;
+    if (was === "konf") {
+      db.ref("team/msgs/" + rk(A.id, "konferenz")).push({ uid: uid, name: ich.name, text: "🏛️ Bitte die Konferenz jetzt starten.", t: TS(), start: true })
+        .then(function () { if (t.raum !== "konferenz") kanalOeffnen(rk(A.id, "konferenz")); arbeitenBald(); }).catch(function () { KW.toast("Das ging nicht."); });
+    } else if (was === "hier") rechnerSetzen(true);
+    else if (was === "akte") akteZeigen(A.projekt);
+    else if (was === "fertig") {
+      if (confirm("Auftrag „" + A.titel + "“ abschließen? Die KI arbeitet dann nicht mehr daran. Die Chats bleiben unter „Erledigte Aufträge“.")) db.ref("team/msgs/auftraege/" + A.id).update({ aktiv: false }).catch(function () { KW.toast("Das ging nicht."); });
+    }
+  });
+
+  /* Projektakte */
+  function akteZeigen(projekt) {
+    var l = Object.keys(akten).map(function (k) { return akten[k]; }).filter(function (a) { return norm(a.projekt) === norm(projekt); }).sort(function (a, b) { return (b.t || 0) - (a.t || 0); });
+    $("akteTitel").textContent = "📁 Projektakte: " + projekt;
+    $("akteInhalt").innerHTML = l.length ? l.map(function (a) {
+      return '<div class="akte"><b>' + esc(a.titel) + '</b> <small class="muted">' + esc(wann(a.t || Date.now())) + '</small><div class="txt">' + format(a.text) + '</div><button class="btn small" type="button" data-akopie="' + esc(a.id) + '">📋 Für Claude kopieren</button></div>';
+    }).join("") : '<p class="muted">Noch keine Beschlüsse. Sobald eine Konferenz ein Ergebnis hat, landet es automatisch hier – und das Team liest es beim nächsten Auftrag zu diesem Projekt mit.</p>';
+    $("akteDlg").showModal();
+  }
+  $("akteInhalt").addEventListener("click", function (e) { var b = e.target.closest("[data-akopie]"); if (b && akten[b.dataset.akopie]) kopieren(akten[b.dataset.akopie].text); });
+  function kopieren(text) {
+    var txt = "Bauauftrag aus der Konferenz im Kometen-Team:\n\n" + text + "\n\nBitte so bauen.";
+    (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { KW.toast("Kopiert! Jetzt bei Claude einfügen."); })
+      .catch(function () { window.prompt("Kopiere diesen Text:", txt); });
+  }
+  $("liste").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-kopie]"); if (!b) return;
+    var m = nachrichten.find(function (x) { return x.id === b.dataset.kopie; }); if (m) kopieren(m.text);
+  });
+
+  /* Neuer Auftrag */
+  var abtManuell = false;
+  function naechsteZeit(hhmm) {
+    var p = String(hhmm || "17:00").split(":"), d = new Date();
+    d.setHours(Number(p[0]) || 0, Number(p[1]) || 0, 0, 0);
+    if (d.getTime() <= Date.now() + 60000) d.setDate(d.getDate() + 1);
+    return d.getTime();
+  }
+  function abtWahlZeigen(gewaehlt) {
+    $("abtWahl").innerHTML = ABT.map(function (a) {
+      var fest = a.id === "sicherheit", an = fest || gewaehlt.indexOf(a.id) >= 0;
+      return '<label><input type="checkbox" name="aabt" value="' + a.id + '"' + (an ? " checked" : "") + (fest ? " disabled" : "") + ' style="margin-top:3px"><span>' + a.em + " " + esc(a.name) +
+        '<small>Vorsitz: ' + esc(KI[a.leiter].name) + (fest ? " · immer dabei" : "") + '</small></span></label>';
+    }).join("");
+  }
+  function zeitHinweis() { $("aZeitHinweis").textContent = "→ " + wann(naechsteZeit($("aZeit").value)); }
+  function auftragDialog() {
+    if (!ich) return;
+    abtManuell = false;
+    $("aTitel").value = ""; $("aInhalt").value = ""; $("aZeit").value = "17:00";
+    var k = kanaele[aktKanal] && kanaele[aktKanal].name;
+    $("aProjekt").value = k && k !== "allgemein" && k !== "ideen" && k !== "bugs" ? (APP_NAMEN.filter(function (n) { return norm(n) === norm(k); })[0] || "") : "";
+    var proj = APP_NAMEN.slice();
+    Object.keys(akten).forEach(function (x) { if (akten[x].projekt && proj.indexOf(akten[x].projekt) < 0) proj.push(akten[x].projekt); });
+    Object.keys(auftraege).forEach(function (x) { if (auftraege[x].projekt && proj.indexOf(auftraege[x].projekt) < 0) proj.push(auftraege[x].projekt); });
+    $("projektListe").innerHTML = proj.map(function (n) { return '<option value="' + esc(n) + '"></option>'; }).join("");
+    document.querySelector('#auftragForm input[name="atempo"][value="schnell"]').checked = true;
+    abtWahlZeigen(vorschlagAbt("")); zeitHinweis();
+    $("auftragDlg").showModal(); setTimeout(function () { $("aTitel").focus(); }, 50);
+  }
+  $("auftragBtn").onclick = auftragDialog;
+  $("auftragAbbruch").onclick = function () { $("auftragDlg").close(); };
+  $("aZeit").addEventListener("input", zeitHinweis);
+  ["aTitel", "aInhalt", "aProjekt"].forEach(function (id) {
+    $(id).addEventListener("input", function () { if (!abtManuell) abtWahlZeigen(vorschlagAbt($("aTitel").value + " " + $("aInhalt").value + " " + $("aProjekt").value)); });
+  });
+  $("abtWahl").addEventListener("change", function () { abtManuell = true; });
+  $("auftragForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var titel = $("aTitel").value.trim().slice(0, 60), text = $("aInhalt").value.trim().slice(0, 3000);
+    if (!titel || !text || !ich) return;
+    var gewaehlt = Array.prototype.map.call(document.querySelectorAll('#abtWahl input:checked'), function (x) { return x.value; });
+    var tw = document.querySelector('#auftragForm input[name="atempo"]:checked');
+    var A = { uid: uid, name: ich.name, text: text, t: TS(), titel: titel, projekt: $("aProjekt").value.trim().slice(0, 40), abt: abtListe(gewaehlt.join(",")).join(","), tempo: tw ? tw.value : "schnell", um: naechsteZeit($("aZeit").value), aktiv: true };
+    var ref = db.ref("team/msgs/auftraege").push(), aid = ref.key;
+    var knopf = $("auftragForm").querySelector('button[type="submit"]'); knopf.disabled = true;
+    ref.set(A).then(function () {
+      var lokal = Object.assign({}, A, { id: aid, abtListe: abtListe(A.abt) });
+      var fest = function (raum, kid, txt) { return db.ref("team/msgs/" + rk(aid, raum)).push({ uid: uid, name: KI[kid].name + " · " + kiTitel(kid), text: txt, t: TS(), rolle: kid, auftrag: aid, schritt: "auftrag" }); };
+      var w = [fest("konferenz", "sofie", "📝 **Neuer Auftrag vom Chef: " + titel + "**\n\n" + text + "\n\nAusgehändigt an: " + lokal.abtListe.map(function (d) { return ABT_MAP[d].em + " " + ABT_MAP[d].name; }).join(", ") +
+        "\n🏛️ Konferenz: " + wann(A.um) + ". Bis dahin kannst du in jede Abteilung reinschreiben, wenn dir etwas fehlt.")];
+      lokal.abtListe.forEach(function (d) {
+        var ex = expertenFuer(lokal, d);
+        w.push(fest(d, ABT_MAP[d].leiter, "📝 Der Auftrag „" + titel + "“ ist bei uns angekommen. Dabei sind " + (ex.length ? namen(ex) + " und ich" : "ich") + ". Wir legen los!"));
+      });
+      return Promise.all(w);
+    }).then(function () {
+      knopf.disabled = false; $("auftragDlg").close();
+      offenA = aid; KW.save("kw-team-offen", aid);
+      oeffneNach = rk(aid, "konferenz");
+      if (kanalInfo(oeffneNach)) { kanalOeffnen(oeffneNach); oeffneNach = null; }
+      KW.toast("📝 Auftrag ausgehändigt!");
+      if (!rechneHier() && !anderRechner()) gpuDa().then(function (ok) {
+        if (ok) rechnerSetzen(true);
+        else KW.toast("Dieses Gerät kann die KI nicht ausführen. Öffne den Team-Chat am PC (Chrome oder Edge) – dort arbeitet das Team weiter.");
+      });
+      else arbeitenBald();
+    }).catch(function () { knopf.disabled = false; KW.toast("Aushändigen ging nicht – bist du noch im Team?"); });
+  });
 
   KW.footer("team", function () { return { hinweis: "Die Nachrichten liegen im Team-Chat, nicht auf diesem Gerät." }; }, function () {});
   start();
