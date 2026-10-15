@@ -180,6 +180,7 @@
     <h3>Impressum</h3><p id="impText"></p>
     <h3>Datenschutz</h3>
     <p>Diese Seite speichert keine Daten über dich und nutzt keine Cookies, keine Tracker und keine Werbung. Die Schrift liegt auf unserem eigenen Server, es wird nichts zu Google geladen. Die Seite liegt bei GitHub Pages (GitHub Inc.); dort werden – wie bei jeder Webseite – technische Daten wie deine IP-Adresse kurz verarbeitet, damit die Seite ausgeliefert werden kann.</p>
+    <p>Damit du nur freie Zeiten siehst, lädt die Seite eine kurze Liste der schon vergebenen Zeiten aus unserer Datenbank bei Google Firebase (Google Ireland Ltd.). Dabei wird deine IP-Adresse technisch übertragen. Es wird nichts über dich gespeichert und kein Konto angelegt.</p>
     <p>Wenn du uns eine Anfrage schickst, bekommen wir deine E-Mail mit den Angaben, die du hineinschreibst. Wir nutzen sie nur, um dir zu antworten, und löschen sie, wenn sie nicht mehr gebraucht wird. Du kannst jederzeit verlangen, dass wir deine Daten löschen.</p>
   </section>
 </main>
@@ -254,14 +255,14 @@
   }
   function slotsFuer(ymd) {
     var d = KW.parse(ymd), key = WD_KEY[d.getDay()], out = [];
-    if (C.gesperrt.indexOf(ymd) >= 0) return out;
+    if (C.gesperrt.indexOf(ymd) >= 0 || VERF[ymd]) return out;
     var grenze = Date.now() + C.vorlaufStunden * 3600000;
     (C.sprechzeiten[key] || []).forEach(function (r) {
       var p = r.split("-"), a = min(p[0]), e = min(p[1]);
       for (var m = a; m + C.terminMinuten <= e; m += C.terminMinuten) {
         var zeit = hhmm(m), ts = new Date(d.getFullYear(), d.getMonth(), d.getDate(), Math.floor(m / 60), m % 60).getTime();
         if (ts < grenze) continue;
-        out.push({ zeit: zeit, belegt: C.belegt.indexOf(ymd + " " + zeit) >= 0 });
+        out.push({ zeit: zeit, belegt: C.belegt.indexOf(ymd + " " + zeit) >= 0 || !!VERF[ymd + " " + zeit] });
       }
     });
     return out;
@@ -385,11 +386,27 @@
     zeichnen(); C = E; alles();
   }
 
-  var ONLINE = STANDARD;
-  fetch("einstellungen.json", { cache: "no-cache" }).then(function (r) { if (!r.ok) throw 0; return r.json(); })
-    .then(function (d) { ONLINE = d; }).catch(function () { ONLINE = STANDARD; })
-    .then(function () {
-      C = sauber(ONLINE); woche = ersteFreieWoche(); alles();
+  /* Freie Zeiten: Sofie (Kometen-Team) sperrt automatisch Zeiten, an denen wir nicht können. Hier steht nur „vergeben“, nie warum. */
+  var VERF_URL = "https://krawallzoo-default-rtdb.europe-west1.firebasedatabase.app/public/verfuegbar.json";
+  function verfHolen() {
+    var ctrl = "AbortController" in window ? new AbortController() : null, t = setTimeout(function () { if (ctrl) ctrl.abort(); }, 6000);
+    return fetch(VERF_URL, ctrl ? { cache: "no-cache", signal: ctrl.signal } : { cache: "no-cache" }).then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (d) { clearTimeout(t); var o = {}; if (d && typeof d.zu === "string") d.zu.split(",").forEach(function (k) { k = k.trim(); if (/^\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?$/.test(k)) o[k] = true; }); return o; })
+      .catch(function () { clearTimeout(t); return {}; });
+  }
+  var ONLINE = STANDARD, VERF = {};
+  Promise.all([
+    fetch("einstellungen.json", { cache: "no-cache" }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (d) { ONLINE = d; }).catch(function () { ONLINE = STANDARD; }),
+    verfHolen().then(function (o) { VERF = o; })
+  ]).then(function () {
+      C = sauber(ONLINE); woche = ersteFreieWoche();
+      var sl = (new URLSearchParams(location.search).get("slot") || "").match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})$/);
+      if (sl && slotsFuer(sl[1]).some(function (x) { return x.zeit === sl[2] && !x.belegt; })) {
+        wahl = { datum: sl[1], zeit: sl[2] };
+        woche = Math.max(0, Math.round(KW.days(montag(KW.today()), montag(sl[1])) / 7));
+      }
+      alles();
+      if (sl) setTimeout(function () { var z = $("termin"); if (z) z.scrollIntoView({ block: "start" }); }, 50);
       if (/[?&]chef\b/.test(location.search)) chefModus();
     });
 })();

@@ -1,5 +1,5 @@
 // Offline-Speicher für Kometen-Team
-const V = "kw-team-baa5a717";
+const V = "kw-team-ae3a42a3";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "../shared/kw.css", "../shared/kw.js"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -10,13 +10,14 @@ self.addEventListener("activate", e => {
     .then(() => self.clients.claim()));
 });
 const FREMD = ["fonts.googleapis.com", "fonts.gstatic.com", "raw.githubusercontent.com", "cdn.jsdelivr.net"];
+const NETZ = []; // diese Dateien immer frisch aus dem Netz holen (z. B. Einstellungen)
 self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   const eigen = url.origin === location.origin;
   if (!eigen && !FREMD.includes(url.hostname)) return;
-  if (req.mode === "navigate" || url.hostname === "raw.githubusercontent.com") {
+  if (req.mode === "navigate" || url.hostname === "raw.githubusercontent.com" || (eigen && NETZ.some(n => url.pathname.endsWith("/" + n)))) {
     // Erst Netz (damit es aktuell ist), sonst gespeicherte Version
     e.respondWith(fetch(req).then(r => {
       if (r.ok) { const c = r.clone(); caches.open(V).then(x => x.put(req, c)); }
