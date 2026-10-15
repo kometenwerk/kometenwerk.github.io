@@ -96,6 +96,10 @@ body.results .res{display:block}
 .hit h3 a:hover{text-decoration:underline}
 .hit p{margin:0;color:var(--muted);font-size:.93rem;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 mark{background:var(--accent-soft);color:inherit;border-radius:3px;padding:0 1px}
+.src .wikiW{font-family:Georgia,"Times New Roman",serif;font-weight:700;font-size:.85rem;color:var(--ink);border:1px solid var(--line)}
+#wiki{margin-top:18px;padding-top:4px;border-top:2px solid var(--line)}
+.lizenz{font-size:.75rem;color:var(--muted);margin:10px 0 0}
+.lizenz a{color:inherit}
 .web{margin:22px 0 0;padding:16px;border-radius:14px;background:var(--bg2);font-size:.92rem;color:var(--muted)}
 .web a{color:var(--link);font-weight:500}
 .status{color:var(--muted);padding:20px 0}
@@ -187,7 +191,7 @@ dialog form{text-align:right;margin-top:16px}
       <button class="btn" type="submit" form="f1">Kometen-Suche</button>
       <button class="btn" type="button" id="zufall">Überrasch mich</button>
     </div>
-    <p class="hint">Die Kometen-Suche durchsucht alle Apps von Kometenwerk. Für das ganze Internet leiten wir dich auf Wunsch zu DuckDuckGo weiter.</p>
+    <p class="hint">Die Kometen-Suche durchsucht alle Apps von Kometenwerk und das Lexikon Wikipedia. Für das ganze Internet leiten wir dich auf Wunsch zu DuckDuckGo weiter – mit Jugendschutz.</p>
   </section>
 
   <section class="res" aria-label="Suchergebnisse">
@@ -228,13 +232,16 @@ dialog form{text-align:right;margin-top:16px}
   <h2>So funktioniert die Kometen-Suche</h2>
   <p>Die Suche läuft komplett in deinem Browser. Sie lädt die Inhalte unserer Apps und sucht darin nach deinen Wörtern. Treffer im Titel zählen mehr als Treffer im Text, neuere Beiträge kommen bei Gleichstand zuerst.</p>
   <h3>Was wir nicht speichern</h3>
-  <p>Deine Suchanfragen werden nicht an uns geschickt und nirgends gespeichert.</p>
+  <p>Deine Suchanfragen werden nicht an uns geschickt und von uns nirgends gespeichert.</p>
+  <h3>Wikipedia</h3>
+  <p>Bei „Alle“ und „Wissen“ fragt dein Browser zusätzlich das freie Lexikon Wikipedia nach deinem Suchbegriff. Dafür geht nur der Suchbegriff an Wikipedia (Wikimedia Foundation). Deine eigenen Sachen werden nie an Wikipedia geschickt.</p>
+  <p><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="wikiAn"> Wikipedia mitdurchsuchen</label></p>
   <h3>Meine Sachen</h3>
   <p>Die Suche findet auch deine eigenen Notizen, Hausaufgaben, Lernkarten und Beats aus den Kometen-Apps. Die liegen nur auf deinem Gerät – sie werden nur dort durchsucht und nirgends hingeschickt.</p>
   <h3>Tippfehler</h3>
   <p>Bei kleinen Tippfehlern sucht die Suche automatisch nach dem richtigen Wort, zum Beispiel „klmia“ → „klima“.</p>
   <h3>Das ganze Internet</h3>
-  <p>Eine Suche über das ganze Internet können wir noch nicht selbst anbieten. Dafür gibt es unten in den Ergebnissen einen Link zu DuckDuckGo.</p>
+  <p>Eine Suche über das ganze Internet können wir nicht selbst anbieten – das schaffen nur riesige Rechenzentren. Dafür gibt es unten in den Ergebnissen einen Link zu DuckDuckGo, mit strengem Jugendschutz.</p>
   <form method="dialog"><button class="btn">Schließen</button></form>
 </dialog>
 
@@ -428,6 +435,41 @@ dialog form{text-align:right;margin-top:16px}
     return d.toLocaleDateString("de-DE", {day:"numeric", month:"long", year:"numeric"});
   }
 
+  /* ---------- Wikipedia (freies Lexikon, kostenlos, ohne Schlüssel) ---------- */
+  function wikiErlaubt(){ try { return localStorage.getItem("kw-suche-wiki") !== "aus"; } catch (e) { return true; } }
+  var wikiCache = {};
+  function wikiSuchen(q){
+    var key = norm(q);
+    if (wikiCache[key]) return wikiCache[key];
+    var url = "https://de.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&generator=search&gsrnamespace=0&gsrlimit=5" +
+      "&gsrsearch=" + encodeURIComponent(q) + "&prop=extracts%7Cinfo&exintro=1&explaintext=1&exsentences=2&exlimit=5&inprop=url";
+    var ctrl = "AbortController" in window ? new AbortController() : null;
+    var t = setTimeout(function(){ if (ctrl) ctrl.abort(); }, 7000);
+    wikiCache[key] = fetch(url, ctrl ? {signal:ctrl.signal} : {}).then(function(r){ if (!r.ok) throw 0; return r.json(); }).then(function(d){
+      clearTimeout(t);
+      var seiten = (d && d.query && d.query.pages) || {};
+      return Object.keys(seiten).map(function(k){ return seiten[k]; })
+        .filter(function(x){ return x && x.title && x.extract && !/Begriffsklärung/.test(x.title) && !/bezeichnet:?$/.test(x.extract.trim()); })
+        .sort(function(a, b){ return (a.index || 0) - (b.index || 0); })
+        .map(function(x){ return {titel:x.title, text:x.extract, url:x.fullurl || ("https://de.wikipedia.org/wiki/" + encodeURIComponent(x.title.replace(/ /g, "_")))}; });
+    }).catch(function(){ clearTimeout(t); delete wikiCache[key]; return null; });
+    return wikiCache[key];
+  }
+  var wikiToken = 0;
+  function wikiZeigen(q, token){
+    var box = document.getElementById("wiki");
+    if (!box) return;
+    wikiSuchen(q).then(function(liste){
+      if (token !== wikiToken || !document.getElementById("wiki")) return;
+      if (liste === null){ box.innerHTML = '<p class="status">Wikipedia ist gerade nicht erreichbar.</p>'; return; }
+      if (!liste.length){ box.innerHTML = '<p class="status">Bei Wikipedia haben wir dazu nichts gefunden.</p>'; return; }
+      box.innerHTML = '<p class="count">Aus dem Lexikon Wikipedia</p>' + liste.map(function(e){
+        return '<article class="hit"><div class="src"><span class="ph wikiW" aria-hidden="true">W</span><span><b>Wikipedia</b> · Lexikon</span></div>' +
+          '<h3><a href="' + esc(e.url) + '" target="_blank" rel="noopener">' + markieren(e.titel, q) + '</a></h3><p>' + markieren(e.text, q) + '</p></article>';
+      }).join("") + '<p class="lizenz">Texte aus <a href="https://de.wikipedia.org/" target="_blank" rel="noopener">Wikipedia</a>, der freien Enzyklopädie, unter der Lizenz <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.de" target="_blank" rel="noopener">CC BY-SA 4.0</a>.</p>';
+    });
+  }
+
   var tab = "alle";
   function zeigen(q){
     var out = $("#out");
@@ -457,8 +499,12 @@ dialog form{text-align:right;margin-top:16px}
     if (!liste.length){
       html += '<p class="status">Dazu haben wir in unseren Apps nichts gefunden.</p>';
     }
-    html += '<div class="web">Mehr aus dem ganzen Internet: <a href="https://duckduckgo.com/?q=' + encodeURIComponent(q) + '" rel="noopener">„' + esc(q) + '“ bei DuckDuckGo suchen ↗</a></div>';
+    var mitWiki = (tab === "alle" || tab === "wissen") && wikiErlaubt();
+    if (mitWiki) html += '<div id="wiki" aria-live="polite"><p class="status">Wikipedia wird durchsucht …</p></div>';
+    html += '<div class="web">Mehr aus dem ganzen Internet: <a href="https://duckduckgo.com/?q=' + encodeURIComponent(q) + '&kp=1&kl=de-de" rel="noopener">„' + esc(q) + '“ bei DuckDuckGo suchen ↗</a><br><small>mit strengem Jugendschutz</small></div>';
     out.innerHTML = html;
+    wikiToken++;
+    if (mitWiki) wikiZeigen(q, wikiToken);
   }
 
   function starten(q, push){
@@ -502,6 +548,12 @@ dialog form{text-align:right;margin-top:16px}
     document.querySelectorAll("#tabs button").forEach(function(x){ x.setAttribute("aria-selected", x === b ? "true" : "false"); });
     if (INDEX) zeigen($("#q2").value);
   });
+
+  var wikiBox = document.getElementById("wikiAn");
+  if (wikiBox){
+    wikiBox.checked = wikiErlaubt();
+    wikiBox.addEventListener("change", function(){ try { localStorage.setItem("kw-suche-wiki", wikiBox.checked ? "an" : "aus"); } catch (e) {} if (INDEX && document.body.classList.contains("results")) zeigen($("#q2").value); });
+  }
 
   $("#zufall").addEventListener("click", function(){
     indexLaden().then(function(ix){
