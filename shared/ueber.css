@@ -1,0 +1,71 @@
+/* Kometenwerk – Über uns (Startseite) */
+
+/* Leistungen & Werte */
+.leist,.werte{margin-top:36px}
+.ico{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent)}
+.ico svg{width:28px;height:28px}
+.card .mehr{display:inline-block;margin-top:14px;font-weight:600;color:var(--accent-ink);text-decoration:none}
+.card .mehr:hover{text-decoration:underline}
+.wert{position:relative;overflow:hidden}
+.wert::after{content:"";position:absolute;right:-30px;top:-30px;width:110px;height:110px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--c) 22%,transparent),transparent 70%)}
+.wert .ico{color:var(--c)}
+
+/* KI-Abzeichen */
+.ki{display:inline-block;vertical-align:2px;font-size:.66rem;font-weight:700;letter-spacing:.08em;padding:2px 6px;border-radius:6px;background:#101826;color:#ff8a3c;border:1px solid #ff8a3c;line-height:1.2}
+@media (prefers-color-scheme:dark){.ki{background:rgba(255,138,60,.12)}}
+
+/* Team */
+.spitze{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:36px}
+.person{display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+.person h3{margin:0;font-size:1.1rem}
+.person p{margin:2px 0 0;color:var(--muted);font-size:.93rem}
+.person .rolle,.rolle{color:var(--accent-ink);font-weight:600;font-size:.86rem}
+.person.chef{background:linear-gradient(135deg,#0b111c,#1b2a4a);color:#fff;border-color:#2a3650}
+.person.chef p{color:#c9d2e3}.person.chef .rolle{color:#ffb27e}
+.av-wrap{position:relative;flex:none;line-height:0}
+.av-wrap .em{position:absolute;right:-4px;bottom:-4px;width:26px;height:26px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:grid;place-items:center;font-size:.85rem;line-height:1}
+.chef-av{width:72px;height:72px;border-radius:50%;background:#0b111c;border:2px solid #ff8a3c;display:grid;place-items:center;overflow:hidden}
+.chef-av svg{width:52px;height:52px}
+.abt-t{margin:48px 0 16px;font-size:1.3rem;text-align:center}
+.abts{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start}
+.abt{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;border-top:4px solid var(--c)}
+.abt header{display:flex;gap:12px;padding:18px 18px 12px;background:linear-gradient(180deg,color-mix(in srgb,var(--c) 10%,transparent),transparent)}
+.abt-em{font-size:1.6rem;line-height:1;width:46px;height:46px;flex:none;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 16%,transparent)}
+.abt h4{margin:0;font-size:1.12rem}
+.abt header p{margin:2px 0 0;color:var(--muted);font-size:.9rem}
+.leiter{display:flex;align-items:center;gap:12px;padding:6px 18px 14px}
+.leiter b{font-size:1.02rem}
+.abt details{border-top:1px solid var(--line)}
+.abt summary{cursor:pointer;padding:12px 18px;font-weight:600;font-size:.92rem;color:var(--accent-ink);list-style:none}
+.abt summary::-webkit-details-marker{display:none}
+.abt summary::before{content:"▸ ";display:inline-block;transition:transform .2s}
+.abt details[open] summary::before{transform:rotate(90deg)}
+.experten{list-style:none;margin:0;padding:0 18px 16px;display:grid;gap:10px}
+.experten li{display:flex;gap:10px;align-items:center;font-size:.92rem;line-height:1.35}
+.experten .rolle{font-weight:500;color:var(--muted)}
+
+/* Geschichte als Umlaufbahn */
+.bahn{list-style:none;margin:40px auto 0;padding:0;max-width:760px;position:relative}
+.bahn::before{content:"";position:absolute;left:27px;top:10px;bottom:10px;border-left:3px dashed color-mix(in srgb,var(--muted) 45%,transparent)}
+.bahn li{position:relative;display:flex;gap:18px;align-items:flex-start;padding:0 0 22px}
+.bahn .planet{position:relative;z-index:1;flex:none;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-size:1.5rem;background:var(--card);border:2px solid var(--line);box-shadow:0 0 0 6px var(--bg2)}
+.bahn .station{flex:1;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.bahn h3{margin:0 0 4px;font-size:1.05rem}
+.bahn p{margin:0;color:var(--muted);font-size:.94rem}
+.bahn .jetzt .planet{border-color:#ff8a3c;box-shadow:0 0 0 6px var(--bg2),0 0 22px rgba(255,138,60,.55)}
+.bahn .jetzt .station{border-color:#ff8a3c}
+.bahn .jetzt h3::after{content:"In Arbeit";margin-left:8px;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink);vertical-align:2px}
+.bahn .zukunft .planet{background:#0b111c;border-color:#ff8a3c}
+.bahn .zukunft .station{background:transparent;border-style:dashed}
+
+/* Ziel */
+.ziel{position:relative;overflow:hidden;background:linear-gradient(135deg,#0b111c,#1b2a4a);color:#fff;padding:84px 0}
+.ziel-in{position:relative;z-index:1;text-align:center;max-width:820px}
+.ziel .h2{font-size:clamp(1.5rem,3.8vw,2.3rem)}
+.ziel .lead{color:#c9d2e3;margin:0 auto}
+.ziel .kicker{color:#ffb27e}
+
+/* Projekt-Kasten */
+.cta{display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between;padding:32px;border-radius:24px;background:linear-gradient(135deg,var(--accent-soft),transparent),var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}
+.cta>div:first-child{flex:1 1 380px}
+@media (max-width:560px){.cta{padding:22px}.sec{padding:56px 0}}

@@ -3,15 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Kometenwerk für Kunden</title>
-<meta name="description" content="Webseiten und Apps von Kometenwerk: Angebote, Sprechzeiten und Termin anfragen.">
+<title>Websites &amp; Apps für Vereine und Betriebe – Kometenwerk</title>
+<meta name="description" content="Kometenwerk baut Websites und kleine Apps für Vereine und kleine Betriebe – schnell, fürs Handy gemacht und ohne Werbung. Angebote ansehen und Termin per Video oder Telefon anfragen.">
 <meta name="theme-color" content="#a21caf">
+<link rel="canonical" href="https://kometenwerk.github.io/kunden/">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Kunden">
 <link rel="stylesheet" href="../shared/kw.css">
+<link rel="stylesheet" href="../shared/nav.css">
 <style>:root{--app:#a21caf;--app-soft:rgba(162,28,175,.14)}</style>
 <link rel="stylesheet" href="../shared/fonts/fonts.css">
 <style>
@@ -77,15 +79,25 @@
 .k-chef .knoepfe{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 @media (max-width:520px){.k-name{font-size:1.9rem}.k-zeiten th,.k-zeiten td{padding:9px 10px}}
 </style>
+<style>
+/* Weltraum-Kopf passend zur neuen Website */
+.k-hero{position:relative;overflow:hidden;margin-top:6px;padding:40px 16px 34px;border-radius:24px;color:#fff;background:radial-gradient(500px 260px at 80% 0%,#1b2a4a,rgba(27,42,74,0) 70%),radial-gradient(400px 240px at 0% 100%,rgba(255,138,60,.14),rgba(255,138,60,0) 70%),linear-gradient(180deg,#0b111c,#101826)}
+.k-hero .k-logo{color:#fff}
+.k-hero .k-name{color:#fff}.k-hero .k-unter{color:#9aa7bd}.k-hero .k-lead{color:#c9d2e3}
+.k-hero .btn:not(.primary){background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.25);color:#fff}
+.k-hero .btn:not(.primary):hover{background:rgba(255,255,255,.12)}
+</style>
 </head>
 <body>
-<header class="kw-bar">
-  <a class="kw-home" href="../" aria-label="Zurück zu Kometenwerk"><svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="currentColor" stroke-opacity=".6" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)" fill="currentColor"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="15" fill="#ff8a3c"/></g></svg></a>
-  <h1>Kometenwerk für Kunden</h1>
-  <span id="kwBarExtra" style="display:contents"></span>
-  <button class="kw-install" id="kwInstall" type="button" hidden>Als App installieren</button>
+<a class="skip" href="#inhalt">Zum Inhalt springen</a>
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="../" aria-label="Kometenwerk – zur Startseite"><svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="#fff" stroke-opacity=".55" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)"><g class="" fill="#fff"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="30" fill="none" stroke="#0b111c" stroke-width="3"/></g><circle r="15" fill="#ff8a3c"/></g></svg><span><b>Kometen</b><span>werk</span></span></a>
+    <button class="burger" type="button" aria-label="Menü" aria-expanded="false" aria-controls="menue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <nav aria-label="Hauptmenü"><ul class="nav-links" id="menue"><li><a href="../">Über uns</a></li><li><a href="../apps/">Apps</a></li><li><a href="../kunden/" aria-current="page">Für Kunden</a></li><li><a href="../hilfe/">Hilfe</a></li><li><a class="icon-link" href="../suche/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>Suche</span></a></li><li><a class="nav-cta" href="../kunden/#termin">Projekt anfragen</a></li></ul></nav>
+  </div>
 </header>
-<main class="kw-main">
+<main class="kw-main" id="inhalt">
   <section class="k-chef" id="chef" hidden aria-label="Chef-Modus"></section>
 
   <section class="k-hero">
@@ -101,7 +113,7 @@
     <p class="k-name"><b>Kometen</b>werk</p>
     <p class="k-unter">SOFTWARE · SPIELE · TECHNIK</p>
     <p class="k-lead">Moderne Webseiten und Apps – schnell, schön und fürs Handy gemacht.</p>
-    <div class="k-cta"><a class="btn primary" href="#termin">📅 Termin anfragen</a><a class="btn" href="#angebote">Angebote ansehen</a></div>
+    <div class="k-cta"><a class="btn primary" href="#termin">📅 Termin anfragen</a><a class="btn" href="#angebote">Angebote ansehen</a><button class="btn" id="kwInstall" type="button" hidden>📲 Als App installieren</button></div>
   </section>
 
   <section class="k-sec" id="ueber">
@@ -112,6 +124,7 @@
         <div class="k-wert"><span class="i" aria-hidden="true">🛡️</span><span><b>Ohne Werbung</b><br>Keine Datensammelei, keine Tracker.</span></div>
         <div class="k-wert"><span class="i" aria-hidden="true">🤝</span><span><b>Ehrlich und persönlich</b><br>Wir sagen klar, was geht und was es kostet.</span></div>
       </div>
+      <p style="margin:14px 0 0"><a href="../#team">Unser Team kennenlernen ›</a> · <a href="../apps/">Alle unsere Apps ›</a></p>
     </div>
   </section>
 
@@ -123,7 +136,7 @@
       <a class="k-card k-bsp" href="../Krawallzoo/"><img src="../icons/krawallzoo.png" alt=""><span><b>Krawallzoo</b><br><span class="muted">Online-Spiel mit Freunden</span></span></a>
       <a class="k-card k-bsp" href="../ND/"><img src="../icons/nachrichten.png" alt=""><span><b>Nachrichten-Heft</b><br><span class="muted">Neutrale Nachrichten-App</span></span></a>
       <a class="k-card k-bsp" href="../planer/"><img src="../planer/icons/icon-192.png" alt=""><span><b>Kometen-Planer</b><br><span class="muted">Web-App für die Schule</span></span></a>
-      <a class="k-card k-bsp" href="../"><img src="icons/icon-192.png" alt=""><span><b>Kometen-Suche</b><br><span class="muted">Unsere Startseite mit Suche</span></span></a>
+      <a class="k-card k-bsp" href="../suche/"><img src="../icons/kometenwerk.svg" alt=""><span><b>Kometen-Suche</b><br><span class="muted">Suche über alle unsere Apps</span></span></a>
     </div>
   </section>
 
@@ -184,9 +197,29 @@
     <p>Wenn du uns eine Anfrage schickst, bekommen wir deine E-Mail mit den Angaben, die du hineinschreibst. Wir nutzen sie nur, um dir zu antworten, und löschen sie, wenn sie nicht mehr gebraucht wird. Du kannst jederzeit verlangen, dass wir deine Daten löschen.</p>
   </section>
 </main>
-<footer class="k-foot">Kometenwerk · Software · Spiele · Technik<br><a href="../">Startseite</a>·<a href="#impressum">Impressum</a>·<a href="#impressum">Datenschutz</a></footer>
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a class="brand" href="../" aria-label="Kometenwerk – zur Startseite"><svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="#fff" stroke-opacity=".55" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)"><g class="" fill="#fff"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="30" fill="none" stroke="#0b111c" stroke-width="3"/></g><circle r="15" fill="#ff8a3c"/></g></svg><span><b>Kometen</b><span>werk</span></span></a>
+        <p>Ein junges Studio aus Deutschland. Wir bauen Apps, Spiele und Websites – sicher, ehrlich und ohne Werbung.</p>
+      </div>
+      <div><h2>Entdecken</h2><ul>
+        <li><a href="../">Über uns</a></li><li><a href="../#team">Unser Team</a></li><li><a href="../apps/">Alle Apps</a></li><li><a href="../suche/">Kometen-Suche</a></li></ul></div>
+      <div><h2>Beliebt</h2><ul>
+        <li><a href="../Krawallzoo/">Krawallzoo</a></li><li><a href="../ND/">Nachrichten-Heft</a></li><li><a href="../planer/">Kometen-Planer</a></li><li><a href="../beats/">Kometen-Beats</a></li></ul></div>
+      <div><h2>Kontakt</h2><ul>
+        <li><a href="../kunden/">Für Kunden</a></li><li><a href="../kunden/#termin">Termin anfragen</a></li><li><a href="../hilfe/">Hilfe &amp; Kontakt</a></li><li><a href="https://github.com/kometenwerk" rel="noopener">GitHub</a></li></ul></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span data-jahr>2026</span> Kometenwerk · Software · Spiele · Technik</span>
+      <span><a href="../impressum/">Impressum</a> · <a href="../datenschutz/">Datenschutz</a></span>
+    </div>
+  </div>
+</footer>
 
 <script src="../shared/kw.js"></script>
+<script src="../shared/site.js" defer></script>
 <script>
 (function () {
   "use strict";

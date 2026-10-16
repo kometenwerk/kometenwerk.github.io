@@ -3,942 +3,126 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Kometenwerk</title>
-<meta name="description" content="Die Kometen-Suche durchsucht alle Apps von Kometenwerk: Nachrichten, Wissen, Podcasts und Spiele.">
-<meta name="theme-color" content="#101826">
-<meta property="og:title" content="Kometenwerk">
-<meta property="og:description" content="Suche in allen Apps von Kometenwerk.">
+<title>Kometenwerk – Apps, Spiele und Websites ohne Werbung</title>
+<meta name="description" content="Kometenwerk ist ein junges Studio aus Deutschland: Wir bauen Apps, Spiele und Websites – sicher, ehrlich und ohne Werbung. Lerne unser Team kennen und entdecke unsere Apps.">
+
+<meta name="theme-color" content="#0b111c">
 <link rel="canonical" href="https://kometenwerk.github.io/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Kometenwerk">
+<meta property="og:title" content="Kometenwerk – Apps, Spiele und Websites ohne Werbung">
+<meta property="og:description" content="Kometenwerk ist ein junges Studio aus Deutschland: Wir bauen Apps, Spiele und Websites – sicher, ehrlich und ohne Werbung. Lerne unser Team kennen und entdecke unsere Apps.">
 <meta property="og:url" content="https://kometenwerk.github.io/">
+<meta property="og:locale" content="de_DE">
 <link rel="icon" href="icons/kometenwerk.svg" type="image/svg+xml">
-<link href="shared/fonts/fonts.css" rel="stylesheet">
-<style>
-:root{
-  --bg:#ffffff;--bg2:#f4f6fa;--card:#ffffff;--ink:#101826;--muted:#5b6578;--line:#dfe3ea;--link:#16407a;
-  --accent:#ff8a3c;--accent-soft:rgba(255,138,60,.14);--shadow:0 1px 3px rgba(16,24,38,.08),0 8px 24px rgba(16,24,38,.08);
-  color-scheme:light;
-}
-@media (prefers-color-scheme:dark){
-  :root{--bg:#101826;--bg2:#0b111c;--card:#172133;--ink:#ffffff;--muted:#9aa7bd;--line:#2a3650;--link:#9cc3ff;--accent-soft:rgba(255,138,60,.18);--shadow:0 8px 24px rgba(0,0,0,.35);color-scheme:dark}
-}
-*{box-sizing:border-box}
-html,body{margin:0;height:100%}
-body{background:var(--bg);color:var(--ink);font-family:'Space Grotesk','Helvetica Neue',Arial,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;min-height:100%}
-a{color:inherit}
-button{font:inherit;color:inherit}
-.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-
-/* Leiste oben */
-.top{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:12px 16px;min-height:64px}
-.top .mini{display:none;align-items:center;gap:10px;text-decoration:none;font-weight:600;margin-right:auto}
-.top .mini svg{width:34px;height:30px}
-.top a.txt{color:var(--muted);text-decoration:none;font-size:.92rem;padding:8px 10px}
-.top a.txt:hover{color:var(--ink)}
-.dots{width:44px;height:44px;border-radius:50%;border:0;background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--muted)}
-.dots:hover,.dots[aria-expanded="true"]{background:var(--bg2);color:var(--ink)}
-.dots svg{width:22px;height:22px}
-
-/* App-Menü */
-.launcher{position:absolute;right:16px;top:60px;width:min(320px,calc(100vw - 32px));background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:14px;z-index:20}
-.launcher[hidden]{display:none}
-.launcher{max-height:min(560px,calc(100vh - 80px));overflow:auto}
-.launcher .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
-.launcher a,.launcher .soon{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;border-radius:14px;text-decoration:none;font-size:.78rem;text-align:center;line-height:1.2}
-.launcher a:hover,.launcher a:focus-visible{background:var(--bg2);outline:none}
-.launcher img,.launcher .ph{width:46px;height:46px;border-radius:12px}
-.launcher .ph{display:grid;place-items:center;background:var(--bg2);border:1px dashed var(--line);font-size:1.3rem}
-.launcher .soon{opacity:.6}
-.launcher p{margin:10px 4px 2px;font-size:.78rem;color:var(--muted);text-align:center}
-
-/* Startansicht */
-main{flex:1}
-.home{display:flex;flex-direction:column;align-items:center;padding:6vh 20px 40px}
-.mark{width:min(150px,38vw);height:auto;color:var(--ink);overflow:visible}
-.gear{transform-box:fill-box;transform-origin:center;animation:turn 24s linear infinite}
-@keyframes turn{to{transform:rotate(360deg)}}
-.word{font-size:clamp(2.6rem,9vw,4.4rem);line-height:1;margin:14px 0 0;letter-spacing:.005em;font-weight:600}
-.word span{font-weight:400}
-.searchbox{position:relative;width:min(620px,100%);margin-top:30px}
-.searchbox input{width:100%;font:inherit;font-size:1.08rem;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:15px 48px 15px 52px;box-shadow:var(--shadow);outline:none;-webkit-appearance:none;appearance:none}
-.searchbox input::-webkit-search-cancel-button{display:none}
-.searchbox input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),var(--shadow)}
-.searchbox .lupe{position:absolute;left:19px;top:50%;width:20px;height:20px;transform:translateY(-50%);color:var(--muted);pointer-events:none}
-.searchbox .clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:var(--muted);cursor:pointer;display:none}
-.searchbox .clear:hover{background:var(--bg2);color:var(--ink)}
-.searchbox.filled .clear{display:grid;place-items:center}
-.btns{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap;justify-content:center}
-.btn{border:1px solid var(--line);background:var(--bg2);border-radius:10px;padding:10px 18px;font-size:.95rem;cursor:pointer;text-decoration:none}
-.btn:hover{border-color:var(--muted)}
-.btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.hint{margin:26px 0 0;color:var(--muted);font-size:.88rem;text-align:center;max-width:520px}
-
-/* Ergebnisansicht */
-body.results .home{display:none}
-body.results .top .mini{display:flex}
-.res{display:none;max-width:720px;padding:0 20px 40px;margin:0 0 0 max(0px,calc((100vw - 1040px)/2))}
-body.results .res{display:block}
-.res .searchbox{margin-top:4px}
-.tabs{display:flex;gap:4px;margin:16px 0 4px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line)}
-.tabs::-webkit-scrollbar{display:none}
-.tabs button{border:0;background:transparent;padding:10px 12px;font-size:.92rem;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
-.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
-.count{color:var(--muted);font-size:.85rem;margin:12px 0 6px}
-.hit{padding:14px 0;border-bottom:1px solid var(--line)}
-.hit:last-child{border-bottom:0}
-.src{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted)}
-.src img,.src .ph{width:22px;height:22px;border-radius:6px;flex:none}
-.src .ph{display:grid;place-items:center;background:var(--bg2);font-size:.8rem}
-.src b{color:var(--ink);font-weight:500}
-.hit h3{margin:6px 0 4px;font-size:1.15rem;font-weight:500;line-height:1.3}
-.hit h3 a{color:var(--link);text-decoration:none}
-.hit h3 a:hover{text-decoration:underline}
-.hit p{margin:0;color:var(--muted);font-size:.93rem;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-mark{background:var(--accent-soft);color:inherit;border-radius:3px;padding:0 1px}
-.src .wikiW{font-family:Georgia,"Times New Roman",serif;font-weight:700;font-size:.85rem;color:var(--ink);border:1px solid var(--line)}
-#wiki{margin-top:18px;padding-top:4px;border-top:2px solid var(--line)}
-.lizenz{font-size:.75rem;color:var(--muted);margin:10px 0 0}
-.lizenz a{color:inherit}
-.web{margin:22px 0 0;padding:16px;border-radius:14px;background:var(--bg2);font-size:.92rem;color:var(--muted)}
-.web a{color:var(--link);font-weight:500}
-.status{color:var(--muted);padding:20px 0}
-
-footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px 18px;padding:16px 20px calc(16px + env(safe-area-inset-bottom,0px));background:var(--bg2);color:var(--muted);font-size:.85rem}
-footer a{text-decoration:none}
-footer a:hover{color:var(--ink)}
-footer nav{display:flex;gap:18px}
-
-dialog{border:1px solid var(--line);border-radius:20px;background:var(--card);color:var(--ink);max-width:min(520px,calc(100vw - 32px));padding:22px 22px 18px}
-dialog::backdrop{background:rgba(10,16,27,.55)}
-dialog h2{margin:0 0 8px;font-size:1.25rem}
-dialog h3{margin:14px 0 2px;font-size:1rem}
-dialog p{margin:0;color:var(--muted);font-size:.94rem}
-dialog form{text-align:right;margin-top:16px}
-
-/* Hilfe & Kontakt */
-dialog.hdlg{width:min(560px,calc(100vw - 24px));max-width:none;max-height:calc(100dvh - 24px);overflow:auto;padding:18px 18px 14px}
-.h-kopf{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.h-kopf h2{margin:0}
-.h-x{width:40px;height:40px;border-radius:50%;border:0;background:var(--bg2);cursor:pointer;font-size:1rem}
-.h-status{margin:10px 0 0;padding:9px 12px;border-radius:12px;background:var(--bg2);font-size:.9rem;color:var(--ink)}
-.h-status.warn{background:#fff4d6;color:#5c3d00}
-@media (prefers-color-scheme:dark){.h-status.warn{background:#3d2e05;color:#ffe3a3}}
-.h-tabs{display:flex;gap:2px;margin:12px 0 10px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
-.h-tabs button{border:0;background:transparent;padding:9px 10px;font-size:.9rem;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
-.h-tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
-.h-p[hidden]{display:none}
-@media (max-width:420px){.h-tabs button{padding:9px 6px;font-size:.84rem}dialog.hdlg{padding:14px 12px 12px}}
-.h-p>p{margin:0 0 10px}
-.h-log{display:flex;flex-direction:column;gap:8px;max-height:260px;min-height:70px;overflow:auto;padding:4px 2px}
-.h-msg{max-width:85%;padding:9px 12px;border-radius:14px;font-size:.94rem;line-height:1.4;background:var(--bg2);align-self:flex-start;white-space:pre-wrap}
-.h-msg.du{align-self:flex-end;background:var(--accent);color:#101826}
-.h-msg .btn{margin-top:8px}
-.h-eingabe{display:flex;gap:6px;margin-top:8px}
-.h-eingabe input{flex:1;min-width:0;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
-.h-eingabe input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.h-mic{width:44px;flex:none;border:1px solid var(--line);background:var(--bg2);border-radius:12px;cursor:pointer;font-size:1.1rem}
-.h-mic.an{background:#dc2626;color:#fff;border-color:#dc2626}
-.h-senden{padding:10px 14px}
-.h-primaer{background:var(--accent);border-color:var(--accent);color:#101826;font-weight:600}
-.h-klein{font-size:.82rem !important;color:var(--muted)}
-dialog .h-klein{margin:6px 0}
-.h-link{border:0;background:none;padding:0;color:var(--link);font:inherit;text-decoration:underline;cursor:pointer}
-.h-faq{border-bottom:1px solid var(--line);padding:2px 0}
-.h-faq summary{cursor:pointer;padding:8px 0;font-weight:500;font-size:.94rem}
-.h-faq p{margin:0 0 10px}
-.h-art{display:flex;gap:16px;flex-wrap:wrap;margin:4px 0 10px}
-.h-art label{display:flex;gap:6px;align-items:center}
-.h-feld{display:flex;flex-direction:column;gap:4px;margin:0 0 10px;font-size:.88rem;color:var(--muted)}
-.h-feld select,.h-feld textarea{font:inherit;font-size:.95rem;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
-.h-feld textarea{resize:vertical}
-.h-fehler{color:#b42318 !important;font-size:.88rem !important;margin:0 0 8px !important}
-@media (prefers-color-scheme:dark){.h-fehler{color:#ff9b8f !important}}
-.h-danke{margin-top:10px;padding:10px 12px;border-radius:12px;background:#e7f6ec;color:#14532d}
-@media (prefers-color-scheme:dark){.h-danke{background:#0f2e1b;color:#b7f0c8}}
-.h-bald{padding:10px 12px;border-radius:12px;background:var(--bg2);color:var(--ink) !important}
-.h-slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;margin:6px 0}
-.h-slot{display:flex;flex-direction:column;align-items:center;padding:9px 6px;border:1px solid var(--line);border-radius:12px;text-decoration:none;font-size:.85rem;color:var(--muted)}
-.h-slot b{color:var(--ink);font-size:1.05rem}
-.h-slot:hover,.h-slot:focus-visible{border-color:var(--accent);outline:none}
-.h-neu{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;font-size:.94rem}
-.h-ds{margin-top:14px;font-size:.85rem;color:var(--muted)}
-.h-ds summary{cursor:pointer}
-.h-ds p{font-size:.82rem;margin:6px 0}
-
-@media (max-width:560px){.top a.txt{display:none}.res{padding:0 16px 32px}}
-@media (prefers-reduced-motion:reduce){.gear{animation:none}.planet{display:none}}
-</style>
+<link rel="stylesheet" href="shared/fonts/fonts.css">
+<link rel="stylesheet" href="shared/nav.css">
+<link rel="stylesheet" href="shared/site.css">
+<link rel="stylesheet" href="shared/ueber.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Organization", "@id": "https://kometenwerk.github.io/#org", "name": "Kometenwerk", "url": "https://kometenwerk.github.io/", "logo": "https://kometenwerk.github.io/icons/kometenwerk.svg", "slogan": "Software · Spiele · Technik", "description": "Junges Studio aus Deutschland, das Apps, Spiele und Websites baut – sicher, ehrlich und ohne Werbung.", "areaServed": "DE", "knowsLanguage": "de", "sameAs": ["https://github.com/kometenwerk"], "knowsAbout": ["Web-Apps", "Webseiten für Vereine", "Spiele", "Roblox", "Arduino", "Künstliche Intelligenz"]}, {"@type": "WebSite", "@id": "https://kometenwerk.github.io/#web", "name": "Kometenwerk", "url": "https://kometenwerk.github.io/", "inLanguage": "de-DE", "publisher": {"@id": "https://kometenwerk.github.io/#org"}, "potentialAction": {"@type": "SearchAction", "target": "https://kometenwerk.github.io/suche/?q={search_term_string}", "query-input": "required name=search_term_string"}}, {"@type": "ItemList", "name": "Apps und Spiele von Kometenwerk", "itemListElement": [{"@type": "ListItem", "position": 1, "url": "https://kometenwerk.github.io/Krawallzoo/", "name": "Krawallzoo"}, {"@type": "ListItem", "position": 2, "url": "https://kometenwerk.github.io/ND/", "name": "Nachrichten-Heft"}, {"@type": "ListItem", "position": 3, "url": "https://kometenwerk.github.io/ND/?app=wissen", "name": "Warum eigentlich?"}, {"@type": "ListItem", "position": 4, "url": "https://kometenwerk.github.io/ND/?app=podcast", "name": "Streitfrage"}, {"@type": "ListItem", "position": 5, "url": "https://kometenwerk.github.io/ND/?app=wetter", "name": "Wetter"}, {"@type": "ListItem", "position": 6, "url": "https://kometenwerk.github.io/planer/", "name": "Kometen-Planer"}, {"@type": "ListItem", "position": 7, "url": "https://kometenwerk.github.io/notizen/", "name": "Kometen-Notizen"}, {"@type": "ListItem", "position": 8, "url": "https://kometenwerk.github.io/quiz/", "name": "Kometen-Quiz"}, {"@type": "ListItem", "position": 9, "url": "https://kometenwerk.github.io/fokus/", "name": "Kometen-Fokus"}, {"@type": "ListItem", "position": 10, "url": "https://kometenwerk.github.io/werkstatt/", "name": "Kometen-Werkstatt"}, {"@type": "ListItem", "position": 11, "url": "https://kometenwerk.github.io/beats/", "name": "Kometen-Beats"}, {"@type": "ListItem", "position": 12, "url": "https://kometenwerk.github.io/ki/", "name": "Kometen-KI"}, {"@type": "ListItem", "position": 13, "url": "https://kometenwerk.github.io/taschengeld/", "name": "Kometen-Taschengeld"}, {"@type": "ListItem", "position": 14, "url": "https://kometenwerk.github.io/suche/", "name": "Kometen-Suche"}]}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Wer steckt hinter Kometenwerk?", "acceptedAnswer": {"@type": "Answer", "text": "Hinter Kometenwerk steht ein Gründer aus Deutschland. Unterstützt wird er von einem eigenen KI-Team, das beim Planen, Gestalten und Prüfen hilft. Die Entscheidungen trifft immer der Chef."}}, {"@type": "Question", "name": "Kosten eure Apps etwas?", "acceptedAnswer": {"@type": "Answer", "text": "Nein. Alle Apps und Spiele von Kometenwerk sind kostenlos und ohne Werbung."}}, {"@type": "Question", "name": "Was kostet eine Website bei Kometenwerk?", "acceptedAnswer": {"@type": "Answer", "text": "Das hängt davon ab, was sie können soll. Nach dem ersten Gespräch bekommst du ein klares Angebot – das Gespräch selbst kostet nichts."}}, {"@type": "Question", "name": "Wie lange dauert eine Website?", "acceptedAnswer": {"@type": "Answer", "text": "Eine einfache Website ist oft in ein bis drei Wochen fertig. Vorher siehst du einen Entwurf und kannst Wünsche sagen."}}, {"@type": "Question", "name": "Sammelt ihr Daten über mich?", "acceptedAnswer": {"@type": "Answer", "text": "Nein. Was du in unseren Apps speicherst, bleibt auf deinem Gerät. Wir nutzen keine Tracker und keine Werbung."}}, {"@type": "Question", "name": "Wie kann ich mit euch sprechen?", "acceptedAnswer": {"@type": "Answer", "text": "Auf der Kunden-Seite suchst du dir eine freie Zeit aus – wir sprechen dann per Videoanruf oder Telefon. Eine Telefonnummer veröffentlichen wir nicht, damit alles sicher bleibt."}}, {"@type": "Question", "name": "Wie installiere ich eine App?", "acceptedAnswer": {"@type": "Answer", "text": "Öffne die App und tipp oben auf „Als App installieren“. Auf dem iPhone: unten auf „Teilen“ und dann „Zum Home-Bildschirm“."}}, {"@type": "Question", "name": "Was ist das KI-Team?", "acceptedAnswer": {"@type": "Answer", "text": "Unser Team besteht aus KI-Rollen mit festen Aufgaben – zum Beispiel Testen, Design oder Sicherheit. Sie sammeln Ideen und prüfen Pläne. Jede KI ist auf dieser Seite mit einem KI-Abzeichen gekennzeichnet."}}]}]}</script>
 </head>
 <body>
-<header class="top">
-  <a class="mini" href="./" aria-label="Zur Startseite von Kometenwerk">
-    <svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="currentColor" stroke-opacity=".55" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)" fill="currentColor"><rect x="-11" y="-58" width="22" height="24" rx="4"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="15" fill="#ff8a3c"/></g></svg>
-    Kometenwerk
-  </a>
-  <a class="txt" href="Krawallzoo/">Krawallzoo</a>
-  <a class="txt" href="ND/">Nachrichten</a>
-  <a class="txt" href="#hilfe" data-hilfe>Hilfe</a>
-  <button class="dots" id="dots" aria-label="Alle Apps von Kometenwerk" aria-expanded="false" aria-controls="launcher">
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg>
-  </button>
-  <div class="launcher" id="launcher" hidden>
-    <div class="grid">
-      <a href="Krawallzoo/"><img src="icons/krawallzoo.png" alt="">Krawallzoo</a>
-      <a href="ND/"><img src="icons/nachrichten.png" alt="">Nachrichten-Heft</a>
-      <a href="ND/?app=wissen"><img src="icons/wissen.png" alt="">Warum eigentlich?</a>
-      <a href="ND/?app=podcast"><img src="icons/podcast.png" alt="">Streitfrage</a>
-      <a href="ND/?app=wetter"><img src="icons/wetter.png" alt="">Wetter</a>
-      <a href="planer/"><img src="planer/icons/icon-192.png" alt="">Planer</a>
-      <a href="notizen/"><img src="notizen/icons/icon-192.png" alt="">Notizen</a>
-      <a href="quiz/"><img src="quiz/icons/icon-192.png" alt="">Quiz</a>
-      <a href="werkstatt/"><img src="werkstatt/icons/icon-192.png" alt="">Werkstatt</a>
-      <a href="ki/"><img src="ki/icons/icon-192.png" alt="">KI</a>
-      <a href="beats/"><img src="beats/icons/icon-192.png" alt="">Beats</a>
-      <a href="fokus/"><img src="fokus/icons/icon-192.png" alt="">Fokus</a>
-      <a href="taschengeld/"><img src="taschengeld/icons/icon-192.png" alt="">Taschengeld</a>
-      <a href="kunden/"><img src="kunden/icons/icon-192.png" alt="">Für Kunden</a>
-      <span class="soon"><span class="ph" aria-hidden="true">🚨</span>Notruf Lindau<br>(bald)</span>
-    </div>
-    <p>Alle Apps von Kometenwerk</p>
+<a class="skip" href="#inhalt">Zum Inhalt springen</a>
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="" aria-label="Kometenwerk – zur Startseite"><svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="#fff" stroke-opacity=".55" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)"><g class="" fill="#fff"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="30" fill="none" stroke="#0b111c" stroke-width="3"/></g><circle r="15" fill="#ff8a3c"/></g></svg><span><b>Kometen</b><span>werk</span></span></a>
+    <button class="burger" type="button" aria-label="Menü" aria-expanded="false" aria-controls="menue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <nav aria-label="Hauptmenü"><ul class="nav-links" id="menue"><li><a href="" aria-current="page">Über uns</a></li><li><a href="apps/">Apps</a></li><li><a href="kunden/">Für Kunden</a></li><li><a href="hilfe/">Hilfe</a></li><li><a class="icon-link" href="suche/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>Suche</span></a></li><li><a class="nav-cta" href="kunden/#termin">Projekt anfragen</a></li></ul></nav>
   </div>
 </header>
-
-<main>
-  <section class="home" aria-label="Kometen-Suche">
-    <svg class="mark" viewBox="0 0 320 300" role="img" aria-label="Kometenwerk Zeichen">
-      <defs>
-        <linearGradient id="s1" x1="190" y1="128" x2="50" y2="250" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="currentColor"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient>
-        <linearGradient id="s2" x1="212" y1="150" x2="120" y2="246" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ff8a3c"/><stop offset="1" stop-color="#ff8a3c" stop-opacity="0"/></linearGradient>
-        <linearGradient id="s3" x1="180" y1="106" x2="96" y2="162" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9aa7bd"/><stop offset="1" stop-color="#9aa7bd" stop-opacity="0"/></linearGradient>
-      </defs>
-      <path d="M64 62 l3 8 l8 3 l-8 3 l-3 8 l-3 -8 l-8 -3 l8 -3 z" fill="#9aa7bd"/>
-      <circle cx="108" cy="40" r="2.5" fill="#9aa7bd"/>
-      <ellipse cx="220" cy="110" rx="92" ry="32" transform="rotate(-24 220 110)" fill="none" stroke="#9aa7bd" stroke-width="2.5" stroke-dasharray="2 7" stroke-linecap="round"/>
-      <path d="M180 106 L96 162" stroke="url(#s3)" stroke-width="6" stroke-linecap="round"/>
-      <path d="M190 128 L50 250" stroke="url(#s1)" stroke-width="22" stroke-linecap="round"/>
-      <path d="M212 150 L120 246" stroke="url(#s2)" stroke-width="9" stroke-linecap="round"/>
-      <g transform="translate(220 110)">
-        <g class="gear" fill="currentColor">
-          <rect x="-11" y="-58" width="22" height="24" rx="4"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/>
-          <circle r="42"/>
-          <circle r="30" fill="none" style="stroke:var(--bg)" stroke-width="3"/>
-        </g>
-        <circle r="15" fill="#ff8a3c"/>
-        <circle cx="-5" cy="-5" r="4" fill="#ffd2b0"/>
-      </g>
-      <g transform="rotate(-24 220 110)">
-        <circle class="planet" r="5" fill="#ff8a3c"><animateMotion dur="9s" repeatCount="indefinite" path="M312 110 A92 32 0 1 1 128 110 A92 32 0 1 1 312 110"/></circle>
-      </g>
-    </svg>
-    <h1 class="word">Kometen<span>werk</span></h1>
-
-    <form class="searchbox" id="f1" role="search">
-      <svg class="lupe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
-      <label class="vh" for="q1">Suchbegriff</label>
-      <input id="q1" type="search" placeholder="Was suchst du?" autocomplete="off" enterkeyhint="search" list="vorschlaege">
-      <button type="button" class="clear" aria-label="Eingabe löschen">✕</button>
-    </form>
-    <div class="btns">
-      <button class="btn" type="submit" form="f1">Kometen-Suche</button>
-      <button class="btn" type="button" id="zufall">Überrasch mich</button>
-      <button class="btn" type="button" data-hilfe>🙋 Hilfe &amp; Kontakt</button>
+<main id="inhalt">
+<section class="hero" aria-labelledby="titel"><svg class="stars" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><circle class="tw" cx="389" cy="91" r="0.7" fill="#fff" opacity="0.54" style="animation-delay:1.5s"/><circle class="tw" cx="70" cy="304" r="0.7" fill="#fff" opacity="0.48" style="animation-delay:1.0s"/><circle class="tw" cx="661" cy="35" r="1.8" fill="#fff" opacity="0.37" style="animation-delay:2.5s"/><circle class="tw" cx="1137" cy="346" r="1.4" fill="#fff" opacity="0.37" style="animation-delay:2.2s"/><circle class="tw" cx="160" cy="251" r="1.8" fill="#fff" opacity="0.42" style="animation-delay:3.3s"/><circle cx="217" cy="349" r="0.9" fill="#fff" opacity="0.55"/><circle cx="75" cy="36" r="0.9" fill="#fff" opacity="0.54"/><circle cx="933" cy="279" r="1.4" fill="#fff" opacity="0.39"/><circle cx="216" cy="468" r="0.7" fill="#fff" opacity="0.54"/><circle cx="1050" cy="438" r="1.1" fill="#fff" opacity="0.29"/><circle class="tw" cx="614" cy="99" r="1.1" fill="#fff" opacity="0.52" style="animation-delay:0.2s"/><circle cx="802" cy="459" r="1.8" fill="#fff" opacity="0.70"/><circle cx="408" cy="210" r="1.4" fill="#fff" opacity="0.50"/><circle cx="1008" cy="567" r="1.4" fill="#fff" opacity="0.29"/><circle cx="877" cy="186" r="1.8" fill="#fff" opacity="0.70"/><circle class="tw" cx="342" cy="231" r="1.1" fill="#fff" opacity="0.50" style="animation-delay:0.7s"/><circle class="tw" cx="141" cy="35" r="1.1" fill="#fff" opacity="0.39" style="animation-delay:1.6s"/><circle cx="1046" cy="48" r="1.4" fill="#fff" opacity="0.40"/><circle class="tw" cx="164" cy="258" r="1.8" fill="#fff" opacity="0.48" style="animation-delay:1.4s"/><circle class="tw" cx="1061" cy="575" r="0.9" fill="#fff" opacity="0.33" style="animation-delay:2.6s"/><circle class="tw" cx="14" cy="499" r="0.9" fill="#fff" opacity="0.25" style="animation-delay:1.7s"/><circle cx="443" cy="340" r="0.9" fill="#fff" opacity="0.53"/><circle cx="741" cy="406" r="0.7" fill="#fff" opacity="0.73"/><circle cx="1142" cy="408" r="1.8" fill="#fff" opacity="0.47"/><circle class="tw" cx="124" cy="381" r="0.7" fill="#fff" opacity="0.79" style="animation-delay:1.8s"/><circle class="tw" cx="132" cy="360" r="0.7" fill="#fff" opacity="0.33" style="animation-delay:0.4s"/><circle cx="436" cy="15" r="0.9" fill="#fff" opacity="0.33"/><circle cx="303" cy="208" r="1.1" fill="#fff" opacity="0.31"/><circle cx="586" cy="587" r="1.4" fill="#fff" opacity="0.30"/><circle cx="123" cy="206" r="1.1" fill="#fff" opacity="0.63"/><circle cx="620" cy="123" r="1.8" fill="#fff" opacity="0.63"/><circle cx="1097" cy="455" r="1.1" fill="#fff" opacity="0.72"/><circle cx="835" cy="157" r="1.1" fill="#fff" opacity="0.45"/><circle class="tw" cx="267" cy="325" r="1.8" fill="#fff" opacity="0.37" style="animation-delay:3.2s"/><circle cx="1182" cy="512" r="0.9" fill="#fff" opacity="0.66"/><circle cx="272" cy="311" r="1.1" fill="#fff" opacity="0.79"/><circle cx="948" cy="283" r="0.9" fill="#fff" opacity="0.78"/><circle cx="537" cy="562" r="1.1" fill="#fff" opacity="0.45"/><circle class="tw" cx="265" cy="136" r="0.9" fill="#fff" opacity="0.52" style="animation-delay:3.9s"/><circle cx="732" cy="1" r="1.1" fill="#fff" opacity="0.30"/><circle cx="793" cy="546" r="0.9" fill="#fff" opacity="0.35"/><circle cx="947" cy="200" r="1.4" fill="#fff" opacity="0.66"/><circle class="tw" cx="102" cy="95" r="0.9" fill="#fff" opacity="0.57" style="animation-delay:1.9s"/><circle cx="787" cy="367" r="1.8" fill="#fff" opacity="0.61"/><circle class="tw" cx="420" cy="329" r="0.9" fill="#fff" opacity="0.69" style="animation-delay:2.9s"/><circle cx="123" cy="450" r="0.9" fill="#fff" opacity="0.73"/><circle class="tw" cx="991" cy="127" r="1.1" fill="#fff" opacity="0.53" style="animation-delay:3.1s"/><circle class="tw" cx="391" cy="327" r="0.9" fill="#fff" opacity="0.66" style="animation-delay:3.6s"/><circle cx="795" cy="489" r="1.8" fill="#fff" opacity="0.75"/><circle cx="602" cy="319" r="1.8" fill="#fff" opacity="0.73"/><circle class="tw" cx="932" cy="365" r="0.9" fill="#fff" opacity="0.51" style="animation-delay:2.9s"/><circle cx="668" cy="196" r="1.8" fill="#fff" opacity="0.52"/><circle class="tw" cx="932" cy="530" r="0.7" fill="#fff" opacity="0.40" style="animation-delay:3.1s"/><circle cx="609" cy="337" r="0.7" fill="#fff" opacity="0.59"/><circle cx="607" cy="307" r="1.1" fill="#fff" opacity="0.54"/><circle cx="574" cy="565" r="1.8" fill="#fff" opacity="0.77"/><circle cx="312" cy="336" r="0.9" fill="#fff" opacity="0.33"/><circle cx="146" cy="265" r="0.7" fill="#fff" opacity="0.49"/><circle cx="255" cy="182" r="0.7" fill="#fff" opacity="0.33"/><circle class="tw" cx="859" cy="396" r="0.9" fill="#fff" opacity="0.33" style="animation-delay:1.9s"/><circle class="tw" cx="896" cy="56" r="1.4" fill="#fff" opacity="0.62" style="animation-delay:0.9s"/><circle class="tw" cx="848" cy="596" r="1.4" fill="#fff" opacity="0.36" style="animation-delay:1.3s"/><circle cx="867" cy="12" r="1.8" fill="#fff" opacity="0.64"/><circle cx="461" cy="310" r="1.1" fill="#fff" opacity="0.29"/><circle class="tw" cx="1182" cy="473" r="0.7" fill="#fff" opacity="0.40" style="animation-delay:3.6s"/><circle cx="218" cy="453" r="1.4" fill="#fff" opacity="0.62"/><circle cx="1135" cy="244" r="1.8" fill="#fff" opacity="0.56"/><circle cx="841" cy="54" r="0.7" fill="#fff" opacity="0.35"/><circle cx="1074" cy="161" r="0.7" fill="#fff" opacity="0.69"/><circle class="tw" cx="100" cy="514" r="0.7" fill="#fff" opacity="0.32" style="animation-delay:0.0s"/><circle cx="1193" cy="251" r="1.1" fill="#fff" opacity="0.27"/><circle class="tw" cx="851" cy="563" r="0.9" fill="#fff" opacity="0.35" style="animation-delay:3.7s"/><circle class="tw" cx="754" cy="319" r="0.9" fill="#fff" opacity="0.53" style="animation-delay:0.7s"/><circle class="tw" cx="416" cy="11" r="1.1" fill="#fff" opacity="0.26" style="animation-delay:2.0s"/><circle cx="1174" cy="309" r="0.9" fill="#fff" opacity="0.31"/><circle cx="983" cy="259" r="1.4" fill="#fff" opacity="0.74"/><circle cx="1164" cy="185" r="0.9" fill="#fff" opacity="0.44"/><circle cx="999" cy="424" r="0.9" fill="#fff" opacity="0.44"/><circle cx="65" cy="78" r="0.7" fill="#fff" opacity="0.73"/><circle cx="517" cy="33" r="1.4" fill="#fff" opacity="0.62"/></svg>
+  <div class="hero-in">
+    <div>
+      <div class="wort"><span class="name"><b>Kometen</b>werk</span><span class="unter">SOFTWARE · SPIELE · TECHNIK</span></div>
+      <h1 id="titel">Wir bauen Apps, Spiele und Websites – <em>sicher, ehrlich und ohne Werbung.</em></h1>
+      <p class="lead">Kometenwerk ist ein junges Studio aus Deutschland. Viele Apps unter einem Dach: kostenlos, fürs Handy gemacht und ohne Datensammelei.</p>
+      <div class="btns"><a class="btn primary" href="apps/">🚀 Unsere Apps ansehen</a><a class="btn ghost" href="kunden/#termin">Projekt anfragen</a></div>
+      <ul class="facts">
+        <li><b>14</b> Apps &amp; Spiele</li>
+        <li><b>0</b> Werbung</li>
+        <li><b>47</b> KI-Helfer im Team</li>
+      </ul>
     </div>
-    <p class="hint">Die Kometen-Suche durchsucht alle Apps von Kometenwerk und das Lexikon Wikipedia. Für das ganze Internet leiten wir dich auf Wunsch zu DuckDuckGo weiter – mit Jugendschutz.</p>
-  </section>
-
-  <section class="res" aria-label="Suchergebnisse">
-    <form class="searchbox" id="f2" role="search">
-      <svg class="lupe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
-      <label class="vh" for="q2">Suchbegriff</label>
-      <input id="q2" type="search" autocomplete="off" enterkeyhint="search" list="vorschlaege">
-      <datalist id="vorschlaege"></datalist>
-      <button type="button" class="clear" aria-label="Eingabe löschen">✕</button>
-    </form>
-    <div class="tabs" role="tablist" id="tabs">
-      <button role="tab" data-t="alle" aria-selected="true">Alle</button>
-      <button role="tab" data-t="news" aria-selected="false">Nachrichten</button>
-      <button role="tab" data-t="wissen" aria-selected="false">Wissen</button>
-      <button role="tab" data-t="podcast" aria-selected="false">Podcasts</button>
-      <button role="tab" data-t="app" aria-selected="false">Apps</button>
-      <button role="tab" data-t="meins" aria-selected="false">Meine Sachen</button>
-    </div>
-    <div id="out" aria-live="polite"></div>
-  </section>
-</main>
-
-<footer>
-  <span>© <span id="jahr">2026</span> Kometenwerk · Gebaut in Deutschland</span>
-  <nav><a href="#hilfe" data-hilfe>Hilfe &amp; Kontakt</a><a href="kunden/">Für Kunden</a><a href="#" id="ueberLink">Über uns</a><a href="#" id="sucheLink">So funktioniert die Suche</a></nav>
-</footer>
-
-<dialog id="ueber">
-  <h2>Über Kometenwerk</h2>
-  <p>Kometenwerk ist ein junges Studio aus Deutschland. Wir bauen Spiele, Apps und Technik.</p>
-  <h3>Was uns wichtig ist</h3>
-  <p>Unsere Apps sind kostenlos und ohne Werbung. Wir kopieren nichts und sammeln so wenig Daten wie möglich.</p>
-  <h3>Wo es hingeht</h3>
-  <p>Viele Apps unter einem Dach, ein Konto für alles, und irgendwann ein eigenes System.</p>
-  <form method="dialog"><button class="btn">Schließen</button></form>
-</dialog>
-<dialog id="hilfe" class="hdlg" aria-labelledby="hTitel">
-  <div class="h-kopf"><h2 id="hTitel">🙋 Hilfe &amp; Kontakt</h2><button type="button" class="h-x" id="hZu" aria-label="Hilfe schließen">✕</button></div>
-  <div class="h-status" id="hStatus" role="status">🔄 Status wird geladen …</div>
-  <div class="h-tabs" role="tablist" aria-label="Bereiche">
-    <button type="button" role="tab" data-h="fragen" aria-selected="true">🤖 Fragen</button>
-    <button type="button" role="tab" data-h="melden" aria-selected="false">📣 Melden</button>
-    <button type="button" role="tab" data-h="termin" aria-selected="false">📅 Termin</button>
-    <button type="button" role="tab" data-h="neu" aria-selected="false">✨ Neu</button>
+    <div class="hero-art"><svg class="big float" viewBox="0 0 320 300" role="img" aria-label="Das Logo von Kometenwerk: ein Zahnrad als Komet mit Schweif und kleinem Planeten auf seiner Umlaufbahn">
+  <defs>
+    <linearGradient id="t1" x1="190" y1="128" x2="50" y2="250" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <linearGradient id="t2" x1="212" y1="150" x2="120" y2="246" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ff8a3c"/><stop offset="1" stop-color="#ff8a3c" stop-opacity="0"/></linearGradient>
+    <linearGradient id="t3" x1="180" y1="106" x2="96" y2="162" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9aa7bd"/><stop offset="1" stop-color="#9aa7bd" stop-opacity="0"/></linearGradient>
+    <radialGradient id="glow"><stop offset="0" stop-color="#ff8a3c" stop-opacity=".55"/><stop offset="1" stop-color="#ff8a3c" stop-opacity="0"/></radialGradient>
+  </defs>
+  <circle cx="220" cy="110" r="88" fill="url(#glow)"/>
+  <path class="tw" d="M64 62 l3 8 l8 3 l-8 3 l-3 8 l-3 -8 l-8 -3 l8 -3 z" fill="#ffc59a"/>
+  <circle cx="108" cy="40" r="2.5" fill="#9aa7bd"/>
+  <ellipse cx="220" cy="110" rx="92" ry="32" transform="rotate(-24 220 110)" fill="none" stroke="#9aa7bd" stroke-width="2.5" stroke-dasharray="2 7" stroke-linecap="round"/>
+  <path class="trail" d="M180 106 L96 162" stroke="url(#t3)" stroke-width="6" stroke-linecap="round"/>
+  <path class="trail" d="M190 128 L50 250" stroke="url(#t1)" stroke-width="22" stroke-linecap="round"/>
+  <path class="trail" d="M212 150 L120 246" stroke="url(#t2)" stroke-width="9" stroke-linecap="round"/>
+  <g transform="translate(220 110)"><g class="gear" fill="#fff"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="30" fill="none" stroke="#0b111c" stroke-width="3"/></g><circle r="15" fill="#ff8a3c"/><circle cx="-5" cy="-5" r="4" fill="#ffd2b0"/></g>
+  <g transform="rotate(-24 220 110)"><circle class="orbit-planet" r="6" fill="#ff8a3c"><animateMotion dur="9s" repeatCount="indefinite" path="M312 110 A92 32 0 1 1 128 110 A92 32 0 1 1 312 110"/></circle></g>
+</svg></div>
   </div>
-
-  <section class="h-p" data-p="fragen" role="tabpanel" aria-label="Fragen">
-    <div class="h-log" id="hLog" aria-live="polite"></div>
-    <div class="h-eingabe" id="hForm">
-      <label class="vh" for="hText">Deine Frage</label>
-      <input id="hText" type="text" maxlength="200" autocomplete="off" enterkeyhint="send" placeholder="Deine Frage …">
-      <button type="button" class="h-mic" id="hMic" aria-label="Frage sprechen" aria-pressed="false">🎙️</button>
-      <button type="button" class="btn h-senden" id="hSenden">Fragen</button>
+</section>
+<section class="sec" id="was" aria-labelledby="wasT"><div class="wrap">
+  <div class="center reveal"><p class="kicker">Was wir machen</p><h2 class="h2" id="wasT">Drei Dinge können wir richtig gut</h2>
+  <p class="lead">Alles, was wir bauen, läuft direkt im Browser – auf dem Handy, dem Tablet und am PC. Viele unserer Apps kann man sogar installieren und offline nutzen.</p></div>
+  <div class="grid g3 leist">
+    <article class="card reveal"><div class="ico" style="--c:#2563eb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2.5"/><path d="M3 8h18M7 6h.01M10 6h.01M8 21h8M12 18v3"/></svg></div><h3>Websites</h3><p>Für Vereine, kleine Betriebe und Projekte: übersichtlich, schnell und schön auf dem Handy.</p><a class="mehr" href="kunden/#angebote">Zu den Angeboten ›</a></article>
+    <article class="card reveal"><div class="ico" style="--c:#16a34a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10.5 18.5h3"/><rect x="9" y="6.5" width="2.5" height="2.5" rx=".6"/><rect x="12.5" y="6.5" width="2.5" height="2.5" rx=".6"/><rect x="9" y="10.5" width="2.5" height="2.5" rx=".6"/><rect x="12.5" y="10.5" width="2.5" height="2.5" rx=".6"/></svg></div><h3>Apps</h3><p>Web-Apps, die man wie eine echte App installieren kann – vom Planer bis zum Lern-Quiz.</p><a class="mehr" href="apps/">Alle Apps ansehen ›</a></article>
+    <article class="card reveal"><div class="ico" style="--c:#db2777"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8h10a4 4 0 0 1 4 4v1.5a3.5 3.5 0 0 1-6.3 2.1L14 14.5h-4l-.7 1.1A3.5 3.5 0 0 1 3 13.5V12a4 4 0 0 1 4-4z"/><path d="M7.5 11v3M6 12.5h3M15.5 12h.01M17.5 13.5h.01"/></svg></div><h3>Spiele</h3><p>Lustige Spiele im Browser und auf Roblox – zum Beispiel Krawallzoo und bald Notruf Lindau.</p><a class="mehr" href="Krawallzoo/">Krawallzoo spielen ›</a></article>
+  </div>
+</div></section>
+<section class="sec alt" id="werte" aria-labelledby="werteT"><div class="wrap"><div class="center reveal"><p class="kicker">Wofür wir stehen</p><h2 class="h2" id="werteT">Unsere vier Versprechen</h2><p class="lead">Danach richten wir jede App, jedes Spiel und jede Website aus.</p></div><div class="grid g4 werte">
+<article class="card wert reveal" style="--c:#16a34a;transition-delay:0ms"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.9-7.5-9.5V6z"/><path d="M8.8 12.2l2.2 2.2 4.4-4.6"/></svg></div><h3>Sicher und kindgerecht</h3><p>Kein Chat mit Fremden, nichts Gefährliches. Unsere Sicherheits-Abteilung darf jederzeit Nein sagen.</p></article>
+<article class="card wert reveal" style="--c:#dc2626;transition-delay:80ms"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10v4h3l6 4V6L7 10z"/><path d="M16.5 9.5a3.5 3.5 0 0 1 0 5"/><path d="M3 3l18 18"/></svg></div><h3>Keine Werbung, kein Datensammeln</h3><p>Deine Notizen, Hausaufgaben und Beats bleiben auf deinem Gerät. Keine Tracker, keine Werbung.</p></article>
+<article class="card wert reveal" style="--c:#2563eb;transition-delay:160ms"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M7 20h10M5 7h14M12 4l-1.5 3h3z"/><path d="M5 7l-3 6a3 3 0 0 0 6 0zM19 7l-3 6a3 3 0 0 0 6 0z"/></svg></div><h3>Neutral und ehrlich</h3><p>Wir sagen klar, was geht und was nicht – und im Nachrichten-Heft kommen immer beide Seiten zu Wort.</p></article>
+<article class="card wert reveal" style="--c:#d97706;transition-delay:240ms"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M12 10.5V9a1.5 1.5 0 0 1 3 0v2"/><path d="M15 10.5a1.5 1.5 0 0 1 3 0v3.5a7 7 0 0 1-7 7h-.5a6 6 0 0 1-5-2.7L3.6 15.2a1.5 1.5 0 0 1 2.4-1.8L9 16V11"/><path d="M5 3.5l-1-1M14.5 3.5l1-1M9.8 1.5V.5"/></svg></div><h3>Einfach zu bedienen</h3><p>Große Knöpfe, klare Texte, kein Fachchinesisch. Wenn man eine Anleitung braucht, bauen wir es nochmal.</p></article>
+</div></div></section>
+<section class="sec" id="team" aria-labelledby="teamT"><div class="wrap"><div class="center reveal"><p class="kicker">Unser Team</p><h2 class="h2" id="teamT">Ein Gründer, unterstützt von 47 KI-Helfern</h2><p class="lead">Im Moment besteht unser Team aus dem Chef und einem eigenen KI-Team in neun Abteilungen. Jede KI hat eine feste Aufgabe und ist mit einem <span class="ki">KI</span>-Abzeichen gekennzeichnet. Die Entscheidungen trifft der Chef.</p></div><div class="spitze"><article class="person chef reveal"><div class="av-wrap chef-av"><svg class="av" viewBox="36 44 250 216" width="72" height="72" aria-hidden="true"><path d="M190 128 L50 250" stroke="#fff" stroke-opacity=".55" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)"><g class="" fill="#fff"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="30" fill="none" stroke="#0b111c" stroke-width="3"/></g><circle r="15" fill="#ff8a3c"/></g></svg></div>
+  <div><h3>Der Chef</h3><p class="rolle">Gründer von Kometenwerk</p><p>Hat die Ideen, trifft alle Entscheidungen und baut zusammen mit Claude die Apps.</p></div></article><article class="person reveal"><div class="av-wrap"><svg class="av" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#ff8a3c" opacity=".16"/><path d="M32 4l2.4 5 5.4.6-4 3.7 1.1 5.4L32 16l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6z" fill="#ff8a3c"/><path d="M32 16v5" stroke="#ff8a3c" stroke-width="2.5"/><path d="M22 20h20l10 16-10 16H22L12 36z" fill="#ff8a3c" stroke="#ff8a3c" stroke-width="2" stroke-linejoin="round"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#ff8a3c" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#ff8a3c" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><path d="M23 36q3-4 6 0M35 36q3-4 6 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><rect x="28" y="40" width="8" height="2.2" rx="1.1" fill="#9aa7bd"/></svg><span class="em" aria-hidden="true">📎</span></div><div><h3>Sofie <span class="ki">KI</span></h3><p class="rolle">Sekretärin</p><p>Stellt Rückfragen, verteilt Aufgaben, fasst zusammen und plant Termine.</p></div></article><article class="person reveal"><div class="av-wrap"><svg class="av" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#ff8a3c" opacity=".16"/><path d="M32 4l2.4 5 5.4.6-4 3.7 1.1 5.4L32 16l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6z" fill="#ff8a3c"/><path d="M32 16v5" stroke="#ff8a3c" stroke-width="2.5"/><rect x="13" y="20" width="38" height="32" rx="11" fill="#ff8a3c"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#ff8a3c" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#ff8a3c" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><rect x="22" y="32.5" width="20" height="5" rx="2.5" fill="#ff8a3c"/><circle cx="27" cy="35" r="1.6" fill="#fff"/><circle cx="37" cy="35" r="1.6" fill="#fff"/><rect x="28" y="40" width="8" height="2.2" rx="1.1" fill="#9aa7bd"/></svg><span class="em" aria-hidden="true">🧭</span></div><div><h3>Paul <span class="ki">KI</span></h3><p class="rolle">Berater</p><p>Schaut von außen drauf und gibt ehrliche Tipps.</p></div></article><article class="person reveal"><div class="av-wrap"><svg class="av" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#ff8a3c" opacity=".16"/><path d="M32 4l2.4 5 5.4.6-4 3.7 1.1 5.4L32 16l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6z" fill="#ff8a3c"/><path d="M32 16v5" stroke="#ff8a3c" stroke-width="2.5"/><rect x="13" y="20" width="38" height="32" rx="11" fill="#ff8a3c"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#ff8a3c" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#ff8a3c" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><path d="M23 36q3-4 6 0M35 36q3-4 6 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="32" cy="41.2" r="1.6" fill="#ff8a3c"/></svg><span class="em" aria-hidden="true">🌟</span></div><div><h3>Nova <span class="ki">KI</span></h3><p class="rolle">Chef-Vertretung</p><p>Springt ein, wenn der Chef gerade nicht da ist.</p></div></article></div><h3 class="abt-t reveal">Unsere Abteilungen</h3><div class="abts"><article class="abt reveal" style="--c:#d97706"><header><span class="abt-em" aria-hidden="true">💡</span><div><h4>Ideen &amp; Planung</h4><p>Sammelt Ideen, plant in Schritten und schaut, was den Leuten noch fehlt.</p></div></header><div class="leiter"><div class="av-wrap"><svg class="av" viewBox="0 0 64 64" width="56" height="56" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#d97706" opacity=".16"/><path d="M24 20l-5-9M40 20l5-9" stroke="#d97706" stroke-width="3" stroke-linecap="round"/><circle cx="19" cy="10" r="3" fill="#ff8a3c"/><circle cx="45" cy="10" r="3" fill="#d97706"/><path d="M22 20h20l10 16-10 16H22L12 36z" fill="#d97706" stroke="#d97706" stroke-width="2" stroke-linejoin="round"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#d97706" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#d97706" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><path d="M23 36q3-4 6 0M35 36q3-4 6 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M28 41q4 2.5 8 0" fill="none" stroke="#ff8a3c" stroke-width="2" stroke-linecap="round"/></svg><span class="em" aria-hidden="true">💡</span></div><div><b>Mia</b> <span class="ki">KI</span><br><span class="rolle">Leitung · Ideen sammeln</span></div></div><details><summary>Alle 4 Experten zeigen</summary><ul class="experten"><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#d97706" opacity=".16"/><path d="M24 20l-5-9M40 20l5-9" stroke="#d97706" stroke-width="3" stroke-linecap="round"/><circle cx="19" cy="10" r="3" fill="#ff8a3c"/><circle cx="45" cy="10" r="3" fill="#d97706"/><rect x="13" y="20" width="38" height="32" rx="11" fill="#d97706"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#d97706" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#d97706" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><path d="M23 36q3-4 6 0M35 36q3-4 6 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="32" cy="41.2" r="1.6" fill="#ff8a3c"/></svg></div><div><b>Lea</b> <span class="ki">KI</span><br><span class="rolle">Planung in Schritten und Versionen</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#d97706" opacity=".16"/><path d="M32 12v8" stroke="#d97706" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="10" r="4" fill="#ff8a3c"/><rect x="13" y="20" width="38" height="32" rx="11" fill="#d97706"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#d97706" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#d97706" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><path d="M23 36q3-4 6 0M35 36q3-4 6 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="32" cy="41.2" r="1.6" fill="#ff8a3c"/></svg></div><div><b>Jonas</b> <span class="ki">KI</span><br><span class="rolle">Spielideen und Spielspaß</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#d97706" opacity=".16"/><path d="M32 12v8" stroke="#d97706" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="10" r="4" fill="#ff8a3c"/><rect x="13" y="20" width="38" height="32" rx="11" fill="#d97706"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#d97706" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#d97706" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><path d="M23 36q3-4 6 0M35 36q3-4 6 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><rect x="28" y="40" width="8" height="2.2" rx="1.1" fill="#9aa7bd"/></svg></div><div><b>Ronja</b> <span class="ki">KI</span><br><span class="rolle">App-Ideen: welches Problem lösen wir für wen</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#d97706" opacity=".16"/><path d="M32 12v8" stroke="#d97706" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="10" r="4" fill="#ff8a3c"/><rect x="13" y="20" width="38" height="32" rx="11" fill="#d97706"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#d97706" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#d97706" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><rect x="22" y="32.5" width="20" height="5" rx="2.5" fill="#ff8a3c"/><circle cx="27" cy="35" r="1.6" fill="#fff"/><circle cx="37" cy="35" r="1.6" fill="#fff"/><circle cx="32" cy="41.2" r="1.6" fill="#ff8a3c"/></svg></div><div><b>Vincent</b> <span class="ki">KI</span><br><span class="rolle">Markt: was gibt es schon, was fehlt den Leuten (ohne zu kopieren)</span></div></li></ul></details></article><article class="abt reveal" style="--c:#db2777"><header><span class="abt-em" aria-hidden="true">🎨</span><div><h4>Design &amp; Ton</h4><p>Sorgt dafür, dass alles schön aussieht, sich gut anfühlt und gut klingt.</p></div></header><div class="leiter"><div class="av-wrap"><svg class="av" viewBox="0 0 64 64" width="56" height="56" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#db2777" opacity=".16"/><path d="M32 12v8" stroke="#db2777" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="10" r="4" fill="#ff8a3c"/><circle cx="32" cy="37" r="18" fill="#db2777"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#db2777" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#db2777" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><rect x="22" y="32.5" width="20" height="5" rx="2.5" fill="#ff8a3c"/><circle cx="27" cy="35" r="1.6" fill="#fff"/><circle cx="37" cy="35" r="1.6" fill="#fff"/><path d="M28 41q4 2.5 8 0" fill="none" stroke="#ff8a3c" stroke-width="2" stroke-linecap="round"/></svg><span class="em" aria-hidden="true">🎨</span></div><div><b>Nora</b> <span class="ki">KI</span><br><span class="rolle">Leitung · Aussehen und Gefühl</span></div></div><details><summary>Alle 5 Experten zeigen</summary><ul class="experten"><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#db2777" opacity=".16"/><path d="M24 20l-5-9M40 20l5-9" stroke="#db2777" stroke-width="3" stroke-linecap="round"/><circle cx="19" cy="10" r="3" fill="#ff8a3c"/><circle cx="45" cy="10" r="3" fill="#db2777"/><path d="M22 20h20l10 16-10 16H22L12 36z" fill="#db2777" stroke="#db2777" stroke-width="2" stroke-linejoin="round"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#db2777" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#db2777" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><path d="M23 36q3-4 6 0M35 36q3-4 6 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><rect x="28" y="40" width="8" height="2.2" rx="1.1" fill="#9aa7bd"/></svg></div><div><b>Moritz</b> <span class="ki">KI</span><br><span class="rolle">Bedienung: versteht man jeden Knopf?</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#db2777" opacity=".16"/><path d="M24 20l-5-9M40 20l5-9" stroke="#db2777" stroke-width="3" stroke-linecap="round"/><circle cx="19" cy="10" r="3" fill="#ff8a3c"/><circle cx="45" cy="10" r="3" fill="#db2777"/><circle cx="32" cy="37" r="18" fill="#db2777"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#db2777" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#db2777" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><rect x="22" y="32.5" width="20" height="5" rx="2.5" fill="#ff8a3c"/><circle cx="27" cy="35" r="1.6" fill="#fff"/><circle cx="37" cy="35" r="1.6" fill="#fff"/><circle cx="32" cy="41.2" r="1.6" fill="#ff8a3c"/></svg></div><div><b>Zoe</b> <span class="ki">KI</span><br><span class="rolle">Grafik, Icons, Farben und eigene Figuren</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#db2777" opacity=".16"/><path d="M32 21l-3-4 4-3-3-4" fill="none" stroke="#ff8a3c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="32" cy="37" r="18" fill="#db2777"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#db2777" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#db2777" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><rect x="22" y="32.5" width="20" height="5" rx="2.5" fill="#ff8a3c"/><circle cx="27" cy="35" r="1.6" fill="#fff"/><circle cx="37" cy="35" r="1.6" fill="#fff"/><circle cx="32" cy="41.2" r="1.6" fill="#ff8a3c"/></svg></div><div><b>Anton</b> <span class="ki">KI</span><br><span class="rolle">Animation und Effekte</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#db2777" opacity=".16"/><path d="M32 12v8" stroke="#db2777" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="10" r="4" fill="#ff8a3c"/><rect x="13" y="20" width="38" height="32" rx="11" fill="#db2777"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#db2777" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#db2777" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><circle cx="26" cy="35" r="3" fill="#fff"/><circle cx="38" cy="35" r="3" fill="#fff"/><circle cx="32" cy="41.2" r="1.6" fill="#ff8a3c"/></svg></div><div><b>Emil</b> <span class="ki">KI</span><br><span class="rolle">Musik</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#db2777" opacity=".16"/><path d="M24 20l-5-9M40 20l5-9" stroke="#db2777" stroke-width="3" stroke-linecap="round"/><circle cx="19" cy="10" r="3" fill="#ff8a3c"/><circle cx="45" cy="10" r="3" fill="#db2777"/><circle cx="32" cy="37" r="18" fill="#db2777"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#db2777" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#db2777" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><path d="M23 36q3-4 6 0M35 36q3-4 6 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M28 41q4 2.5 8 0" fill="none" stroke="#ff8a3c" stroke-width="2" stroke-linecap="round"/></svg></div><div><b>Frieda</b> <span class="ki">KI</span><br><span class="rolle">Geräusche und Soundeffekte</span></div></li></ul></details></article><article class="abt reveal" style="--c:#2563eb"><header><span class="abt-em" aria-hidden="true">💻</span><div><h4>Technik</h4><p>Baut die Technik: Web-Apps, Roblox, Datenbank, KI und Arduino.</p></div></header><div class="leiter"><div class="av-wrap"><svg class="av" viewBox="0 0 64 64" width="56" height="56" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#2563eb" opacity=".16"/><path d="M24 20l-5-9M40 20l5-9" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/><circle cx="19" cy="10" r="3" fill="#ff8a3c"/><circle cx="45" cy="10" r="3" fill="#2563eb"/><circle cx="32" cy="37" r="18" fill="#2563eb"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#2563eb" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#2563eb" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><path d="M23 36q3-4 6 0M35 36q3-4 6 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="32" cy="41.2" r="1.6" fill="#ff8a3c"/></svg><span class="em" aria-hidden="true">💻</span></div><div><b>Tom</b> <span class="ki">KI</span><br><span class="rolle">Leitung · Gesamtaufbau der Technik</span></div></div><details><summary>Alle 6 Experten zeigen</summary><ul class="experten"><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#2563eb" opacity=".16"/><path d="M24 20l-5-9M40 20l5-9" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/><circle cx="19" cy="10" r="3" fill="#ff8a3c"/><circle cx="45" cy="10" r="3" fill="#2563eb"/><path d="M22 20h20l10 16-10 16H22L12 36z" fill="#2563eb" stroke="#2563eb" stroke-width="2" stroke-linejoin="round"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#2563eb" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#2563eb" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><path d="M23 36q3-4 6 0M35 36q3-4 6 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><rect x="28" y="40" width="8" height="2.2" rx="1.1" fill="#9aa7bd"/></svg></div><div><b>Ida</b> <span class="ki">KI</span><br><span class="rolle">Web und Apps (HTML, CSS, JavaScript, installierbare Web-Apps)</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#2563eb" opacity=".16"/><path d="M32 21l-3-4 4-3-3-4" fill="none" stroke="#ff8a3c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 20h20l10 16-10 16H22L12 36z" fill="#2563eb" stroke="#2563eb" stroke-width="2" stroke-linejoin="round"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#2563eb" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#2563eb" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><rect x="22" y="32.5" width="20" height="5" rx="2.5" fill="#ff8a3c"/><circle cx="27" cy="35" r="1.6" fill="#fff"/><circle cx="37" cy="35" r="1.6" fill="#fff"/><rect x="28" y="40" width="8" height="2.2" rx="1.1" fill="#9aa7bd"/></svg></div><div><b>Luca</b> <span class="ki">KI</span><br><span class="rolle">Roblox Studio und Luau</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#2563eb" opacity=".16"/><path d="M32 21l-3-4 4-3-3-4" fill="none" stroke="#ff8a3c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="13" y="20" width="38" height="32" rx="11" fill="#2563eb"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#2563eb" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#2563eb" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><path d="M23 36q3-4 6 0M35 36q3-4 6 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="32" cy="41.2" r="1.6" fill="#ff8a3c"/></svg></div><div><b>Niklas</b> <span class="ki">KI</span><br><span class="rolle">Datenbank und Firebase</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#2563eb" opacity=".16"/><path d="M24 20l-5-9M40 20l5-9" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/><circle cx="19" cy="10" r="3" fill="#ff8a3c"/><circle cx="45" cy="10" r="3" fill="#2563eb"/><rect x="13" y="20" width="38" height="32" rx="11" fill="#2563eb"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#2563eb" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#2563eb" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><rect x="22" y="32.5" width="20" height="5" rx="2.5" fill="#ff8a3c"/><circle cx="27" cy="35" r="1.6" fill="#fff"/><circle cx="37" cy="35" r="1.6" fill="#fff"/><circle cx="32" cy="41.2" r="1.6" fill="#ff8a3c"/></svg></div><div><b>Elias</b> <span class="ki">KI</span><br><span class="rolle">KI-Technik</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#2563eb" opacity=".16"/><path d="M32 21l-3-4 4-3-3-4" fill="none" stroke="#ff8a3c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 20h20l10 16-10 16H22L12 36z" fill="#2563eb" stroke="#2563eb" stroke-width="2" stroke-linejoin="round"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#2563eb" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#2563eb" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><path d="M23 36q3-4 6 0M35 36q3-4 6 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M28 41q4 2.5 8 0" fill="none" stroke="#ff8a3c" stroke-width="2" stroke-linecap="round"/></svg></div><div><b>Mats</b> <span class="ki">KI</span><br><span class="rolle">Hardware und Arduino</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#2563eb" opacity=".16"/><path d="M32 12v8" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="10" r="4" fill="#ff8a3c"/><path d="M22 20h20l10 16-10 16H22L12 36z" fill="#2563eb" stroke="#2563eb" stroke-width="2" stroke-linejoin="round"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#2563eb" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#2563eb" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><circle cx="26" cy="35" r="3" fill="#fff"/><circle cx="38" cy="35" r="3" fill="#fff"/><rect x="28" y="40" width="8" height="2.2" rx="1.1" fill="#9aa7bd"/></svg></div><div><b>Lina</b> <span class="ki">KI</span><br><span class="rolle">Handy, Installieren und Offline</span></div></li></ul></details></article><article class="abt reveal" style="--c:#16a34a"><header><span class="abt-em" aria-hidden="true">✅</span><div><h4>Qualität</h4><p>Testet alles auf Herz und Nieren – auf jedem Gerät und für alle Menschen.</p></div></header><div class="leiter"><div class="av-wrap"><svg class="av" viewBox="0 0 64 64" width="56" height="56" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#16a34a" opacity=".16"/><path d="M24 20l-5-9M40 20l5-9" stroke="#16a34a" stroke-width="3" stroke-linecap="round"/><circle cx="19" cy="10" r="3" fill="#ff8a3c"/><circle cx="45" cy="10" r="3" fill="#16a34a"/><circle cx="32" cy="37" r="18" fill="#16a34a"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#16a34a" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#16a34a" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><circle cx="26" cy="35" r="3" fill="#fff"/><circle cx="38" cy="35" r="3" fill="#fff"/><circle cx="32" cy="41.2" r="1.6" fill="#ff8a3c"/></svg><span class="em" aria-hidden="true">🐞</span></div><div><b>Kai</b> <span class="ki">KI</span><br><span class="rolle">Leitung · Testen</span></div></div><details><summary>Alle 4 Experten zeigen</summary><ul class="experten"><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#16a34a" opacity=".16"/><path d="M32 21l-3-4 4-3-3-4" fill="none" stroke="#ff8a3c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="13" y="20" width="38" height="32" rx="11" fill="#16a34a"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#16a34a" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#16a34a" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><circle cx="26" cy="35" r="3" fill="#fff"/><circle cx="38" cy="35" r="3" fill="#fff"/><circle cx="32" cy="41.2" r="1.6" fill="#ff8a3c"/></svg></div><div><b>Ben</b> <span class="ki">KI</span><br><span class="rolle">Endkontrolle: passt alles zu den Vorgaben?</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#16a34a" opacity=".16"/><path d="M24 20l-5-9M40 20l5-9" stroke="#16a34a" stroke-width="3" stroke-linecap="round"/><circle cx="19" cy="10" r="3" fill="#ff8a3c"/><circle cx="45" cy="10" r="3" fill="#16a34a"/><path d="M22 20h20l10 16-10 16H22L12 36z" fill="#16a34a" stroke="#16a34a" stroke-width="2" stroke-linejoin="round"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#16a34a" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#16a34a" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><rect x="22" y="32.5" width="20" height="5" rx="2.5" fill="#ff8a3c"/><circle cx="27" cy="35" r="1.6" fill="#fff"/><circle cx="37" cy="35" r="1.6" fill="#fff"/><rect x="28" y="40" width="8" height="2.2" rx="1.1" fill="#9aa7bd"/></svg></div><div><b>Nele</b> <span class="ki">KI</span><br><span class="rolle">Tests auf verschiedenen Handys und Tablets</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#16a34a" opacity=".16"/><path d="M24 20l-5-9M40 20l5-9" stroke="#16a34a" stroke-width="3" stroke-linecap="round"/><circle cx="19" cy="10" r="3" fill="#ff8a3c"/><circle cx="45" cy="10" r="3" fill="#16a34a"/><circle cx="32" cy="37" r="18" fill="#16a34a"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#16a34a" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#16a34a" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><rect x="22" y="32.5" width="20" height="5" rx="2.5" fill="#ff8a3c"/><circle cx="27" cy="35" r="1.6" fill="#fff"/><circle cx="37" cy="35" r="1.6" fill="#fff"/><rect x="28" y="40" width="8" height="2.2" rx="1.1" fill="#9aa7bd"/></svg></div><div><b>Jakob</b> <span class="ki">KI</span><br><span class="rolle">Barrierefreiheit (große Schrift, Farben, Vorlesen)</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#16a34a" opacity=".16"/><path d="M24 20l-5-9M40 20l5-9" stroke="#16a34a" stroke-width="3" stroke-linecap="round"/><circle cx="19" cy="10" r="3" fill="#ff8a3c"/><circle cx="45" cy="10" r="3" fill="#16a34a"/><rect x="13" y="20" width="38" height="32" rx="11" fill="#16a34a"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#16a34a" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#16a34a" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><path d="M23 36q3-4 6 0M35 36q3-4 6 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M28 41q4 2.5 8 0" fill="none" stroke="#ff8a3c" stroke-width="2" stroke-linecap="round"/></svg></div><div><b>Oskar</b> <span class="ki">KI</span><br><span class="rolle">Tempo, Ladezeit und Akku</span></div></li></ul></details></article><article class="abt reveal" style="--c:#0d9488"><header><span class="abt-em" aria-hidden="true">💶</span><div><h4>Finanzen</h4><p>Behält Geld, Preise und Angebote im Blick und achtet darauf, dass Apps gratis bleiben.</p></div></header><div class="leiter"><div class="av-wrap"><svg class="av" viewBox="0 0 64 64" width="56" height="56" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#0d9488" opacity=".16"/><path d="M32 21l-3-4 4-3-3-4" fill="none" stroke="#ff8a3c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 20h20l10 16-10 16H22L12 36z" fill="#0d9488" stroke="#0d9488" stroke-width="2" stroke-linejoin="round"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#0d9488" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#0d9488" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><circle cx="26" cy="35" r="3" fill="#fff"/><circle cx="38" cy="35" r="3" fill="#fff"/><rect x="28" y="40" width="8" height="2.2" rx="1.1" fill="#9aa7bd"/></svg><span class="em" aria-hidden="true">💶</span></div><div><b>Max</b> <span class="ki">KI</span><br><span class="rolle">Leitung · Einnahmen und Ausgaben</span></div></div><details><summary>Alle 3 Experten zeigen</summary><ul class="experten"><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#0d9488" opacity=".16"/><path d="M24 20l-5-9M40 20l5-9" stroke="#0d9488" stroke-width="3" stroke-linecap="round"/><circle cx="19" cy="10" r="3" fill="#ff8a3c"/><circle cx="45" cy="10" r="3" fill="#0d9488"/><rect x="13" y="20" width="38" height="32" rx="11" fill="#0d9488"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#0d9488" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#0d9488" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><rect x="22" y="32.5" width="20" height="5" rx="2.5" fill="#ff8a3c"/><circle cx="27" cy="35" r="1.6" fill="#fff"/><circle cx="37" cy="35" r="1.6" fill="#fff"/><circle cx="32" cy="41.2" r="1.6" fill="#ff8a3c"/></svg></div><div><b>Lotte</b> <span class="ki">KI</span><br><span class="rolle">Preise und Angebote</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#0d9488" opacity=".16"/><path d="M32 21l-3-4 4-3-3-4" fill="none" stroke="#ff8a3c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="13" y="20" width="38" height="32" rx="11" fill="#0d9488"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#0d9488" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#0d9488" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><rect x="22" y="32.5" width="20" height="5" rx="2.5" fill="#ff8a3c"/><circle cx="27" cy="35" r="1.6" fill="#fff"/><circle cx="37" cy="35" r="1.6" fill="#fff"/><path d="M28 41q4 2.5 8 0" fill="none" stroke="#ff8a3c" stroke-width="2" stroke-linecap="round"/></svg></div><div><b>Henry</b> <span class="ki">KI</span><br><span class="rolle">Gratis-Wächter: bleibt alles kostenlos?</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#0d9488" opacity=".16"/><path d="M24 20l-5-9M40 20l5-9" stroke="#0d9488" stroke-width="3" stroke-linecap="round"/><circle cx="19" cy="10" r="3" fill="#ff8a3c"/><circle cx="45" cy="10" r="3" fill="#0d9488"/><rect x="13" y="20" width="38" height="32" rx="11" fill="#0d9488"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#0d9488" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#0d9488" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><rect x="22" y="32.5" width="20" height="5" rx="2.5" fill="#ff8a3c"/><circle cx="27" cy="35" r="1.6" fill="#fff"/><circle cx="37" cy="35" r="1.6" fill="#fff"/><circle cx="32" cy="41.2" r="1.6" fill="#ff8a3c"/></svg></div><div><b>Johanna</b> <span class="ki">KI</span><br><span class="rolle">Wettbewerbe und Förderung</span></div></li></ul></details></article><article class="abt reveal" style="--c:#9333ea"><header><span class="abt-em" aria-hidden="true">📣</span><div><h4>Werbung</h4><p>Erzählt fair von unseren Projekten – ohne Druck und ohne erfundene Bewertungen.</p></div></header><div class="leiter"><div class="av-wrap"><svg class="av" viewBox="0 0 64 64" width="56" height="56" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#9333ea" opacity=".16"/><path d="M32 12v8" stroke="#9333ea" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="10" r="4" fill="#ff8a3c"/><path d="M22 20h20l10 16-10 16H22L12 36z" fill="#9333ea" stroke="#9333ea" stroke-width="2" stroke-linejoin="round"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#9333ea" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#9333ea" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><circle cx="26" cy="35" r="3" fill="#fff"/><circle cx="38" cy="35" r="3" fill="#fff"/><circle cx="32" cy="41.2" r="1.6" fill="#ff8a3c"/></svg><span class="em" aria-hidden="true">📣</span></div><div><b>Jana</b> <span class="ki">KI</span><br><span class="rolle">Leitung · faire Werbung</span></div></div><details><summary>Alle 3 Experten zeigen</summary><ul class="experten"><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#9333ea" opacity=".16"/><path d="M32 12v8" stroke="#9333ea" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="10" r="4" fill="#ff8a3c"/><circle cx="32" cy="37" r="18" fill="#9333ea"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#9333ea" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#9333ea" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><circle cx="26" cy="35" r="3" fill="#fff"/><circle cx="38" cy="35" r="3" fill="#fff"/><circle cx="32" cy="41.2" r="1.6" fill="#ff8a3c"/></svg></div><div><b>Ole</b> <span class="ki">KI</span><br><span class="rolle">Namen, Texte und Slogans</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#9333ea" opacity=".16"/><path d="M32 12v8" stroke="#9333ea" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="10" r="4" fill="#ff8a3c"/><circle cx="32" cy="37" r="18" fill="#9333ea"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#9333ea" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#9333ea" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><rect x="22" y="32.5" width="20" height="5" rx="2.5" fill="#ff8a3c"/><circle cx="27" cy="35" r="1.6" fill="#fff"/><circle cx="37" cy="35" r="1.6" fill="#fff"/><rect x="28" y="40" width="8" height="2.2" rx="1.1" fill="#9aa7bd"/></svg></div><div><b>Mila</b> <span class="ki">KI</span><br><span class="rolle">Gefunden werden (Google, Store, Startseite)</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#9333ea" opacity=".16"/><path d="M32 21l-3-4 4-3-3-4" fill="none" stroke="#ff8a3c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="13" y="20" width="38" height="32" rx="11" fill="#9333ea"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#9333ea" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#9333ea" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><rect x="22" y="32.5" width="20" height="5" rx="2.5" fill="#ff8a3c"/><circle cx="27" cy="35" r="1.6" fill="#fff"/><circle cx="37" cy="35" r="1.6" fill="#fff"/><rect x="28" y="40" width="8" height="2.2" rx="1.1" fill="#9aa7bd"/></svg></div><div><b>Tim</b> <span class="ki">KI</span><br><span class="rolle">Videos und Trailer</span></div></li></ul></details></article><article class="abt reveal" style="--c:#0891b2"><header><span class="abt-em" aria-hidden="true">🙋</span><div><h4>Kundendienst</h4><p>Denkt wie die Nutzer, schreibt Hilfe-Texte und wertet Rückmeldungen aus.</p></div></header><div class="leiter"><div class="av-wrap"><svg class="av" viewBox="0 0 64 64" width="56" height="56" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#0891b2" opacity=".16"/><path d="M32 12v8" stroke="#0891b2" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="10" r="4" fill="#ff8a3c"/><path d="M22 20h20l10 16-10 16H22L12 36z" fill="#0891b2" stroke="#0891b2" stroke-width="2" stroke-linejoin="round"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#0891b2" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#0891b2" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><circle cx="26" cy="35" r="3" fill="#fff"/><circle cx="38" cy="35" r="3" fill="#fff"/><rect x="28" y="40" width="8" height="2.2" rx="1.1" fill="#9aa7bd"/></svg><span class="em" aria-hidden="true">🙋</span></div><div><b>Finn</b> <span class="ki">KI</span><br><span class="rolle">Leitung · Sicht der Nutzer</span></div></div><details><summary>Alle 4 Experten zeigen</summary><ul class="experten"><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#0891b2" opacity=".16"/><path d="M32 12v8" stroke="#0891b2" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="10" r="4" fill="#ff8a3c"/><rect x="13" y="20" width="38" height="32" rx="11" fill="#0891b2"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#0891b2" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#0891b2" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><circle cx="26" cy="35" r="3" fill="#fff"/><circle cx="38" cy="35" r="3" fill="#fff"/><path d="M28 41q4 2.5 8 0" fill="none" stroke="#ff8a3c" stroke-width="2" stroke-linecap="round"/></svg></div><div><b>Ella</b> <span class="ki">KI</span><br><span class="rolle">Hilfe-Texte</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#0891b2" opacity=".16"/><path d="M24 20l-5-9M40 20l5-9" stroke="#0891b2" stroke-width="3" stroke-linecap="round"/><circle cx="19" cy="10" r="3" fill="#ff8a3c"/><circle cx="45" cy="10" r="3" fill="#0891b2"/><circle cx="32" cy="37" r="18" fill="#0891b2"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#0891b2" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#0891b2" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><rect x="22" y="32.5" width="20" height="5" rx="2.5" fill="#ff8a3c"/><circle cx="27" cy="35" r="1.6" fill="#fff"/><circle cx="37" cy="35" r="1.6" fill="#fff"/><path d="M28 41q4 2.5 8 0" fill="none" stroke="#ff8a3c" stroke-width="2" stroke-linecap="round"/></svg></div><div><b>Lukas</b> <span class="ki">KI</span><br><span class="rolle">Rückmeldungen auswerten (ohne Chat mit Fremden)</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#0891b2" opacity=".16"/><path d="M32 21l-3-4 4-3-3-4" fill="none" stroke="#ff8a3c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="13" y="20" width="38" height="32" rx="11" fill="#0891b2"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#0891b2" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#0891b2" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><circle cx="26" cy="35" r="3" fill="#fff"/><circle cx="38" cy="35" r="3" fill="#fff"/><circle cx="32" cy="41.2" r="1.6" fill="#ff8a3c"/></svg></div><div><b>Sara</b> <span class="ki">KI</span><br><span class="rolle">Erste Schritte und Anleitung</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#0891b2" opacity=".16"/><path d="M32 21l-3-4 4-3-3-4" fill="none" stroke="#ff8a3c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="13" y="20" width="38" height="32" rx="11" fill="#0891b2"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#0891b2" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#0891b2" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><path d="M23 36q3-4 6 0M35 36q3-4 6 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="32" cy="41.2" r="1.6" fill="#ff8a3c"/></svg></div><div><b>Paula</b> <span class="ki">KI</span><br><span class="rolle">Übersetzung und Sprachen</span></div></li></ul></details></article><article class="abt reveal" style="--c:#4f46e5"><header><span class="abt-em" aria-hidden="true">🔬</span><div><h4>Forschung &amp; Zukunft</h4><p>Forscht an der Zukunft: neue KI-Technik und unser eigenes Betriebssystem.</p></div></header><div class="leiter"><div class="av-wrap"><svg class="av" viewBox="0 0 64 64" width="56" height="56" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#4f46e5" opacity=".16"/><path d="M24 20l-5-9M40 20l5-9" stroke="#4f46e5" stroke-width="3" stroke-linecap="round"/><circle cx="19" cy="10" r="3" fill="#ff8a3c"/><circle cx="45" cy="10" r="3" fill="#4f46e5"/><path d="M22 20h20l10 16-10 16H22L12 36z" fill="#4f46e5" stroke="#4f46e5" stroke-width="2" stroke-linejoin="round"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#4f46e5" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#4f46e5" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><path d="M23 36q3-4 6 0M35 36q3-4 6 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><rect x="28" y="40" width="8" height="2.2" rx="1.1" fill="#9aa7bd"/></svg><span class="em" aria-hidden="true">🔬</span></div><div><b>Theo</b> <span class="ki">KI</span><br><span class="rolle">Leitung · Forschung und Zukunft</span></div></div><details><summary>Alle 2 Experten zeigen</summary><ul class="experten"><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#4f46e5" opacity=".16"/><path d="M32 12v8" stroke="#4f46e5" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="10" r="4" fill="#ff8a3c"/><circle cx="32" cy="37" r="18" fill="#4f46e5"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#4f46e5" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#4f46e5" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><rect x="22" y="32.5" width="20" height="5" rx="2.5" fill="#ff8a3c"/><circle cx="27" cy="35" r="1.6" fill="#fff"/><circle cx="37" cy="35" r="1.6" fill="#fff"/><circle cx="32" cy="41.2" r="1.6" fill="#ff8a3c"/></svg></div><div><b>Malte</b> <span class="ki">KI</span><br><span class="rolle">Betriebssystem</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#4f46e5" opacity=".16"/><path d="M24 20l-5-9M40 20l5-9" stroke="#4f46e5" stroke-width="3" stroke-linecap="round"/><circle cx="19" cy="10" r="3" fill="#ff8a3c"/><circle cx="45" cy="10" r="3" fill="#4f46e5"/><circle cx="32" cy="37" r="18" fill="#4f46e5"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#4f46e5" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#4f46e5" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><circle cx="26" cy="35" r="3" fill="#fff"/><circle cx="38" cy="35" r="3" fill="#fff"/><path d="M28 41q4 2.5 8 0" fill="none" stroke="#ff8a3c" stroke-width="2" stroke-linecap="round"/></svg></div><div><b>Lia</b> <span class="ki">KI</span><br><span class="rolle">neue KI-Technik</span></div></li></ul></details></article><article class="abt reveal" style="--c:#dc2626"><header><span class="abt-em" aria-hidden="true">🛡️</span><div><h4>Sicherheit</h4><p>Schützt Apps und Nutzer, achtet auf Kinderschutz und Datenschutz – und darf Nein sagen.</p></div></header><div class="leiter"><div class="av-wrap"><svg class="av" viewBox="0 0 64 64" width="56" height="56" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#dc2626" opacity=".16"/><path d="M32 21l-3-4 4-3-3-4" fill="none" stroke="#ff8a3c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 20h20l10 16-10 16H22L12 36z" fill="#dc2626" stroke="#dc2626" stroke-width="2" stroke-linejoin="round"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#dc2626" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#dc2626" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><circle cx="26" cy="35" r="3" fill="#fff"/><circle cx="38" cy="35" r="3" fill="#fff"/><rect x="28" y="40" width="8" height="2.2" rx="1.1" fill="#9aa7bd"/></svg><span class="em" aria-hidden="true">🛡️</span></div><div><b>Sam</b> <span class="ki">KI</span><br><span class="rolle">Leitung · Sicherheit (darf Nein sagen)</span></div></div><details><summary>Alle 4 Experten zeigen</summary><ul class="experten"><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#dc2626" opacity=".16"/><path d="M32 21l-3-4 4-3-3-4" fill="none" stroke="#ff8a3c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="13" y="20" width="38" height="32" rx="11" fill="#dc2626"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#dc2626" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#dc2626" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><circle cx="26" cy="35" r="3" fill="#fff"/><circle cx="38" cy="35" r="3" fill="#fff"/><path d="M28 41q4 2.5 8 0" fill="none" stroke="#ff8a3c" stroke-width="2" stroke-linecap="round"/></svg></div><div><b>Leon</b> <span class="ki">KI</span><br><span class="rolle">Schutz vor Angriffen (denkt wie ein Angreifer, aber nur für die eigenen Apps)</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#dc2626" opacity=".16"/><path d="M24 20l-5-9M40 20l5-9" stroke="#dc2626" stroke-width="3" stroke-linecap="round"/><circle cx="19" cy="10" r="3" fill="#ff8a3c"/><circle cx="45" cy="10" r="3" fill="#dc2626"/><circle cx="32" cy="37" r="18" fill="#dc2626"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#dc2626" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#dc2626" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><rect x="22" y="32.5" width="20" height="5" rx="2.5" fill="#ff8a3c"/><circle cx="27" cy="35" r="1.6" fill="#fff"/><circle cx="37" cy="35" r="1.6" fill="#fff"/><path d="M28 41q4 2.5 8 0" fill="none" stroke="#ff8a3c" stroke-width="2" stroke-linecap="round"/></svg></div><div><b>Hanna</b> <span class="ki">KI</span><br><span class="rolle">Kinderschutz (kein Kontakt mit Fremden, nichts Gefährliches)</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#dc2626" opacity=".16"/><path d="M24 20l-5-9M40 20l5-9" stroke="#dc2626" stroke-width="3" stroke-linecap="round"/><circle cx="19" cy="10" r="3" fill="#ff8a3c"/><circle cx="45" cy="10" r="3" fill="#dc2626"/><circle cx="32" cy="37" r="18" fill="#dc2626"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#dc2626" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#dc2626" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><circle cx="26" cy="35" r="3" fill="#fff"/><circle cx="38" cy="35" r="3" fill="#fff"/><path d="M28 41q4 2.5 8 0" fill="none" stroke="#ff8a3c" stroke-width="2" stroke-linecap="round"/></svg></div><div><b>Clara</b> <span class="ki">KI</span><br><span class="rolle">Datenschutz und Regeln (Impressum, Alter, keine Daten sammeln)</span></div></li><li><div class="av-wrap sm"><svg class="av" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#dc2626" opacity=".16"/><path d="M32 21l-3-4 4-3-3-4" fill="none" stroke="#ff8a3c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 20h20l10 16-10 16H22L12 36z" fill="#dc2626" stroke="#dc2626" stroke-width="2" stroke-linejoin="round"/><rect x="8" y="31" width="5" height="10" rx="2.5" fill="#dc2626" opacity=".7"/><rect x="51" y="31" width="5" height="10" rx="2.5" fill="#dc2626" opacity=".7"/><rect x="18" y="27" width="28" height="18" rx="8" fill="#101826" opacity=".85"/><circle cx="26" cy="35" r="3" fill="#fff"/><circle cx="38" cy="35" r="3" fill="#fff"/><circle cx="32" cy="41.2" r="1.6" fill="#ff8a3c"/></svg></div><div><b>Felix</b> <span class="ki">KI</span><br><span class="rolle">Konten, Schlüssel und Passwörter</span></div></li></ul></details></article></div></div></section>
+<section class="sec alt" id="geschichte" aria-labelledby="gT"><div class="wrap"><div class="center reveal"><p class="kicker">Unsere Geschichte</p><h2 class="h2" id="gT">Unsere Umlaufbahn bis heute</h2><p class="lead">Jedes Projekt ist ein Planet auf unserer Bahn – und es kommen ständig neue dazu.</p></div><ol class="bahn"><li class="reveal"><span class="planet" aria-hidden="true">📰</span><div class="station"><h3>Nachrichten-Heft</h3><p>Alles beginnt mit einer neutralen Nachrichten-App für den Unterricht – mit Wissensteil, Podcast und Wetter.</p></div></li><li class="reveal"><span class="planet" aria-hidden="true">🦁</span><div class="station"><h3>Krawallzoo</h3><p>Unser erstes eigenes Spiel: Tiere kämpfen in der Arena, online mit Freunden.</p></div></li><li class="reveal"><span class="planet" aria-hidden="true">🪐</span><div class="station"><h3>Die Kometen-Apps</h3><p>Planer, Notizen, Quiz, Fokus, Beats, Werkstatt, KI und Taschengeld – alle im gleichen Kometenwerk-Stil.</p></div></li><li class="reveal"><span class="planet" aria-hidden="true">🔎</span><div class="station"><h3>Kometen-Suche &amp; Hilfe</h3><p>Eine Suche über alle Apps und ein Hilfe-Bereich mit Hilfe-Bot, Melden und Neuigkeiten.</p></div></li><li class="reveal"><span class="planet" aria-hidden="true">🤖</span><div class="station"><h3>Das KI-Team</h3><p>47 KI-Helfer in neun Abteilungen unterstützen den Chef beim Planen und Prüfen.</p></div></li><li class="reveal"><span class="planet" aria-hidden="true">🤝</span><div class="station"><h3>Für Kunden</h3><p>Vereine und Betriebe können jetzt eine Website oder App bei uns anfragen.</p></div></li><li class="reveal jetzt"><span class="planet" aria-hidden="true">🚨</span><div class="station"><h3>Notruf Lindau</h3><p>Ein Einsatzkräfte-Rollenspiel auf der Insel Lindau – bald auf Roblox.</p></div></li><li class="reveal zukunft"><span class="planet" aria-hidden="true">✨</span><div class="station"><h3>Und dann?</h3><p>Ein Konto für alle Apps – und irgendwann ein eigenes Betriebssystem.</p></div></li></ol></div></section>
+<section class="ziel" aria-labelledby="zielT"><svg class="stars" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><circle cx="198" cy="414" r="1.1" fill="#fff" opacity="0.37"/><circle class="tw" cx="951" cy="485" r="1.8" fill="#fff" opacity="0.54" style="animation-delay:3.2s"/><circle class="tw" cx="17" cy="560" r="1.4" fill="#fff" opacity="0.69" style="animation-delay:0.9s"/><circle cx="279" cy="25" r="1.4" fill="#fff" opacity="0.27"/><circle cx="395" cy="299" r="0.7" fill="#fff" opacity="0.77"/><circle class="tw" cx="28" cy="445" r="0.7" fill="#fff" opacity="0.76" style="animation-delay:1.8s"/><circle class="tw" cx="662" cy="206" r="1.4" fill="#fff" opacity="0.62" style="animation-delay:1.9s"/><circle class="tw" cx="984" cy="45" r="0.9" fill="#fff" opacity="0.78" style="animation-delay:3.6s"/><circle cx="906" cy="458" r="1.8" fill="#fff" opacity="0.29"/><circle class="tw" cx="672" cy="335" r="1.4" fill="#fff" opacity="0.76" style="animation-delay:3.6s"/><circle cx="492" cy="219" r="1.4" fill="#fff" opacity="0.42"/><circle class="tw" cx="581" cy="159" r="0.7" fill="#fff" opacity="0.64" style="animation-delay:3.9s"/><circle cx="3" cy="42" r="1.8" fill="#fff" opacity="0.37"/><circle class="tw" cx="731" cy="334" r="1.8" fill="#fff" opacity="0.62" style="animation-delay:2.5s"/><circle cx="1000" cy="199" r="1.8" fill="#fff" opacity="0.39"/><circle cx="202" cy="554" r="0.9" fill="#fff" opacity="0.46"/><circle cx="820" cy="406" r="0.9" fill="#fff" opacity="0.79"/><circle cx="1154" cy="354" r="1.1" fill="#fff" opacity="0.46"/><circle cx="297" cy="526" r="0.9" fill="#fff" opacity="0.49"/><circle cx="489" cy="445" r="0.7" fill="#fff" opacity="0.28"/><circle class="tw" cx="310" cy="174" r="1.4" fill="#fff" opacity="0.47" style="animation-delay:3.5s"/><circle cx="775" cy="88" r="0.9" fill="#fff" opacity="0.51"/><circle cx="303" cy="575" r="1.8" fill="#fff" opacity="0.51"/><circle cx="1143" cy="540" r="1.1" fill="#fff" opacity="0.73"/><circle cx="722" cy="256" r="1.8" fill="#fff" opacity="0.51"/><circle cx="167" cy="353" r="0.9" fill="#fff" opacity="0.26"/><circle class="tw" cx="822" cy="572" r="0.7" fill="#fff" opacity="0.43" style="animation-delay:1.0s"/><circle cx="1147" cy="253" r="1.4" fill="#fff" opacity="0.70"/><circle class="tw" cx="166" cy="85" r="1.4" fill="#fff" opacity="0.26" style="animation-delay:1.8s"/><circle class="tw" cx="169" cy="520" r="1.1" fill="#fff" opacity="0.55" style="animation-delay:1.3s"/><circle class="tw" cx="593" cy="132" r="0.9" fill="#fff" opacity="0.72" style="animation-delay:0.8s"/><circle cx="893" cy="454" r="1.8" fill="#fff" opacity="0.73"/><circle cx="929" cy="474" r="0.7" fill="#fff" opacity="0.73"/><circle class="tw" cx="478" cy="340" r="0.9" fill="#fff" opacity="0.63" style="animation-delay:1.3s"/><circle cx="50" cy="233" r="1.1" fill="#fff" opacity="0.79"/><circle cx="981" cy="482" r="1.4" fill="#fff" opacity="0.30"/><circle cx="721" cy="305" r="1.1" fill="#fff" opacity="0.42"/><circle class="tw" cx="839" cy="315" r="1.8" fill="#fff" opacity="0.59" style="animation-delay:1.3s"/><circle class="tw" cx="242" cy="39" r="1.4" fill="#fff" opacity="0.29" style="animation-delay:0.3s"/><circle cx="977" cy="456" r="1.4" fill="#fff" opacity="0.77"/><circle cx="816" cy="423" r="1.4" fill="#fff" opacity="0.46"/><circle cx="482" cy="135" r="0.7" fill="#fff" opacity="0.27"/><circle cx="331" cy="354" r="1.4" fill="#fff" opacity="0.50"/><circle class="tw" cx="284" cy="231" r="1.4" fill="#fff" opacity="0.75" style="animation-delay:2.6s"/><circle cx="45" cy="104" r="1.1" fill="#fff" opacity="0.74"/><circle cx="935" cy="376" r="1.8" fill="#fff" opacity="0.72"/><circle cx="839" cy="410" r="0.9" fill="#fff" opacity="0.52"/><circle cx="367" cy="229" r="1.8" fill="#fff" opacity="0.79"/><circle cx="8" cy="188" r="1.1" fill="#fff" opacity="0.64"/><circle class="tw" cx="109" cy="105" r="1.8" fill="#fff" opacity="0.77" style="animation-delay:3.0s"/></svg><div class="wrap ziel-in reveal">
+  <p class="kicker">Wohin wir fliegen</p>
+  <h2 class="h2" id="zielT">Viele Apps unter einem Dach, ein Konto für alles – und irgendwann ein eigenes Betriebssystem.</h2>
+  <p class="lead">Kometenwerk soll Schritt für Schritt zu einer echten Firma wachsen. Jede neue App ist ein weiterer Planet auf unserer Umlaufbahn.</p>
+</div></section>
+<section class="sec" aria-labelledby="ctaT"><div class="wrap"><div class="cta reveal">
+  <div><h2 class="h2" id="ctaT">Lust auf ein Projekt?</h2><p class="lead">Du brauchst eine Website für deinen Verein oder eine kleine App? Such dir eine freie Zeit aus – wir sprechen per Video oder Telefon. Das erste Gespräch kostet nichts.</p></div>
+  <div class="btns"><a class="btn primary" href="kunden/#termin">📅 Termin anfragen</a><a class="btn" href="kunden/#angebote">Angebote ansehen</a></div>
+</div></div></section>
+<section class="sec alt" id="faq" aria-labelledby="faqT"><div class="wrap"><div class="center reveal"><p class="kicker">Häufige Fragen</p><h2 class="h2" id="faqT">Gut zu wissen</h2></div><div class="faq">
+<details><summary>Wer steckt hinter Kometenwerk?</summary><p>Hinter Kometenwerk steht ein Gründer aus Deutschland. Unterstützt wird er von einem eigenen KI-Team, das beim Planen, Gestalten und Prüfen hilft. Die Entscheidungen trifft immer der Chef.</p></details>
+<details><summary>Kosten eure Apps etwas?</summary><p>Nein. Alle Apps und Spiele von Kometenwerk sind kostenlos und ohne Werbung.</p></details>
+<details><summary>Was kostet eine Website bei Kometenwerk?</summary><p>Das hängt davon ab, was sie können soll. Nach dem ersten Gespräch bekommst du ein klares Angebot – das Gespräch selbst kostet nichts.</p></details>
+<details><summary>Wie lange dauert eine Website?</summary><p>Eine einfache Website ist oft in ein bis drei Wochen fertig. Vorher siehst du einen Entwurf und kannst Wünsche sagen.</p></details>
+<details><summary>Sammelt ihr Daten über mich?</summary><p>Nein. Was du in unseren Apps speicherst, bleibt auf deinem Gerät. Wir nutzen keine Tracker und keine Werbung.</p></details>
+<details><summary>Wie kann ich mit euch sprechen?</summary><p>Auf der Kunden-Seite suchst du dir eine freie Zeit aus – wir sprechen dann per Videoanruf oder Telefon. Eine Telefonnummer veröffentlichen wir nicht, damit alles sicher bleibt.</p></details>
+<details><summary>Wie installiere ich eine App?</summary><p>Öffne die App und tipp oben auf „Als App installieren“. Auf dem iPhone: unten auf „Teilen“ und dann „Zum Home-Bildschirm“.</p></details>
+<details><summary>Was ist das KI-Team?</summary><p>Unser Team besteht aus KI-Rollen mit festen Aufgaben – zum Beispiel Testen, Design oder Sicherheit. Sie sammeln Ideen und prüfen Pläne. Jede KI ist auf dieser Seite mit einem KI-Abzeichen gekennzeichnet.</p></details>
+<p class="center" style="margin:18px 0 0;color:var(--muted)">Noch eine Frage? Frag unseren <a href="hilfe/">Hilfe-Bot</a>.</p></div></div></section>
+</main>
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a class="brand" href="" aria-label="Kometenwerk – zur Startseite"><svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="#fff" stroke-opacity=".55" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)"><g class="" fill="#fff"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="30" fill="none" stroke="#0b111c" stroke-width="3"/></g><circle r="15" fill="#ff8a3c"/></g></svg><span><b>Kometen</b><span>werk</span></span></a>
+        <p>Ein junges Studio aus Deutschland. Wir bauen Apps, Spiele und Websites – sicher, ehrlich und ohne Werbung.</p>
+      </div>
+      <div><h2>Entdecken</h2><ul>
+        <li><a href="">Über uns</a></li><li><a href="#team">Unser Team</a></li><li><a href="apps/">Alle Apps</a></li><li><a href="suche/">Kometen-Suche</a></li></ul></div>
+      <div><h2>Beliebt</h2><ul>
+        <li><a href="Krawallzoo/">Krawallzoo</a></li><li><a href="ND/">Nachrichten-Heft</a></li><li><a href="planer/">Kometen-Planer</a></li><li><a href="beats/">Kometen-Beats</a></li></ul></div>
+      <div><h2>Kontakt</h2><ul>
+        <li><a href="kunden/">Für Kunden</a></li><li><a href="kunden/#termin">Termin anfragen</a></li><li><a href="hilfe/">Hilfe &amp; Kontakt</a></li><li><a href="https://github.com/kometenwerk" rel="noopener">GitHub</a></li></ul></div>
     </div>
-    <p class="h-klein" id="hMicInfo">🎙️ Du kannst auch sprechen – die Spracherkennung läuft nur auf deinem Gerät.</p>
-    <h3>Häufige Fragen</h3>
-    <div id="hFaq"></div>
-    <p class="h-klein">📞 Eine Telefonnummer haben wir nicht – so bleibt alles sicher. Vereine und Betriebe können aber einen <button type="button" class="h-link" data-geh="termin">Telefontermin anfragen</button>.</p>
-  </section>
-
-  <section class="h-p" data-p="melden" role="tabpanel" aria-label="Melden" hidden>
-    <p>Etwas klappt nicht oder du hast eine Idee? Schreib es uns. Wir lesen jede Meldung – antworten können wir aber nicht, denn bei uns gibt es keinen Chat mit Fremden.</p>
-    <div class="h-art" role="radiogroup" aria-label="Was möchtest du melden?">
-      <label><input type="radio" name="hArt" value="fehler" checked> 🐞 Ein Fehler</label>
-      <label><input type="radio" name="hArt" value="idee"> 💡 Eine Idee</label>
+    <div class="foot-bottom">
+      <span>© <span data-jahr>2026</span> Kometenwerk · Software · Spiele · Technik</span>
+      <span><a href="impressum/">Impressum</a> · <a href="datenschutz/">Datenschutz</a></span>
     </div>
-    <label class="h-feld"><span>Welche App?</span>
-      <select id="hApp">
-        <option>Startseite</option><option>Krawallzoo</option><option>Nachrichten-Heft</option><option>Kometen-Planer</option><option>Kometen-Notizen</option><option>Kometen-Quiz</option><option>Kometen-Werkstatt</option><option>Kometen-KI</option><option>Kometen-Beats</option><option>Kometen-Fokus</option><option>Kometen-Taschengeld</option><option>Für Kunden</option><option>Etwas anderes</option>
-      </select></label>
-    <label class="h-feld"><span>Was ist passiert? / Deine Idee</span><textarea id="hMeldung" rows="4" maxlength="500" placeholder="z. B. Im Quiz springt die Karte nach dem Umdrehen zurück."></textarea></label>
-    <p class="h-klein">🔒 Bitte keine Namen, E-Mail-Adressen, Telefonnummern oder Links hineinschreiben.</p>
-    <p class="h-fehler" id="hMeldFehler" hidden></p>
-    <button type="button" class="btn h-primaer" id="hMeldenBtn">Abschicken</button>
-    <div class="h-danke" id="hDanke" hidden>✅ <b>Danke!</b> Deine Meldung ist bei uns angekommen.</div>
-  </section>
+  </div>
+</footer>
+<script src="shared/site.js" defer></script>
+<script src="shared/hilfe.js" defer></script>
 
-  <section class="h-p" data-p="termin" role="tabpanel" aria-label="Termin" hidden>
-    <p><b>Für Vereine und Betriebe:</b> Wir bauen Webseiten und kleine Apps. Such dir eine Zeit aus – wir sprechen dann per Videoanruf oder Telefon.</p>
-    <div id="hTermine" aria-live="polite"><p class="h-klein">Freie Zeiten werden geladen …</p></div>
-    <p><a class="btn" href="kunden/">Alles über unsere Angebote ›</a></p>
-  </section>
-
-  <section class="h-p" data-p="neu" role="tabpanel" aria-label="Neu und repariert" hidden>
-    <div id="hNeu"><p class="h-klein">Wird geladen …</p></div>
-  </section>
-
-  <details class="h-ds"><summary>Datenschutz im Hilfe-Fenster</summary>
-    <p>Wenn du dieses Fenster öffnest, holt dein Browser den aktuellen Status, die Neuigkeiten und die freien Termine aus unserer Datenbank bei Google Firebase (Google Ireland Ltd.). Dabei wird technisch deine IP-Adresse übertragen. Wir speichern dabei nichts über dich.</p>
-    <p>Wenn du etwas meldest, speichern wir nur deinen Text, die App, die Uhrzeit und eine zufällige Kennung ohne Namen (damit niemand die Meldungen zuspammt). Wir löschen Meldungen, sobald sie erledigt sind.</p>
-    <p>Der Hilfe-Bot läuft in deinem Browser. Die Spracheingabe auch: Das Sprachmodell wird einmal geladen und hört dann nur auf deinem Gerät zu – deine Stimme wird nirgends hingeschickt.</p>
-  </details>
-</dialog>
-<dialog id="sucheInfo">
-  <h2>So funktioniert die Kometen-Suche</h2>
-  <p>Die Suche läuft komplett in deinem Browser. Sie lädt die Inhalte unserer Apps und sucht darin nach deinen Wörtern. Treffer im Titel zählen mehr als Treffer im Text, neuere Beiträge kommen bei Gleichstand zuerst.</p>
-  <h3>Was wir nicht speichern</h3>
-  <p>Deine Suchanfragen werden nicht an uns geschickt und von uns nirgends gespeichert.</p>
-  <h3>Wikipedia</h3>
-  <p>Bei „Alle“ und „Wissen“ fragt dein Browser zusätzlich das freie Lexikon Wikipedia nach deinem Suchbegriff. Dafür geht nur der Suchbegriff an Wikipedia (Wikimedia Foundation). Deine eigenen Sachen werden nie an Wikipedia geschickt.</p>
-  <p><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="wikiAn"> Wikipedia mitdurchsuchen</label></p>
-  <h3>Meine Sachen</h3>
-  <p>Die Suche findet auch deine eigenen Notizen, Hausaufgaben, Lernkarten und Beats aus den Kometen-Apps. Die liegen nur auf deinem Gerät – sie werden nur dort durchsucht und nirgends hingeschickt.</p>
-  <h3>Tippfehler</h3>
-  <p>Bei kleinen Tippfehlern sucht die Suche automatisch nach dem richtigen Wort, zum Beispiel „klmia“ → „klima“.</p>
-  <h3>Das ganze Internet</h3>
-  <p>Eine Suche über das ganze Internet können wir nicht selbst anbieten – das schaffen nur riesige Rechenzentren. Dafür gibt es unten in den Ergebnissen einen Link zu DuckDuckGo, mit strengem Jugendschutz.</p>
-  <form method="dialog"><button class="btn">Schließen</button></form>
-</dialog>
-
-<script>
-(function(){
-  "use strict";
-  var $ = function(s){ return document.querySelector(s); };
-  var esc = function(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); };
-  var norm = function(s){ return String(s || "").toLowerCase().replace(/ß/g,"ss").normalize("NFD").replace(/[̀-ͯ]/g,""); };
-
-  /* ---------- Quellen ---------- */
-  var APPS = [
-    {typ:"app", titel:"Krawallzoo", text:"Tier-Arena mit Freunden: 8 Tiere, 6 Spielmodi, Mischtiere, Skins und Krawall-Pass.", extra:"spiel game tiere arena kampf online freunde", url:"Krawallzoo/", icon:"icons/krawallzoo.png", quelle:"App"},
-    {typ:"app", titel:"Nachrichten-Heft", text:"Neutrale Nachrichten. Ein Thema kommt erst, wenn mehrere große Medien darüber berichten.", extra:"news nachrichten neutral medien tagesschau", url:"ND/", icon:"icons/nachrichten.png", quelle:"App"},
-    {typ:"app", titel:"Warum eigentlich?", text:"Der Wissensteil: Hintergründe einfach erklärt.", extra:"wissen lernen erklaert schule", url:"ND/?app=wissen", icon:"icons/wissen.png", quelle:"App"},
-    {typ:"app", titel:"Streitfrage", text:"Der Podcast zu Debatten, mit beiden Seiten.", extra:"podcast hoeren debatte", url:"ND/?app=podcast", icon:"icons/podcast.png", quelle:"App"},
-    {typ:"app", titel:"Wetter", text:"Das Wetter für deinen Ort, mit Karte.", extra:"wetter regen sonne vorhersage", url:"ND/?app=wetter", icon:"icons/wetter.png", quelle:"App"},
-    {typ:"app", titel:"Kometen-Planer", text:"Hausaufgaben, Tests, Termine und Stundenplan an einem Ort.", extra:"planer kalender hausaufgaben test termin stundenplan schule", url:"planer/", icon:"planer/icons/icon-192.png", quelle:"App"},
-    {typ:"app", titel:"Kometen-Notizen", text:"Notizen und Listen zum Abhaken.", extra:"notizen notiz liste checkliste einkaufen aufschreiben", url:"notizen/", icon:"notizen/icons/icon-192.png", quelle:"App"},
-    {typ:"app", titel:"Kometen-Quiz", text:"Lernkarten selbst erstellen und Wissen testen.", extra:"quiz lernkarten vokabeln lernen karteikarten test", url:"quiz/", icon:"quiz/icons/icon-192.png", quelle:"App"},
-    {typ:"app", titel:"Kometen-Werkstatt", text:"Technik-Projekte zum Nachbauen, mit Bauteilen, Schaltplan und Code.", extra:"werkstatt arduino technik basteln elektronik led reaktionstester ampel nachtlicht", url:"werkstatt/", icon:"werkstatt/icons/icon-192.png", quelle:"App"},
-    {typ:"app", titel:"Kometen-KI", text:"Eine KI, die direkt auf deinem Gerät läuft. Testversion.", extra:"ki ai kuenstliche intelligenz chat fragen hilfe", url:"ki/", icon:"ki/icons/icon-192.png", quelle:"App"},
-    {typ:"app", titel:"Kometen-Beats", text:"Eigene Beats und Melodien bauen, direkt im Browser.", extra:"beats musik music song melodie trommel schlagzeug machen", url:"beats/", icon:"beats/icons/icon-192.png", quelle:"App"},
-    {typ:"app", titel:"Kometen-Fokus", text:"Lern-Timer mit Pausen und Statistik.", extra:"fokus timer pomodoro lernen konzentration pause uhr", url:"fokus/", icon:"fokus/icons/icon-192.png", quelle:"App"},
-    {typ:"app", titel:"Kometen-Taschengeld", text:"Einnahmen, Ausgaben und Sparziele im Blick.", extra:"taschengeld geld sparen sparziel ausgaben euro budget", url:"taschengeld/", icon:"taschengeld/icons/icon-192.png", quelle:"App"},
-    {typ:"app", titel:"Kometenwerk für Kunden", text:"Webseiten und Apps von uns: Angebote, Sprechzeiten und Termin anfragen.", extra:"kunden webseite erstellen auftrag angebot preis termin sprechzeiten kontakt firma verein betrieb", url:"kunden/", icon:"kunden/icons/icon-192.png", quelle:"App"},
-    {typ:"app", titel:"Hilfe & Kontakt", text:"Fragen an den Hilfe-Bot, Fehler melden, Ideen schicken und Termine für Vereine und Betriebe.", extra:"hilfe kontakt support kundendienst service fehler bug melden idee frage problem telefon anrufen faq neuigkeiten status", url:"#hilfe", icon:"icons/kometenwerk.svg", quelle:"App"},
-    {typ:"app", titel:"Notruf Lindau", text:"Einsatzkräfte-Rollenspiel auf der Insel Lindau. Bald auf Roblox.", extra:"roblox polizei feuerwehr rettung spiel game", url:"", icon:"", quelle:"Bald"}
-  ];
-  var QUELLEN = {
-    news:{name:"Nachrichten-Heft", icon:"icons/nachrichten.png"},
-    wissen:{name:"Warum eigentlich?", icon:"icons/wissen.png"},
-    podcast:{name:"Streitfrage", icon:"icons/podcast.png"},
-    notizen:{name:"Deine Notizen", icon:"notizen/icons/icon-192.png"},
-    planer:{name:"Dein Planer", icon:"planer/icons/icon-192.png"},
-    quiz:{name:"Deine Lernkarten", icon:"quiz/icons/icon-192.png"},
-    beats:{name:"Deine Beats", icon:"beats/icons/icon-192.png"}
-  };
-  function lies(k){ try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; } }
-  // Eigene Sachen aus den Kometen-Apps auf diesem Gerät (bleiben auf dem Gerät)
-  function meineSachen(){
-    var out = [];
-    var n = lies("kw-notizen");
-    ((n && n.notizen) || []).forEach(function(x){
-      var txt = x.typ === "liste" ? (x.punkte || []).map(function(p){ return (p.ok ? "✓ " : "") + p.t; }).join(" · ") : (x.text || "");
-      out.push({typ:"meins", titel:x.titel || txt.slice(0, 60) || "Notiz", text:txt, extra:"notiz", url:"notizen/", zeit:x.geaendert, quelle:"notizen", info:x.typ === "liste" ? "Liste" : "Notiz"});
-    });
-    var pl = lies("kw-planer");
-    ((pl && pl.eintraege) || []).forEach(function(x){
-      var art = {hausaufgabe:"Hausaufgabe", test:"Test", termin:"Termin"}[x.typ] || "Eintrag";
-      out.push({typ:"meins", titel:(x.fach ? x.fach + ": " : "") + x.titel, text:art + (x.erledigt ? " (erledigt)" : "") + " · " + x.datum.split("-").reverse().join(".") + (x.notiz ? " · " + x.notiz : ""), extra:art + " " + (x.fach || ""), url:"planer/", quelle:"planer", info:art});
-    });
-    var qz = lies("kw-quiz");
-    ((qz && qz.stapel) || []).forEach(function(st){
-      out.push({typ:"meins", titel:"Stapel: " + st.name, text:(st.karten || []).length + " Lernkarten", extra:(st.karten || []).map(function(k){ return k.v + " " + k.r; }).join(" "), url:"quiz/", quelle:"quiz", info:"Lernkarten"});
-    });
-    var bt = lies("kw-beats");
-    ((bt && bt.songs) || []).forEach(function(sg){ out.push({typ:"meins", titel:sg.name, text:"Dein Beat mit " + sg.bpm + " Schlägen pro Minute", extra:"beat song musik", url:"beats/", quelle:"beats", info:"Beat"}); });
-    return out;
-  }
-
-  function dataUrls(pfad){
-    var urls = [];
-    var h = location.hostname;
-    if (/\.github\.io$/.test(h)) urls.push("https://raw.githubusercontent.com/" + h.split(".")[0] + "/ND/main/data/" + pfad);
-    urls.push("ND/data/" + pfad);
-    return urls;
-  }
-  function holen(pfad){
-    var urls = dataUrls(pfad), i = 0;
-    function next(){
-      if (i >= urls.length) return Promise.reject(new Error(pfad));
-      var u = urls[i++];
-      return fetch(u, {cache:"no-cache"}).then(function(r){ if (!r.ok) throw 0; return r.json(); }).catch(next);
-    }
-    return next();
-  }
-
-  var INDEX = null, laden = null, WORTSCHATZ = {};
-  function indexLaden(){
-    if (INDEX) return Promise.resolve(INDEX);
-    if (laden) return laden;
-    var liste = APPS.slice();
-    var jobs = [
-      holen("suche.json").then(function(d){
-        (Array.isArray(d) ? d : []).forEach(function(n){
-          liste.push({typ:"news", titel:n.titel, text:n.vorspann, extra:(n.rubrik || "") + " " + ((n.dossier && n.dossier.titel) || ""), url:"ND/#/n/" + encodeURIComponent(n.id), zeit:n.zeit, quelle:"news", info:n.rubrik});
-        });
-      }),
-      holen("wissen.json").then(function(d){
-        ((d && d.stuecke) || []).forEach(function(w){
-          liste.push({typ:"wissen", titel:w.titel, text:w.vorspann, extra:w.bereich || "", url:"ND/?app=wissen#/wissen/" + encodeURIComponent(w.id), zeit:w.zeit, quelle:"wissen", info:w.bereich});
-        });
-      }),
-      holen("podcast.json").then(function(d){
-        ((d && d.folgen) || []).forEach(function(p){
-          liste.push({typ:"podcast", titel:p.titel, text:p.text, extra:p.art || "", url:"ND/?app=podcast#/podcast", zeit:p.zeit, quelle:"podcast", info:"Folge"});
-        });
-      }),
-      holen("gespraeche.json").then(function(d){
-        ((d && d.folgen) || []).forEach(function(p){
-          liste.push({typ:"podcast", titel:p.titel, text:p.text, extra:"gespraech debatte " + (p.art || ""), url:"ND/?app=podcast#/podcast", zeit:p.zeit, quelle:"podcast", info:"Gespräch"});
-        });
-      })
-    ].map(function(p){ return p.catch(function(){ return null; }); });
-    laden = Promise.all(jobs).then(function(){
-      liste.forEach(function(e){ e._t = norm(e.titel); e._x = norm(e.text + " " + e.extra); });
-      INDEX = liste;
-      var wort = {};
-      liste.forEach(function(e){ (e._t + " " + e._x).split(/[^a-z0-9]+/).forEach(function(x){ if (x.length >= 4) wort[x] = (wort[x] || 0) + 1; }); });
-      WORTSCHATZ = wort;
-      var dl = document.getElementById("vorschlaege");
-      if (dl) dl.innerHTML = liste.filter(function(e){ return e.typ !== "app" || e.url; }).slice(0, 200).map(function(e){ return '<option value="' + esc(e.titel) + '">'; }).join("");
-      return INDEX;
-    });
-    return laden;
-  }
-
-  /* ---------- Suchen ---------- */
-  function woerter(q){ return norm(q).split(/[^a-z0-9]+/).filter(function(w){ return w.length > 1 || /\d/.test(w); }); }
-  function suchen(q){
-    var w = woerter(q);
-    if (!w.length) return [];
-    var treffer = [];
-    var meins = meineSachen();
-    meins.forEach(function(e){ e._t = norm(e.titel); e._x = norm(e.text + " " + e.extra); });
-    INDEX.concat(meins).forEach(function(e){
-      var score = 0, alle = true;
-      w.forEach(function(x){
-        var inT = e._t.indexOf(x) >= 0, inX = e._x.indexOf(x) >= 0;
-        if (!inT && !inX){ alle = false; return; }
-        if (inT) score += (new RegExp("(^|[^a-z0-9])" + x).test(e._t)) ? 6 : 3;
-        if (inX) score += 1;
-      });
-      if (!score) return;
-      if (alle) score += 10 * w.length;
-      if (e.typ === "app" && alle) score += 5;
-      treffer.push({e:e, s:score, alle:alle});
-    });
-    var mitAllen = treffer.filter(function(t){ return t.alle; });
-    if (mitAllen.length) treffer = mitAllen;
-    treffer.sort(function(a, b){ return b.s - a.s || String(b.e.zeit || "").localeCompare(String(a.e.zeit || "")); });
-    return treffer.map(function(t){ return t.e; });
-  }
-
-  function abstand(a, b){
-    if (Math.abs(a.length - b.length) > 2) return 9;
-    var d = [], i, j;
-    for (i = 0; i <= a.length; i++){ d[i] = [i]; }
-    for (j = 1; j <= b.length; j++) d[0][j] = j;
-    for (i = 1; i <= a.length; i++) for (j = 1; j <= b.length; j++)
-      { d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1));
-        if (i > 1 && j > 1 && a[i-1] === b[j-2] && a[i-2] === b[j-1]) d[i][j] = Math.min(d[i][j], d[i-2][j-2] + 1); }
-    return d[a.length][b.length];
-  }
-  // Tippfehler verbessern: "Krawalzoo" -> "krawallzoo"
-  function korrektur(q){
-    var w = woerter(q), geaendert = false;
-    var neu = w.map(function(x){
-      if (x.length < 4 || WORTSCHATZ[x] || Object.keys(WORTSCHATZ).some(function(k){ return k.indexOf(x) >= 0; })) return x;
-      var best = null, bd = x.length >= 7 ? 2 : 1;
-      Object.keys(WORTSCHATZ).forEach(function(k){ var d = abstand(x, k); if (d <= bd && (!best || d < best.d || (d === best.d && WORTSCHATZ[k] > WORTSCHATZ[best.k]))) best = {k:k, d:d}; });
-      if (best){ geaendert = true; return best.k; }
-      return x;
-    });
-    return geaendert ? neu.join(" ") : null;
-  }
-
-  function markieren(text, q){
-    var html = esc(text), w = woerter(q);
-    if (!w.length) return html;
-    var plain = norm(text);
-    var spans = [];
-    w.forEach(function(x){
-      var i = plain.indexOf(x);
-      while (i >= 0){ spans.push([i, i + x.length]); i = plain.indexOf(x, i + x.length); }
-    });
-    if (!spans.length || plain.length !== text.length) return html;
-    spans.sort(function(a, b){ return a[0] - b[0]; });
-    var out = "", pos = 0;
-    spans.forEach(function(s){
-      if (s[0] < pos) return;
-      out += esc(text.slice(pos, s[0])) + "<mark>" + esc(text.slice(s[0], s[1])) + "</mark>";
-      pos = s[1];
-    });
-    return out + esc(text.slice(pos));
-  }
-
-  function datum(z){
-    if (!z) return "";
-    var d = new Date(z);
-    if (isNaN(d)) return "";
-    return d.toLocaleDateString("de-DE", {day:"numeric", month:"long", year:"numeric"});
-  }
-
-  /* ---------- Wikipedia (freies Lexikon, kostenlos, ohne Schlüssel) ---------- */
-  function wikiErlaubt(){ try { return localStorage.getItem("kw-suche-wiki") !== "aus"; } catch (e) { return true; } }
-  var wikiCache = {};
-  function wikiSuchen(q){
-    var key = norm(q);
-    if (wikiCache[key]) return wikiCache[key];
-    var url = "https://de.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&generator=search&gsrnamespace=0&gsrlimit=5" +
-      "&gsrsearch=" + encodeURIComponent(q) + "&prop=extracts%7Cinfo&exintro=1&explaintext=1&exsentences=2&exlimit=5&inprop=url";
-    var ctrl = "AbortController" in window ? new AbortController() : null;
-    var t = setTimeout(function(){ if (ctrl) ctrl.abort(); }, 7000);
-    wikiCache[key] = fetch(url, ctrl ? {signal:ctrl.signal} : {}).then(function(r){ if (!r.ok) throw 0; return r.json(); }).then(function(d){
-      clearTimeout(t);
-      var seiten = (d && d.query && d.query.pages) || {};
-      return Object.keys(seiten).map(function(k){ return seiten[k]; })
-        .filter(function(x){ return x && x.title && x.extract && !/Begriffsklärung/.test(x.title) && !/bezeichnet:?$/.test(x.extract.trim()); })
-        .sort(function(a, b){ return (a.index || 0) - (b.index || 0); })
-        .map(function(x){ return {titel:x.title, text:x.extract, url:x.fullurl || ("https://de.wikipedia.org/wiki/" + encodeURIComponent(x.title.replace(/ /g, "_")))}; });
-    }).catch(function(){ clearTimeout(t); delete wikiCache[key]; return null; });
-    return wikiCache[key];
-  }
-  var wikiToken = 0;
-  function wikiZeigen(q, token){
-    var box = document.getElementById("wiki");
-    if (!box) return;
-    wikiSuchen(q).then(function(liste){
-      if (token !== wikiToken || !document.getElementById("wiki")) return;
-      if (liste === null){ box.innerHTML = '<p class="status">Wikipedia ist gerade nicht erreichbar.</p>'; return; }
-      if (!liste.length){ box.innerHTML = '<p class="status">Bei Wikipedia haben wir dazu nichts gefunden.</p>'; return; }
-      box.innerHTML = '<p class="count">Aus dem Lexikon Wikipedia</p>' + liste.map(function(e){
-        return '<article class="hit"><div class="src"><span class="ph wikiW" aria-hidden="true">W</span><span><b>Wikipedia</b> · Lexikon</span></div>' +
-          '<h3><a href="' + esc(e.url) + '" target="_blank" rel="noopener">' + markieren(e.titel, q) + '</a></h3><p>' + markieren(e.text, q) + '</p></article>';
-      }).join("") + '<p class="lizenz">Texte aus <a href="https://de.wikipedia.org/" target="_blank" rel="noopener">Wikipedia</a>, der freien Enzyklopädie, unter der Lizenz <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.de" target="_blank" rel="noopener">CC BY-SA 4.0</a>.</p>';
-    });
-  }
-
-  var tab = "alle";
-  function zeigen(q){
-    var out = $("#out");
-    var alle = suchen(q), besser = korrektur(q), hinweis = "";
-    if (besser && !alle.length){
-      hinweis = '<p class="status" style="padding:8px 0 0">Keine Treffer für „' + esc(q) + '“. Ergebnisse für <b>„' + esc(besser) + '“</b>:</p>';
-      alle = suchen(besser); q = besser;
-    } else if (besser){
-      hinweis = '<p class="status" style="padding:8px 0 0">Meintest du <a href="?q=' + encodeURIComponent(besser) + '" data-q="' + esc(besser) + '">' + esc(besser) + '</a>?</p>';
-    }
-    var liste = tab === "alle" ? alle : alle.filter(function(e){ return e.typ === tab; });
-    var html = "";
-    if (!INDEX.some(function(e){ return e.typ !== "app"; })){
-      html += '<p class="status">Die Inhalte der Apps konnten gerade nicht geladen werden. Es werden nur die Apps selbst durchsucht.</p>';
-    }
-    html += hinweis + '<p class="count">' + (liste.length === 1 ? "1 Treffer" : liste.length + " Treffer") + (tab === "meins" ? " in deinen eigenen Sachen auf diesem Gerät" : " in den Apps von Kometenwerk") + '</p>';
-    liste.slice(0, 40).forEach(function(e){
-      var q2 = QUELLEN[e.quelle];
-      var name = e.typ === "app" ? e.titel : q2.name;
-      var icon = e.typ === "app" ? e.icon : q2.icon;
-      var meta = [e.typ === "app" ? (e.quelle === "Bald" ? "Bald verfügbar" : "App") : e.info, datum(e.zeit)].filter(Boolean).join(" · ");
-      html += '<article class="hit"><div class="src">' + (icon ? '<img src="' + esc(icon) + '" alt="">' : '<span class="ph" aria-hidden="true">🚨</span>') +
-        '<span><b>' + esc(name) + '</b>' + (meta ? " · " + esc(meta) : "") + '</span></div>' +
-        '<h3>' + (e.url ? '<a href="' + esc(e.url) + '">' + markieren(e.titel, q) + '</a>' : markieren(e.titel, q)) + '</h3>' +
-        '<p>' + markieren(e.text || "", q) + '</p></article>';
-    });
-    if (!liste.length){
-      html += '<p class="status">Dazu haben wir in unseren Apps nichts gefunden.</p>';
-    }
-    var mitWiki = (tab === "alle" || tab === "wissen") && wikiErlaubt();
-    if (mitWiki) html += '<div id="wiki" aria-live="polite"><p class="status">Wikipedia wird durchsucht …</p></div>';
-    html += '<div class="web">Mehr aus dem ganzen Internet: <a href="https://duckduckgo.com/?q=' + encodeURIComponent(q) + '&kp=1&kl=de-de" rel="noopener">„' + esc(q) + '“ bei DuckDuckGo suchen ↗</a><br><small>mit strengem Jugendschutz</small></div>';
-    out.innerHTML = html;
-    wikiToken++;
-    if (mitWiki) wikiZeigen(q, wikiToken);
-  }
-
-  function starten(q, push){
-    q = (q || "").trim();
-    if (!q){ zurStart(push); return; }
-    document.body.classList.add("results");
-    $("#q2").value = q; $("#q1").value = q;
-    syncClear();
-    document.title = q + " – Kometen-Suche";
-    if (push) history.pushState({q:q}, "", "?q=" + encodeURIComponent(q));
-    $("#out").innerHTML = '<p class="status">Suche läuft …</p>';
-    indexLaden().then(function(){ zeigen(q); });
-  }
-  function zurStart(push){
-    document.body.classList.remove("results");
-    document.title = "Kometenwerk";
-    if (push) history.pushState({}, "", location.pathname);
-  }
-
-  $("#f1").addEventListener("submit", function(e){ e.preventDefault(); starten($("#q1").value, true); });
-  $("#f2").addEventListener("submit", function(e){ e.preventDefault(); $("#q2").blur(); starten($("#q2").value, true); });
-  $("#q1").addEventListener("focus", function(){ indexLaden(); }, {once:true});
-  window.addEventListener("popstate", function(){
-    var q = new URLSearchParams(location.search).get("q");
-    q ? starten(q, false) : zurStart(false);
-  });
-
-  function syncClear(){
-    document.querySelectorAll(".searchbox").forEach(function(f){ f.classList.toggle("filled", !!f.querySelector("input").value); });
-  }
-  document.querySelectorAll(".searchbox").forEach(function(f){
-    var inp = f.querySelector("input");
-    inp.addEventListener("input", syncClear);
-    f.querySelector(".clear").addEventListener("click", function(){ inp.value = ""; syncClear(); inp.focus(); });
-  });
-
-  $("#tabs").addEventListener("click", function(e){
-    var b = e.target.closest("button[data-t]");
-    if (!b) return;
-    tab = b.dataset.t;
-    document.querySelectorAll("#tabs button").forEach(function(x){ x.setAttribute("aria-selected", x === b ? "true" : "false"); });
-    if (INDEX) zeigen($("#q2").value);
-  });
-
-  var wikiBox = document.getElementById("wikiAn");
-  if (wikiBox){
-    wikiBox.checked = wikiErlaubt();
-    wikiBox.addEventListener("change", function(){ try { localStorage.setItem("kw-suche-wiki", wikiBox.checked ? "an" : "aus"); } catch (e) {} if (INDEX && document.body.classList.contains("results")) zeigen($("#q2").value); });
-  }
-
-  $("#zufall").addEventListener("click", function(){
-    indexLaden().then(function(ix){
-      var wissen = ix.filter(function(e){ return e.typ === "wissen"; });
-      var pool = wissen.length ? wissen : ix.filter(function(e){ return e.url; });
-      var e = pool[Math.floor(Math.random() * pool.length)];
-      if (e) location.href = e.url;
-    });
-  });
-
-  /* ---------- App-Menü ---------- */
-  var dots = $("#dots"), menu = $("#launcher");
-  function menuZu(){ menu.hidden = true; dots.setAttribute("aria-expanded", "false"); }
-  dots.addEventListener("click", function(e){
-    e.stopPropagation();
-    var auf = menu.hidden;
-    menu.hidden = !auf; dots.setAttribute("aria-expanded", auf ? "true" : "false");
-    if (auf){ var a = menu.querySelector("a"); if (a) a.focus(); }
-  });
-  document.addEventListener("click", function(e){ if (!menu.hidden && !menu.contains(e.target)) menuZu(); });
-  document.addEventListener("keydown", function(e){ if (e.key === "Escape" && !menu.hidden){ menuZu(); dots.focus(); } });
-
-  /* ---------- Fenster ---------- */
-  $("#ueberLink").addEventListener("click", function(e){ e.preventDefault(); $("#ueber").showModal(); });
-  $("#sucheLink").addEventListener("click", function(e){ e.preventDefault(); $("#sucheInfo").showModal(); });
-  $("#jahr").textContent = new Date().getFullYear();
-
-  /* ---------- 🙋 Hilfe & Kontakt (Kundendienst) ----------
-     Lädt erst etwas, wenn das Fenster geöffnet wird. Firebase (Melden) erst beim Abschicken. */
-  var DB = "https://krawallzoo-default-rtdb.europe-west1.firebasedatabase.app";
-  var FB_CFG = { apiKey: "AIzaSyBaCkktmwGDgr6v_8p85aa2Fl6NsjODFMQ", authDomain: "krawallzoo.firebaseapp.com", databaseURL: DB, projectId: "krawallzoo", storageBucket: "krawallzoo.firebasestorage.app", messagingSenderId: "780974811882", appId: "1:780974811882:web:5f6fb526a931ae3715c593" };
-  var FB_JS = "https://cdn.jsdelivr.net/npm/firebase@10.12.2/";
-  var FAQ = [
-    { f: "Was ist Kometenwerk?", a: "Kometenwerk ist ein junges Studio aus Deutschland. Wir bauen Spiele, Apps und Technik – kostenlos und ohne Werbung.", k: ["kometenwerk", "wer seid", "wer bist", "was ist das", "firma", "studio", "dahinter", "uber euch"] },
-    { f: "Kostet das etwas?", a: "Nein. Alle Apps und Spiele von Kometenwerk sind kostenlos. Es gibt keine Werbung und nichts zu kaufen.", k: ["kostet", "kosten", "preis", "bezahlen", "geld", "gratis", "kostenlos", "abo", "kaufen"] },
-    { f: "Wo sind meine Daten gespeichert?", a: "Deine Notizen, Hausaufgaben, Lernkarten und Beats bleiben nur auf deinem Gerät, im Speicher deines Browsers. Wir bekommen sie nicht zu sehen.", k: ["daten", "gespeichert", "speichert", "datenschutz", "privat", "sicher gespeichert", "wo sind"] },
-    { f: "Meine Sachen sind weg – was jetzt?", a: "Deine Sachen liegen im Browser. Wenn du die Browserdaten löschst oder ein anderes Gerät nimmst, sind sie dort nicht. Tipp: Unten in jeder App gibt es „Sicherung speichern“. Mit „Sicherung laden“ holst du sie zurück – auch auf ein neues Gerät.", k: ["weg", "verloren", "geloscht", "verschwunden", "sicherung", "backup", "neues gerat", "handy gewechselt", "wiederherstellen", "zuruck holen"] },
-    { f: "Wie installiere ich eine App?", a: "Öffne die App und tipp oben auf „Als App installieren“. Auf dem iPhone: unten auf „Teilen“ und dann „Zum Home-Bildschirm“. Danach startet sie wie eine normale App und geht auch offline.", k: ["installieren", "install", "home bildschirm", "homebildschirm", "herunterladen", "download", "app store", "iphone", "android", "offline"] },
-    { f: "Eine App lädt nicht oder ist veraltet", a: "Lade die Seite neu (am PC: F5). Wenn du noch die alte Version siehst, schließ die App ganz und öffne sie nochmal – die neue Version wird im Hintergrund geladen. Klappt es dann immer noch nicht, melde den Fehler.", k: ["ladt nicht", "geht nicht", "funktioniert nicht", "kaputt", "hangt", "weiss", "leer", "alte version", "veraltet", "update", "fehler", "bug", "absturz", "sturzt"] },
-    { f: "Wie spiele ich Krawallzoo?", a: "Krawallzoo läuft direkt im Browser unter kometenwerk.github.io/Krawallzoo/ – ohne Anmeldung mit E-Mail. Wenn ein Online-Spiel hängt, lade die Seite neu. Fehler kannst du hier unter „Melden“ schicken.", k: ["krawallzoo", "spiel", "spielen", "zoo", "tiere", "arena", "zocken", "game"] },
-    { f: "Wie funktioniert die Suche?", a: "Die Kometen-Suche läuft in deinem Browser und durchsucht alle unsere Apps und auf Wunsch das Lexikon Wikipedia. Für das ganze Internet gibt es einen Link zu DuckDuckGo mit Jugendschutz. Deine Suchen speichern wir nicht.", k: ["suche", "suchen", "wikipedia", "duckduckgo", "google", "internet"] },
-    { f: "Ist Kometenwerk sicher für Kinder?", a: "Ja, darauf achten wir: Es gibt keinen Chat mit Fremden, keine Werbung und wir sammeln keine Daten über dich.", k: ["kinder", "sicher", "jugendschutz", "fremde", "chat", "eltern", "werbung", "gefahrlich"] },
-    { f: "Wie melde ich einen Fehler oder eine Idee?", a: "Tipp oben auf „📣 Melden“, wähl die App und schreib kurz, was passiert ist. Wir lesen jede Meldung.", k: ["melden", "meldung", "idee", "vorschlag", "wunsch", "feedback", "verbesserung"], geh: "melden" },
-    { f: "Kann ich euch anrufen oder schreiben?", a: "Eine Telefonnummer und einen Chat haben wir nicht – so bleibt alles sicher. Fehler und Ideen schickst du über „Melden“. Vereine und Betriebe können über „Termin“ ein Gespräch per Telefon oder Video anfragen.", k: ["anrufen", "telefon", "telefonieren", "nummer", "kontakt", "e mail", "email", "schreiben", "erreichen", "sprechen", "mitarbeiter", "mensch"], geh: "termin" },
-    { f: "Baut ihr auch Webseiten für Vereine?", a: "Ja! Wir bauen Webseiten und kleine Apps für Vereine und Betriebe. Unter „Termin“ siehst du freie Zeiten, auf der Kunden-Seite alle Angebote.", k: ["webseite", "website", "homepage", "verein", "betrieb", "firma", "auftrag", "angebot", "kunde", "termin", "beratung"], geh: "termin" }
-  ];
-  function wortGleich(t, k) { return (" " + t + " ").indexOf(" " + k) >= 0; }
-  function faqFinden(text) {
-    var t = norm(text).replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim(), best = null;
-    FAQ.forEach(function (x) {
-      var s = 0; x.k.forEach(function (k) { if (wortGleich(t, k)) s += k.indexOf(" ") > 0 ? 3 : 2; });
-      if (norm(x.f).replace(/[^a-z0-9 ]+/g, " ").trim() === t) s += 10;
-      if (s && (!best || s > best.s)) best = { x: x, s: s };
-    });
-    return best && best.x;
-  }
-  var hLog = [], hSprechen = false;
-  function botAntwort(text) {
-    var t = norm(text);
-    if (/^(hallo|hi|hey|moin|servus|guten (morgen|tag|abend))\b/.test(t) && t.length < 25) return { a: "Hallo! 👋 Ich bin der Hilfe-Bot von Kometenwerk. Frag mich zum Beispiel, wo deine Daten gespeichert sind oder wie du eine App installierst." };
-    if (/^(danke|dankeschoen|super|cool|ok|okay)\b/.test(t)) return { a: "Gern geschehen! 😊" };
-    var x = faqFinden(text);
-    if (x) return { a: x.a, geh: x.geh };
-    return { a: "Das weiß ich leider nicht. 🤔 Schau unten bei den häufigen Fragen – oder schick uns deine Frage als Idee über „Melden“. Wir lesen alles.", geh: "melden" };
-  }
-  var GEH_TEXT = { melden: "📣 Zum Melden", termin: "📅 Zu den Terminen" };
-  function hLogZeigen() {
-    var el = $("#hLog");
-    el.innerHTML = hLog.length ? hLog.map(function (m) {
-      return '<div class="h-msg ' + m.wer + '">' + esc(m.text) + (m.geh ? '<br><button type="button" class="h-link" data-geh="' + m.geh + '">' + GEH_TEXT[m.geh] + ' ›</button>' : "") + (m.laden ? '<br><button type="button" class="btn h-primaer" id="hAsrJa">Ja, Spracheingabe laden</button>' : "") + '</div>';
-    }).join("") : '<div class="h-msg bot">Hallo! 👋 Ich bin der Hilfe-Bot. Was möchtest du wissen?</div>';
-    el.scrollTop = el.scrollHeight;
-  }
-  function fragen(text) {
-    text = String(text || "").trim(); if (!text) return;
-    hLog.push({ wer: "du", text: text });
-    var r = botAntwort(text); hLog.push({ wer: "bot", text: r.a, geh: r.geh }); hLog = hLog.slice(-20); hLogZeigen();
-    if (hSprechen) vorlesen(r.a);
-    hSprechen = false;
-  }
-  function vorlesen(t) {
-    if (!("speechSynthesis" in window)) return;
-    try {
-      // Nur Stimmen, die auf dem Gerät laufen (sonst ginge der Text an einen Online-Dienst)
-      var st = speechSynthesis.getVoices().filter(function (v) { return /^de/i.test(v.lang) && v.localService; });
-      if (!st.length) return;
-      speechSynthesis.cancel();
-      var u = new SpeechSynthesisUtterance(String(t).replace(/[\u{1F300}-\u{1FAFF}☀-➿]/gu, " ").replace(/\s+/g, " ").trim());
-      u.lang = "de-DE"; u.voice = st[0]; speechSynthesis.speak(u);
-    } catch (e) {}
-  }
-  $("#hFaq").innerHTML = FAQ.map(function (x) { return '<details class="h-faq"><summary>' + esc(x.f) + '</summary><p>' + esc(x.a) + '</p></details>'; }).join("");
-  $("#hSenden").addEventListener("click", function () { var i = $("#hText"); fragen(i.value); i.value = ""; i.focus(); });
-  $("#hText").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $("#hSenden").click(); } });
-
-  /* Spracheingabe: Whisper läuft im Browser (dasselbe Modell wie bei Sofie im Team-Chat) */
-  var TRANS = "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6", ASR = null, asrLaden = null;
-  function asrOk() { try { return localStorage.getItem("kw-hilfe-asr") === "ja"; } catch (e) { return false; } }
-  function micInfo(t) { $("#hMicInfo").textContent = t || "🎙️ Du kannst auch sprechen – die Spracherkennung läuft nur auf deinem Gerät."; }
-  function asrHolen() {
-    if (ASR) return Promise.resolve(ASR);
-    if (asrLaden) return asrLaden;
-    var gpu = "gpu" in navigator ? navigator.gpu.requestAdapter().then(function (a) { return !!a; }).catch(function () { return false; }) : Promise.resolve(false);
-    asrLaden = gpu.then(function (g) {
-      return import(TRANS).then(function (tf) {
-        tf.env.allowLocalModels = false;
-        var dateien = {}, opts = g ? { device: "webgpu", dtype: { encoder_model: "fp32", decoder_model_merged: "q4" } } : { dtype: "q8" };
-        opts.progress_callback = function (p) {
-          if (p && p.status === "progress" && p.total) { dateien[p.file] = [p.loaded, p.total]; var a = 0, b = 0; for (var k in dateien) { a += dateien[k][0]; b += dateien[k][1]; } micInfo("🎙️ Spracheingabe lädt (nur beim ersten Mal) … " + Math.round(a / b * 100) + " %"); }
-        };
-        return tf.pipeline("automatic-speech-recognition", "onnx-community/whisper-base", opts);
-      });
-    }).then(function (p) { ASR = p; micInfo(); return p; }).catch(function (e) { asrLaden = null; micInfo("😕 Die Spracheingabe ging gerade nicht. Du kannst die Frage auch eintippen."); throw e; });
-    return asrLaden;
-  }
-  var rec = null, recTeile = [], recStart = 0, recStream = null, recTimer = null;
-  function micZeigen(an) { var b = $("#hMic"); b.classList.toggle("an", an); b.setAttribute("aria-pressed", an ? "true" : "false"); b.textContent = an ? "⏺" : "🎙️"; if (an) micInfo("● Ich höre zu … tipp nochmal aufs Mikrofon, wenn du fertig bist."); else if (ASR) micInfo(); }
-  function aufnahme() {
-    if (rec) { stopp(); return; }
-    if (!asrOk()) { hLog.push({ wer: "bot", text: "Für die Spracheingabe lädt dein Browser einmal ein Sprachmodell (etwa 80 MB, am besten im WLAN). Danach hört es nur auf deinem Gerät zu – deine Stimme wird nirgends hingeschickt.", laden: true }); hLogZeigen(); return; }
-    if (!navigator.mediaDevices || !window.MediaRecorder) { micInfo("Dieser Browser kann leider nicht aufnehmen. Tipp die Frage einfach ein."); return; }
-    navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } }).then(function (s) {
-      recStream = s; asrHolen().catch(function () {});
-      if ("speechSynthesis" in window) speechSynthesis.cancel();
-      recTeile = []; rec = new MediaRecorder(s);
-      rec.ondataavailable = function (e) { if (e.data && e.data.size) recTeile.push(e.data); };
-      rec.onstop = fertig; rec.start(); recStart = Date.now(); micZeigen(true);
-      recTimer = setTimeout(stopp, 12000);
-    }).catch(function () { micInfo("Ich darf das Mikrofon nicht benutzen. Erlaube es oben in der Adressleiste – oder tipp die Frage ein."); });
-  }
-  function stopp() { if (!rec || rec.state === "inactive") return; clearTimeout(recTimer); rec.stop(); if (recStream) recStream.getTracks().forEach(function (t) { t.stop(); }); micZeigen(false); }
-  function fertig() {
-    var typ = rec && rec.mimeType, blob = new Blob(recTeile, typ ? { type: typ } : {}); rec = null;
-    if (Date.now() - recStart < 600 || !blob.size) { micInfo(); return; }
-    micInfo("🎙️ Ich höre genau hin …");
-    blob.arrayBuffer().then(function (buf) {
-      var ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-      return ctx.decodeAudioData(buf).then(function (a) { try { ctx.close(); } catch (e) {} return a.getChannelData(0); });
-    }).then(function (daten) { return asrHolen().then(function (asr) { micInfo("🎙️ Ich höre genau hin …"); return asr(daten, { language: "german", task: "transcribe" }); }); })
-      .then(function (out) {
-        micInfo();
-        var t = String((out && out.text) || "").replace(/^\s*[\[(].*?[\])]\s*$/, "").trim();
-        if (!t) { hLog.push({ wer: "bot", text: "Ich habe nichts verstanden. Versuch es nochmal etwas lauter." }); hLogZeigen(); return; }
-        hSprechen = true; fragen(t);
-      }).catch(function () { micInfo("😕 Das hat gerade nicht geklappt. Tipp die Frage einfach ein."); });
-  }
-  $("#hMic").addEventListener("click", aufnahme);
-  $("#hLog").addEventListener("click", function (e) {
-    if (e.target.id === "hAsrJa") { try { localStorage.setItem("kw-hilfe-asr", "ja"); } catch (x) {} e.target.remove(); asrHolen().then(function () { hLog.push({ wer: "bot", text: "Fertig! 🎙️ Tipp jetzt aufs Mikrofon und stell deine Frage." }); hLogZeigen(); }).catch(function () {}); }
-  });
-
-  /* Status, Neuigkeiten und freie Zeiten: nur lesen, ohne Firebase-Bibliothek */
-  var pub = null;
-  function holeJson(url, ms) {
-    var ctrl = "AbortController" in window ? new AbortController() : null, t = setTimeout(function () { if (ctrl) ctrl.abort(); }, ms || 6000);
-    return fetch(url, ctrl ? { cache: "no-cache", signal: ctrl.signal } : { cache: "no-cache" }).then(function (r) { clearTimeout(t); if (!r.ok) throw 0; return r.json(); }, function (e) { clearTimeout(t); throw e; });
-  }
-  function pubHolen() {
-    if (pub) return Promise.resolve(pub);
-    return holeJson(DB + "/public.json").then(function (d) { pub = d || {}; return pub; }).catch(function () { return null; });
-  }
-  function wannText(ts) { var d = new Date(ts); return isNaN(d) ? "" : d.toLocaleDateString("de-DE", { day: "numeric", month: "long" }); }
-  function statusZeigen(p) {
-    var el = $("#hStatus");
-    if (!p) { el.className = "h-status"; el.textContent = "Der Status ist gerade nicht abrufbar. Die Hilfe unten funktioniert trotzdem."; return; }
-    var s = p.status || { art: "ok", text: "" };
-    el.className = "h-status " + (s.art === "warn" ? "warn" : "ok");
-    el.textContent = (s.art === "warn" ? "🟡 " : "🟢 ") + (s.text || (s.art === "warn" ? "Bei einer App gibt es gerade ein Problem. Wir arbeiten dran." : "Alle Apps laufen."));
-  }
-  function neuZeigen(p) {
-    var el = $("#hNeu");
-    if (!p) { el.innerHTML = '<p class="h-klein">Gerade nicht abrufbar.</p>'; return; }
-    var n = p.neu || {}, k = Object.keys(n).filter(function (x) { return n[x] && n[x].text; }).sort(function (a, b) { return (n[b].t || 0) - (n[a].t || 0); });
-    el.innerHTML = k.length ? '<ul class="h-neu">' + k.slice(0, 20).map(function (x) { return '<li><span class="h-klein">' + esc(wannText(n[x].t)) + '</span><br>' + esc(n[x].text) + '</li>'; }).join("") + '</ul>' : '<p class="h-klein">Hier stehen bald Neuigkeiten und reparierte Fehler.</p>';
-  }
-  var WD = ["so", "mo", "di", "mi", "do", "fr", "sa"];
-  function ymd(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
-  function freieZeiten(C, zu, max) {
-    var out = [], T = +C.terminMinuten || 30, grenze = Date.now() + (+C.vorlaufStunden || 24) * 3600000, gesp = C.gesperrt || [], bel = C.belegt || [];
-    for (var i = 0; i <= (+C.wochen || 3) * 7 && out.length < max; i++) {
-      var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + i);
-      var tag = ymd(d); if (gesp.indexOf(tag) >= 0 || zu[tag]) continue;
-      ((C.sprechzeiten || {})[WD[d.getDay()]] || []).forEach(function (r) {
-        var p = String(r).split("-"); if (p.length !== 2) return;
-        var a = p[0].split(":"), b = p[1].split(":"), m0 = +a[0] * 60 + +a[1], m1 = +b[0] * 60 + +b[1];
-        for (var m = m0; m + T <= m1 && out.length < max; m += T) {
-          var zeit = String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"), ts = new Date(d.getFullYear(), d.getMonth(), d.getDate(), Math.floor(m / 60), m % 60).getTime();
-          if (ts < grenze || bel.indexOf(tag + " " + zeit) >= 0 || zu[tag + " " + zeit]) continue;
-          out.push({ tag: tag, zeit: zeit, d: d });
-        }
-      });
-    }
-    return out;
-  }
-  var termineGeladen = false;
-  function termineZeigen() {
-    if (termineGeladen) return; termineGeladen = true;
-    Promise.all([holeJson("kunden/einstellungen.json").catch(function () { return null; }), pubHolen()]).then(function (r) {
-      var C = r[0], el = $("#hTermine");
-      if (!C) { el.innerHTML = '<p class="h-klein">Die Termine konnten gerade nicht geladen werden. Schau auf der Kunden-Seite nach.</p>'; termineGeladen = false; return; }
-      var bald = !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(C.email || "") || /example\.(com|org|net)$/i.test(C.email || "");
-      if (bald) { el.innerHTML = '<p class="h-bald">⏳ <b>Termin-Anfragen sind bald freigeschaltet.</b> Schau gern bald wieder vorbei!</p>'; return; }
-      var zu = {}; ((r[1] && r[1].verfuegbar && r[1].verfuegbar.zu) || "").split(",").forEach(function (k) { if (k) zu[k.trim()] = true; });
-      var f = freieZeiten(C, zu, 6);
-      el.innerHTML = f.length ? '<p class="h-klein">Die nächsten freien Zeiten (' + (+C.terminMinuten || 30) + ' Minuten):</p><div class="h-slots">' + f.map(function (x) {
-        var lang = x.d.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" });
-        return '<a class="h-slot" href="kunden/?slot=' + encodeURIComponent(x.tag + " " + x.zeit) + '" aria-label="Termin am ' + esc(x.d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })) + ' um ' + x.zeit + ' Uhr anfragen">' + esc(lang) + '<b>' + x.zeit + '</b></a>';
-      }).join("") + '</div><p class="h-klein">Tipp auf eine Zeit – auf der nächsten Seite wählst du Telefon oder Video und schickst die Anfrage per E-Mail.</p>'
-        : '<p class="h-klein">Gerade sind alle Zeiten vergeben. Auf der Kunden-Seite kannst du auch ohne festen Termin anfragen.</p>';
-    });
-  }
-
-  /* Melden: Firebase wird erst jetzt geladen (anonym, ohne Konto) */
-  function skript(src) { return new Promise(function (ok, nein) { var s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = nein; document.head.appendChild(s); }); }
-  var fbBereit = null;
-  function fbHolen() {
-    if (fbBereit) return fbBereit;
-    fbBereit = (window.firebase ? Promise.resolve() : skript(FB_JS + "firebase-app-compat.js").then(function () { return skript(FB_JS + "firebase-auth-compat.js"); }).then(function () { return skript(FB_JS + "firebase-database-compat.js"); }))
-      .then(function () {
-        if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(FB_CFG);
-        var auth = firebase.auth();
-        // Nichts auf dem Gerät merken: neue zufällige Kennung pro Besuch
-        var p = auth.setPersistence && firebase.auth.Auth ? auth.setPersistence(firebase.auth.Auth.Persistence.NONE) : Promise.resolve();
-        return p.then(function () { return auth.currentUser || auth.signInAnonymously(); }).then(function () { return firebase.database(); });
-      }).catch(function (e) { fbBereit = null; throw e; });
-    return fbBereit;
-  }
-  var letzteMeldung = 0;
-  function meldFehler(t) { var el = $("#hMeldFehler"); el.textContent = t || ""; el.hidden = !t; }
-  $("#hMeldenBtn").addEventListener("click", function () {
-    var text = $("#hMeldung").value.replace(/\s+\n/g, "\n").trim(), art = (document.querySelector('input[name="hArt"]:checked') || {}).value || "fehler", app = $("#hApp").value;
-    if (text.length < 3) { meldFehler("Schreib bitte kurz, was los ist (mindestens ein paar Wörter)."); return; }
-    if (/(https?:|www\.)/i.test(text)) { meldFehler("Bitte ohne Links."); return; }
-    if (/[^\s@]+@[^\s@]+\.[a-z]{2,}/i.test(text) || /(\+?\d[\d \/\-()]{6,}\d)/.test(text)) { meldFehler("🔒 Bitte keine E-Mail-Adressen oder Telefonnummern – zu deiner Sicherheit."); return; }
-    if (Date.now() - letzteMeldung < 60000) { meldFehler("Danke! Bitte warte eine Minute bis zur nächsten Meldung."); return; }
-    meldFehler(""); var b = $("#hMeldenBtn"); b.disabled = true; b.textContent = "Wird geschickt …";
-    fbHolen().then(function (db) {
-      var u = {}, uid = firebase.auth().currentUser.uid, k = db.ref("feedback").push().key, TS = firebase.database.ServerValue.TIMESTAMP;
-      u["feedback/" + k] = { app: app, art: art, text: text.slice(0, 500), t: TS, uid: uid };
-      u["feedbackZeit/" + uid] = TS;
-      return db.ref().update(u);
-    }).then(function () {
-      letzteMeldung = Date.now(); $("#hMeldung").value = ""; $("#hDanke").hidden = false;
-      setTimeout(function () { $("#hDanke").hidden = true; }, 8000);
-    }).catch(function (e) {
-      meldFehler(/permission/i.test(String(e && (e.code || e.message))) ? "Das ging gerade nicht. Warte bitte eine Minute und versuch es nochmal." : "Keine Verbindung. Versuch es gleich nochmal.");
-    }).then(function () { b.disabled = false; b.textContent = "Abschicken"; });
-  });
-
-  /* Fenster und Reiter */
-  function reiter(w) {
-    document.querySelectorAll("#hilfe [data-h]").forEach(function (b) { b.setAttribute("aria-selected", b.dataset.h === w ? "true" : "false"); });
-    document.querySelectorAll("#hilfe .h-p").forEach(function (p) { p.hidden = p.dataset.p !== w; });
-    if (w === "termin") termineZeigen();
-    if (w === "melden") setTimeout(function () { $("#hMeldung").focus(); }, 30);
-  }
-  function hilfeAuf(w) {
-    var d = $("#hilfe"); if (!d.open) d.showModal();
-    reiter(w || "fragen"); hLogZeigen();
-    pubHolen().then(function (p) { statusZeigen(p); neuZeigen(p); });
-  }
-  $("#hilfe").addEventListener("click", function (e) {
-    var t = e.target.closest("[data-h]"); if (t) { reiter(t.dataset.h); return; }
-    var g = e.target.closest("[data-geh]"); if (g) { reiter(g.dataset.geh); return; }
-  });
-  $("#hZu").addEventListener("click", function () { $("#hilfe").close(); });
-  $("#hilfe").addEventListener("close", function () { stopp(); if ("speechSynthesis" in window) speechSynthesis.cancel(); if (/^#hilfe/.test(location.hash)) history.replaceState(null, "", location.pathname + location.search); });
-  document.querySelectorAll("[data-hilfe]").forEach(function (a) { a.addEventListener("click", function (e) { e.preventDefault(); hilfeAuf(a.dataset.hilfe || "fragen"); }); });
-  function hashPruefen() { var m = location.hash.match(/^#hilfe(?:-(fragen|melden|termin|neu))?$/); if (m) hilfeAuf(m[1]); }
-  window.addEventListener("hashchange", hashPruefen);
-  hashPruefen();
-
-  var start = new URLSearchParams(location.search).get("q");
-  if (start) starten(start, false);
-})();
-</script>
 </body>
 </html>

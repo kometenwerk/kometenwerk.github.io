@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kometen-Suche – Kometenwerk</title>
+<meta name="description" content="Die Kometen-Suche durchsucht alle Apps von Kometenwerk: Nachrichten, Wissen, Podcasts und Spiele.">
+<meta name="theme-color" content="#101826">
+<meta property="og:title" content="Kometen-Suche – Kometenwerk">
+<meta property="og:description" content="Suche in allen Apps von Kometenwerk.">
+<link rel="canonical" href="https://kometenwerk.github.io/suche/">
+<meta property="og:url" content="https://kometenwerk.github.io/suche/">
+<link rel="icon" href="../icons/kometenwerk.svg" type="image/svg+xml">
+<link href="../shared/fonts/fonts.css" rel="stylesheet">
+<link rel="stylesheet" href="../shared/nav.css">
+<style>
+:root{
+  --bg:#ffffff;--bg2:#f4f6fa;--card:#ffffff;--ink:#101826;--muted:#5b6578;--line:#dfe3ea;--link:#16407a;
+  --accent:#ff8a3c;--accent-soft:rgba(255,138,60,.14);--shadow:0 1px 3px rgba(16,24,38,.08),0 8px 24px rgba(16,24,38,.08);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#101826;--bg2:#0b111c;--card:#172133;--ink:#ffffff;--muted:#9aa7bd;--line:#2a3650;--link:#9cc3ff;--accent-soft:rgba(255,138,60,.18);--shadow:0 8px 24px rgba(0,0,0,.35);color-scheme:dark}
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:'Space Grotesk','Helvetica Neue',Arial,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;min-height:100%}
+a{color:inherit}
+button{font:inherit;color:inherit}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Startansicht */
+main{flex:1}
+.home{display:flex;flex-direction:column;align-items:center;padding:6vh 20px 40px}
+.mark{width:min(150px,38vw);height:auto;color:var(--ink);overflow:visible}
+.gear{transform-box:fill-box;transform-origin:center;animation:turn 24s linear infinite}
+@keyframes turn{to{transform:rotate(360deg)}}
+.word{font-size:clamp(2.6rem,9vw,4.4rem);line-height:1;margin:14px 0 0;letter-spacing:.005em;font-weight:600}
+.word span{font-weight:400}
+.searchbox{position:relative;width:min(620px,100%);margin-top:30px}
+.searchbox input{width:100%;font:inherit;font-size:1.08rem;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:15px 48px 15px 52px;box-shadow:var(--shadow);outline:none;-webkit-appearance:none;appearance:none}
+.searchbox input::-webkit-search-cancel-button{display:none}
+.searchbox input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),var(--shadow)}
+.searchbox .lupe{position:absolute;left:19px;top:50%;width:20px;height:20px;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.searchbox .clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:var(--muted);cursor:pointer;display:none}
+.searchbox .clear:hover{background:var(--bg2);color:var(--ink)}
+.searchbox.filled .clear{display:grid;place-items:center}
+.btns{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap;justify-content:center}
+.btn{border:1px solid var(--line);background:var(--bg2);border-radius:10px;padding:10px 18px;font-size:.95rem;cursor:pointer;text-decoration:none}
+.btn:hover{border-color:var(--muted)}
+.btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.hint{margin:26px 0 0;color:var(--muted);font-size:.88rem;text-align:center;max-width:520px}
+
+/* Ergebnisansicht */
+body.results .home{display:none}
+.res{display:none;max-width:720px;padding:0 20px 40px;margin:0 0 0 max(0px,calc((100vw - 1040px)/2))}
+body.results .res{display:block}
+.res .searchbox{margin-top:4px}
+.tabs{display:flex;gap:4px;margin:16px 0 4px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line)}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{border:0;background:transparent;padding:10px 12px;font-size:.92rem;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.count{color:var(--muted);font-size:.85rem;margin:12px 0 6px}
+.hit{padding:14px 0;border-bottom:1px solid var(--line)}
+.hit:last-child{border-bottom:0}
+.src{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted)}
+.src img,.src .ph{width:22px;height:22px;border-radius:6px;flex:none}
+.src .ph{display:grid;place-items:center;background:var(--bg2);font-size:.8rem}
+.src b{color:var(--ink);font-weight:500}
+.hit h3{margin:6px 0 4px;font-size:1.15rem;font-weight:500;line-height:1.3}
+.hit h3 a{color:var(--link);text-decoration:none}
+.hit h3 a:hover{text-decoration:underline}
+.hit p{margin:0;color:var(--muted);font-size:.93rem;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+mark{background:var(--accent-soft);color:inherit;border-radius:3px;padding:0 1px}
+.src .wikiW{font-family:Georgia,"Times New Roman",serif;font-weight:700;font-size:.85rem;color:var(--ink);border:1px solid var(--line)}
+#wiki{margin-top:18px;padding-top:4px;border-top:2px solid var(--line)}
+.lizenz{font-size:.75rem;color:var(--muted);margin:10px 0 0}
+.lizenz a{color:inherit}
+.web{margin:22px 0 0;padding:16px;border-radius:14px;background:var(--bg2);font-size:.92rem;color:var(--muted)}
+.web a{color:var(--link);font-weight:500}
+.status{color:var(--muted);padding:20px 0}
+
+
+dialog{border:1px solid var(--line);border-radius:20px;background:var(--card);color:var(--ink);max-width:min(520px,calc(100vw - 32px));padding:22px 22px 18px}
+dialog::backdrop{background:rgba(10,16,27,.55)}
+dialog h2{margin:0 0 8px;font-size:1.25rem}
+dialog h3{margin:14px 0 2px;font-size:1rem}
+dialog p{margin:0;color:var(--muted);font-size:.94rem}
+dialog form{text-align:right;margin-top:16px}
+
+@media (max-width:560px){.res{padding:0 16px 32px}}
+@media (prefers-reduced-motion:reduce){.gear{animation:none}.planet{display:none}}
+</style>
+</head>
+<body>
+<a class="skip" href="#inhalt">Zum Inhalt springen</a>
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="../" aria-label="Kometenwerk – zur Startseite"><svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="#fff" stroke-opacity=".55" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)"><g class="" fill="#fff"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="30" fill="none" stroke="#0b111c" stroke-width="3"/></g><circle r="15" fill="#ff8a3c"/></g></svg><span><b>Kometen</b><span>werk</span></span></a>
+    <button class="burger" type="button" aria-label="Menü" aria-expanded="false" aria-controls="menue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <nav aria-label="Hauptmenü"><ul class="nav-links" id="menue"><li><a href="../">Über uns</a></li><li><a href="../apps/">Apps</a></li><li><a href="../kunden/">Für Kunden</a></li><li><a href="../hilfe/">Hilfe</a></li><li><a class="icon-link" href="../suche/" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>Suche</span></a></li><li><a class="nav-cta" href="../kunden/#termin">Projekt anfragen</a></li></ul></nav>
+  </div>
+</header>
+
+<main id="inhalt">
+  <section class="home" aria-label="Kometen-Suche">
+    <svg class="mark" viewBox="0 0 320 300" role="img" aria-label="Kometenwerk Zeichen">
+      <defs>
+        <linearGradient id="s1" x1="190" y1="128" x2="50" y2="250" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="currentColor"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient>
+        <linearGradient id="s2" x1="212" y1="150" x2="120" y2="246" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ff8a3c"/><stop offset="1" stop-color="#ff8a3c" stop-opacity="0"/></linearGradient>
+        <linearGradient id="s3" x1="180" y1="106" x2="96" y2="162" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9aa7bd"/><stop offset="1" stop-color="#9aa7bd" stop-opacity="0"/></linearGradient>
+      </defs>
+      <path d="M64 62 l3 8 l8 3 l-8 3 l-3 8 l-3 -8 l-8 -3 l8 -3 z" fill="#9aa7bd"/>
+      <circle cx="108" cy="40" r="2.5" fill="#9aa7bd"/>
+      <ellipse cx="220" cy="110" rx="92" ry="32" transform="rotate(-24 220 110)" fill="none" stroke="#9aa7bd" stroke-width="2.5" stroke-dasharray="2 7" stroke-linecap="round"/>
+      <path d="M180 106 L96 162" stroke="url(#s3)" stroke-width="6" stroke-linecap="round"/>
+      <path d="M190 128 L50 250" stroke="url(#s1)" stroke-width="22" stroke-linecap="round"/>
+      <path d="M212 150 L120 246" stroke="url(#s2)" stroke-width="9" stroke-linecap="round"/>
+      <g transform="translate(220 110)">
+        <g class="gear" fill="currentColor">
+          <rect x="-11" y="-58" width="22" height="24" rx="4"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/>
+          <circle r="42"/>
+          <circle r="30" fill="none" style="stroke:var(--bg)" stroke-width="3"/>
+        </g>
+        <circle r="15" fill="#ff8a3c"/>
+        <circle cx="-5" cy="-5" r="4" fill="#ffd2b0"/>
+      </g>
+      <g transform="rotate(-24 220 110)">
+        <circle class="planet" r="5" fill="#ff8a3c"><animateMotion dur="9s" repeatCount="indefinite" path="M312 110 A92 32 0 1 1 128 110 A92 32 0 1 1 312 110"/></circle>
+      </g>
+    </svg>
+    <h1 class="word">Kometen<span>-Suche</span></h1>
+
+    <form class="searchbox" id="f1" role="search">
+      <svg class="lupe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <label class="vh" for="q1">Suchbegriff</label>
+      <input id="q1" type="search" placeholder="Was suchst du?" autocomplete="off" enterkeyhint="search" list="vorschlaege">
+      <button type="button" class="clear" aria-label="Eingabe löschen">✕</button>
+    </form>
+    <div class="btns">
+      <button class="btn" type="submit" form="f1">Kometen-Suche</button>
+      <button class="btn" type="button" id="zufall">Überrasch mich</button>
+      <button class="btn" type="button" id="sucheLink2">So funktioniert die Suche</button>
+    </div>
+    <p class="hint">Die Kometen-Suche durchsucht alle Apps von Kometenwerk und das Lexikon Wikipedia. Für das ganze Internet leiten wir dich auf Wunsch zu DuckDuckGo weiter – mit Jugendschutz.</p>
+  </section>
+
+  <section class="res" aria-label="Suchergebnisse">
+    <form class="searchbox" id="f2" role="search">
+      <svg class="lupe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <label class="vh" for="q2">Suchbegriff</label>
+      <input id="q2" type="search" autocomplete="off" enterkeyhint="search" list="vorschlaege">
+      <datalist id="vorschlaege"></datalist>
+      <button type="button" class="clear" aria-label="Eingabe löschen">✕</button>
+    </form>
+    <div class="tabs" role="tablist" id="tabs">
+      <button role="tab" data-t="alle" aria-selected="true">Alle</button>
+      <button role="tab" data-t="news" aria-selected="false">Nachrichten</button>
+      <button role="tab" data-t="wissen" aria-selected="false">Wissen</button>
+      <button role="tab" data-t="podcast" aria-selected="false">Podcasts</button>
+      <button role="tab" data-t="app" aria-selected="false">Apps</button>
+      <button role="tab" data-t="meins" aria-selected="false">Meine Sachen</button>
+    </div>
+    <div id="out" aria-live="polite"></div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a class="brand" href="../" aria-label="Kometenwerk – zur Startseite"><svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="#fff" stroke-opacity=".55" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)"><g class="" fill="#fff"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="30" fill="none" stroke="#0b111c" stroke-width="3"/></g><circle r="15" fill="#ff8a3c"/></g></svg><span><b>Kometen</b><span>werk</span></span></a>
+        <p>Ein junges Studio aus Deutschland. Wir bauen Apps, Spiele und Websites – sicher, ehrlich und ohne Werbung.</p>
+      </div>
+      <div><h2>Entdecken</h2><ul>
+        <li><a href="../">Über uns</a></li><li><a href="../#team">Unser Team</a></li><li><a href="../apps/">Alle Apps</a></li><li><a href="../suche/">Kometen-Suche</a></li></ul></div>
+      <div><h2>Beliebt</h2><ul>
+        <li><a href="../Krawallzoo/">Krawallzoo</a></li><li><a href="../ND/">Nachrichten-Heft</a></li><li><a href="../planer/">Kometen-Planer</a></li><li><a href="../beats/">Kometen-Beats</a></li></ul></div>
+      <div><h2>Kontakt</h2><ul>
+        <li><a href="../kunden/">Für Kunden</a></li><li><a href="../kunden/#termin">Termin anfragen</a></li><li><a href="../hilfe/">Hilfe &amp; Kontakt</a></li><li><a href="https://github.com/kometenwerk" rel="noopener">GitHub</a></li></ul></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span data-jahr>2026</span> Kometenwerk · Software · Spiele · Technik</span>
+      <span><a href="../impressum/">Impressum</a> · <a href="../datenschutz/">Datenschutz</a></span>
+    </div>
+  </div>
+</footer>
+
+
+
+<dialog id="sucheInfo">
+  <h2>So funktioniert die Kometen-Suche</h2>
+  <p>Die Suche läuft komplett in deinem Browser. Sie lädt die Inhalte unserer Apps und sucht darin nach deinen Wörtern. Treffer im Titel zählen mehr als Treffer im Text, neuere Beiträge kommen bei Gleichstand zuerst.</p>
+  <h3>Was wir nicht speichern</h3>
+  <p>Deine Suchanfragen werden nicht an uns geschickt und von uns nirgends gespeichert.</p>
+  <h3>Wikipedia</h3>
+  <p>Bei „Alle“ und „Wissen“ fragt dein Browser zusätzlich das freie Lexikon Wikipedia nach deinem Suchbegriff. Dafür geht nur der Suchbegriff an Wikipedia (Wikimedia Foundation). Deine eigenen Sachen werden nie an Wikipedia geschickt.</p>
+  <p><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="wikiAn"> Wikipedia mitdurchsuchen</label></p>
+  <h3>Meine Sachen</h3>
+  <p>Die Suche findet auch deine eigenen Notizen, Hausaufgaben, Lernkarten und Beats aus den Kometen-Apps. Die liegen nur auf deinem Gerät – sie werden nur dort durchsucht und nirgends hingeschickt.</p>
+  <h3>Tippfehler</h3>
+  <p>Bei kleinen Tippfehlern sucht die Suche automatisch nach dem richtigen Wort, zum Beispiel „klmia“ → „klima“.</p>
+  <h3>Das ganze Internet</h3>
+  <p>Eine Suche über das ganze Internet können wir nicht selbst anbieten – das schaffen nur riesige Rechenzentren. Dafür gibt es unten in den Ergebnissen einen Link zu DuckDuckGo, mit strengem Jugendschutz.</p>
+  <form method="dialog"><button class="btn">Schließen</button></form>
+</dialog>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(s){ return document.querySelector(s); };
+  var esc = function(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); };
+  var norm = function(s){ return String(s || "").toLowerCase().replace(/ß/g,"ss").normalize("NFD").replace(/[̀-ͯ]/g,""); };
+
+  /* ---------- Quellen ---------- */
+  var APPS = [
+    {typ:"app", titel:"Krawallzoo", text:"Tier-Arena mit Freunden: 8 Tiere, 6 Spielmodi, Mischtiere, Skins und Krawall-Pass.", extra:"spiel game tiere arena kampf online freunde", url:"../Krawallzoo/", icon:"../icons/krawallzoo.png", quelle:"App"},
+    {typ:"app", titel:"Nachrichten-Heft", text:"Neutrale Nachrichten. Ein Thema kommt erst, wenn mehrere große Medien darüber berichten.", extra:"news nachrichten neutral medien tagesschau", url:"../ND/", icon:"../icons/nachrichten.png", quelle:"App"},
+    {typ:"app", titel:"Warum eigentlich?", text:"Der Wissensteil: Hintergründe einfach erklärt.", extra:"wissen lernen erklaert schule", url:"../ND/?app=wissen", icon:"../icons/wissen.png", quelle:"App"},
+    {typ:"app", titel:"Streitfrage", text:"Der Podcast zu Debatten, mit beiden Seiten.", extra:"podcast hoeren debatte", url:"../ND/?app=podcast", icon:"../icons/podcast.png", quelle:"App"},
+    {typ:"app", titel:"Wetter", text:"Das Wetter für deinen Ort, mit Karte.", extra:"wetter regen sonne vorhersage", url:"../ND/?app=wetter", icon:"../icons/wetter.png", quelle:"App"},
+    {typ:"app", titel:"Kometen-Planer", text:"Hausaufgaben, Tests, Termine und Stundenplan an einem Ort.", extra:"planer kalender hausaufgaben test termin stundenplan schule", url:"../planer/", icon:"../planer/icons/icon-192.png", quelle:"App"},
+    {typ:"app", titel:"Kometen-Notizen", text:"Notizen und Listen zum Abhaken.", extra:"notizen notiz liste checkliste einkaufen aufschreiben", url:"../notizen/", icon:"../notizen/icons/icon-192.png", quelle:"App"},
+    {typ:"app", titel:"Kometen-Quiz", text:"Lernkarten selbst erstellen und Wissen testen.", extra:"quiz lernkarten vokabeln lernen karteikarten test", url:"../quiz/", icon:"../quiz/icons/icon-192.png", quelle:"App"},
+    {typ:"app", titel:"Kometen-Werkstatt", text:"Technik-Projekte zum Nachbauen, mit Bauteilen, Schaltplan und Code.", extra:"werkstatt arduino technik basteln elektronik led reaktionstester ampel nachtlicht", url:"../werkstatt/", icon:"../werkstatt/icons/icon-192.png", quelle:"App"},
+    {typ:"app", titel:"Kometen-KI", text:"Eine KI, die direkt auf deinem Gerät läuft. Testversion.", extra:"ki ai kuenstliche intelligenz chat fragen hilfe", url:"../ki/", icon:"../ki/icons/icon-192.png", quelle:"App"},
+    {typ:"app", titel:"Kometen-Beats", text:"Eigene Beats und Melodien bauen, direkt im Browser.", extra:"beats musik music song melodie trommel schlagzeug machen", url:"../beats/", icon:"../beats/icons/icon-192.png", quelle:"App"},
+    {typ:"app", titel:"Kometen-Fokus", text:"Lern-Timer mit Pausen und Statistik.", extra:"fokus timer pomodoro lernen konzentration pause uhr", url:"../fokus/", icon:"../fokus/icons/icon-192.png", quelle:"App"},
+    {typ:"app", titel:"Kometen-Taschengeld", text:"Einnahmen, Ausgaben und Sparziele im Blick.", extra:"taschengeld geld sparen sparziel ausgaben euro budget", url:"../taschengeld/", icon:"../taschengeld/icons/icon-192.png", quelle:"App"},
+    {typ:"app", titel:"Kometenwerk für Kunden", text:"Webseiten und Apps von uns: Angebote, Sprechzeiten und Termin anfragen.", extra:"kunden webseite erstellen auftrag angebot preis termin sprechzeiten kontakt firma verein betrieb", url:"../kunden/", icon:"../kunden/icons/icon-192.png", quelle:"App"},
+    {typ:"app", titel:"Hilfe & Kontakt", text:"Fragen an den Hilfe-Bot, Fehler melden, Ideen schicken und Termine für Vereine und Betriebe.", extra:"hilfe kontakt support kundendienst service fehler bug melden idee frage problem telefon anrufen faq neuigkeiten status", url:"../hilfe/", icon:"../icons/kometenwerk.svg", quelle:"App"},
+    {typ:"app", titel:"Über uns & Team", text:"Wer hinter Kometenwerk steckt, wofür wir stehen und unser KI-Team mit allen Abteilungen.", extra:"ueber uns team wer firma studio werte geschichte ki mitarbeiter", url:"../", icon:"../icons/kometenwerk.svg", quelle:"App"},
+    {typ:"app", titel:"Alle Apps & Spiele", text:"Alle Apps und Spiele von Kometenwerk auf einen Blick.", extra:"apps alle uebersicht spiele programme", url:"../apps/", icon:"../icons/kometenwerk.svg", quelle:"App"},
+    {typ:"app", titel:"Notruf Lindau", text:"Einsatzkräfte-Rollenspiel auf der Insel Lindau. Bald auf Roblox.", extra:"roblox polizei feuerwehr rettung spiel game", url:"", icon:"", quelle:"Bald"}
+  ];
+  var QUELLEN = {
+    news:{name:"Nachrichten-Heft", icon:"../icons/nachrichten.png"},
+    wissen:{name:"Warum eigentlich?", icon:"../icons/wissen.png"},
+    podcast:{name:"Streitfrage", icon:"../icons/podcast.png"},
+    notizen:{name:"Deine Notizen", icon:"../notizen/icons/icon-192.png"},
+    planer:{name:"Dein Planer", icon:"../planer/icons/icon-192.png"},
+    quiz:{name:"Deine Lernkarten", icon:"../quiz/icons/icon-192.png"},
+    beats:{name:"Deine Beats", icon:"../beats/icons/icon-192.png"}
+  };
+  function lies(k){ try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; } }
+  // Eigene Sachen aus den Kometen-Apps auf diesem Gerät (bleiben auf dem Gerät)
+  function meineSachen(){
+    var out = [];
+    var n = lies("kw-notizen");
+    ((n && n.notizen) || []).forEach(function(x){
+      var txt = x.typ === "liste" ? (x.punkte || []).map(function(p){ return (p.ok ? "✓ " : "") + p.t; }).join(" · ") : (x.text || "");
+      out.push({typ:"meins", titel:x.titel || txt.slice(0, 60) || "Notiz", text:txt, extra:"notiz", url:"../notizen/", zeit:x.geaendert, quelle:"notizen", info:x.typ === "liste" ? "Liste" : "Notiz"});
+    });
+    var pl = lies("kw-planer");
+    ((pl && pl.eintraege) || []).forEach(function(x){
+      var art = {hausaufgabe:"Hausaufgabe", test:"Test", termin:"Termin"}[x.typ] || "Eintrag";
+      out.push({typ:"meins", titel:(x.fach ? x.fach + ": " : "") + x.titel, text:art + (x.erledigt ? " (erledigt)" : "") + " · " + x.datum.split("-").reverse().join(".") + (x.notiz ? " · " + x.notiz : ""), extra:art + " " + (x.fach || ""), url:"../planer/", quelle:"planer", info:art});
+    });
+    var qz = lies("kw-quiz");
+    ((qz && qz.stapel) || []).forEach(function(st){
+      out.push({typ:"meins", titel:"Stapel: " + st.name, text:(st.karten || []).length + " Lernkarten", extra:(st.karten || []).map(function(k){ return k.v + " " + k.r; }).join(" "), url:"../quiz/", quelle:"quiz", info:"Lernkarten"});
+    });
+    var bt = lies("kw-beats");
+    ((bt && bt.songs) || []).forEach(function(sg){ out.push({typ:"meins", titel:sg.name, text:"Dein Beat mit " + sg.bpm + " Schlägen pro Minute", extra:"beat song musik", url:"../beats/", quelle:"beats", info:"Beat"}); });
+    return out;
+  }
+
+  function dataUrls(pfad){
+    var urls = [];
+    var h = location.hostname;
+    if (/\.github\.io$/.test(h)) urls.push("https://raw.githubusercontent.com/" + h.split(".")[0] + "/ND/main/data/" + pfad);
+    urls.push("../ND/data/" + pfad);
+    return urls;
+  }
+  function holen(pfad){
+    var urls = dataUrls(pfad), i = 0;
+    function next(){
+      if (i >= urls.length) return Promise.reject(new Error(pfad));
+      var u = urls[i++];
+      return fetch(u, {cache:"no-cache"}).then(function(r){ if (!r.ok) throw 0; return r.json(); }).catch(next);
+    }
+    return next();
+  }
+
+  var INDEX = null, laden = null, WORTSCHATZ = {};
+  function indexLaden(){
+    if (INDEX) return Promise.resolve(INDEX);
+    if (laden) return laden;
+    var liste = APPS.slice();
+    var jobs = [
+      holen("suche.json").then(function(d){
+        (Array.isArray(d) ? d : []).forEach(function(n){
+          liste.push({typ:"news", titel:n.titel, text:n.vorspann, extra:(n.rubrik || "") + " " + ((n.dossier && n.dossier.titel) || ""), url:"../ND/#/n/" + encodeURIComponent(n.id), zeit:n.zeit, quelle:"news", info:n.rubrik});
+        });
+      }),
+      holen("wissen.json").then(function(d){
+        ((d && d.stuecke) || []).forEach(function(w){
+          liste.push({typ:"wissen", titel:w.titel, text:w.vorspann, extra:w.bereich || "", url:"../ND/?app=wissen#/wissen/" + encodeURIComponent(w.id), zeit:w.zeit, quelle:"wissen", info:w.bereich});
+        });
+      }),
+      holen("podcast.json").then(function(d){
+        ((d && d.folgen) || []).forEach(function(p){
+          liste.push({typ:"podcast", titel:p.titel, text:p.text, extra:p.art || "", url:"../ND/?app=podcast#/podcast", zeit:p.zeit, quelle:"podcast", info:"Folge"});
+        });
+      }),
+      holen("gespraeche.json").then(function(d){
+        ((d && d.folgen) || []).forEach(function(p){
+          liste.push({typ:"podcast", titel:p.titel, text:p.text, extra:"gespraech debatte " + (p.art || ""), url:"../ND/?app=podcast#/podcast", zeit:p.zeit, quelle:"podcast", info:"Gespräch"});
+        });
+      })
+    ].map(function(p){ return p.catch(function(){ return null; }); });
+    laden = Promise.all(jobs).then(function(){
+      liste.forEach(function(e){ e._t = norm(e.titel); e._x = norm(e.text + " " + e.extra); });
+      INDEX = liste;
+      var wort = {};
+      liste.forEach(function(e){ (e._t + " " + e._x).split(/[^a-z0-9]+/).forEach(function(x){ if (x.length >= 4) wort[x] = (wort[x] || 0) + 1; }); });
+      WORTSCHATZ = wort;
+      var dl = document.getElementById("vorschlaege");
+      if (dl) dl.innerHTML = liste.filter(function(e){ return e.typ !== "app" || e.url; }).slice(0, 200).map(function(e){ return '<option value="' + esc(e.titel) + '">'; }).join("");
+      return INDEX;
+    });
+    return laden;
+  }
+
+  /* ---------- Suchen ---------- */
+  function woerter(q){ return norm(q).split(/[^a-z0-9]+/).filter(function(w){ return w.length > 1 || /\d/.test(w); }); }
+  function suchen(q){
+    var w = woerter(q);
+    if (!w.length) return [];
+    var treffer = [];
+    var meins = meineSachen();
+    meins.forEach(function(e){ e._t = norm(e.titel); e._x = norm(e.text + " " + e.extra); });
+    INDEX.concat(meins).forEach(function(e){
+      var score = 0, alle = true;
+      w.forEach(function(x){
+        var inT = e._t.indexOf(x) >= 0, inX = e._x.indexOf(x) >= 0;
+        if (!inT && !inX){ alle = false; return; }
+        if (inT) score += (new RegExp("(^|[^a-z0-9])" + x).test(e._t)) ? 6 : 3;
+        if (inX) score += 1;
+      });
+      if (!score) return;
+      if (alle) score += 10 * w.length;
+      if (e.typ === "app" && alle) score += 5;
+      treffer.push({e:e, s:score, alle:alle});
+    });
+    var mitAllen = treffer.filter(function(t){ return t.alle; });
+    if (mitAllen.length) treffer = mitAllen;
+    treffer.sort(function(a, b){ return b.s - a.s || String(b.e.zeit || "").localeCompare(String(a.e.zeit || "")); });
+    return treffer.map(function(t){ return t.e; });
+  }
+
+  function abstand(a, b){
+    if (Math.abs(a.length - b.length) > 2) return 9;
+    var d = [], i, j;
+    for (i = 0; i <= a.length; i++){ d[i] = [i]; }
+    for (j = 1; j <= b.length; j++) d[0][j] = j;
+    for (i = 1; i <= a.length; i++) for (j = 1; j <= b.length; j++)
+      { d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+        if (i > 1 && j > 1 && a[i-1] === b[j-2] && a[i-2] === b[j-1]) d[i][j] = Math.min(d[i][j], d[i-2][j-2] + 1); }
+    return d[a.length][b.length];
+  }
+  // Tippfehler verbessern: "Krawalzoo" -> "krawallzoo"
+  function korrektur(q){
+    var w = woerter(q), geaendert = false;
+    var neu = w.map(function(x){
+      if (x.length < 4 || WORTSCHATZ[x] || Object.keys(WORTSCHATZ).some(function(k){ return k.indexOf(x) >= 0; })) return x;
+      var best = null, bd = x.length >= 7 ? 2 : 1;
+      Object.keys(WORTSCHATZ).forEach(function(k){ var d = abstand(x, k); if (d <= bd && (!best || d < best.d || (d === best.d && WORTSCHATZ[k] > WORTSCHATZ[best.k]))) best = {k:k, d:d}; });
+      if (best){ geaendert = true; return best.k; }
+      return x;
+    });
+    return geaendert ? neu.join(" ") : null;
+  }
+
+  function markieren(text, q){
+    var html = esc(text), w = woerter(q);
+    if (!w.length) return html;
+    var plain = norm(text);
+    var spans = [];
+    w.forEach(function(x){
+      var i = plain.indexOf(x);
+      while (i >= 0){ spans.push([i, i + x.length]); i = plain.indexOf(x, i + x.length); }
+    });
+    if (!spans.length || plain.length !== text.length) return html;
+    spans.sort(function(a, b){ return a[0] - b[0]; });
+    var out = "", pos = 0;
+    spans.forEach(function(s){
+      if (s[0] < pos) return;
+      out += esc(text.slice(pos, s[0])) + "<mark>" + esc(text.slice(s[0], s[1])) + "</mark>";
+      pos = s[1];
+    });
+    return out + esc(text.slice(pos));
+  }
+
+  function datum(z){
+    if (!z) return "";
+    var d = new Date(z);
+    if (isNaN(d)) return "";
+    return d.toLocaleDateString("de-DE", {day:"numeric", month:"long", year:"numeric"});
+  }
+
+  /* ---------- Wikipedia (freies Lexikon, kostenlos, ohne Schlüssel) ---------- */
+  function wikiErlaubt(){ try { return localStorage.getItem("kw-suche-wiki") !== "aus"; } catch (e) { return true; } }
+  var wikiCache = {};
+  function wikiSuchen(q){
+    var key = norm(q);
+    if (wikiCache[key]) return wikiCache[key];
+    var url = "https://de.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&generator=search&gsrnamespace=0&gsrlimit=5" +
+      "&gsrsearch=" + encodeURIComponent(q) + "&prop=extracts%7Cinfo&exintro=1&explaintext=1&exsentences=2&exlimit=5&inprop=url";
+    var ctrl = "AbortController" in window ? new AbortController() : null;
+    var t = setTimeout(function(){ if (ctrl) ctrl.abort(); }, 7000);
+    wikiCache[key] = fetch(url, ctrl ? {signal:ctrl.signal} : {}).then(function(r){ if (!r.ok) throw 0; return r.json(); }).then(function(d){
+      clearTimeout(t);
+      var seiten = (d && d.query && d.query.pages) || {};
+      return Object.keys(seiten).map(function(k){ return seiten[k]; })
+        .filter(function(x){ return x && x.title && x.extract && !/Begriffsklärung/.test(x.title) && !/bezeichnet:?$/.test(x.extract.trim()); })
+        .sort(function(a, b){ return (a.index || 0) - (b.index || 0); })
+        .map(function(x){ return {titel:x.title, text:x.extract, url:x.fullurl || ("https://de.wikipedia.org/wiki/" + encodeURIComponent(x.title.replace(/ /g, "_")))}; });
+    }).catch(function(){ clearTimeout(t); delete wikiCache[key]; return null; });
+    return wikiCache[key];
+  }
+  var wikiToken = 0;
+  function wikiZeigen(q, token){
+    var box = document.getElementById("wiki");
+    if (!box) return;
+    wikiSuchen(q).then(function(liste){
+      if (token !== wikiToken || !document.getElementById("wiki")) return;
+      if (liste === null){ box.innerHTML = '<p class="status">Wikipedia ist gerade nicht erreichbar.</p>'; return; }
+      if (!liste.length){ box.innerHTML = '<p class="status">Bei Wikipedia haben wir dazu nichts gefunden.</p>'; return; }
+      box.innerHTML = '<p class="count">Aus dem Lexikon Wikipedia</p>' + liste.map(function(e){
+        return '<article class="hit"><div class="src"><span class="ph wikiW" aria-hidden="true">W</span><span><b>Wikipedia</b> · Lexikon</span></div>' +
+          '<h3><a href="' + esc(e.url) + '" target="_blank" rel="noopener">' + markieren(e.titel, q) + '</a></h3><p>' + markieren(e.text, q) + '</p></article>';
+      }).join("") + '<p class="lizenz">Texte aus <a href="https://de.wikipedia.org/" target="_blank" rel="noopener">Wikipedia</a>, der freien Enzyklopädie, unter der Lizenz <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.de" target="_blank" rel="noopener">CC BY-SA 4.0</a>.</p>';
+    });
+  }
+
+  var tab = "alle";
+  function zeigen(q){
+    var out = $("#out");
+    var alle = suchen(q), besser = korrektur(q), hinweis = "";
+    if (besser && !alle.length){
+      hinweis = '<p class="status" style="padding:8px 0 0">Keine Treffer für „' + esc(q) + '“. Ergebnisse für <b>„' + esc(besser) + '“</b>:</p>';
+      alle = suchen(besser); q = besser;
+    } else if (besser){
+      hinweis = '<p class="status" style="padding:8px 0 0">Meintest du <a href="?q=' + encodeURIComponent(besser) + '" data-q="' + esc(besser) + '">' + esc(besser) + '</a>?</p>';
+    }
+    var liste = tab === "alle" ? alle : alle.filter(function(e){ return e.typ === tab; });
+    var html = "";
+    if (!INDEX.some(function(e){ return e.typ !== "app"; })){
+      html += '<p class="status">Die Inhalte der Apps konnten gerade nicht geladen werden. Es werden nur die Apps selbst durchsucht.</p>';
+    }
+    html += hinweis + '<p class="count">' + (liste.length === 1 ? "1 Treffer" : liste.length + " Treffer") + (tab === "meins" ? " in deinen eigenen Sachen auf diesem Gerät" : " in den Apps von Kometenwerk") + '</p>';
+    liste.slice(0, 40).forEach(function(e){
+      var q2 = QUELLEN[e.quelle];
+      var name = e.typ === "app" ? e.titel : q2.name;
+      var icon = e.typ === "app" ? e.icon : q2.icon;
+      var meta = [e.typ === "app" ? (e.quelle === "Bald" ? "Bald verfügbar" : "App") : e.info, datum(e.zeit)].filter(Boolean).join(" · ");
+      html += '<article class="hit"><div class="src">' + (icon ? '<img src="' + esc(icon) + '" alt="">' : '<span class="ph" aria-hidden="true">🚨</span>') +
+        '<span><b>' + esc(name) + '</b>' + (meta ? " · " + esc(meta) : "") + '</span></div>' +
+        '<h3>' + (e.url ? '<a href="' + esc(e.url) + '">' + markieren(e.titel, q) + '</a>' : markieren(e.titel, q)) + '</h3>' +
+        '<p>' + markieren(e.text || "", q) + '</p></article>';
+    });
+    if (!liste.length){
+      html += '<p class="status">Dazu haben wir in unseren Apps nichts gefunden.</p>';
+    }
+    var mitWiki = (tab === "alle" || tab === "wissen") && wikiErlaubt();
+    if (mitWiki) html += '<div id="wiki" aria-live="polite"><p class="status">Wikipedia wird durchsucht …</p></div>';
+    html += '<div class="web">Mehr aus dem ganzen Internet: <a href="https://duckduckgo.com/?q=' + encodeURIComponent(q) + '&kp=1&kl=de-de" rel="noopener">„' + esc(q) + '“ bei DuckDuckGo suchen ↗</a><br><small>mit strengem Jugendschutz</small></div>';
+    out.innerHTML = html;
+    wikiToken++;
+    if (mitWiki) wikiZeigen(q, wikiToken);
+  }
+
+  function starten(q, push){
+    q = (q || "").trim();
+    if (!q){ zurStart(push); return; }
+    document.body.classList.add("results");
+    $("#q2").value = q; $("#q1").value = q;
+    syncClear();
+    document.title = q + " – Kometen-Suche";
+    if (push) history.pushState({q:q}, "", "?q=" + encodeURIComponent(q));
+    $("#out").innerHTML = '<p class="status">Suche läuft …</p>';
+    indexLaden().then(function(){ zeigen(q); });
+  }
+  function zurStart(push){
+    document.body.classList.remove("results");
+    document.title = "Kometenwerk";
+    if (push) history.pushState({}, "", location.pathname);
+  }
+
+  $("#f1").addEventListener("submit", function(e){ e.preventDefault(); starten($("#q1").value, true); });
+  $("#f2").addEventListener("submit", function(e){ e.preventDefault(); $("#q2").blur(); starten($("#q2").value, true); });
+  $("#q1").addEventListener("focus", function(){ indexLaden(); }, {once:true});
+  window.addEventListener("popstate", function(){
+    var q = new URLSearchParams(location.search).get("q");
+    q ? starten(q, false) : zurStart(false);
+  });
+
+  function syncClear(){
+    document.querySelectorAll(".searchbox").forEach(function(f){ f.classList.toggle("filled", !!f.querySelector("input").value); });
+  }
+  document.querySelectorAll(".searchbox").forEach(function(f){
+    var inp = f.querySelector("input");
+    inp.addEventListener("input", syncClear);
+    f.querySelector(".clear").addEventListener("click", function(){ inp.value = ""; syncClear(); inp.focus(); });
+  });
+
+  $("#tabs").addEventListener("click", function(e){
+    var b = e.target.closest("button[data-t]");
+    if (!b) return;
+    tab = b.dataset.t;
+    document.querySelectorAll("#tabs button").forEach(function(x){ x.setAttribute("aria-selected", x === b ? "true" : "false"); });
+    if (INDEX) zeigen($("#q2").value);
+  });
+
+  var wikiBox = document.getElementById("wikiAn");
+  if (wikiBox){
+    wikiBox.checked = wikiErlaubt();
+    wikiBox.addEventListener("change", function(){ try { localStorage.setItem("kw-suche-wiki", wikiBox.checked ? "an" : "aus"); } catch (e) {} if (INDEX && document.body.classList.contains("results")) zeigen($("#q2").value); });
+  }
+
+  $("#zufall").addEventListener("click", function(){
+    indexLaden().then(function(ix){
+      var wissen = ix.filter(function(e){ return e.typ === "wissen"; });
+      var pool = wissen.length ? wissen : ix.filter(function(e){ return e.url; });
+      var e = pool[Math.floor(Math.random() * pool.length)];
+      if (e) location.href = e.url;
+    });
+  });
+
+  /* ---------- Fenster ---------- */
+  ["#sucheLink2"].forEach(function(id){ var el = $(id); if (el) el.addEventListener("click", function(e){ e.preventDefault(); $("#sucheInfo").showModal(); }); });
+
+  var start = new URLSearchParams(location.search).get("q");
+  if (start) starten(start, false);
+})();
+</script>
+<script src="../shared/site.js" defer></script>
+<script src="../shared/hilfe.js" defer></script>
+</body>
+</html>

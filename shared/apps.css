@@ -1,0 +1,35 @@
+/* Kometenwerk – Apps- und Hilfe-Seite */
+.apps-sec{padding-top:36px}
+.filter{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 10px;scrollbar-width:none;margin:0 -16px;padding-left:16px;padding-right:16px}
+.filter::-webkit-scrollbar{display:none}
+.filter button{flex:none;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:10px 16px;font-size:.93rem;font-weight:500;cursor:pointer;min-height:44px}
+.filter button:hover{border-color:var(--muted)}
+.filter button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.anzahl{margin:6px 0 16px;color:var(--muted);font-size:.9rem}
+.apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
+.app[hidden]{display:none}
+.app{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:var(--shadow);transition:transform .25s ease,box-shadow .25s ease}
+.app:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(16,24,38,.16)}
+.app-top{position:relative;height:120px;display:flex;align-items:flex-end;padding:0 18px;background:radial-gradient(160px 120px at 85% 0%,rgba(255,255,255,.22),transparent 70%),linear-gradient(135deg,var(--c),color-mix(in srgb,var(--c) 55%,#0b111c))}
+.app-top::after{content:"";position:absolute;right:18px;top:18px;width:60px;height:22px;border:2px dashed rgba(255,255,255,.35);border-radius:50%;transform:rotate(-20deg)}
+.app-top img,.app-top .ph{width:72px;height:72px;border-radius:18px;margin-bottom:-28px;box-shadow:0 8px 20px rgba(0,0,0,.28);background:#fff;position:relative;z-index:1;object-fit:cover}
+.app-top .ph{display:grid;place-items:center;font-size:2rem;background:var(--card);border:1px solid var(--line)}
+.status{position:absolute;left:14px;top:14px;font-size:.75rem;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(11,17,28,.6);color:#fff;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.s-arbeit{background:#ff8a3c;color:#101826}
+.s-geplant{background:rgba(255,255,255,.88);color:#101826}
+.app-body{display:flex;flex-direction:column;flex:1;padding:40px 18px 18px}
+.app-body h2{margin:0 0 6px;font-size:1.18rem}
+.app-body p{margin:0;color:var(--muted);font-size:.94rem;flex:1}
+.tags{display:flex;flex-wrap:wrap;gap:6px;list-style:none;margin:12px 0 16px;padding:0}
+.tags li{font-size:.75rem;font-weight:600;padding:3px 9px;border-radius:999px;background:color-mix(in srgb,var(--c) 12%,transparent);color:var(--ink);border:1px solid color-mix(in srgb,var(--c) 30%,transparent)}
+.app .btn{width:100%}
+.app .btn.bald{background:transparent;color:var(--muted);border-style:dashed;cursor:default}
+.tipp{margin:28px 0 0;padding:16px 18px;border-radius:16px;background:var(--accent-soft);color:var(--ink)}
+
+/* Hilfe-Kacheln */
+.kachel{display:flex;flex-direction:column;text-decoration:none;color:var(--ink);transition:transform .2s ease,border-color .2s}
+.kachel:hover{transform:translateY(-3px);border-color:var(--accent)}
+.kachel h2{margin:12px 0 6px;font-size:1.12rem}
+.kachel p{flex:1}
+.k-em{font-size:2rem;line-height:1}
+.kachel .mehr{margin-top:14px;font-weight:600;color:var(--accent-ink)}
