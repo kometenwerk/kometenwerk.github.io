@@ -40,3 +40,32 @@
 .app.gewaehlt{animation:gewaehlt .65s ease-out;box-shadow:0 0 0 3px #ff8a3c,0 18px 40px rgba(255,138,60,.35)}
 @keyframes gewaehlt{0%{transform:scale(1)}40%{transform:scale(1.04)}100%{transform:scale(1)}}
 .app.show{transition:opacity .7s ease,transform .15s ease}
+
+/* Bildschirmfotos auf den App-Karten */
+.app-top.mit-bild{height:190px}
+.shot{position:absolute;right:16px;top:44px;width:118px;padding:0;border:3px solid #0b111c;border-radius:18px;overflow:hidden;background:#0b111c;cursor:zoom-in;transform:rotate(6deg);transform-origin:top left;box-shadow:0 14px 30px rgba(0,0,0,.35);transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s;line-height:0}
+.shot img{width:100%;height:auto;display:block}
+.shot-rahmen{position:absolute;inset:0;overflow:hidden;pointer-events:none}.shot-rahmen .shot{pointer-events:auto}
+.app-top.mit-bild img:not(.shot img),.app-top.mit-bild .ph{z-index:3}
+.app:hover .shot,.shot:focus-visible{transform:rotate(0deg) translateY(-14px);box-shadow:0 20px 40px rgba(0,0,0,.45)}
+.shot:focus-visible{outline:3px solid #ff8a3c;outline-offset:2px}
+.shot .lupe{position:absolute;right:6px;top:6px;width:24px;height:24px;border-radius:50%;background:rgba(11,17,28,.75);color:#fff;font-size:.8rem;line-height:24px;text-align:center;opacity:0;transition:opacity .2s}
+.app:hover .shot .lupe,.shot:focus-visible .lupe{opacity:1}
+@media (hover:none){.shot .lupe{opacity:.9}}
+.app-top.mit-bild .status{z-index:2}
+
+/* Großansicht */
+.leuchte{border:0;padding:0;background:transparent;max-width:100vw;max-height:100dvh;width:100vw;height:100dvh;margin:0}
+.leuchte::backdrop{background:rgba(6,10,18,.88);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.leuchte[open]{display:flex;align-items:center;justify-content:center}
+.leuchte figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:10px}
+.leuchte img{max-height:calc(100dvh - 90px);max-width:calc(100vw - 120px);border-radius:24px;border:4px solid #1b2a4a;box-shadow:0 30px 80px rgba(0,0,0,.6);animation:leuchteAuf .3s ease-out}
+@keyframes leuchteAuf{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+.leuchte figcaption{color:#fff;font-weight:600}
+.l-x,.l-pfeil{position:absolute;border:0;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;border-radius:50%;display:grid;place-items:center}
+.l-x{top:16px;right:16px;width:44px;height:44px;font-size:1.1rem}
+.l-pfeil{top:50%;transform:translateY(-50%);width:48px;height:48px;font-size:1.8rem;line-height:1}
+.l-zur{left:12px}.l-vor{right:12px}
+.l-x:hover,.l-pfeil:hover{background:rgba(255,255,255,.22)}
+@media (max-width:560px){.leuchte img{max-width:calc(100vw - 32px);max-height:calc(100dvh - 140px)}.l-pfeil{top:auto;bottom:18px;transform:none}}
+@media (prefers-reduced-motion:reduce){.shot{transition:none}.leuchte img{animation:none}}
