@@ -69,3 +69,91 @@
 .cta{display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between;padding:32px;border-radius:24px;background:linear-gradient(135deg,var(--accent-soft),transparent),var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}
 .cta>div:first-child{flex:1 1 380px}
 @media (max-width:560px){.cta{padding:22px}.sec{padding:56px 0}}
+
+/* ---------- Steckbrief-Karten zum Umdrehen ---------- */
+.flip{perspective:900px;cursor:pointer;outline:none;border-radius:16px}
+.flip:focus-visible{outline:3px solid #ff8a3c;outline-offset:3px}
+.flip-in{display:grid;transition:transform .6s cubic-bezier(.3,.7,.2,1);transform-style:preserve-3d}
+.flip.on .flip-in{transform:rotateY(180deg)}
+.face{grid-area:1/1;-webkit-backface-visibility:hidden;backface-visibility:hidden;position:relative}
+.face.back{transform:rotateY(180deg);display:flex;flex-direction:column;gap:6px;justify-content:center;padding:14px 16px;border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--c,#ff8a3c) 16%,var(--card)),var(--card));border:1px solid color-mix(in srgb,var(--c,#ff8a3c) 40%,var(--line))}
+.bk-t{font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-ink)}
+.pk{font-size:.88rem;line-height:1.35;padding-left:20px;position:relative}
+.pk::before{content:"✓";position:absolute;left:2px;color:var(--c,#ff8a3c);font-weight:700}
+.dreh{position:absolute;right:12px;bottom:8px;font-size:.72rem;font-weight:600;color:var(--muted);opacity:0;transition:opacity .2s}
+.face.back .dreh{position:static;align-self:flex-end;opacity:.8;margin-top:2px}
+.flip:hover .front .dreh,.flip:focus-visible .front .dreh{opacity:1}
+@media (hover:none){.front .dreh{opacity:.55}}
+.flip.gross .face.front{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 18px 26px;box-shadow:var(--shadow)}
+.flip.gross .face.back{border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+.person-row{display:flex;gap:14px;align-items:flex-start}
+.person-row h3{margin:0;font-size:1.1rem}
+.person-row p{margin:2px 0 0;color:var(--muted);font-size:.93rem}
+.person-row .rolle{color:var(--accent-ink);font-weight:600;font-size:.86rem}
+.person-flip{display:grid}.person-flip>.flip,.person-flip .flip-in{height:100%}
+.leiter-wrap{padding:0 10px 10px}
+.leiter-wrap .face.front{border-radius:14px}
+.leiter-wrap .leiter{padding:8px 8px 16px}
+.flip.klein .face.front{padding:6px 4px 14px}
+.flip.klein .face.back{padding:10px 12px}
+.flip.klein .pk{font-size:.82rem}
+.exp{display:flex;gap:10px;align-items:center;font-size:.92rem;line-height:1.35}
+.exp .rolle{font-weight:500;color:var(--muted)}
+.experten li{display:block}
+.tipp-klein{margin:14px 0 0;font-size:.9rem;color:var(--muted)}
+
+/* Roboter blinzeln und wackeln */
+.av .eyes{transform-box:fill-box;transform-origin:center;animation:blink 7s infinite}
+@keyframes blink{0%,94%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+.flip:hover .av,.flip:focus-visible .av{animation:wackel .55s ease-in-out}
+@keyframes wackel{0%,100%{transform:rotate(0)}25%{transform:rotate(-8deg)}60%{transform:rotate(6deg)}}
+
+/* ---------- Komet: Einflug, Klick, Sternschnuppen ---------- */
+.komet-knopf{background:none;border:0;padding:0;margin:0;cursor:pointer;border-radius:50%;line-height:0;-webkit-tap-highlight-color:transparent}
+.komet-knopf:focus-visible{outline:3px solid #ff8a3c;outline-offset:6px}
+.komet-knopf svg.big{animation:einflug 1.6s cubic-bezier(.2,.8,.2,1) both,float 7s ease-in-out 1.6s infinite}
+@keyframes einflug{from{transform:translate(160px,-140px) scale(.55);opacity:0}to{transform:none;opacity:1}}
+.komet-knopf.zuck svg.big .gear{animation-duration:2s}
+.parallax{position:absolute;inset:0;transition:transform .25s ease-out;will-change:transform}
+.schnuppen{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.schnuppe{position:absolute;width:130px;height:2px;border-radius:2px;background:linear-gradient(90deg,#fff,rgba(255,197,154,.6) 30%,transparent);filter:drop-shadow(0 0 4px rgba(255,255,255,.8));animation:schnupp 1.3s linear forwards}
+@keyframes schnupp{from{transform:translate(0,0) rotate(-30deg);opacity:0}10%{opacity:1}to{transform:translate(-460px,266px) rotate(-30deg);opacity:0}}
+.egg-toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;z-index:90;background:#0b111c;color:#fff;border:1px solid #ff8a3c;padding:12px 18px;border-radius:999px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.35);transition:all .35s;max-width:calc(100vw - 32px);text-align:center}
+.egg-toast.zeigen{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- Mission Control ---------- */
+.mission{padding:0 0 64px}
+.mission-in{position:relative;background:linear-gradient(135deg,#0b111c,#16233d);color:#fff;border-radius:24px;padding:22px 24px;border:1px solid #2a3650;box-shadow:var(--shadow);overflow:hidden}
+.mission-in::after{content:"";position:absolute;right:-60px;top:-60px;width:220px;height:220px;border:2px dashed rgba(154,167,189,.25);border-radius:50%}
+.m-kopf{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.m-kopf h2{margin:0;font-size:.82rem;letter-spacing:.18em;text-transform:uppercase;color:#ffb27e}
+.m-puls{width:10px;height:10px;border-radius:50%;background:#43c27a;box-shadow:0 0 0 0 rgba(67,194,122,.6);animation:puls 2s infinite}
+.m-puls.warn{background:#f5b83d;box-shadow:0 0 0 0 rgba(245,184,61,.6)}
+@keyframes puls{70%{box-shadow:0 0 0 10px rgba(67,194,122,0)}100%{box-shadow:0 0 0 0 rgba(67,194,122,0)}}
+.m-status{font-weight:600;font-size:1rem}
+.m-neu{list-style:none;margin:14px 0 6px;padding:0;display:grid;gap:8px;position:relative;z-index:1}
+.m-neu li{display:flex;gap:12px;align-items:baseline;color:#c9d2e3;font-size:.95rem}
+.m-t{flex:none;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(255,138,60,.16);color:#ffb27e;font-variant-numeric:tabular-nums}
+.m-link{position:relative;z-index:1;color:#ffb27e;font-weight:600;text-decoration:none;font-size:.92rem}
+.m-link:hover{text-decoration:underline}
+
+/* ---------- Umlaufbahn füllt sich beim Scrollen ---------- */
+.bahn::after{content:"";position:absolute;left:27px;top:10px;width:3px;height:calc(var(--p,0) * (100% - 20px));background:linear-gradient(180deg,#ff8a3c,#ffc59a);border-radius:3px;box-shadow:0 0 10px rgba(255,138,60,.6)}
+.bahn .planet{transition:border-color .4s,box-shadow .4s}
+.bahn li.an .planet{border-color:#ff8a3c;box-shadow:0 0 0 6px var(--bg2),0 0 18px rgba(255,138,60,.45)}
+
+@media (prefers-reduced-motion:reduce){
+  .komet-knopf svg.big,.av .eyes,.flip:hover .av,.m-puls{animation:none!important}
+  .flip-in{transition:none}
+}
+
+/* Kleine Karten (Leitung, Experten): Steckbrief klappt darunter auf statt umzudrehen */
+.flip:not(.gross) .flip-in{display:block;transform:none!important;transition:none}
+.flip:not(.gross) .face{-webkit-backface-visibility:visible;backface-visibility:visible}
+.flip:not(.gross) .face.back{display:none;transform:none;margin:4px 0 2px}
+.flip:not(.gross).on .face.back{display:flex;animation:aufklappen .3s ease-out}
+.flip:not(.gross).on .front .dreh{opacity:0}
+.flip:not(.gross) .front .dreh{bottom:2px}
+@keyframes aufklappen{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.flip:not(.gross):hover .face.front{background:color-mix(in srgb,var(--c,#ff8a3c) 7%,transparent);border-radius:12px}
+@media (prefers-reduced-motion:reduce){.flip:not(.gross).on .face.back{animation:none}}

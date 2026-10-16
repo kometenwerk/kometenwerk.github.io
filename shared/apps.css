@@ -33,3 +33,10 @@
 .kachel p{flex:1}
 .k-em{font-size:2rem;line-height:1}
 .kachel .mehr{margin-top:14px;font-weight:600;color:var(--accent-ink)}
+.apps-leiste{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 0 16px}
+.apps-leiste .anzahl{margin:0}
+.zufall{min-height:44px;padding:8px 16px}
+.tilt{transform-style:preserve-3d;will-change:transform}
+.app.gewaehlt{animation:gewaehlt .65s ease-out;box-shadow:0 0 0 3px #ff8a3c,0 18px 40px rgba(255,138,60,.35)}
+@keyframes gewaehlt{0%{transform:scale(1)}40%{transform:scale(1.04)}100%{transform:scale(1)}}
+.app.show{transition:opacity .7s ease,transform .15s ease}

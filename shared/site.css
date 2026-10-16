@@ -104,3 +104,11 @@ button{font:inherit;color:inherit}
 .text p,.text li{color:var(--muted)}
 .text strong{color:var(--ink)}
 .hinweis{padding:14px 16px;border-radius:14px;background:var(--accent-soft);color:var(--ink)}
+
+/* Sternschnuppen & Parallax für alle Weltraum-Köpfe */
+.parallax{position:absolute;inset:0;transition:transform .25s ease-out;will-change:transform}
+.schnuppen{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.schnuppe{position:absolute;width:130px;height:2px;border-radius:2px;background:linear-gradient(90deg,#fff,rgba(255,197,154,.6) 30%,transparent);filter:drop-shadow(0 0 4px rgba(255,255,255,.8));animation:schnupp 1.3s linear forwards}
+@keyframes schnupp{from{transform:translate(0,0) rotate(-30deg);opacity:0}10%{opacity:1}to{transform:translate(-460px,266px) rotate(-30deg);opacity:0}}
+.egg-toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;z-index:90;background:#0b111c;color:#fff;border:1px solid #ff8a3c;padding:12px 18px;border-radius:999px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.35);transition:all .35s;max-width:calc(100vw - 32px);text-align:center}
+.egg-toast.zeigen{opacity:1;transform:translate(-50%,0)}
