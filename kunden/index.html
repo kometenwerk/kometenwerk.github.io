@@ -3,90 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Websites &amp; Apps für Vereine und Betriebe – Kometenwerk</title>
-<meta name="description" content="Kometenwerk baut Websites und kleine Apps für Vereine und kleine Betriebe – schnell, fürs Handy gemacht und ohne Werbung. Angebote ansehen und Termin per Video oder Telefon anfragen.">
-<meta name="theme-color" content="#a21caf">
+<title>Websites für Vereine &amp; Betriebe – Kometenwerk</title>
+<meta name="description" content="Kometenwerk baut moderne Websites und kleine Web-Apps für Vereine, kleine Betriebe und Projekte: schnell, fürs Handy gemacht, ohne Werbung und Tracker. Pakete ansehen und Projekt planen.">
+
+<meta name="theme-color" content="#0b111c">
 <link rel="canonical" href="https://kometenwerk.github.io/kunden/">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icons/icon-192.png" type="image/png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Kunden">
-<link rel="stylesheet" href="../shared/kw.css">
-<link rel="stylesheet" href="../shared/nav.css">
-<style>:root{--app:#a21caf;--app-soft:rgba(162,28,175,.14)}</style>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Kometenwerk">
+<meta property="og:title" content="Websites für Vereine &amp; Betriebe – Kometenwerk">
+<meta property="og:description" content="Kometenwerk baut moderne Websites und kleine Web-Apps für Vereine, kleine Betriebe und Projekte: schnell, fürs Handy gemacht, ohne Werbung und Tracker. Pakete ansehen und Projekt planen.">
+<meta property="og:url" content="https://kometenwerk.github.io/kunden/">
+<meta property="og:locale" content="de_DE">
+<link rel="icon" href="../icons/kometenwerk.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../shared/fonts/fonts.css">
-<style>
-.kw-install{display:none!important}
-.k-hero{text-align:center;padding:28px 8px 8px}
-.k-logo{width:150px;height:auto;color:var(--ink);display:block;margin:0 auto 6px}
-.k-name{font-size:2.3rem;margin:0;letter-spacing:-.01em;font-weight:400}
-.k-name b{font-weight:600}
-.k-unter{margin:2px 0 14px;font-size:.72rem;letter-spacing:.32em;color:var(--muted)}
-.k-lead{font-size:1.15rem;max-width:520px;margin:0 auto 18px}
-.k-cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-.k-cta a{text-decoration:none}
-.k-sec{margin-top:34px}
-.k-sec>h2{font-size:1.35rem;margin:0 0 12px}
-.k-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
-.k-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}
-.k-card h3{margin:0 0 6px;font-size:1.05rem}
-.k-card p{margin:0;color:var(--muted);font-size:.93rem}
-.k-preis{margin-top:10px!important;color:var(--ink)!important;font-weight:600}
-.k-werte{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:14px}
-.k-wert{display:flex;gap:10px;align-items:flex-start;font-size:.93rem}
-.k-wert .i{font-size:1.3rem;line-height:1}
-.k-bsp{display:flex;align-items:center;gap:12px;text-decoration:none}
-.k-bsp img{width:44px;height:44px;border-radius:12px;flex:none}
-.k-schritte{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
-.k-schritte li{counter-increment:s;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 14px 14px 52px;position:relative;font-size:.93rem}
-.k-schritte li::before{content:counter(s);position:absolute;left:14px;top:12px;width:28px;height:28px;border-radius:50%;background:var(--app);color:#fff;display:grid;place-items:center;font-weight:600}
-.k-zeiten{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
-.k-zeiten th,.k-zeiten td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);font-size:.95rem}
-.k-zeiten tr:last-child th,.k-zeiten tr:last-child td{border-bottom:0}
-.k-zeiten td.zu{color:var(--muted)}
-.k-tage{display:flex;flex-direction:column;gap:12px}
-.k-tag h3{margin:0 0 6px;font-size:.95rem}
-.k-slots{display:flex;flex-wrap:wrap;gap:6px}
-.k-slot{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:9px 12px;min-width:68px;cursor:pointer;font-weight:500}
-.k-slot:hover{border-color:var(--app)}
-.k-slot[aria-pressed="true"]{background:var(--app);border-color:var(--app);color:#fff}
-.k-slot:disabled{cursor:not-allowed;opacity:.5;text-decoration:line-through}
-.k-woche{display:flex;gap:8px;align-items:center;margin-bottom:10px}
-.k-woche b{flex:1;text-align:center}
-.k-wahl{display:flex;flex-wrap:wrap;gap:6px}
-.k-wahl label{border:1px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;background:var(--card);font-size:.92rem}
-.k-wahl input{position:absolute;opacity:0;pointer-events:none}
-.k-wahl label:has(input:checked){background:var(--app);border-color:var(--app);color:#fff}
-.k-wahl label:has(input:focus-visible){outline:3px solid var(--accent);outline-offset:2px}
-.k-gewaehlt{background:var(--app-soft);border-radius:12px;padding:10px 14px;margin:12px 0;font-weight:500}
-.k-hinweis{font-size:.85rem;color:var(--muted)}
-.k-bald{background:rgba(255,138,60,.14);border:1px solid rgba(255,138,60,.5);border-radius:12px;padding:12px 14px;margin:12px 0}
-.k-fertig{background:var(--card);border:2px solid var(--good);border-radius:var(--r);padding:16px;margin-top:12px}
-.k-fertig pre{white-space:pre-wrap;background:var(--soft);padding:10px;border-radius:10px;font:inherit;font-size:.88rem;max-height:240px;overflow:auto}
-.k-faq details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px}
-.k-faq summary{cursor:pointer;font-weight:500}
-.k-recht{font-size:.9rem;color:var(--muted)}
-.k-recht h3{color:var(--ink);font-size:1rem;margin:16px 0 4px}
-.k-foot{margin:40px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);text-align:center;font-size:.85rem;color:var(--muted)}
-.k-foot a{margin:0 6px}
-/* Chef-Modus */
-.k-chef{background:var(--card);border:2px dashed var(--accent);border-radius:var(--r);padding:16px;margin:16px 0}
-.k-chef h2{margin:0 0 6px}
-.k-chef .row{flex-wrap:wrap}
-.k-chef .zeile{display:grid;grid-template-columns:44px 1fr;gap:8px;align-items:center;margin:4px 0}
-.k-chef .angebot{border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0;display:grid;gap:6px}
-.k-chef .knoepfe{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-@media (max-width:520px){.k-name{font-size:1.9rem}.k-zeiten th,.k-zeiten td{padding:9px 10px}}
-</style>
-<style>
-/* Weltraum-Kopf passend zur neuen Website */
-.k-hero{position:relative;overflow:hidden;margin-top:6px;padding:40px 16px 34px;border-radius:24px;color:#fff;background:radial-gradient(500px 260px at 80% 0%,#1b2a4a,rgba(27,42,74,0) 70%),radial-gradient(400px 240px at 0% 100%,rgba(255,138,60,.14),rgba(255,138,60,0) 70%),linear-gradient(180deg,#0b111c,#101826)}
-.k-hero .k-logo{color:#fff}
-.k-hero .k-name{color:#fff}.k-hero .k-unter{color:#9aa7bd}.k-hero .k-lead{color:#c9d2e3}
-.k-hero .btn:not(.primary){background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.25);color:#fff}
-.k-hero .btn:not(.primary):hover{background:rgba(255,255,255,.12)}
-</style>
+<link rel="stylesheet" href="../shared/nav.css">
+<link rel="stylesheet" href="../shared/site.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="kunden.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "ProfessionalService", "name": "Kometenwerk", "url": "https://kometenwerk.github.io/kunden/", "description": "Websites und kleine Web-Apps für Vereine, kleine Betriebe und Projekte – modern, schnell und ohne Werbung.", "areaServed": "DE", "parentOrganization": {"@type": "Organization", "name": "Kometenwerk", "url": "https://kometenwerk.github.io/"}, "knowsLanguage": "de"}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Was kostet eine Website?", "acceptedAnswer": {"@type": "Answer", "text": "Das hängt davon ab, was sie können soll. Die Pakete geben dir eine Orientierung. Nach dem ersten Gespräch bekommst du ein klares Angebot – das Gespräch selbst kostet nichts."}}, {"@type": "Question", "name": "Wie lange dauert es?", "acceptedAnswer": {"@type": "Answer", "text": "Eine einfache Website ist oft in ein bis drei Wochen fertig. Vorher siehst du einen Entwurf und kannst Wünsche sagen."}}, {"@type": "Question", "name": "Gibt es monatliche Kosten?", "acceptedAnswer": {"@type": "Answer", "text": "Einfache Websites lassen sich oft ganz ohne monatliche Hosting-Kosten betreiben. Eine eigene Internet-Adresse (Domain) wie „deinverein.de“ kostet bei einem Anbieter meist ein paar Euro im Jahr – wir helfen dir bei der Einrichtung."}}, {"@type": "Question", "name": "Brauche ich eine eigene Internet-Adresse?", "acceptedAnswer": {"@type": "Answer", "text": "Nicht unbedingt. Mit eigener Adresse wirkt die Seite aber professioneller und ist leichter zu merken. Wir beraten dich gern."}}, {"@type": "Question", "name": "Kann ich später selbst etwas ändern?", "acceptedAnswer": {"@type": "Answer", "text": "Ja. Du bekommst eine kurze Anleitung, wie du Texte und Termine selbst änderst – oder wir machen es für dich."}}, {"@type": "Question", "name": "Wie läuft das erste Gespräch?", "acceptedAnswer": {"@type": "Answer", "text": "Nach deiner Anfrage melden wir uns per E-Mail und schlagen einen Termin vor – am Telefon oder persönlich, ganz wie es dir passt."}}, {"@type": "Question", "name": "Ist die Seite datenschutzfreundlich?", "acceptedAnswer": {"@type": "Answer", "text": "Ja. Wir verzichten auf Werbung, Tracker und unnötige Cookies. Das macht die Datenschutzerklärung einfacher und schützt deine Besucher."}}, {"@type": "Question", "name": "Baut ihr auch Apps?", "acceptedAnswer": {"@type": "Answer", "text": "Ja – kleine Web-Apps wie Terminpläne, Quiz oder Rechner. Sie laufen direkt im Browser und lassen sich wie eine App aufs Handy legen."}}]}]}</script>
 </head>
 <body>
 <a class="skip" href="#inhalt">Zum Inhalt springen</a>
@@ -94,108 +29,143 @@
   <div class="nav-in">
     <a class="brand" href="../" aria-label="Kometenwerk – zur Startseite"><svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="#fff" stroke-opacity=".55" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)"><g class="" fill="#fff"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="30" fill="none" stroke="#0b111c" stroke-width="3"/></g><circle r="15" fill="#ff8a3c"/></g></svg><span><b>Kometen</b><span>werk</span></span></a>
     <button class="burger" type="button" aria-label="Menü" aria-expanded="false" aria-controls="menue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-    <nav aria-label="Hauptmenü"><ul class="nav-links" id="menue"><li><a href="../">Über uns</a></li><li><a href="../apps/">Apps</a></li><li><a href="../kunden/" aria-current="page">Für Kunden</a></li><li><a href="../hilfe/">Hilfe</a></li><li><a class="icon-link" href="../suche/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>Suche</span></a></li><li><a class="nav-cta" href="../kunden/#termin">Projekt anfragen</a></li></ul></nav>
+    <nav aria-label="Hauptmenü"><ul class="nav-links" id="menue"><li><a href="../">Über uns</a></li><li><a href="../apps/">Apps</a></li><li><a href="../kunden/" aria-current="page">Für Kunden</a></li><li><a href="../hilfe/">Hilfe</a></li><li><a class="icon-link" href="../suche/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>Suche</span></a></li><li><a class="nav-cta" href="../kunden/#planer">Projekt anfragen</a></li></ul></nav>
   </div>
 </header>
-<main class="kw-main" id="inhalt">
+<main id="inhalt">
   <section class="k-chef" id="chef" hidden aria-label="Chef-Modus"></section>
 
-  <section class="k-hero">
-    <svg class="k-logo" viewBox="0 0 320 300" role="img" aria-label="Logo von Kometenwerk">
-      <ellipse cx="220" cy="110" rx="92" ry="32" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-width="2" stroke-dasharray="3 7" transform="rotate(-24 220 110)"/>
-      <path d="M190 128 L50 250" stroke="currentColor" stroke-width="22" stroke-linecap="round"/>
-      <path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/>
-      <path d="M180 106 L96 162" stroke="#9aa7bd" stroke-width="6" stroke-linecap="round"/>
-      <g transform="translate(220 110)" fill="currentColor" id="zahnrad"></g>
-      <circle cx="303" cy="78" r="7" fill="#ff8a3c"/>
-      <path d="M92 64l4 10 10 4-10 4-4 10-4-10-10-4 10-4z" fill="#ff8a3c" opacity=".85"/>
-    </svg>
-    <p class="k-name"><b>Kometen</b>werk</p>
-    <p class="k-unter">SOFTWARE · SPIELE · TECHNIK</p>
-    <p class="k-lead">Moderne Webseiten und Apps – schnell, schön und fürs Handy gemacht.</p>
-    <div class="k-cta"><a class="btn primary" href="#termin">📅 Termin anfragen</a><a class="btn" href="#angebote">Angebote ansehen</a><button class="btn" id="kwInstall" type="button" hidden>📲 Als App installieren</button></div>
-  </section>
-
-  <section class="k-sec" id="ueber">
-    <h2>Über uns</h2>
-    <div class="k-card"><p id="ueberText" style="color:var(--ink);font-size:1rem"></p>
-      <div class="k-werte">
-        <div class="k-wert"><span class="i" aria-hidden="true">📱</span><span><b>Fürs Handy gemacht</b><br>Sieht überall gut aus und lädt schnell.</span></div>
-        <div class="k-wert"><span class="i" aria-hidden="true">🛡️</span><span><b>Ohne Werbung</b><br>Keine Datensammelei, keine Tracker.</span></div>
-        <div class="k-wert"><span class="i" aria-hidden="true">🤝</span><span><b>Ehrlich und persönlich</b><br>Wir sagen klar, was geht und was es kostet.</span></div>
+  <section class="hero" aria-labelledby="titel"><div class="parallax" data-tiefe="14"><svg class="stars" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><circle class="tw" cx="15" cy="67" r="1.4" fill="#fff" opacity="0.27" style="animation-delay:3.8s"/><circle class="tw" cx="642" cy="427" r="0.9" fill="#fff" opacity="0.66" style="animation-delay:2.6s"/><circle cx="164" cy="321" r="1.4" fill="#fff" opacity="0.36"/><circle class="tw" cx="712" cy="71" r="1.4" fill="#fff" opacity="0.36" style="animation-delay:1.6s"/><circle cx="716" cy="148" r="0.9" fill="#fff" opacity="0.61"/><circle cx="72" cy="31" r="0.9" fill="#fff" opacity="0.36"/><circle class="tw" cx="1004" cy="593" r="0.7" fill="#fff" opacity="0.54" style="animation-delay:1.8s"/><circle cx="971" cy="125" r="1.4" fill="#fff" opacity="0.36"/><circle class="tw" cx="769" cy="132" r="0.7" fill="#fff" opacity="0.41" style="animation-delay:2.3s"/><circle cx="578" cy="390" r="1.1" fill="#fff" opacity="0.79"/><circle cx="1192" cy="474" r="1.1" fill="#fff" opacity="0.56"/><circle class="tw" cx="1123" cy="503" r="1.1" fill="#fff" opacity="0.36" style="animation-delay:3.7s"/><circle cx="722" cy="417" r="0.7" fill="#fff" opacity="0.41"/><circle class="tw" cx="367" cy="504" r="0.9" fill="#fff" opacity="0.36" style="animation-delay:1.3s"/><circle class="tw" cx="484" cy="29" r="0.7" fill="#fff" opacity="0.73" style="animation-delay:2.5s"/><circle cx="1153" cy="121" r="0.9" fill="#fff" opacity="0.72"/><circle class="tw" cx="571" cy="299" r="1.8" fill="#fff" opacity="0.45" style="animation-delay:2.5s"/><circle cx="763" cy="23" r="0.7" fill="#fff" opacity="0.69"/><circle class="tw" cx="728" cy="299" r="0.7" fill="#fff" opacity="0.67" style="animation-delay:3.9s"/><circle cx="418" cy="7" r="1.4" fill="#fff" opacity="0.50"/><circle cx="1192" cy="79" r="1.8" fill="#fff" opacity="0.28"/><circle cx="737" cy="124" r="0.9" fill="#fff" opacity="0.73"/><circle cx="827" cy="333" r="1.8" fill="#fff" opacity="0.54"/><circle class="tw" cx="1032" cy="241" r="1.8" fill="#fff" opacity="0.59" style="animation-delay:1.2s"/><circle class="tw" cx="983" cy="196" r="1.1" fill="#fff" opacity="0.68" style="animation-delay:3.0s"/><circle cx="1131" cy="414" r="1.8" fill="#fff" opacity="0.27"/><circle class="tw" cx="802" cy="440" r="0.9" fill="#fff" opacity="0.46" style="animation-delay:1.2s"/><circle cx="511" cy="427" r="1.8" fill="#fff" opacity="0.76"/><circle class="tw" cx="323" cy="564" r="0.7" fill="#fff" opacity="0.59" style="animation-delay:3.6s"/><circle class="tw" cx="311" cy="121" r="1.1" fill="#fff" opacity="0.27" style="animation-delay:1.8s"/><circle class="tw" cx="849" cy="144" r="1.1" fill="#fff" opacity="0.63" style="animation-delay:1.5s"/><circle cx="925" cy="40" r="0.9" fill="#fff" opacity="0.63"/><circle cx="1066" cy="271" r="1.1" fill="#fff" opacity="0.48"/><circle cx="82" cy="92" r="1.4" fill="#fff" opacity="0.79"/><circle class="tw" cx="333" cy="163" r="1.1" fill="#fff" opacity="0.75" style="animation-delay:2.3s"/><circle class="tw" cx="484" cy="466" r="0.9" fill="#fff" opacity="0.33" style="animation-delay:2.5s"/><circle cx="922" cy="510" r="1.8" fill="#fff" opacity="0.26"/><circle cx="1088" cy="295" r="1.1" fill="#fff" opacity="0.54"/><circle cx="1030" cy="185" r="1.4" fill="#fff" opacity="0.37"/><circle cx="1064" cy="460" r="0.7" fill="#fff" opacity="0.38"/><circle cx="847" cy="29" r="1.4" fill="#fff" opacity="0.43"/><circle class="tw" cx="1180" cy="478" r="0.7" fill="#fff" opacity="0.65" style="animation-delay:3.0s"/><circle class="tw" cx="513" cy="460" r="1.1" fill="#fff" opacity="0.27" style="animation-delay:1.6s"/><circle class="tw" cx="646" cy="264" r="0.9" fill="#fff" opacity="0.52" style="animation-delay:1.9s"/><circle cx="326" cy="455" r="0.7" fill="#fff" opacity="0.70"/><circle cx="873" cy="203" r="0.9" fill="#fff" opacity="0.51"/><circle cx="431" cy="562" r="1.4" fill="#fff" opacity="0.43"/><circle cx="467" cy="251" r="0.7" fill="#fff" opacity="0.71"/><circle cx="47" cy="438" r="1.4" fill="#fff" opacity="0.32"/><circle cx="1158" cy="472" r="1.8" fill="#fff" opacity="0.49"/><circle class="tw" cx="667" cy="471" r="1.4" fill="#fff" opacity="0.73" style="animation-delay:1.2s"/><circle cx="851" cy="118" r="1.4" fill="#fff" opacity="0.40"/><circle cx="409" cy="551" r="1.1" fill="#fff" opacity="0.58"/><circle class="tw" cx="985" cy="252" r="0.7" fill="#fff" opacity="0.37" style="animation-delay:1.0s"/><circle cx="1087" cy="102" r="0.7" fill="#fff" opacity="0.42"/><circle class="tw" cx="798" cy="270" r="0.9" fill="#fff" opacity="0.30" style="animation-delay:3.2s"/><circle class="tw" cx="650" cy="292" r="1.1" fill="#fff" opacity="0.49" style="animation-delay:0.6s"/><circle cx="307" cy="193" r="1.1" fill="#fff" opacity="0.68"/><circle cx="144" cy="424" r="1.8" fill="#fff" opacity="0.63"/><circle cx="274" cy="306" r="1.8" fill="#fff" opacity="0.40"/><circle cx="654" cy="472" r="1.8" fill="#fff" opacity="0.42"/><circle cx="727" cy="405" r="0.7" fill="#fff" opacity="0.34"/><circle cx="826" cy="86" r="1.8" fill="#fff" opacity="0.65"/><circle class="tw" cx="888" cy="256" r="0.9" fill="#fff" opacity="0.53" style="animation-delay:2.7s"/><circle cx="701" cy="481" r="1.4" fill="#fff" opacity="0.70"/><circle cx="403" cy="300" r="0.9" fill="#fff" opacity="0.52"/><circle cx="370" cy="124" r="0.7" fill="#fff" opacity="0.58"/><circle cx="415" cy="515" r="0.7" fill="#fff" opacity="0.75"/><circle class="tw" cx="720" cy="488" r="0.7" fill="#fff" opacity="0.70" style="animation-delay:3.4s"/><circle cx="417" cy="108" r="0.7" fill="#fff" opacity="0.48"/></svg></div><div class="schnuppen" aria-hidden="true"></div>
+    <div class="hero-in">
+      <div>
+        <p class="kicker">Für Vereine, Betriebe &amp; Projekte</p>
+        <h1 id="titel">Deine Website – <em>modern, schnell und ohne Werbung.</em></h1>
+        <p class="lead">Wir bauen Websites und kleine Web-Apps, die auf jedem Handy gut aussehen, schnell laden und deine Besucher nicht ausspionieren. Das erste Gespräch kostet nichts.</p>
+        <div class="btns"><a class="btn primary" href="#planer">🧩 Projekt planen</a><a class="btn ghost" href="#proben">Arbeitsproben ansehen</a></div>
+        <p class="k-status" id="kStatus" hidden>🚧 <b>Aufträge sind bald möglich.</b> Schau dich gern schon um und plane dein Projekt.</p>
       </div>
-      <p style="margin:14px 0 0"><a href="../#team">Unser Team kennenlernen ›</a> · <a href="../apps/">Alle unsere Apps ›</a></p>
+      <div class="hero-art" aria-hidden="true">
+        <div class="mock-browser float">
+          <div class="mb-leiste"><i></i><i></i><i></i><span>deinverein.de</span></div>
+          <div class="mb-seite">
+            <div class="mb-kopf"><b>⚽ Dein Verein</b><span>Start · Termine · Kontakt</span></div>
+            <div class="mb-bild"></div>
+            <div class="mb-zeilen"><span></span><span></span><span class="kurz"></span></div>
+            <div class="mb-karten"><span></span><span></span><span></span></div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <section class="k-sec" id="angebote"><h2>Was wir für dich bauen</h2><div class="k-grid" id="angebotListe"></div></section>
-
-  <section class="k-sec" id="beispiele">
-    <h2>Beispiele von uns</h2>
-    <div class="k-grid">
-      <a class="k-card k-bsp" href="../Krawallzoo/"><img src="../icons/krawallzoo.png" alt=""><span><b>Krawallzoo</b><br><span class="muted">Online-Spiel mit Freunden</span></span></a>
-      <a class="k-card k-bsp" href="../ND/"><img src="../icons/nachrichten.png" alt=""><span><b>Nachrichten-Heft</b><br><span class="muted">Neutrale Nachrichten-App</span></span></a>
-      <a class="k-card k-bsp" href="../planer/"><img src="../planer/icons/icon-192.png" alt=""><span><b>Kometen-Planer</b><br><span class="muted">Web-App für die Schule</span></span></a>
-      <a class="k-card k-bsp" href="../suche/"><img src="../icons/kometenwerk.svg" alt=""><span><b>Kometen-Suche</b><br><span class="muted">Suche über alle unsere Apps</span></span></a>
+  <section class="sec" id="gruende" aria-labelledby="gT"><div class="wrap">
+    <div class="center reveal"><p class="kicker">Warum Kometenwerk</p><h2 class="h2" id="gT">Was du bei uns bekommst</h2>
+      <p class="lead" id="ueberText">Kometenwerk ist ein junges Studio aus Deutschland. Wir bauen Websites, Apps und Spiele – modern, schnell und fürs Handy gemacht.</p></div>
+    <div class="grid g3 k-gruende">
+      <article class="card reveal"><span class="k-ico">📱</span><h3>Gemacht fürs Handy</h3><p>Sieht auf Handy, Tablet und PC gleich gut aus – dort, wo deine Besucher wirklich sind.</p></article>
+      <article class="card reveal"><span class="k-ico">⚡</span><h3>Richtig schnell</h3><p>Schlanker Code ohne unnötigen Ballast. Die Seite ist da, bevor jemand ungeduldig wird.</p></article>
+      <article class="card reveal"><span class="k-ico">🛡️</span><h3>Keine Werbung, keine Tracker</h3><p>Keine Cookies, keine fremden Zähler. Das schützt deine Besucher und erspart dir Ärger beim Datenschutz.</p></article>
+      <article class="card reveal"><span class="k-ico">💸</span><h3>Geringe laufende Kosten</h3><p>Einfache Websites lassen sich oft ganz ohne monatliche Hosting-Kosten betreiben. Wir zeigen dir die günstigste Lösung.</p></article>
+      <article class="card reveal"><span class="k-ico">✏️</span><h3>Selbst ändern können</h3><p>Du bekommst eine kurze Anleitung, wie du Texte und Termine selbst änderst – oder wir machen es für dich.</p></article>
+      <article class="card reveal"><span class="k-ico">🤝</span><h3>Ehrlich und persönlich</h3><p>Wir sagen klar, was geht, was es kostet und wie lange es dauert. Kein Fachchinesisch.</p></article>
     </div>
-  </section>
+  </div></section>
 
-  <section class="k-sec" id="ablauf">
-    <h2>So läuft's</h2>
-    <ol class="k-schritte">
-      <li><b>Termin wählen</b><br>Such dir unten eine freie Zeit aus.</li>
-      <li><b>Anfrage schicken</b><br>Dein E-Mail-Programm öffnet sich mit fertigem Text.</li>
-      <li><b>Wir bestätigen</b><br>Du bekommst eine Antwort per E-Mail.</li>
-      <li><b>Gespräch</b><br>Per Videoanruf oder Telefon besprechen wir, was du brauchst.</li>
+  <section class="sec alt" id="angebote" aria-labelledby="aT"><div class="wrap">
+    <div class="center reveal"><p class="kicker">Unsere Pakete</p><h2 class="h2" id="aT">Das passende Paket für dein Projekt</h2>
+      <p class="lead">Jedes Projekt ist anders. Die Pakete zeigen, was typischerweise drin ist – den genauen Preis besprechen wir nach dem ersten Gespräch.</p></div>
+    <div class="pakete" id="angebotListe"></div>
+  </div></section>
+
+  <section class="sec" id="planer" aria-labelledby="pT"><div class="wrap">
+    <div class="center reveal"><p class="kicker">Projekt-Planer</p><h2 class="h2" id="pT">Klick dir deine Website zusammen</h2>
+      <p class="lead">Wähl aus, was deine Seite können soll. Wir zeigen dir sofort, welches Paket passt – und deine Auswahl landet direkt in deiner Anfrage.</p></div>
+
+    <div class="pl reveal">
+      <ol class="pl-schritte" aria-label="Fortschritt">
+        <li data-s="1" class="an"><span>1</span>Was brauchst du?</li>
+        <li data-s="2"><span>2</span>Über dich</li>
+        <li data-s="3"><span>3</span>Absenden</li>
+      </ol>
+      <div class="pl-balken"><span id="plBalken"></span></div>
+
+      <div class="pl-schritt" data-s="1">
+        <fieldset class="pl-art"><legend>Worum geht's?</legend><div id="plArt"></div></fieldset>
+        <fieldset><legend>Was soll deine Seite können?</legend><div class="pl-boxen" id="plBoxen"></div></fieldset>
+        <div class="pl-ergebnis" aria-live="polite">
+          <div class="pl-meter"><span id="plMeter"></span></div>
+          <p id="plEmpf">Wähl oben aus, was du brauchst.</p>
+        </div>
+        <div class="pl-knoepfe"><span></span><button class="btn primary" type="button" data-weiter="2">Weiter ›</button></div>
+      </div>
+
+      <div class="pl-schritt" data-s="2" hidden>
+        <label class="pl-feld"><span>Name oder Verein / Betrieb</span><input id="kName" maxlength="80" autocomplete="organization" placeholder="z. B. SV Musterstadt"></label>
+        <label class="pl-feld"><span>Gibt es schon eine Website? (freiwillig)</span><input id="kAlt" maxlength="120" placeholder="z. B. www.alte-seite.de"></label>
+        <label class="pl-feld"><span>Deine Nachricht (freiwillig)</span><textarea id="kText" rows="4" maxlength="800" placeholder="Was ist dir besonders wichtig? Gibt es einen Wunschtermin für die fertige Seite?"></textarea></label>
+        <fieldset><legend>Wie sollen wir nach deiner Anfrage sprechen?</legend>
+          <div class="pl-wahl" role="radiogroup">
+            <label><input type="radio" name="art" value="Telefon" checked>📞 Telefon</label>
+            <label><input type="radio" name="art" value="Persönliches Treffen">🤝 Persönlich treffen</label>
+            <label><input type="radio" name="art" value="Erst nur per E-Mail">✉️ Erst nur per E-Mail</label>
+          </div>
+          <p class="pl-klein">Wir antworten dir zuerst per E-Mail und schlagen dann einen Termin vor.</p>
+        </fieldset>
+        <div class="pl-knoepfe"><button class="btn" type="button" data-weiter="1">‹ Zurück</button><button class="btn primary" type="button" data-weiter="3">Weiter ›</button></div>
+      </div>
+
+      <div class="pl-schritt" data-s="3" hidden>
+        <div class="pl-zusammen" id="plZusammen"></div>
+        <div class="pl-bald" id="plBald" hidden>🚧 <b>Anfragen sind bald möglich.</b> Wir richten gerade alles ein – schau in Kürze wieder vorbei. Deine Auswahl bleibt bis dahin auf diesem Gerät gespeichert.</div>
+        <p class="pl-klein">🔒 Diese Seite speichert nichts bei uns. Deine Anfrage geht als ganz normale E-Mail aus deinem eigenen E-Mail-Programm an uns. Bitte schick keine Passwörter oder Bankdaten.</p>
+        <div class="pl-knoepfe"><button class="btn" type="button" data-weiter="2">‹ Zurück</button><button class="btn primary" type="button" id="senden">✉️ Anfrage per E-Mail senden</button></div>
+        <div class="pl-fertig" id="fertig" hidden aria-live="polite"></div>
+      </div>
+    </div>
+  </div></section>
+
+  <section class="sec alt" id="proben" aria-labelledby="prT"><div class="wrap">
+    <div class="center reveal"><p class="kicker">Arbeitsproben</p><h2 class="h2" id="prT">Das haben wir schon gebaut</h2>
+      <p class="lead">Alles selbst entwickelt – vom Online-Spiel bis zur Nachrichten-App. Tipp auf ein Bild, um die App auszuprobieren.</p></div>
+    <div class="proben reveal" tabindex="0" aria-label="Arbeitsproben, seitlich scrollen"><a class="probe" href="../Krawallzoo/"><span class="tel"><img src="../apps/bilder/krawallzoo.webp" alt="Bildschirmfoto von Krawallzoo" width="600" height="1200" loading="lazy" decoding="async"></span><b>Krawallzoo</b><small>Online-Spiel</small></a><a class="probe" href="../ND/"><span class="tel"><img src="../apps/bilder/nachrichten.webp" alt="Bildschirmfoto von Nachrichten-Heft" width="600" height="1200" loading="lazy" decoding="async"></span><b>Nachrichten-Heft</b><small>Nachrichten-App</small></a><a class="probe" href="../planer/"><span class="tel"><img src="../apps/bilder/planer.webp" alt="Bildschirmfoto von Kometen-Planer" width="600" height="1200" loading="lazy" decoding="async"></span><b>Kometen-Planer</b><small>Schul-Planer</small></a><a class="probe" href="../beats/"><span class="tel"><img src="../apps/bilder/beats.webp" alt="Bildschirmfoto von Kometen-Beats" width="600" height="1200" loading="lazy" decoding="async"></span><b>Kometen-Beats</b><small>Musik-App</small></a><a class="probe" href="../ND/?app=wetter"><span class="tel"><img src="../apps/bilder/wetter.webp" alt="Bildschirmfoto von Wetter" width="600" height="1200" loading="lazy" decoding="async"></span><b>Wetter</b><small>Wetter-App</small></a><a class="probe" href="../werkstatt/"><span class="tel"><img src="../apps/bilder/werkstatt.webp" alt="Bildschirmfoto von Kometen-Werkstatt" width="600" height="1200" loading="lazy" decoding="async"></span><b>Kometen-Werkstatt</b><small>Technik-Projekte</small></a><a class="probe" href="../quiz/"><span class="tel"><img src="../apps/bilder/quiz.webp" alt="Bildschirmfoto von Kometen-Quiz" width="600" height="1200" loading="lazy" decoding="async"></span><b>Kometen-Quiz</b><small>Lernkarten</small></a></div>
+
+    <div class="demo reveal">
+      <div class="demo-text">
+        <span class="chip">Beispiel</span>
+        <h3>So könnte deine Vereinsseite aussehen</h3>
+        <p>Ein Entwurf für einen erfundenen Sportverein – so ungefähr starten wir mit dir: klare Navigation, Termine auf einen Blick, Mannschaften und Kontakt.</p>
+        <p class="pl-klein">Diesen Verein gibt es nicht. Die Seite ist nur ein Beispiel.</p>
+      </div>
+      <div class="demo-frame" aria-label="Beispiel einer Vereinswebsite (erfundener Verein)">
+        <div class="mb-leiste"><i></i><i></i><i></i><span>tsv-sternberg.example</span></div>
+        <div class="dv">
+          <header class="dv-kopf"><b>⭐ TSV Sternberg</b><nav><span>Start</span><span>Mannschaften</span><span>Termine</span><span>Kontakt</span></nav></header>
+          <div class="dv-hero"><div><small>Seit 1921</small><strong>Gemeinsam am Ball.</strong><span class="dv-btn">Probetraining ›</span></div></div>
+          <div class="dv-reihe">
+            <div class="dv-karte"><small>Nächstes Spiel</small><b>Sa · 15:00</b><span>TSV – FC Talheim</span></div>
+            <div class="dv-karte"><small>Training</small><b>Di &amp; Do</b><span>18:00 Sportplatz</span></div>
+            <div class="dv-karte"><small>Mitglieder</small><b>320</b><span>in 9 Teams</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></section>
+
+  <section class="sec" id="ablauf" aria-labelledby="abT"><div class="wrap">
+    <div class="center reveal"><p class="kicker">So läuft's</p><h2 class="h2" id="abT">In fünf Schritten zur fertigen Seite</h2></div>
+    <ol class="k-ablauf">
+      <li class="reveal"><span>1</span><div><h3>Anfrage schicken</h3><p>Mit dem Projekt-Planer oben – dauert zwei Minuten.</p></div></li>
+      <li class="reveal"><span>2</span><div><h3>Wir melden uns per E-Mail</h3><p>Meist innerhalb von drei Tagen, mit ersten Fragen und einem Terminvorschlag.</p></div></li>
+      <li class="reveal"><span>3</span><div><h3>Gespräch</h3><p>Am Telefon oder persönlich besprechen wir, was du brauchst. Danach bekommst du ein klares Angebot.</p></div></li>
+      <li class="reveal"><span>4</span><div><h3>Entwurf &amp; Feinschliff</h3><p>Du siehst einen Entwurf und sagst uns deine Wünsche. Wir passen an, bis es passt.</p></div></li>
+      <li class="reveal"><span>5</span><div><h3>Online gehen</h3><p>Deine Seite geht live. Du bekommst eine Anleitung, wie du selbst Kleinigkeiten änderst.</p></div></li>
     </ol>
-  </section>
+  </div></section>
 
-  <section class="k-sec" id="sprechzeiten"><h2>Unsere Sprechzeiten</h2><table class="k-zeiten" id="zeitenTabelle"><caption class="vh">Sprechzeiten pro Wochentag</caption></table>
-    <p class="k-hinweis" id="zeitenHinweis"></p></section>
-
-  <section class="k-sec" id="termin">
-    <h2>Termin anfragen</h2>
-    <div class="k-bald" id="bald" hidden>⏳ <b>Termin-Anfragen sind bald freigeschaltet.</b> Schau gern bald wieder vorbei!</div>
-    <div class="k-card">
-      <div class="k-woche"><button class="btn small" type="button" id="wZurueck" aria-label="Vorige Woche">‹</button><b id="wTitel">Diese Woche</b><button class="btn small" type="button" id="wVor" aria-label="Nächste Woche">›</button></div>
-      <div class="k-tage" id="tage" aria-live="polite"></div>
-      <p class="k-hinweis" style="margin-bottom:0">Alle Zeiten sind Anfragen – wir bestätigen sie per E-Mail. Keine passende Zeit? Wähl „Ohne festen Termin“ unten.</p>
-    </div>
-
-    <form class="k-card" id="anfrage" style="margin-top:12px" novalidate>
-      <div class="k-gewaehlt" id="gewaehlt">Noch kein Termin gewählt.</div>
-      <label style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><input type="checkbox" id="ohneTermin"> Ohne festen Termin – meldet euch einfach</label>
-      <div class="field"><span>Worum geht's?</span>
-        <div class="k-wahl" id="anliegen" role="radiogroup" aria-label="Anliegen"></div></div>
-      <div class="field"><span>Wie sollen wir sprechen?</span>
-        <div class="k-wahl" role="radiogroup" aria-label="Gesprächsart">
-          <label><input type="radio" name="art" value="Videoanruf" checked>🎥 Videoanruf</label>
-          <label><input type="radio" name="art" value="Telefon">📞 Telefon</label>
-          <label><input type="radio" name="art" value="Erst nur per E-Mail">✉️ Erst nur per E-Mail</label>
-        </div></div>
-      <label class="field"><span>Name oder Verein / Betrieb</span><input class="inp" id="kName" maxlength="80" autocomplete="organization" placeholder="z. B. SV Musterstadt"></label>
-      <label class="field"><span>Deine Nachricht (freiwillig)</span><textarea class="inp" id="kText" rows="4" maxlength="800" placeholder="Was soll die Webseite oder App können? Gibt es schon eine alte Seite?"></textarea></label>
-      <button class="btn primary" type="submit" id="senden" style="width:100%">✉️ Anfrage per E-Mail senden</button>
-      <p class="k-hinweis">🔒 Diese Seite speichert nichts. Deine Anfrage geht als ganz normale E-Mail aus deinem eigenen E-Mail-Programm an uns. Bitte schick keine Passwörter oder Bankdaten.</p>
-      <div class="k-fertig" id="fertig" hidden aria-live="polite"></div>
-    </form>
-  </section>
-
-  <section class="k-sec k-faq" id="faq">
-    <h2>Häufige Fragen</h2>
-    <details><summary>Was kostet eine Webseite?</summary><p>Das hängt davon ab, was sie können soll. Nach dem ersten Gespräch bekommst du ein klares Angebot – vorher kostet nichts.</p></details>
-    <details><summary>Wie lange dauert es?</summary><p>Eine einfache Webseite ist oft in ein bis drei Wochen fertig. Du siehst vorher einen Entwurf und kannst Wünsche sagen.</p></details>
-    <details><summary>Kann ich später selbst etwas ändern?</summary><p>Ja. Wir zeigen dir, wie du Texte und Termine selbst änderst – oder wir machen es für dich.</p></details>
-  </section>
-
-  <section class="k-sec k-recht" id="impressum">
-    <h2 style="color:var(--ink)">Impressum und Datenschutz</h2>
-    <h3>Impressum</h3><p id="impText"></p>
-    <h3>Datenschutz</h3>
-    <p>Diese Seite speichert keine Daten über dich und nutzt keine Cookies, keine Tracker und keine Werbung. Die Schrift liegt auf unserem eigenen Server, es wird nichts zu Google geladen. Die Seite liegt bei GitHub Pages (GitHub Inc.); dort werden – wie bei jeder Webseite – technische Daten wie deine IP-Adresse kurz verarbeitet, damit die Seite ausgeliefert werden kann.</p>
-    <p>Damit du nur freie Zeiten siehst, lädt die Seite eine kurze Liste der schon vergebenen Zeiten aus unserer Datenbank bei Google Firebase (Google Ireland Ltd.). Dabei wird deine IP-Adresse technisch übertragen. Es wird nichts über dich gespeichert und kein Konto angelegt.</p>
-    <p>Wenn du uns eine Anfrage schickst, bekommen wir deine E-Mail mit den Angaben, die du hineinschreibst. Wir nutzen sie nur, um dir zu antworten, und löschen sie, wenn sie nicht mehr gebraucht wird. Du kannst jederzeit verlangen, dass wir deine Daten löschen.</p>
-  </section>
+  <section class="sec alt" id="faq" aria-labelledby="fT"><div class="wrap">
+    <div class="center reveal"><p class="kicker">Häufige Fragen</p><h2 class="h2" id="fT">Gut zu wissen</h2></div>
+    <div class="faq"><details><summary>Was kostet eine Website?</summary><p>Das hängt davon ab, was sie können soll. Die Pakete geben dir eine Orientierung. Nach dem ersten Gespräch bekommst du ein klares Angebot – das Gespräch selbst kostet nichts.</p></details><details><summary>Wie lange dauert es?</summary><p>Eine einfache Website ist oft in ein bis drei Wochen fertig. Vorher siehst du einen Entwurf und kannst Wünsche sagen.</p></details><details><summary>Gibt es monatliche Kosten?</summary><p>Einfache Websites lassen sich oft ganz ohne monatliche Hosting-Kosten betreiben. Eine eigene Internet-Adresse (Domain) wie „deinverein.de“ kostet bei einem Anbieter meist ein paar Euro im Jahr – wir helfen dir bei der Einrichtung.</p></details><details><summary>Brauche ich eine eigene Internet-Adresse?</summary><p>Nicht unbedingt. Mit eigener Adresse wirkt die Seite aber professioneller und ist leichter zu merken. Wir beraten dich gern.</p></details><details><summary>Kann ich später selbst etwas ändern?</summary><p>Ja. Du bekommst eine kurze Anleitung, wie du Texte und Termine selbst änderst – oder wir machen es für dich.</p></details><details><summary>Wie läuft das erste Gespräch?</summary><p>Nach deiner Anfrage melden wir uns per E-Mail und schlagen einen Termin vor – am Telefon oder persönlich, ganz wie es dir passt.</p></details><details><summary>Ist die Seite datenschutzfreundlich?</summary><p>Ja. Wir verzichten auf Werbung, Tracker und unnötige Cookies. Das macht die Datenschutzerklärung einfacher und schützt deine Besucher.</p></details><details><summary>Baut ihr auch Apps?</summary><p>Ja – kleine Web-Apps wie Terminpläne, Quiz oder Rechner. Sie laufen direkt im Browser und lassen sich wie eine App aufs Handy legen.</p></details></div>
+  </div></section>
 </main>
 <footer class="foot">
   <div class="wrap">
@@ -209,7 +179,7 @@
       <div><h2>Beliebt</h2><ul>
         <li><a href="../Krawallzoo/">Krawallzoo</a></li><li><a href="../ND/">Nachrichten-Heft</a></li><li><a href="../planer/">Kometen-Planer</a></li><li><a href="../beats/">Kometen-Beats</a></li></ul></div>
       <div><h2>Kontakt</h2><ul>
-        <li><a href="../kunden/">Für Kunden</a></li><li><a href="../kunden/#termin">Termin anfragen</a></li><li><a href="../hilfe/">Hilfe &amp; Kontakt</a></li><li><a href="https://github.com/kometenwerk" rel="noopener">GitHub</a></li></ul></div>
+        <li><a href="../kunden/">Für Kunden</a></li><li><a href="../kunden/#planer">Projekt planen</a></li><li><a href="../hilfe/">Hilfe &amp; Kontakt</a></li><li><a href="https://github.com/kometenwerk" rel="noopener">GitHub</a></li></ul></div>
     </div>
     <div class="foot-bottom">
       <span>© <span data-jahr>2026</span> Kometenwerk · Software · Spiele · Technik</span>
@@ -217,232 +187,9 @@
     </div>
   </div>
 </footer>
-
-<script src="../shared/kw.js"></script>
+<div class="k-toast" id="toast" role="status" aria-live="polite"></div>
 <script src="../shared/site.js" defer></script>
-<script>
-(function () {
-  "use strict";
-  var esc = KW.esc, $ = function (id) { return document.getElementById(id); };
-  var STANDARD = {
-    email: "kontakt@example.com",
-    ueberUns: "Kometenwerk ist ein junges Studio aus Deutschland. Wir bauen Webseiten, Apps und Spiele – modern, schnell und fürs Handy gemacht. Bei uns gibt es keine Werbung und keine Datensammelei, und wir sagen ehrlich, was geht und was nicht.",
-    sprechzeiten: { mo: ["16:00-18:00"], di: [], mi: ["16:00-18:00"], do: [], fr: ["15:00-17:00"], sa: [], so: [] },
-    terminMinuten: 30, vorlaufStunden: 24, wochen: 3, gesperrt: [], belegt: [],
-    angebote: [
-      { name: "Webseite für Vereine", text: "Start, Über uns, Termine und Kontakt – übersichtlich und schön auf dem Handy.", preis: "Preis auf Anfrage" },
-      { name: "Webseite für kleine Betriebe", text: "Deine Visitenkarte im Internet: Angebot, Öffnungszeiten und Anfahrt.", preis: "Preis auf Anfrage" },
-      { name: "Webseite modernisieren", text: "Deine alte Seite wird schnell, modern und handyfreundlich.", preis: "Preis auf Anfrage" },
-      { name: "Kleine Web-App", text: "Zum Beispiel ein Terminplan, ein Quiz oder ein Rechner – direkt im Browser, ohne App-Store.", preis: "Preis auf Anfrage" }
-    ],
-    impressum: ""
-  };
-  var TAGE = [["mo", "Montag"], ["di", "Dienstag"], ["mi", "Mittwoch"], ["do", "Donnerstag"], ["fr", "Freitag"], ["sa", "Samstag"], ["so", "Sonntag"]];
-  var WD_KEY = ["so", "mo", "di", "mi", "do", "fr", "sa"];
-  var ANLIEGEN = ["Neue Webseite", "Webseite modernisieren", "Kleine App / Werkzeug", "Erst mal nur eine Frage", "Etwas anderes"];
-  var C = null, woche = 0, wahl = null;
-
-  // Logo-Zahnrad
-  $("zahnrad").innerHTML = [0, 45, 90, 135, 180, 225, 270, 315].map(function (a) { return '<rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(' + a + ')"/>'; }).join("") +
-    '<circle r="42"/><circle r="30" fill="none" stroke="var(--bg)" stroke-width="2" opacity=".5"/><circle r="15" fill="#ff8a3c"/><circle cx="-5" cy="-5" r="4" fill="#fff" opacity=".7"/>';
-
-  /* Einstellungen prüfen (falls jemand beim Bearbeiten einen Fehler macht, gibt es sinnvolle Standardwerte) */
-  function sauber(c) {
-    c = c && typeof c === "object" ? c : {};
-    var o = JSON.parse(JSON.stringify(STANDARD));
-    if (typeof c.email === "string") o.email = c.email.trim();
-    if (typeof c.ueberUns === "string" && c.ueberUns.trim()) o.ueberUns = c.ueberUns.trim();
-    if (c.sprechzeiten && typeof c.sprechzeiten === "object") TAGE.forEach(function (t) {
-      var l = c.sprechzeiten[t[0]];
-      o.sprechzeiten[t[0]] = (Array.isArray(l) ? l : []).filter(function (x) { return /^\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}$/.test(String(x).trim()); }).map(function (x) { return String(x).replace(/\s/g, ""); });
-    });
-    ["terminMinuten", "vorlaufStunden", "wochen"].forEach(function (k) { var n = Number(c[k]); if (isFinite(n) && n > 0) o[k] = n; });
-    o.terminMinuten = Math.min(180, Math.max(10, o.terminMinuten)); o.wochen = Math.min(12, o.wochen);
-    ["gesperrt", "belegt"].forEach(function (k) { if (Array.isArray(c[k])) o[k] = c[k].map(function (x) { return String(x).trim(); }).filter(Boolean); });
-    if (Array.isArray(c.angebote)) o.angebote = c.angebote.filter(function (a) { return a && a.name; }).slice(0, 12).map(function (a) { return { name: String(a.name), text: String(a.text || ""), preis: String(a.preis || "") }; });
-    if (typeof c.impressum === "string") o.impressum = c.impressum.trim();
-    return o;
-  }
-  function freigeschaltet() { return /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(C.email) && !/example\.(com|org|net)$/i.test(C.email); }
-  function min(hhmm) { var p = hhmm.split(":"); return (+p[0]) * 60 + (+p[1]); }
-  function hhmm(m) { return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); }
-  function datumLang(ymd) { return KW.parse(ymd).toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" }); }
-
-  /* Anzeigen */
-  function alles() {
-    $("ueberText").textContent = C.ueberUns;
-    $("angebotListe").innerHTML = C.angebote.map(function (a) { return '<div class="k-card"><h3>' + esc(a.name) + '</h3><p>' + esc(a.text) + '</p>' + (a.preis ? '<p class="k-preis">' + esc(a.preis) + '</p>' : "") + '</div>'; }).join("") ||
-      '<p class="muted">Angebote folgen bald.</p>';
-    $("zeitenTabelle").innerHTML = '<caption class="vh">Sprechzeiten pro Wochentag</caption>' + TAGE.map(function (t) {
-      var l = C.sprechzeiten[t[0]];
-      return '<tr><th scope="row">' + t[1] + '</th>' + (l.length ? '<td>' + l.map(function (z) { return esc(z.replace("-", " – ")) + " Uhr"; }).join(", ") + '</td>' : '<td class="zu">geschlossen</td>') + '</tr>';
-    }).join("");
-    $("zeitenHinweis").textContent = "Termine dauern etwa " + C.terminMinuten + " Minuten. Bitte frag mindestens " + (C.vorlaufStunden >= 24 ? Math.round(C.vorlaufStunden / 24) + (C.vorlaufStunden >= 48 ? " Tage" : " Tag") : C.vorlaufStunden + " Stunden") + " vorher an." +
-      (C.gesperrt.length ? " An einzelnen Tagen (z. B. Ferien) sind wir nicht erreichbar – die siehst du im Kalender." : "");
-    var imp = C.impressum;
-    $("impText").innerHTML = imp ? esc(imp).replace(/\n/g, "<br>") : "<i>Das Impressum wird gerade ergänzt.</i>";
-    $("bald").hidden = freigeschaltet();
-    $("senden").disabled = !freigeschaltet();
-    $("anliegen").innerHTML = ANLIEGEN.map(function (a, i) { return '<label><input type="radio" name="anliegen" value="' + esc(a) + '"' + (i === 0 ? " checked" : "") + '>' + esc(a) + '</label>'; }).join("");
-    kalender();
-  }
-  function slotsFuer(ymd) {
-    var d = KW.parse(ymd), key = WD_KEY[d.getDay()], out = [];
-    if (C.gesperrt.indexOf(ymd) >= 0 || VERF[ymd]) return out;
-    var grenze = Date.now() + C.vorlaufStunden * 3600000;
-    (C.sprechzeiten[key] || []).forEach(function (r) {
-      var p = r.split("-"), a = min(p[0]), e = min(p[1]);
-      for (var m = a; m + C.terminMinuten <= e; m += C.terminMinuten) {
-        var zeit = hhmm(m), ts = new Date(d.getFullYear(), d.getMonth(), d.getDate(), Math.floor(m / 60), m % 60).getTime();
-        if (ts < grenze) continue;
-        out.push({ zeit: zeit, belegt: C.belegt.indexOf(ymd + " " + zeit) >= 0 || !!VERF[ymd + " " + zeit] });
-      }
-    });
-    return out;
-  }
-  function ersteFreieWoche() {
-    var start = montag(KW.today()), letzte = KW.addDays(KW.today(), C.wochen * 7);
-    for (var w = 0; KW.addDays(start, w * 7) <= letzte; w++)
-      for (var i = 0; i < 7; i++) { var tag = KW.addDays(start, w * 7 + i); if (tag >= KW.today() && tag <= letzte && slotsFuer(tag).some(function (x) { return !x.belegt; })) return w; }
-    return 0;
-  }
-  function montag(ymd) { var d = KW.parse(ymd), wd = (d.getDay() + 6) % 7; return KW.addDays(ymd, -wd); }
-  function kalender() {
-    var start = KW.addDays(montag(KW.today()), woche * 7), letzte = KW.addDays(KW.today(), C.wochen * 7), h = "";
-    $("wZurueck").disabled = woche <= 0; $("wVor").disabled = KW.addDays(start, 7) > letzte;
-    var ende = KW.addDays(start, 6);
-    $("wTitel").textContent = woche === 0 ? "Diese Woche" : woche === 1 ? "Nächste Woche" : KW.parse(start).toLocaleDateString("de-DE", { day: "numeric", month: "numeric" }) + " – " + KW.parse(ende).toLocaleDateString("de-DE", { day: "numeric", month: "numeric" });
-    for (var i = 0; i < 7; i++) {
-      var tag = KW.addDays(start, i);
-      if (tag < KW.today() || tag > letzte) continue;
-      var s = slotsFuer(tag);
-      if (!s.length) continue;
-      h += '<div class="k-tag"><h3>' + esc(datumLang(tag)) + '</h3><div class="k-slots">' + s.map(function (x) {
-        var an = wahl && wahl.datum === tag && wahl.zeit === x.zeit;
-        return '<button class="k-slot" type="button" data-d="' + tag + '" data-z="' + x.zeit + '"' + (x.belegt ? ' disabled aria-label="' + x.zeit + ' Uhr, schon vergeben"' : ' aria-pressed="' + (an ? "true" : "false") + '" aria-label="' + esc(datumLang(tag)) + ', ' + x.zeit + ' Uhr"') + '>' + x.zeit + '</button>';
-      }).join("") + '</div></div>';
-    }
-    $("tage").innerHTML = h || '<p class="muted" style="margin:0">In dieser Woche gibt es keine freien Zeiten mehr.' + (KW.addDays(start, 7) <= letzte ? " Schau in die nächste Woche ›" : "") + '</p>';
-    gewaehltZeigen();
-  }
-  function gewaehltZeigen() {
-    var ohne = $("ohneTermin").checked;
-    $("gewaehlt").textContent = ohne ? "✉️ Ohne festen Termin – wir melden uns bei dir." : wahl ? "📅 " + datumLang(wahl.datum) + " um " + wahl.zeit + " Uhr (" + C.terminMinuten + " Minuten)" : "Noch kein Termin gewählt – tipp oben auf eine freie Zeit.";
-  }
-  $("tage").addEventListener("click", function (e) {
-    var b = e.target.closest("[data-d]"); if (!b || b.disabled) return;
-    wahl = { datum: b.dataset.d, zeit: b.dataset.z }; $("ohneTermin").checked = false; kalender();
-    $("gewaehlt").scrollIntoView({ behavior: "smooth", block: "center" });
-  });
-  $("wZurueck").onclick = function () { if (woche > 0) { woche--; kalender(); } };
-  $("wVor").onclick = function () { woche++; kalender(); };
-  $("ohneTermin").addEventListener("change", gewaehltZeigen);
-
-  /* Anfrage als E-Mail (nichts wird gespeichert) */
-  function anfrageText() {
-    var art = document.querySelector('input[name="art"]:checked').value, anl = (document.querySelector('input[name="anliegen"]:checked') || {}).value || "Etwas anderes";
-    var name = $("kName").value.trim(), text = $("kText").value.trim(), ohne = $("ohneTermin").checked || !wahl;
-    var termin = ohne ? "ohne festen Termin" : datumLang(wahl.datum) + " um " + wahl.zeit + " Uhr (" + C.terminMinuten + " Minuten)";
-    var betreff = "Terminanfrage: " + anl + (ohne ? "" : " – " + KW.parse(wahl.datum).toLocaleDateString("de-DE") + " " + wahl.zeit);
-    var saubere = function (s) { return String(s).replace(/[|\n\r]/g, " ").trim(); };
-    var body = "Hallo Kometenwerk,\n\nich möchte gern einen Termin anfragen.\n\nTermin: " + termin + "\nGespräch: " + art + "\nAnliegen: " + anl + "\nName / Verein: " + (name || "–") +
-      (text ? "\n\nNachricht:\n" + text : "") + "\n\nViele Grüße\n\n---\nKW-TERMIN: " + (ohne ? "-" : wahl.datum + " " + wahl.zeit) + " | " + saubere(anl) + " | " + saubere(name || "–") + " | " + saubere(art);
-    return { betreff: betreff, body: body };
-  }
-  $("anfrage").addEventListener("submit", function (e) {
-    e.preventDefault();
-    if (!freigeschaltet()) return;
-    if (!wahl && !$("ohneTermin").checked) { KW.toast("Wähl oben eine freie Zeit – oder „Ohne festen Termin“."); $("termin").scrollIntoView({ behavior: "smooth" }); return; }
-    var a = anfrageText();
-    var link = "mailto:" + C.email + "?subject=" + encodeURIComponent(a.betreff) + "&body=" + encodeURIComponent(a.body);
-    $("fertig").hidden = false;
-    $("fertig").innerHTML = '<b>Fast geschafft! ✉️</b><p style="margin:6px 0">Dein E-Mail-Programm sollte sich jetzt öffnen. Schick die E-Mail einfach ab – wir melden uns bald.</p>' +
-      '<p class="k-hinweis" style="margin:6px 0">Hat sich nichts geöffnet? Dann schick diesen Text an <b>' + esc(C.email) + '</b>:</p><pre id="kopierText">' + esc("Betreff: " + a.betreff + "\n\n" + a.body) + '</pre>' +
-      '<button class="btn small" type="button" id="kopieren">📋 Text kopieren</button>';
-    $("kopieren").onclick = function () { (navigator.clipboard ? navigator.clipboard.writeText("Betreff: " + a.betreff + "\n\n" + a.body) : Promise.reject()).then(function () { KW.toast("Kopiert."); }).catch(function () {}); };
-    location.href = link;
-  });
-
-  /* Chef-Modus: Einstellungen zusammenklicken und als Datei für GitHub kopieren (?chef) */
-  function chefModus() {
-    var E = KW.load("kw-kunden-entwurf", null) || JSON.parse(JSON.stringify(C));
-    E = sauber(E);
-    var el = $("chef"); el.hidden = false;
-    function zeichnen() {
-      el.innerHTML = '<h2>🛠️ Chef-Modus</h2><p class="muted" style="margin:0 0 10px">Hier stellst du alles ein. Unten siehst du sofort, wie es aussieht. Danach kopierst du das Ergebnis und ersetzt auf GitHub die Datei <b>kunden/einstellungen.json</b>. Nur das, was auf GitHub steht, sehen die Kunden.</p>' +
-        (/example\./i.test(E.email) || !E.email ? '<p class="k-bald" style="margin-top:0">⚠️ Trag eine echte Kometenwerk-E-Mail ein (am besten zusammen mit deinen Eltern eingerichtet). Solange hier keine echte Adresse steht, sind Anfragen gesperrt.</p>' : "") +
-        (!E.impressum ? '<p class="k-bald" style="margin-top:0">⚠️ Bevor du Aufträge annimmst, braucht die Seite ein Impressum (Name und Adresse). Klärt mit deinen Eltern, wessen Angaben dort stehen.</p>' : "") +
-        '<label class="field"><span>E-Mail für Anfragen</span><input class="inp" data-f="email" value="' + esc(E.email) + '" type="email"></label>' +
-        '<label class="field"><span>Über uns</span><textarea class="inp" data-f="ueberUns" rows="3">' + esc(E.ueberUns) + '</textarea></label>' +
-        '<div class="field"><span>Sprechzeiten (z. B. „16:00-18:00“, mehrere mit Komma)</span>' + TAGE.map(function (t) {
-          return '<div class="zeile"><b>' + t[1].slice(0, 2) + '</b><input class="inp" data-tag="' + t[0] + '" value="' + esc(E.sprechzeiten[t[0]].join(", ")) + '" placeholder="geschlossen" aria-label="Sprechzeiten ' + t[1] + '"></div>';
-        }).join("") + '</div>' +
-        '<div class="row"><label class="field"><span>Termin-Länge (Minuten)</span><input class="inp" data-n="terminMinuten" type="number" min="10" max="180" step="5" value="' + E.terminMinuten + '"></label>' +
-        '<label class="field"><span>Vorlauf (Stunden)</span><input class="inp" data-n="vorlaufStunden" type="number" min="0" max="336" value="' + E.vorlaufStunden + '"></label>' +
-        '<label class="field"><span>Wochen im Voraus</span><input class="inp" data-n="wochen" type="number" min="1" max="12" value="' + E.wochen + '"></label></div>' +
-        '<label class="field"><span>Gesperrte Tage (je Zeile ein Datum, z. B. 2026-12-24)</span><textarea class="inp" data-l="gesperrt" rows="2">' + esc(E.gesperrt.join("\n")) + '</textarea></label>' +
-        '<label class="field"><span>Schon vergebene Termine (je Zeile, z. B. 2026-10-20 16:00)</span><textarea class="inp" data-l="belegt" rows="2">' + esc(E.belegt.join("\n")) + '</textarea></label>' +
-        '<div class="field"><span>Angebote</span>' + E.angebote.map(function (a, i) {
-          return '<div class="angebot"><input class="inp" data-a="' + i + '" data-k="name" value="' + esc(a.name) + '" aria-label="Name des Angebots"><textarea class="inp" data-a="' + i + '" data-k="text" rows="2" aria-label="Beschreibung">' + esc(a.text) + '</textarea>' +
-            '<div class="row"><input class="inp" data-a="' + i + '" data-k="preis" value="' + esc(a.preis) + '" aria-label="Preis" placeholder="z. B. ab 150 €"><button class="btn small danger" type="button" data-weg="' + i + '">Entfernen</button></div></div>';
-        }).join("") + '<button class="btn small" type="button" id="aPlus">+ Angebot</button></div>' +
-        '<label class="field"><span>Impressum (Name, Adresse, E-Mail – mit deinen Eltern klären)</span><textarea class="inp" data-f="impressum" rows="4">' + esc(E.impressum) + '</textarea></label>' +
-        '<div class="knoepfe"><button class="btn primary" type="button" id="cKopieren">📋 Einstellungen kopieren</button><button class="btn" type="button" id="cLaden">⬇️ Als Datei speichern</button><button class="btn" type="button" id="cReset">↺ Wieder wie auf GitHub</button></div>' +
-        '<ol class="k-hinweis" style="margin:10px 0 0;padding-left:18px"><li>Auf „Einstellungen kopieren“ tippen.</li><li>Auf GitHub im Repo <b>kometenwerk.github.io</b> die Datei <b>kunden/einstellungen.json</b> öffnen.</li><li>Auf den Stift ✏️ tippen, alles markieren, einfügen, unten „Commit changes“.</li><li>Nach 1–2 Minuten sehen die Kunden die neue Version.</li></ol>';
-    }
-    function uebernehmen() { E = sauber(E); KW.save("kw-kunden-entwurf", E); C = E; alles(); }
-    el.addEventListener("input", function (e) {
-      var t = e.target;
-      if (t.dataset.f) E[t.dataset.f] = t.value;
-      else if (t.dataset.tag) E.sprechzeiten[t.dataset.tag] = t.value.split(",").map(function (x) { return x.trim(); }).filter(Boolean);
-      else if (t.dataset.n) E[t.dataset.n] = Number(t.value);
-      else if (t.dataset.l) E[t.dataset.l] = t.value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean);
-      else if (t.dataset.a) E.angebote[+t.dataset.a][t.dataset.k] = t.value;
-      else return;
-      KW.save("kw-kunden-entwurf", E); C = sauber(E); alles();
-    });
-    el.addEventListener("click", function (e) {
-      var t = e.target.closest("button"); if (!t) return;
-      if (t.id === "aPlus") { E.angebote.push({ name: "Neues Angebot", text: "", preis: "" }); uebernehmen(); zeichnen(); }
-      else if (t.dataset.weg) { E.angebote.splice(+t.dataset.weg, 1); uebernehmen(); zeichnen(); }
-      else if (t.id === "cKopieren") {
-        var json = JSON.stringify(Object.assign({ _anleitung: "Am einfachsten änderst du diese Datei über kometenwerk.github.io/kunden/?chef" }, sauber(E)), null, 2);
-        (navigator.clipboard ? navigator.clipboard.writeText(json) : Promise.reject()).then(function () { KW.toast("Kopiert! Jetzt auf GitHub einfügen."); }).catch(function () { window.prompt("Kopiere diesen Text:", json); });
-      } else if (t.id === "cLaden") {
-        var blob = new Blob([JSON.stringify(Object.assign({ _anleitung: "Am einfachsten änderst du diese Datei über kometenwerk.github.io/kunden/?chef" }, sauber(E)), null, 2)], { type: "application/json" });
-        var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "einstellungen.json"; document.body.appendChild(a); a.click(); a.remove();
-      } else if (t.id === "cReset") {
-        if (!confirm("Deinen Entwurf verwerfen und die Einstellungen von GitHub laden?")) return;
-        KW.save("kw-kunden-entwurf", null); E = JSON.parse(JSON.stringify(ONLINE)); C = sauber(E); alles(); zeichnen();
-      }
-    });
-    zeichnen(); C = E; alles();
-  }
-
-  /* Freie Zeiten: Sofie (Kometen-Team) sperrt automatisch Zeiten, an denen wir nicht können. Hier steht nur „vergeben“, nie warum. */
-  var VERF_URL = "https://krawallzoo-default-rtdb.europe-west1.firebasedatabase.app/public/verfuegbar.json";
-  function verfHolen() {
-    var ctrl = "AbortController" in window ? new AbortController() : null, t = setTimeout(function () { if (ctrl) ctrl.abort(); }, 6000);
-    return fetch(VERF_URL, ctrl ? { cache: "no-cache", signal: ctrl.signal } : { cache: "no-cache" }).then(function (r) { if (!r.ok) throw 0; return r.json(); })
-      .then(function (d) { clearTimeout(t); var o = {}; if (d && typeof d.zu === "string") d.zu.split(",").forEach(function (k) { k = k.trim(); if (/^\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?$/.test(k)) o[k] = true; }); return o; })
-      .catch(function () { clearTimeout(t); return {}; });
-  }
-  var ONLINE = STANDARD, VERF = {};
-  Promise.all([
-    fetch("einstellungen.json", { cache: "no-cache" }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (d) { ONLINE = d; }).catch(function () { ONLINE = STANDARD; }),
-    verfHolen().then(function (o) { VERF = o; })
-  ]).then(function () {
-      C = sauber(ONLINE); woche = ersteFreieWoche();
-      var sl = (new URLSearchParams(location.search).get("slot") || "").match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})$/);
-      if (sl && slotsFuer(sl[1]).some(function (x) { return x.zeit === sl[2] && !x.belegt; })) {
-        wahl = { datum: sl[1], zeit: sl[2] };
-        woche = Math.max(0, Math.round(KW.days(montag(KW.today()), montag(sl[1])) / 7));
-      }
-      alles();
-      if (sl) setTimeout(function () { var z = $("termin"); if (z) z.scrollIntoView({ block: "start" }); }, 50);
-      if (/[?&]chef\b/.test(location.search)) chefModus();
-    });
-})();
-</script>
+<script src="../shared/hilfe.js" defer></script>
+<script src="kunden.js" defer></script>
 </body>
 </html>

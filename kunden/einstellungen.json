@@ -1,13 +1,19 @@
 {
-  "_anleitung": "Am einfachsten änderst du diese Datei über kometenwerk.github.io/kunden/?chef – dort klickst du alles zusammen und kopierst das Ergebnis hierher.",
-  "email": "kontakt@example.com",
-  "ueberUns": "Kometenwerk ist ein junges Studio aus Deutschland. Wir bauen Webseiten, Apps und Spiele – modern, schnell und fürs Handy gemacht. Bei uns gibt es keine Werbung und keine Datensammelei, und wir sagen ehrlich, was geht und was nicht.",
+  "_anleitung": "Am einfachsten änderst du diese Datei über kometenwerk.github.io/kunden/?chef",
+  "email": "kometenwerk.kontakt@gmail.com",
+  "ueberUns": "Kometenwerk ist ein junges Studio aus Deutschland. Wir bauen Websites, Apps und Spiele – modern, schnell und fürs Handy gemacht. Bei uns gibt es keine Werbung und keine Datensammelei, und wir sagen ehrlich, was geht und was nicht.",
   "sprechzeiten": {
-    "mo": ["16:00-18:00"],
+    "mo": [
+      "16:00-18:00"
+    ],
     "di": [],
-    "mi": ["16:00-18:00"],
+    "mi": [
+      "16:00-18:00"
+    ],
     "do": [],
-    "fr": ["15:00-17:00"],
+    "fr": [
+      "15:00-17:00"
+    ],
     "sa": [],
     "so": []
   },
@@ -17,10 +23,56 @@
   "gesperrt": [],
   "belegt": [],
   "angebote": [
-    { "name": "Webseite für Vereine", "text": "Start, Über uns, Termine und Kontakt – übersichtlich und schön auf dem Handy.", "preis": "Preis auf Anfrage" },
-    { "name": "Webseite für kleine Betriebe", "text": "Deine Visitenkarte im Internet: Angebot, Öffnungszeiten und Anfahrt.", "preis": "Preis auf Anfrage" },
-    { "name": "Webseite modernisieren", "text": "Deine alte Seite wird schnell, modern und handyfreundlich.", "preis": "Preis auf Anfrage" },
-    { "name": "Kleine Web-App", "text": "Zum Beispiel ein Terminplan, ein Quiz oder ein Rechner – direkt im Browser, ohne App-Store.", "preis": "Preis auf Anfrage" }
+    {
+      "name": "Start",
+      "text": "Deine Visitenkarte im Internet – klein, schnell und schön.",
+      "punkte": [
+        "1–3 Seiten",
+        "Perfekt auf Handy, Tablet und PC",
+        "Kontakt & Anfahrt",
+        "Einweisung, wie du Texte änderst"
+      ],
+      "preis": "",
+      "hervor": false
+    },
+    {
+      "name": "Verein",
+      "text": "Für Vereine und kleine Betriebe, die mehr zeigen wollen.",
+      "punkte": [
+        "Bis zu 8 Seiten",
+        "Termine & Veranstaltungen",
+        "Bildergalerie",
+        "Mannschaften, Team oder Angebot",
+        "Texte und Termine selbst ändern"
+      ],
+      "preis": "",
+      "hervor": true
+    },
+    {
+      "name": "Plus",
+      "text": "Wenn's ein bisschen mehr sein darf.",
+      "punkte": [
+        "Alles aus „Verein“",
+        "Neuigkeiten / Blog",
+        "Downloads & Formulare",
+        "Besondere Effekte & Animationen",
+        "Hilfe bei eigener Internet-Adresse"
+      ],
+      "preis": "",
+      "hervor": false
+    },
+    {
+      "name": "Web-App",
+      "text": "Ein eigenes kleines Werkzeug – direkt im Browser.",
+      "punkte": [
+        "Zum Beispiel Terminplan, Quiz oder Rechner",
+        "Lässt sich wie eine App aufs Handy legen",
+        "Funktioniert auch offline",
+        "Ohne App-Store"
+      ],
+      "preis": "",
+      "hervor": false
+    }
   ],
   "impressum": ""
 }
