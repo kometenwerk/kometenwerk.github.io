@@ -69,3 +69,24 @@
 .l-x:hover,.l-pfeil:hover{background:rgba(255,255,255,.22)}
 @media (max-width:560px){.leuchte img{max-width:calc(100vw - 32px);max-height:calc(100dvh - 140px)}.l-pfeil{top:auto;bottom:18px;transform:none}}
 @media (prefers-reduced-motion:reduce){.shot{transition:none}.leuchte img{animation:none}}
+
+/* Handy-Stapel: weitere Bilder schauen hinten raus */
+.shot-rahmen .hinten{position:absolute;top:50px;width:110px;border:3px solid #0b111c;border-radius:16px;box-shadow:0 10px 24px rgba(0,0,0,.3);transition:transform .35s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+.shot-rahmen .h1{right:66px;transform:rotate(-8deg)}
+.shot-rahmen .h2{right:104px;top:60px;transform:rotate(-16deg);opacity:.85}
+.app:hover .shot-rahmen .h1{transform:rotate(-12deg) translate(-12px,-6px)}
+.app:hover .shot-rahmen .h2{transform:rotate(-22deg) translate(-22px,-2px)}
+.shot .lupe{opacity:.92;font-weight:700;font-size:.78rem}
+.leuchte figcaption{display:flex;flex-direction:column;align-items:center;gap:8px}
+.l-punkte{display:flex;gap:6px}
+.l-punkte i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.35)}
+.l-punkte i.an{background:#ff8a3c;width:22px;border-radius:4px}
+@media (max-width:400px){.shot-rahmen .h2{display:none}}
+@media (prefers-reduced-motion:reduce){.shot-rahmen .hinten{transition:none}}
+.shot-rahmen .hinten{width:104px;filter:brightness(.8)}
+.shot-rahmen .h1{right:48px;top:58px;transform:rotate(-5deg)}
+.shot-rahmen .h2{right:80px;top:70px;transform:rotate(-11deg);opacity:.75}
+.app:hover .shot-rahmen .h1{transform:rotate(-8deg) translate(-10px,-6px)}
+.app:hover .shot-rahmen .h2{transform:rotate(-15deg) translate(-18px,-2px)}
+.shot{z-index:1}
+.app-top.mit-bild .shot-rahmen img.hinten{z-index:0}.app-top.mit-bild .shot{z-index:1}

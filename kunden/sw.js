@@ -9,7 +9,7 @@ self.addEventListener("activate", e => {
     .then(keys => Promise.all(keys.filter(k => k.startsWith("kw-kunden-") && k !== V).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
-const FREMD = ["fonts.googleapis.com", "fonts.gstatic.com", "raw.githubusercontent.com", "cdn.jsdelivr.net"];
+const FREMD = ["raw.githubusercontent.com", "cdn.jsdelivr.net"];
 const NETZ = ["einstellungen.json"]; // diese Dateien immer frisch aus dem Netz holen (z. B. Einstellungen)
 self.addEventListener("fetch", e => {
   const req = e.request;

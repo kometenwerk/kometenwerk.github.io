@@ -1,6 +1,6 @@
 // Offline-Speicher für Kometen-Quiz
-const V = "kw-quiz-ed0398b6";
-const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "../shared/kw.css", "../shared/kw.js"];
+const V = "kw-quiz-2026-10-17f";
+const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "../shared/kw.css", "../shared/kw.js", "../shared/fonts/fonts.css", "../shared/fonts/space-grotesk-latin-400-normal.woff2", "../shared/fonts/space-grotesk-latin-500-normal.woff2", "../shared/fonts/space-grotesk-latin-600-normal.woff2"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
@@ -9,7 +9,7 @@ self.addEventListener("activate", e => {
     .then(keys => Promise.all(keys.filter(k => k.startsWith("kw-quiz-") && k !== V).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
-const FREMD = ["fonts.googleapis.com", "fonts.gstatic.com", "raw.githubusercontent.com", "cdn.jsdelivr.net"];
+const FREMD = ["raw.githubusercontent.com", "cdn.jsdelivr.net"];
 self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET") return;
