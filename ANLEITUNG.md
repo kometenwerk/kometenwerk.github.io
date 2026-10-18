@@ -7,12 +7,19 @@ Alles in diesem Ordner gehört in **ein** Repository: `kometenwerk.github.io`
 1. Repository `kometenwerk.github.io` öffnen → „Add file“ → „Upload files“.
 2. **Alles** aus diesem Ordner hineinziehen – auch die Ordner
    `shared`, `icons`, `planer`, `notizen`, `quiz`, `werkstatt`, `ki`,
-   `beats`, `fokus`, `taschengeld`, `team` und `Krawallzoo`.
+   `beats`, `fokus`, `taschengeld`, `team`, `kunden`, `Krawallzoo`,
+   und die neuen Ordner `apps`, `hilfe`, `suche`, `impressum`, `datenschutz`, `kueche` – dazu `404.html`.
+   Wichtig: auch `shared/ocr` (Texterkennung zum Scannen) und `Krawallzoo/fonts` mit hochladen.
 3. Unten auf „Commit changes“ klicken.
 4. Settings → Pages: Branch `main`, Ordner `/ (root)` → Save.
 
 ## Danach erreichbar
-- Startseite mit Suche: https://kometenwerk.github.io/
+- Über uns (Startseite): https://kometenwerk.github.io/
+- Alle Apps: https://kometenwerk.github.io/apps/
+- Hilfe & Kontakt: https://kometenwerk.github.io/hilfe/
+- Kometen-Suche: https://kometenwerk.github.io/suche/
+- Impressum: https://kometenwerk.github.io/impressum/ (Text kommt aus kunden/einstellungen.json → über kunden/?chef eintragen)
+- Datenschutz: https://kometenwerk.github.io/datenschutz/
 - Krawallzoo:  https://kometenwerk.github.io/Krawallzoo/
 - Planer:    https://kometenwerk.github.io/planer/
 - Notizen:   https://kometenwerk.github.io/notizen/
@@ -22,6 +29,9 @@ Alles in diesem Ordner gehört in **ein** Repository: `kometenwerk.github.io`
 - Beats:     https://kometenwerk.github.io/beats/
 - Fokus:     https://kometenwerk.github.io/fokus/
 - Taschengeld: https://kometenwerk.github.io/taschengeld/
+- Küche:     https://kometenwerk.github.io/kueche/ (für „Link einfügen“: siehe kueche/HELFER-EINRICHTEN.md)
+- Für Kunden: https://kometenwerk.github.io/kunden/ (Einstellungen: …/kunden/?chef)
+- Team-Chat:  https://kometenwerk.github.io/team/ (nicht öffentlich verlinkt)
 
 Jede App hat oben den Knopf „Als App installieren“.
 
@@ -51,3 +61,19 @@ Damit der Chat funktioniert, muss in Firebase einmal die neue Regel-Datei rein:
 
 Gut zu wissen: Chat und Krawallzoo teilen sich die kostenlose Firebase-Grenze
 von etwa 100 Verbindungen gleichzeitig.
+
+
+## Firebase-Regeln
+Die Datei `database.rules.json` gehört NICHT ins Repo. Ihren Inhalt in der Firebase-Konsole einfügen:
+Realtime Database → Regeln → alles ersetzen → Veröffentlichen.
+
+## Achtung: kunden/einstellungen.json
+Wenn du deine Kunden-Einstellungen (E-Mail, Sprechzeiten, Impressum) schon auf GitHub geändert hast,
+diese eine Datei beim Hochladen NICHT ersetzen.
+
+## Bei Google anmelden (Search Console)
+1. https://search.google.com/search-console öffnen und mit der Kometenwerk-E-Mail anmelden.
+2. „Property hinzufügen“ → „URL-Präfix“ → `https://kometenwerk.github.io/` eingeben.
+3. Bestätigen mit „HTML-Tag“: Google zeigt eine Zeile `<meta name="google-site-verification" …>`.
+   Die schickst du Claude – sie kommt in den Kopf der Startseite. Hochladen, dann bei Google „Bestätigen“.
+4. Links „Sitemaps“ → `sitemap.xml` eintragen → „Senden“.

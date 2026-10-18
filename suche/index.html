@@ -221,11 +221,12 @@ dialog form{text-align:right;margin-top:16px}
     {typ:"app", titel:"Wetter", text:"Das Wetter für deinen Ort, mit Karte.", extra:"wetter regen sonne vorhersage", url:"../ND/?app=wetter", icon:"../icons/wetter.png", quelle:"App"},
     {typ:"app", titel:"Kometen-Planer", text:"Hausaufgaben, Tests, Termine und Stundenplan an einem Ort.", extra:"planer kalender hausaufgaben test termin stundenplan schule", url:"../planer/", icon:"../planer/icons/icon-192.png", quelle:"App"},
     {typ:"app", titel:"Kometen-Notizen", text:"Notizen und Listen zum Abhaken.", extra:"notizen notiz liste checkliste einkaufen aufschreiben", url:"../notizen/", icon:"../notizen/icons/icon-192.png", quelle:"App"},
-    {typ:"app", titel:"Kometen-Quiz", text:"Lernkarten selbst erstellen und Wissen testen.", extra:"quiz lernkarten vokabeln lernen karteikarten test", url:"../quiz/", icon:"../quiz/icons/icon-192.png", quelle:"App"},
+    {typ:"app", titel:"Kometen-Quiz", text:"Vokabeln und Lernkarten: Buchseite scannen, eintippen oder Karteikarte – mit Aussprache und Tagesziel.", extra:"quiz lernkarten vokabeln lernen karteikarten test englisch franzoesisch spanisch latein scannen", url:"../quiz/", icon:"../quiz/icons/icon-192.png", quelle:"App"},
     {typ:"app", titel:"Kometen-Werkstatt", text:"Technik-Projekte zum Nachbauen, mit Bauteilen, Schaltplan und Code.", extra:"werkstatt arduino technik basteln elektronik led reaktionstester ampel nachtlicht", url:"../werkstatt/", icon:"../werkstatt/icons/icon-192.png", quelle:"App"},
     {typ:"app", titel:"Kometen-KI", text:"Eine KI, die direkt auf deinem Gerät läuft. Testversion.", extra:"ki ai kuenstliche intelligenz chat fragen hilfe", url:"../ki/", icon:"../ki/icons/icon-192.png", quelle:"App"},
     {typ:"app", titel:"Kometen-Beats", text:"Eigene Beats und Melodien bauen, direkt im Browser.", extra:"beats musik music song melodie trommel schlagzeug machen", url:"../beats/", icon:"../beats/icons/icon-192.png", quelle:"App"},
     {typ:"app", titel:"Kometen-Fokus", text:"Lern-Timer mit Pausen und Statistik.", extra:"fokus timer pomodoro lernen konzentration pause uhr", url:"../fokus/", icon:"../fokus/icons/icon-192.png", quelle:"App"},
+    {typ:"app", titel:"Kometen-Küche", text:"Alle deine Rezepte an einem Ort: per Link, Foto oder Text hinzufügen und Schritt für Schritt kochen.", extra:"kueche kochen rezept rezepte backen kuchen essen einkaufsliste scannen", url:"../kueche/", icon:"../kueche/icons/icon-192.png", quelle:"App"},
     {typ:"app", titel:"Kometen-Taschengeld", text:"Einnahmen, Ausgaben und Sparziele im Blick.", extra:"taschengeld geld sparen sparziel ausgaben euro budget", url:"../taschengeld/", icon:"../taschengeld/icons/icon-192.png", quelle:"App"},
     {typ:"app", titel:"Kometenwerk für Kunden", text:"Webseiten und Apps von uns: Angebote, Sprechzeiten und Termin anfragen.", extra:"kunden webseite erstellen auftrag angebot preis termin sprechzeiten kontakt firma verein betrieb", url:"../kunden/", icon:"../kunden/icons/icon-192.png", quelle:"App"},
     {typ:"app", titel:"Hilfe & Kontakt", text:"Fragen an den Hilfe-Bot, Fehler melden, Ideen schicken und Termine für Vereine und Betriebe.", extra:"hilfe kontakt support kundendienst service fehler bug melden idee frage problem telefon anrufen faq neuigkeiten status", url:"../hilfe/", icon:"../icons/kometenwerk.svg", quelle:"App"},
@@ -240,7 +241,8 @@ dialog form{text-align:right;margin-top:16px}
     notizen:{name:"Deine Notizen", icon:"../notizen/icons/icon-192.png"},
     planer:{name:"Dein Planer", icon:"../planer/icons/icon-192.png"},
     quiz:{name:"Deine Lernkarten", icon:"../quiz/icons/icon-192.png"},
-    beats:{name:"Deine Beats", icon:"../beats/icons/icon-192.png"}
+    beats:{name:"Deine Beats", icon:"../beats/icons/icon-192.png"},
+    kueche:{name:"Deine Rezepte", icon:"../kueche/icons/icon-192.png"}
   };
   function lies(k){ try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; } }
   // Eigene Sachen aus den Kometen-Apps auf diesem Gerät (bleiben auf dem Gerät)
@@ -262,6 +264,8 @@ dialog form{text-align:right;margin-top:16px}
     });
     var bt = lies("kw-beats");
     ((bt && bt.songs) || []).forEach(function(sg){ out.push({typ:"meins", titel:sg.name, text:"Dein Beat mit " + sg.bpm + " Schlägen pro Minute", extra:"beat song musik", url:"../beats/", quelle:"beats", info:"Beat"}); });
+    var kr = lies("kw-kueche");
+    ((kr && kr.rezepte) || []).forEach(function(r){ out.push({typ:"meins", titel:r.titel, text:(r.zutaten || []).map(function(z){ return z.name; }).slice(0, 8).join(", "), extra:"rezept kochen backen " + (r.kategorien || []).join(" ") + " " + (r.zutaten || []).map(function(z){ return z.name; }).join(" "), url:"../kueche/#r/" + encodeURIComponent(r.id), zeit:r.erstellt, quelle:"kueche", info:"Rezept"}); });
     return out;
   }
 

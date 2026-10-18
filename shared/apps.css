@@ -90,3 +90,4 @@
 .app:hover .shot-rahmen .h2{transform:rotate(-15deg) translate(-18px,-2px)}
 .shot{z-index:1}
 .app-top.mit-bild .shot-rahmen img.hinten{z-index:0}.app-top.mit-bild .shot{z-index:1}
+.s-neu{background:#ff8a3c;color:#101826}

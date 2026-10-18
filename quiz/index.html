@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Kometen-Quiz</title>
-<meta name="description" content="Lernkarten selbst erstellen und Wissen testen.">
+<meta name="description" content="Lernkarten und Vokabeln lernen: Vokabelseiten scannen, Listen einfügen, eintippen oder Karteikarten – mit Aussprache, Lernstand und Tagesziel.">
 <meta name="theme-color" content="#6d3fd6">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png" type="image/png">
@@ -58,6 +58,58 @@
 .bereiche button:hover{border-color:var(--app)}
 .bereiche button.alle{background:var(--app);color:#fff;border-color:var(--app);font-weight:600}
 .rek{font-size:.8rem;color:var(--muted);margin-left:4px}
+.crd{grid-template-columns:auto 1fr auto!important;padding:0!important;cursor:default!important;touch-action:pan-y}
+.crd-in{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center;border:0;background:none;font:inherit;color:inherit;text-align:left;padding:12px 4px;cursor:pointer;min-height:48px}
+.crd-in span{overflow-wrap:anywhere;font-size:.92rem}.crd-in span+span{color:var(--muted)}
+.crd .box{padding-right:12px;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.crd .box small{font-size:.7rem}
+.griff{cursor:grab;color:var(--muted);padding:12px 6px 12px 10px;font-size:1.1rem;touch-action:none;user-select:none}
+.crd.zieht{position:relative;z-index:5;box-shadow:0 12px 30px rgba(0,0,0,.25);opacity:.95}
+.abschnitt{display:flex;justify-content:space-between;align-items:baseline;width:100%;margin:18px 0 4px;padding:6px 2px;border:0;background:none;font:inherit;color:inherit;cursor:pointer;text-align:left}
+.abschnitt span{font-weight:600}.abschnitt small{color:var(--muted)}
+.plus{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.stand{display:flex;height:10px;border-radius:6px;overflow:hidden;background:var(--soft);margin:6px 0 4px}
+.stand.klein{height:5px;margin:6px 0 0;max-width:220px}
+.stand .s1{background:var(--good)}.stand .s2{background:#e8a33d}
+.legende{font-size:.78rem;color:var(--muted);margin:2px 0 4px;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.legende span{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:-6px}
+.legende .p1{background:var(--good)}.legende .p2{background:#e8a33d}.legende .p3{background:var(--line)}
+.ziel{display:flex;align-items:center;gap:12px;width:100%;margin:14px 0 4px;padding:12px 14px;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.ziel .flamme{font-size:1.7rem;filter:grayscale(1);opacity:.5}.ziel .flamme.an{filter:none;opacity:1}
+.z-txt{flex:1}.z-txt b{display:block}.z-txt small{color:var(--muted)}
+.z-ring{width:38px;height:38px;border-radius:50%;background:conic-gradient(var(--app) calc(var(--p)*1%),var(--soft) 0);position:relative;flex:none}
+.z-ring::after{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--card)}
+.lern .ziel{max-width:420px;margin:16px auto}
+.laut{border:0;background:var(--app-soft);border-radius:50%;width:40px;height:40px;cursor:pointer;font-size:1.1rem;margin-left:8px;vertical-align:middle}
+.laut-reihe{min-height:44px;margin:-6px 0 8px}
+.tipp-karte{padding:28px 18px;margin:0 0 14px;position:relative}
+.tipp-karte small{position:absolute;top:10px;left:0;right:0;font-size:.75rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.tk-wort{font-size:1.5rem;font-weight:600;overflow-wrap:anywhere}
+.tipp-form{display:flex;gap:8px;margin:0 0 6px}
+.tipp-form .inp{font-size:1.15rem;min-height:52px}
+.urteil{border-radius:14px;padding:14px;margin:0 0 14px;text-align:left}
+.urteil p{margin:6px 0 0}
+.urteil.richtig,.urteil.fast{background:rgba(26,143,76,.14)}.urteil.falsch{background:rgba(201,58,58,.12)}
+.wahl{display:flex;flex-wrap:wrap;gap:6px}
+.wahl label{position:relative;border:1px solid var(--line);border-radius:999px;padding:8px 13px;cursor:pointer;font-size:.9rem;min-height:40px;display:flex;align-items:center}
+.wahl input{position:absolute;opacity:0;pointer-events:none}
+.wahl label:has(input:checked){background:var(--app);border-color:var(--app);color:#fff;font-weight:600}
+.wahl label:has(input:focus-visible){outline:3px solid var(--accent)}
+.hinweis{padding:10px 12px;border-radius:12px;background:var(--app-soft);font-size:.9rem;margin:0 0 12px}
+.hinweis-dup{padding:10px 12px;border-radius:12px;background:#fff4d6;color:#5c3d00;font-size:.88rem;margin:0 0 10px}
+@media (prefers-color-scheme:dark){.hinweis-dup{background:#3d2e05;color:#ffe3a3}}
+.link{border:0;background:none;color:inherit;text-decoration:underline;font:inherit;font-weight:600;cursor:pointer;padding:0}
+.fortschritt{height:10px;border-radius:10px;background:var(--line);overflow:hidden;margin:10px 0 6px}
+.fortschritt span{display:block;height:100%;width:0;background:var(--app);transition:width .3s}
+.vorschau{max-height:min(48vh,420px);overflow:auto;display:flex;flex-direction:column;gap:6px;margin:0 0 6px}
+.imp{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;align-items:center;padding:6px;border-radius:12px;border:1px solid var(--line)}
+.imp.aus{opacity:.5}
+.imp .inp{padding:8px 10px;font-size:.92rem}
+.imp input[type=checkbox]{width:20px;height:20px;accent-color:var(--app)}
+.imp-st{grid-column:2/4;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.st{font-size:.74rem;font-weight:600;padding:2px 8px;border-radius:999px}
+.st-neu{background:rgba(26,143,76,.14);color:var(--good)}.st-dup{background:var(--soft);color:var(--muted)}.st-bed{background:rgba(232,163,61,.18)}.st-warn{background:rgba(201,58,58,.12);color:var(--bad)}
+.inp.mini{width:auto;padding:4px 8px;font-size:.8rem}
 </style>
 </head>
 <body>
@@ -78,8 +130,14 @@
 <dialog class="sheet" id="kDlg">
   <form class="sheet-in" method="dialog" id="kForm">
     <h2 id="kTitel">Neue Karte</h2>
-    <label class="field"><span>Vorderseite (Frage, Wort …)</span><textarea class="inp" id="kV" rows="2" required maxlength="400"></textarea></label>
-    <label class="field"><span>Rückseite (Antwort)</span><textarea class="inp" id="kR" rows="2" required maxlength="400"></textarea></label>
+    <label class="field"><span id="kVL">Vorderseite (Frage, Wort …)</span><textarea class="inp" id="kV" rows="2" required maxlength="400"></textarea></label>
+    <label class="field"><span id="kRL">Rückseite (Antwort)</span><textarea class="inp" id="kR" rows="2" required maxlength="400"></textarea></label>
+    <div class="row">
+      <label class="field"><span>Abschnitt (freiwillig)</span><input class="inp" id="kA" maxlength="40" placeholder="z. B. Unit 3" list="abschnitte" autocomplete="off"></label>
+      <label class="field" style="max-width:120px"><span>Seite</span><input class="inp" id="kS" type="number" min="1" max="999" inputmode="numeric"></label>
+    </div>
+    <datalist id="abschnitte"></datalist>
+    <p class="hinweis-dup" id="kDup" hidden></p>
     <div class="sheet-foot">
       <button type="button" class="btn danger" id="kLoeschen">Löschen</button>
       <span class="sp"></span>
@@ -88,10 +146,13 @@
     </div>
   </form>
 </dialog>
+
 <dialog class="sheet" id="sDlg">
   <form class="sheet-in" method="dialog" id="sForm">
     <h2 id="sTitel">Neuer Stapel</h2>
     <label class="field"><span>Name</span><input class="inp" id="sName" required maxlength="60" placeholder="z. B. Englisch Unit 3" autocomplete="off"></label>
+    <label class="field"><span>Sprache (für Aussprache, Scannen und Tippfehler)</span>
+      <select class="inp" id="sSprache"><option value="">Keine Sprache / anderes Fach</option><option value="en">🇬🇧 Englisch</option><option value="fr">🇫🇷 Französisch</option><option value="es">🇪🇸 Spanisch</option><option value="la">🏛️ Latein</option></select></label>
     <div class="sheet-foot">
       <button type="button" class="btn danger" id="sLoeschen">Stapel löschen</button>
       <span class="sp"></span>
@@ -101,92 +162,301 @@
   </form>
 </dialog>
 
+<dialog class="sheet" id="impDlg">
+  <div class="sheet-in">
+    <h2 id="impTitel">Vokabeln hinzufügen</h2>
+    <div id="impSchritt1">
+      <div id="impScan" hidden>
+        <p class="hinweis">📷 Fotografier die Vokabelliste gerade von oben. Die Texterkennung läuft <b>nur auf deinem Gerät</b>. Beim ersten Mal lädt sie ein paar MB von unserer Seite.</p>
+        <label class="field"><span>Foto(s) der Vokabelseite – mehrere Seiten gehen auch</span><input class="inp" id="impDatei" type="file" accept="image/*" capture="environment" multiple></label>
+        <div id="impLauf" hidden><div class="fortschritt"><span id="impBalken"></span></div><p class="muted" id="impStatus" style="margin:0;font-size:.88rem"></p></div>
+      </div>
+      <div id="impText">
+        <label class="field"><span>Eine Vokabel pro Zeile, z. B. „house – Haus“</span><textarea class="inp" id="impRoh" rows="9" placeholder="house – Haus&#10;to remember – sich erinnern&#10;although – obwohl"></textarea></label>
+        <p class="muted" style="font-size:.82rem;margin:-4px 0 10px">Erlaubte Trenner: – · - · = · ; · Tab. Die Reihenfolge bleibt wie in deiner Liste.</p>
+      </div>
+      <div class="sheet-foot"><button type="button" class="btn" data-zu="impDlg">Abbrechen</button><button type="button" class="btn primary" id="impWeiter">Weiter ›</button></div>
+    </div>
+    <div id="impSchritt2" hidden>
+      <div class="row">
+        <label class="field"><span>Abschnitt</span><input class="inp" id="impA" maxlength="40" placeholder="z. B. Unit 3" list="abschnitte" autocomplete="off"></label>
+        <label class="field" style="max-width:120px"><span>Seite</span><input class="inp" id="impS" type="number" min="1" max="999" inputmode="numeric"></label>
+      </div>
+      <p class="muted" id="impInfo" style="font-size:.88rem;margin:0 0 8px"></p>
+      <div class="vorschau" id="impListe"></div>
+      <div class="sheet-foot"><button type="button" class="btn" id="impZurueck">‹ Zurück</button><span class="sp"></span><button type="button" class="btn primary" id="impLos">Übernehmen</button></div>
+    </div>
+  </div>
+</dialog>
+
+<dialog class="sheet" id="optDlg">
+  <form class="sheet-in" method="dialog" id="optForm">
+    <h2>Lernen</h2>
+    <div class="field"><span>Was willst du lernen?</span><div class="wahl" id="oAbschnitt"></div></div>
+    <div class="field"><span>Welche Karten?</span><div class="wahl" id="oWelche">
+      <label><input type="radio" name="oW" value="faellig" checked>📅 Nur heute dran</label><label><input type="radio" name="oW" value="alle">📚 Alle</label></div></div>
+    <div class="field"><span>Reihenfolge</span><div class="wahl">
+      <label><input type="radio" name="oR" value="buch" checked>📖 Wie im Buch</label><label><input type="radio" name="oR" value="mix">🎲 Gemischt</label><label><input type="radio" name="oR" value="schwer">🔥 Schwierige zuerst</label></div></div>
+    <div class="field" id="oRichtungFeld"><span>Richtung</span><div class="wahl">
+      <label><input type="radio" name="oD" value="vr" checked><span id="oVR">Vorne → Hinten</span></label><label><input type="radio" name="oD" value="rv"><span id="oRV">Hinten → Vorne</span></label><label><input type="radio" name="oD" value="beide">↔️ Beide</label></div></div>
+    <div class="field"><span>Wie willst du lernen?</span><div class="wahl arten">
+      <label><input type="radio" name="oA" value="karte" checked>🃏 Karteikarte</label><label><input type="radio" name="oA" value="tippen">⌨️ Eintippen</label><label><input type="radio" name="oA" value="auswahl">❓ Auswahl</label></div></div>
+    <p class="muted" id="oAnzahl" style="margin:0 0 6px;font-size:.88rem"></p>
+    <div class="sheet-foot"><button type="button" class="btn" data-zu="optDlg">Abbrechen</button><button type="submit" class="btn primary" id="oLos">▶ Los geht's</button></div>
+  </form>
+</dialog>
+
+<dialog class="sheet" id="zielDlg">
+  <form class="sheet-in" method="dialog" id="zielForm">
+    <h2>🎯 Tagesziel</h2>
+    <p class="muted" style="margin-top:0">Wie viele Karten willst du jeden Tag lernen? Jeder Tag, an dem du dein Ziel schaffst, verlängert deine Serie 🔥.</p>
+    <div class="wahl" id="zielWahl"></div>
+    <div class="sheet-foot"><button type="button" class="btn" data-zu="zielDlg">Abbrechen</button><button type="submit" class="btn primary">Speichern</button></div>
+  </form>
+</dialog>
+
 <script src="../shared/kw.js"></script>
 <script>
 (function () {
   "use strict";
-  var esc = KW.esc, KEY = "kw-quiz";
-  var ABSTAND = [0, 1, 3, 7, 14, 30]; // Tage bis zur nächsten Wiederholung je Fach (Box)
+  var esc = KW.esc, KEY = "kw-quiz", $ = function (id) { return document.getElementById(id); };
+  var ABSTAND = [0, 1, 3, 7, 14, 30]; // Tage bis zur nächsten Wiederholung je Lernstufe
+  var SPRACHEN = { en: { name: "Englisch", flagge: "🇬🇧", tts: "en-GB", ocr: "eng+deu" }, fr: { name: "Französisch", flagge: "🇫🇷", tts: "fr-FR", ocr: "fra+deu" }, es: { name: "Spanisch", flagge: "🇪🇸", tts: "es-ES", ocr: "spa+deu" }, la: { name: "Latein", flagge: "🏛️", tts: "", ocr: "deu" } };
   var D = KW.load(KEY, null);
   if (!D || !Array.isArray(D.stapel)) {
     var bsp = [["the weather", "das Wetter"], ["to remember", "sich erinnern"], ["although", "obwohl"], ["the neighbour", "der Nachbar"], ["to borrow", "(sich etwas) ausleihen"], ["enough", "genug"]];
-    D = { stapel: [{ id: KW.id(), name: "Beispiel: Englisch-Vokabeln", karten: bsp.map(function (k) { return { id: KW.id(), v: k[0], r: k[1], box: 0, faellig: KW.today() }; }) }], rekorde: {} };
+    D = { stapel: [{ id: KW.id(), name: "Beispiel: Englisch-Vokabeln", sprache: "en", karten: bsp.map(function (k) { return { id: KW.id(), v: k[0], r: k[1], box: 0, faellig: KW.today(), abschnitt: "Unit 1", seite: 180 }; }) }], rekorde: {} };
   }
-  function speichern() { KW.save(KEY, D); }
+  D.rekorde = D.rekorde || {};
+  D.serie = D.serie || { ziel: 20, tage: {} };
+  D.stapel.forEach(function (s) { if (s.sprache == null) s.sprache = /engl/i.test(s.name) ? "en" : /franz|franç/i.test(s.name) ? "fr" : /span/i.test(s.name) ? "es" : /latein/i.test(s.name) ? "la" : ""; });
+  function speichern() { if (!KW.save(KEY, D)) KW.toast("⚠️ Speicher voll."); }
   function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
-  function faellige(s) { var h = KW.today(); return s.karten.filter(function (k) { return !k.faellig || k.faellig <= h; }); }
+  function faellig(k) { return !k.faellig || k.faellig <= KW.today(); }
+  function faellige(s) { return s.karten.filter(faellig); }
+  function spr(s) { return SPRACHEN[(s || stapel || {}).sprache] || null; }
+  function seiteVorne(s) { var p = spr(s); return p ? p.name : "Vorderseite"; }
+  function seiteHinten(s) { return spr(s) ? "Deutsch" : "Rückseite"; }
 
   var tab = "karten", modus = "liste", stapel = null, sitzung = null;
-  var view = document.getElementById("view");
+  var view = $("view");
+
+  /* ---------- Vergleichen: Doppelte & Tippfehler ---------- */
+  function norm(t) {
+    return String(t || "").toLowerCase().replace(/ß/g, "ss").normalize("NFD").replace(/[̀-ͯ]/g, "")
+      .replace(/\([^)]*\)/g, " ").replace(/[.,!?¡¿"„“”«»:]/g, " ").replace(/\s+/g, " ").trim();
+  }
+  function kern(t) { // „to go“ = „go“, „the house“ = „house“
+    return norm(t).replace(/^(to|the|a|an|le|la|les|l'|un|une|des|el|los|las|der|die|das|ein|eine|sich)\s+/, "").replace(/^l'/, "").trim();
+  }
+  function bedeutungen(t) { return String(t || "").split(/[,;/]| oder /).map(kern).filter(Boolean); }
+  function abstand(a, b) {
+    if (a === b) return 0; var m = a.length, n = b.length; if (!m || !n) return m || n;
+    var p = [], i, j; for (j = 0; j <= n; j++) p[j] = j;
+    for (i = 1; i <= m; i++) { var prev = p[0]; p[0] = i; for (j = 1; j <= n; j++) { var t = p[j]; p[j] = Math.min(p[j] + 1, p[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = t; } }
+    return p[n];
+  }
+  /* Ergebnis: "richtig" | "fast" (kleiner Tippfehler) | "falsch" */
+  function pruefe(eingabe, loesung) {
+    var e = kern(eingabe); if (!e) return "falsch";
+    var l = bedeutungen(loesung).concat([kern(loesung)]);
+    for (var i = 0; i < l.length; i++) { if (e === l[i]) return "richtig"; }
+    for (i = 0; i < l.length; i++) { var erlaubt = l[i].length >= 10 ? 2 : l[i].length >= 5 ? 1 : 0; if (erlaubt && abstand(e, l[i]) <= erlaubt) return "fast"; }
+    return "falsch";
+  }
+  /* Steht die Vokabel schon irgendwo? */
+  function suchen(v, r, ohne) {
+    var kv = kern(v), funde = [];
+    D.stapel.forEach(function (s) { s.karten.forEach(function (k) { if (k !== ohne && kern(k.v) === kv) funde.push({ s: s, k: k }); }); });
+    if (!funde.length) return null;
+    var neueB = bedeutungen(r);
+    var gleich = funde.filter(function (f) { var alt = bedeutungen(f.k.r); return !neueB.length || neueB.every(function (b) { return alt.indexOf(b) >= 0; }); })[0];
+    return gleich ? { art: "doppelt", s: gleich.s, k: gleich.k } : { art: "bedeutung", s: funde[0].s, k: funde[0].k };
+  }
+  function wo(f) { return (f.s !== stapel ? "„" + f.s.name + "“" : "") + [f.k.abschnitt, f.k.seite ? "S. " + f.k.seite : ""].filter(Boolean).join(", ").replace(/^/, f.s !== stapel && (f.k.abschnitt || f.k.seite) ? " · " : ""); }
+
+  /* ---------- Aussprache (nur Stimmen, die auf dem Gerät laufen) ---------- */
+  function stimme(lang) {
+    if (!lang || !("speechSynthesis" in window)) return null;
+    var l = speechSynthesis.getVoices().filter(function (v) { return v.localService && v.lang && v.lang.toLowerCase().indexOf(lang.slice(0, 2)) === 0; });
+    return l.filter(function (v) { return v.lang === lang; })[0] || l[0] || null;
+  }
+  if ("speechSynthesis" in window) speechSynthesis.onvoiceschanged = function () { if (modus === "lernen") zeigen(); };
+  function sprechen(text, lang) {
+    var v = stimme(lang); if (!v) return;
+    speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(String(text).replace(/\([^)]*\)/g, "")); u.voice = v; u.lang = v.lang; u.rate = 0.9; speechSynthesis.speak(u);
+  }
+  function lautBtn(text, lang) { return stimme(lang) ? '<button type="button" class="laut" data-laut="' + esc(text) + '" data-lang="' + esc(lang) + '" aria-label="Vorlesen">🔊</button>' : ""; }
+
+  /* ---------- Tagesziel & Serie ---------- */
+  function gelernt() { var h = KW.today(); D.serie.tage[h] = (D.serie.tage[h] || 0) + 1; var t = D.serie.tage[h]; if (t === D.serie.ziel) setTimeout(function () { KW.toast("🎯 Tagesziel geschafft! 🔥 " + serie() + " Tage in Folge."); }, 400); }
+  function serie() { var n = 0, tag = KW.today(); if ((D.serie.tage[tag] || 0) < D.serie.ziel) tag = KW.addDays(tag, -1); while ((D.serie.tage[tag] || 0) >= D.serie.ziel) { n++; tag = KW.addDays(tag, -1); } return n; }
+  function zielLeiste() {
+    var h = D.serie.tage[KW.today()] || 0, z = D.serie.ziel, s = serie();
+    return '<button type="button" class="ziel card" data-a="ziel" aria-label="Tagesziel ändern"><span class="flamme' + (s ? " an" : "") + '">🔥</span><span class="z-txt"><b>' + (s ? s + (s === 1 ? " Tag" : " Tage") + " in Folge" : "Starte deine Serie!") + '</b><small>Heute ' + Math.min(h, z) + ' von ' + z + ' Karten' + (h >= z ? " ✓" : "") + '</small></span><span class="z-ring" style="--p:' + Math.min(100, Math.round(h / z * 100)) + '"></span></button>';
+  }
 
   /* ---------- Stapel-Übersicht ---------- */
   function stapelListe() {
-    var h = '<div class="topline"><h2>Deine Stapel</h2><button class="btn primary small" type="button" data-a="neuStapel">+ Neuer Stapel</button></div>';
+    var h = zielLeiste() + '<div class="topline"><h2>Deine Stapel</h2><button class="btn primary small" type="button" data-a="neuStapel">+ Neuer Stapel</button></div>';
     if (!D.stapel.length) return h + '<div class="empty"><b>Noch keine Lernkarten</b>Lege einen Stapel an, zum Beispiel für Vokabeln oder Geschichtsdaten.</div>';
     h += '<div class="decks">' + D.stapel.map(function (s) {
-      var f = faellige(s).length;
-      return '<div class="deck card" role="button" tabindex="0" data-s="' + s.id + '"><span class="ic" aria-hidden="true">🗂️</span><div class="txt"><b>' + esc(s.name) + '</b><small>' +
-        s.karten.length + (s.karten.length === 1 ? " Karte" : " Karten") + (s.karten.length ? " · " + (f ? f + " heute dran" : "heute alles gelernt ✓") : "") + '</small></div><span aria-hidden="true">›</span></div>';
+      var f = faellige(s).length, p = spr(s);
+      return '<div class="deck card" role="button" tabindex="0" data-s="' + s.id + '"><span class="ic" aria-hidden="true">' + (p ? p.flagge : "🗂️") + '</span><div class="txt"><b>' + esc(s.name) + '</b><small>' +
+        s.karten.length + (s.karten.length === 1 ? " Karte" : " Karten") + (s.karten.length ? " · " + (f ? f + " heute dran" : "heute alles gelernt ✓") : "") + '</small>' + standBalken(s, true) + '</div><span aria-hidden="true">›</span></div>';
     }).join("") + '</div>';
-    return h + '<p class="muted" style="font-size:.85rem;margin:18px 4px 0">So lernst du klug: Karten, die du weißt, kommen erst nach ein paar Tagen wieder. Karten, die du nicht weißt, kommen sofort nochmal. So lernst du nur, was du noch nicht kannst.</p>';
+    return h + '<p class="muted" style="font-size:.85rem;margin:18px 4px 0">So lernst du klug: Karten, die du weißt, kommen erst nach ein paar Tagen wieder. Karten, die du nicht weißt, kommen sofort nochmal.</p>';
   }
+  function stand(karten) { var o = { sitzt: 0, lernt: 0, neu: 0 }; karten.forEach(function (k) { if ((k.box || 0) >= 3) o.sitzt++; else if ((k.box || 0) > 0 || k.ok || k.nok) o.lernt++; else o.neu++; }); return o; }
+  function standBalken(s, klein) {
+    var st = stand(s.karten), n = s.karten.length || 1;
+    return '<div class="stand' + (klein ? " klein" : "") + '" aria-label="' + st.sitzt + ' sitzen, ' + st.lernt + ' lernst du gerade, ' + st.neu + ' neu"><i class="s1" style="width:' + (st.sitzt / n * 100) + '%"></i><i class="s2" style="width:' + (st.lernt / n * 100) + '%"></i></div>' +
+      (klein ? "" : '<p class="legende"><span class="p1"></span>' + st.sitzt + ' sitzen <span class="p2"></span>' + st.lernt + ' lernst du gerade <span class="p3"></span>' + st.neu + ' neu</p>');
+  }
+  function abschnitte(s) { var a = []; s.karten.forEach(function (k) { if (k.abschnitt && a.indexOf(k.abschnitt) < 0) a.push(k.abschnitt); }); return a; }
+  var offenAbschnitt = {};
   function stapelAnsicht() {
-    var s = stapel, f = faellige(s).length;
-    var h = '<div class="topline"><button class="btn small" type="button" data-a="zurueck" aria-label="Zurück">‹</button><h2>' + esc(s.name) + '</h2><button class="btn small" type="button" data-a="stapelEdit">Umbenennen</button></div>';
-    h += '<div class="row" style="margin:10px 0">' +
-      '<button class="btn primary" type="button" data-a="lernen"' + (s.karten.length ? "" : " disabled") + '>▶ Lernen' + (f ? " (" + f + ")" : "") + '</button>' +
-      '<button class="btn" type="button" data-a="mc"' + (s.karten.length >= 4 ? "" : " disabled title=\"Ab 4 Karten\"") + '>❓ Quiz mit Auswahl</button>' +
-      '<button class="btn" type="button" data-a="neuKarte">+ Karte</button></div>';
-    if (s.karten.length < 4) h += '<p class="muted" style="font-size:.85rem;margin:0 2px">Das Quiz mit Auswahl geht ab 4 Karten.</p>';
-    if (!s.karten.length) return h + '<div class="empty"><b>Noch leer</b>Füge mit „+ Karte“ deine erste Lernkarte hinzu.</div>';
-    h += '<div class="cards">' + s.karten.map(function (k) {
-      return '<div class="crd card" role="button" tabindex="0" data-k="' + k.id + '"><span>' + esc(k.v) + '</span><span>' + esc(k.r) + '</span><span class="box" title="Lernstufe">' + "●".repeat(k.box || 0) + "○".repeat(5 - Math.min(5, k.box || 0)) + '</span></div>';
-    }).join("") + '</div>';
-    return h;
+    var s = stapel, f = faellige(s).length, p = spr(s);
+    var h = '<div class="topline"><button class="btn small" type="button" data-a="zurueck" aria-label="Zurück">‹</button><h2>' + (p ? p.flagge + " " : "") + esc(s.name) + '</h2><button class="btn small" type="button" data-a="stapelEdit">Bearbeiten</button></div>';
+    h += '<div class="row" style="margin:10px 0"><button class="btn primary" type="button" data-a="lernOpt"' + (s.karten.length ? "" : " disabled") + '>▶ Lernen' + (f ? " (" + f + " dran)" : "") + '</button></div>';
+    h += '<div class="plus"><button class="btn" type="button" data-a="neuKarte">+ Karte</button><button class="btn" type="button" data-a="einfuegen">📋 Liste einfügen</button><button class="btn" type="button" data-a="scannen">📷 Seite scannen</button></div>';
+    if (!s.karten.length) return h + '<div class="empty"><b>Noch leer</b>Füge Karten einzeln hinzu, füg eine ganze Liste ein oder scanne eine Vokabelseite aus deinem Buch.</div>';
+    h += standBalken(s, false);
+    var gruppen = [], g = null;
+    s.karten.forEach(function (k, i) { var a = k.abschnitt || ""; if (!g || g.a !== a) { g = { a: a, karten: [] }; gruppen.push(g); } g.karten.push({ k: k, i: i }); });
+    h += gruppen.map(function (gr) {
+      var zu = gr.a && offenAbschnitt[s.id + gr.a] === false, st = stand(gr.karten.map(function (x) { return x.k; }));
+      return (gr.a ? '<button type="button" class="abschnitt" data-ab="' + esc(gr.a) + '" aria-expanded="' + !zu + '"><span>' + (zu ? "▸" : "▾") + " " + esc(gr.a) + '</span><small>' + gr.karten.length + ' Karten · ' + st.sitzt + ' sitzen</small></button>' : "") +
+        (zu ? "" : '<div class="cards" data-gruppe="' + esc(gr.a) + '">' + gr.karten.map(function (x) {
+          var k = x.k;
+          return '<div class="crd card" data-k="' + k.id + '"><span class="griff" data-griff="' + x.i + '" aria-hidden="true" title="Ziehen zum Sortieren">⠿</span><button type="button" class="crd-in" data-oeffne="' + k.id + '"><span>' + esc(k.v) + '</span><span>' + esc(k.r) + '</span></button><span class="box" title="Lernstufe">' + (k.seite ? '<small>S. ' + k.seite + '</small>' : "") + "●".repeat(Math.min(5, k.box || 0)) + "○".repeat(5 - Math.min(5, k.box || 0)) + '</span></div>';
+        }).join("") + '</div>');
+    }).join("");
+    return h + '<p class="muted" style="font-size:.8rem;margin:10px 2px">Tipp: Am Griff ⠿ kannst du Karten in die richtige Reihenfolge ziehen.</p>';
   }
 
-  /* ---------- Lernen (Karteikarten) ---------- */
-  function lernStart() {
-    var karten = faellige(stapel);
-    if (!karten.length) karten = stapel.karten.slice();
-    sitzung = { art: "lernen", rest: shuffle(karten), gesamt: karten.length, gewusst: 0, nochmal: 0, um: false };
+  /* Sortieren per Ziehen */
+  var zieh = null;
+  view.addEventListener("pointerdown", function (e) {
+    var g = e.target.closest("[data-griff]"); if (!g) return;
+    e.preventDefault(); var el = g.closest(".crd"); var liste = el.parentElement;
+    zieh = { el: el, liste: liste, y: e.clientY, id: el.dataset.k }; el.classList.add("zieht"); g.setPointerCapture(e.pointerId);
+  });
+  view.addEventListener("pointermove", function (e) {
+    if (!zieh) return; var dy = e.clientY - zieh.y; zieh.el.style.transform = "translateY(" + dy + "px)";
+    var geschw = [].slice.call(zieh.liste.children).filter(function (c) { return c !== zieh.el; });
+    for (var i = 0; i < geschw.length; i++) { var r = geschw[i].getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) { if (zieh.el.nextSibling !== geschw[i]) { var vor = zieh.el.getBoundingClientRect().top; zieh.liste.insertBefore(zieh.el, geschw[i]); zieh.y += zieh.el.getBoundingClientRect().top - vor; zieh.el.style.transform = "translateY(" + (e.clientY - zieh.y) + "px)"; } return; } }
+    if (zieh.liste.lastElementChild !== zieh.el) { var v2 = zieh.el.getBoundingClientRect().top; zieh.liste.appendChild(zieh.el); zieh.y += zieh.el.getBoundingClientRect().top - v2; zieh.el.style.transform = "translateY(" + (e.clientY - zieh.y) + "px)"; }
+  });
+  function ziehEnde() {
+    if (!zieh) return;
+    var ids = [].map.call(zieh.liste.children, function (c) { return c.dataset.k; });
+    var inGruppe = stapel.karten.filter(function (k) { return ids.indexOf(k.id) >= 0; });
+    var start = stapel.karten.indexOf(inGruppe[0]);
+    var neu = ids.map(function (id) { return stapel.karten.find(function (k) { return k.id === id; }); });
+    stapel.karten.splice.apply(stapel.karten, [start, neu.length].concat(neu));
+    zieh = null; speichern(); zeigen();
+  }
+  view.addEventListener("pointerup", ziehEnde); view.addEventListener("pointercancel", ziehEnde);
+
+  /* ---------- Lern-Optionen ---------- */
+  var OPT = KW.load("kw-quiz-opt", { w: "faellig", r: "buch", d: "vr", a: "karte" });
+  function optOeffnen() {
+    var s = stapel, ab = abschnitte(s);
+    $("oAbschnitt").innerHTML = '<label><input type="checkbox" value="" checked data-alle>Alles</label>' + ab.map(function (a) { return '<label><input type="checkbox" value="' + esc(a) + '">' + esc(a) + '</label>'; }).join("");
+    $("oAbschnitt").parentElement.hidden = !ab.length;
+    $("oVR").textContent = (spr(s) ? spr(s).flagge + " → 🇩🇪" : "Vorne → Hinten"); $("oRV").textContent = (spr(s) ? "🇩🇪 → " + spr(s).flagge : "Hinten → Vorne");
+    ["W", "R", "D", "A"].forEach(function (x) { var v = OPT[x.toLowerCase()]; var i = document.querySelector('input[name="o' + x + '"][value="' + v + '"]'); if (i) i.checked = true; });
+    optAnzahl(); $("optDlg").showModal();
+  }
+  function optWerte() {
+    var g = function (n) { return (document.querySelector('input[name="' + n + '"]:checked') || {}).value; };
+    var ab = [].map.call($("oAbschnitt").querySelectorAll("input:checked:not([data-alle])"), function (i) { return i.value; });
+    return { w: g("oW"), r: g("oR"), d: g("oD"), a: g("oA"), ab: ab };
+  }
+  function auswahlKarten(o) {
+    var l = stapel.karten.filter(function (k) { return !o.ab.length || o.ab.indexOf(k.abschnitt || "") >= 0; });
+    if (o.w === "faellig") l = l.filter(faellig);
+    return l;
+  }
+  function optAnzahl() { var o = optWerte(), n = auswahlKarten(o).length; $("oAnzahl").textContent = n ? n + (n === 1 ? " Karte" : " Karten") + " ausgewählt" + (o.a === "auswahl" && stapel.karten.length < 4 ? " – „Auswahl“ geht erst ab 4 Karten im Stapel." : "") : "Keine Karten ausgewählt – wähl „Alle“ oder einen anderen Abschnitt."; $("oLos").disabled = !n || (o.a === "auswahl" && stapel.karten.length < 4); }
+  $("optDlg").addEventListener("change", function (e) {
+    if (e.target.dataset.alle != null && e.target.checked) $("oAbschnitt").querySelectorAll("input:not([data-alle])").forEach(function (i) { i.checked = false; });
+    else if (e.target.closest("#oAbschnitt") && e.target.checked) $("oAbschnitt").querySelector("[data-alle]").checked = false;
+    if (!$("oAbschnitt").querySelector("input:checked")) $("oAbschnitt").querySelector("[data-alle]").checked = true;
+    optAnzahl();
+  });
+  $("optForm").addEventListener("submit", function () {
+    var o = optWerte(); OPT = { w: o.w, r: o.r, d: o.d, a: o.a }; KW.save("kw-quiz-opt", OPT);
+    var l = auswahlKarten(o);
+    if (o.r === "mix") l = shuffle(l);
+    else if (o.r === "schwer") l = l.slice().sort(function (a, b) { return ((b.nok || 0) - (b.ok || 0) * 0.5 - (b.box || 0)) - ((a.nok || 0) - (a.ok || 0) * 0.5 - (a.box || 0)); });
+    var fragen = l.map(function (k) { return { k: k, rv: o.d === "rv" || (o.d === "beide" && Math.random() < 0.5) }; });
+    if (o.a === "auswahl") mcStart(fragen.slice(0, 20)); else lernStart(fragen, o.a);
+  });
+
+  /* ---------- Lernen: Karteikarte & Eintippen ---------- */
+  function lernStart(fragen, art) {
+    sitzung = { art: art, rest: fragen, gesamt: fragen.length, gewusst: 0, nochmal: 0, um: false, eingabe: "", urteil: null };
     modus = "lernen"; zeigen();
   }
+  function frageText(f) { return f.rv ? f.k.r : f.k.v; }
+  function antwortText(f) { return f.rv ? f.k.v : f.k.r; }
+  function langFrage(f) { var p = spr(); return f.rv ? "de-DE" : (p && p.tts) || ""; }
+  function langAntwort(f) { var p = spr(); return f.rv ? (p && p.tts) || "" : "de-DE"; }
   function lernAnsicht() {
     var s = sitzung;
     if (!s.rest.length) {
       return '<div class="lern"><div class="ergebnis">🎉</div><h2>Geschafft!</h2><p>' + s.gewusst + ' gewusst, ' + s.nochmal + ' mal nochmal geübt.</p>' +
-        '<p class="muted">Die Karten, die du wusstest, kommen in ein paar Tagen wieder dran.</p><button class="btn primary" type="button" data-a="zumStapel">Fertig</button></div>';
+        '<p class="muted">Die Karten, die du wusstest, kommen in ein paar Tagen wieder dran.</p>' + zielLeiste() + '<p><button class="btn primary" type="button" data-a="zumStapel">Fertig</button></p></div>';
     }
-    var k = s.rest[0], fertig = s.gesamt - s.rest.length;
-    return '<div class="lern"><div class="bar"><i style="width:' + Math.round(fertig / s.gesamt * 100) + '%"></i></div>' +
-      '<div class="flip' + (s.um ? " um" : "") + '" id="flip" role="button" tabindex="0" aria-label="Karte umdrehen"><div class="in">' +
-      '<div class="seite vorne"><small>Frage</small>' + esc(k.v) + '</div><div class="seite hinten"><small>Antwort</small>' + esc(k.r) + '</div></div></div>' +
-      (s.um ? '<div class="antw"><button class="btn" type="button" data-a="nochmal">🔁 Nochmal</button><button class="btn gut" type="button" data-a="gewusst">✓ Gewusst</button></div>'
-            : '<p class="muted">Überleg dir die Antwort, dann tippe auf die Karte.</p>') +
-      '<p style="margin-top:18px"><button class="btn small" type="button" data-a="zumStapel">Beenden</button></p></div>';
+    var f = s.rest[0], fertig = s.gesamt - s.rest.length, sv = f.rv ? seiteHinten() : seiteVorne(), sh = f.rv ? seiteVorne() : seiteHinten();
+    var h = '<div class="lern"><div class="bar"><i style="width:' + Math.round(fertig / s.gesamt * 100) + '%"></i></div><p class="muted" style="margin:-8px 0 10px;font-size:.82rem">' + (fertig + 1) + ' von ' + s.gesamt + (f.k.abschnitt ? " · " + esc(f.k.abschnitt) : "") + (f.k.seite ? " · S. " + f.k.seite : "") + '</p>';
+    if (s.art === "tippen") {
+      h += '<div class="tipp-karte card"><small>' + esc(sv) + '</small><div class="tk-wort">' + esc(frageText(f)) + lautBtn(frageText(f), langFrage(f)) + '</div></div>';
+      if (!s.urteil) {
+        h += '<form id="tippForm" class="tipp-form"><label class="vh" for="tippIn">' + esc(sh) + '</label><input class="inp" id="tippIn" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="' + esc(sh) + ' eintippen …" value="' + esc(s.eingabe) + '"><button class="btn primary" type="submit">Prüfen</button></form>' +
+          '<p><button class="btn small" type="button" data-a="weissNicht">Weiß ich nicht</button></p>';
+      } else {
+        var u = s.urteil;
+        h += '<div class="urteil ' + u + '"><b>' + (u === "richtig" ? "✓ Richtig!" : u === "fast" ? "✓ Fast richtig – kleiner Tippfehler" : "✗ Leider falsch") + '</b>' +
+          (u !== "richtig" ? '<p>Richtig ist: <b>' + esc(antwortText(f)) + '</b>' + lautBtn(antwortText(f), langAntwort(f)) + (s.eingabe && u === "falsch" ? '<br><span class="muted">Du hast geschrieben: ' + esc(s.eingabe) + '</span>' : "") + '</p>' : "") + '</div>' +
+          '<div class="antw">' + (u === "falsch" && s.eingabe ? '<button class="btn" type="button" data-a="hatteRecht">Ich hatte recht</button>' : "") + '<button class="btn primary" type="button" data-a="tippWeiter" id="tippWeiter">Weiter ›</button></div>';
+      }
+    } else {
+      h += '<div class="flip' + (s.um ? " um" : "") + '" id="flip" role="button" tabindex="0" aria-label="Karte umdrehen"><div class="in">' +
+        '<div class="seite vorne"><small>' + esc(sv) + '</small>' + esc(frageText(f)) + '</div><div class="seite hinten"><small>' + esc(sh) + '</small>' + esc(antwortText(f)) + '</div></div></div>' +
+        '<div class="laut-reihe">' + (s.um ? lautBtn(antwortText(f), langAntwort(f)) : lautBtn(frageText(f), langFrage(f))) + '</div>' +
+        (s.um ? '<div class="antw"><button class="btn" type="button" data-a="nochmal">🔁 Nochmal</button><button class="btn gut" type="button" data-a="gewusst">✓ Gewusst</button></div>'
+              : '<p class="muted">Überleg dir die Antwort, dann tippe auf die Karte.</p>');
+    }
+    return h + '<p style="margin-top:18px"><button class="btn small" type="button" data-a="zumStapel">Beenden</button></p></div>';
   }
   function bewerten(gewusst) {
-    var s = sitzung, k = s.rest.shift();
-    if (gewusst) {
-      k.box = Math.min(5, (k.box || 0) + 1);
-      k.faellig = KW.addDays(KW.today(), ABSTAND[k.box]);
-      s.gewusst++;
-    } else {
-      k.box = 0; k.faellig = KW.today(); s.nochmal++;
-      s.rest.splice(Math.min(s.rest.length, 2), 0, k); // kommt gleich nochmal
-    }
-    s.um = false; speichern(); zeigen();
+    var s = sitzung, f = s.rest.shift(), k = f.k;
+    gelernt();
+    if (gewusst) { k.box = Math.min(5, (k.box || 0) + 1); k.faellig = KW.addDays(KW.today(), ABSTAND[k.box]); k.ok = (k.ok || 0) + 1; s.gewusst++; }
+    else { k.box = 0; k.faellig = KW.today(); k.nok = (k.nok || 0) + 1; s.nochmal++; s.rest.splice(Math.min(s.rest.length, 2), 0, f); }
+    s.um = false; s.eingabe = ""; s.urteil = null; speichern(); zeigen();
+    var t = $("tippIn"); if (t) t.focus();
   }
+  view.addEventListener("submit", function (e) {
+    if (e.target.id !== "tippForm") return; e.preventDefault();
+    var s = sitzung, f = s.rest[0]; s.eingabe = $("tippIn").value.trim(); if (!s.eingabe) return;
+    s.urteil = pruefe(s.eingabe, antwortText(f)); zeigen();
+    if (s.urteil !== "richtig") sprechen(antwortText(f), langAntwort(f));
+    var w = $("tippWeiter"); if (w) w.focus();
+  });
 
-  /* ---------- Quiz mit Auswahl (aus eigenen Karten oder Wissensartikeln) ---------- */
-  function mcAusStapel() {
-    var fragen = shuffle(stapel.karten).slice(0, 10).map(function (k) {
-      var falsch = shuffle(stapel.karten.filter(function (x) { return x.id !== k.id && x.r !== k.r; })).slice(0, 3).map(function (x) { return x.r; });
-      var opts = shuffle([k.r].concat(falsch));
-      return { frage: k.v, optionen: opts, richtig: opts.indexOf(k.r) };
+  /* ---------- Auswahl (Multiple Choice) ---------- */
+  function mcStart(fragen) {
+    var alle = stapel.karten;
+    var q = fragen.map(function (f) {
+      var richtigT = antwortText(f), andere = shuffle(alle.filter(function (x) { return x !== f.k && kern(f.rv ? x.v : x.r) !== kern(richtigT); })).slice(0, 3).map(function (x) { return f.rv ? x.v : x.r; });
+      var opts = shuffle([richtigT].concat(andere));
+      return { frage: frageText(f), optionen: opts, richtig: opts.indexOf(richtigT), karte: f.k, thema: f.k.abschnitt || "" };
     });
-    quizStart(fragen, "stapel-" + stapel.id, "zumStapel");
+    quizStart(q, "stapel-" + stapel.id, "zumStapel");
   }
   function quizStart(fragen, rekordKey, zurueck) {
     sitzung = { art: "quiz", fragen: fragen, i: 0, punkte: 0, gewaehlt: null, key: rekordKey, zurueck: zurueck };
@@ -231,17 +501,13 @@
   function wissenLaden() {
     if (WISSEN) return Promise.resolve(WISSEN);
     var urls = wissenUrls(), i = 0;
-    function next() {
-      if (i >= urls.length) return Promise.reject(new Error("weg"));
-      return fetch(urls[i++], { cache: "no-cache" }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).catch(next);
-    }
+    function next() { if (i >= urls.length) return Promise.reject(new Error("weg")); return fetch(urls[i++], { cache: "no-cache" }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).catch(next); }
     return next().then(function (d) {
       WISSEN = [];
       ((d && d.stuecke) || []).forEach(function (st) {
         (st.quiz || []).forEach(function (q) {
           if (!q || !q.frage || !Array.isArray(q.optionen) || typeof q.richtig !== "number") return;
-          WISSEN.push({ frage: q.frage, optionen: q.optionen, richtig: q.richtig, erklaerung: q.erklaerung, thema: st.bereich, titel: st.titel,
-            link: "../ND/?app=wissen#/wissen/" + encodeURIComponent(st.id) });
+          WISSEN.push({ frage: q.frage, optionen: q.optionen, richtig: q.richtig, erklaerung: q.erklaerung, thema: st.bereich, titel: st.titel, link: "../ND/?app=wissen#/wissen/" + encodeURIComponent(st.id) });
         });
       });
       return WISSEN;
@@ -249,17 +515,12 @@
   }
   function wissenAnsicht() {
     if (wissenFehler) return '<div class="empty"><b>Gerade nicht erreichbar</b>Die Fragen kommen aus „Warum eigentlich?“. Prüfe deine Internetverbindung und versuch es nochmal.<p><button class="btn" type="button" data-a="wissenNeu">Nochmal versuchen</button></p></div>';
-    if (!WISSEN) {
-      wissenLaden().then(zeigen).catch(function () { wissenFehler = true; zeigen(); });
-      return '<div class="empty">Fragen werden geladen …</div>';
-    }
+    if (!WISSEN) { wissenLaden().then(zeigen).catch(function () { wissenFehler = true; zeigen(); }); return '<div class="empty">Fragen werden geladen …</div>'; }
     var bereiche = {};
     WISSEN.forEach(function (q) { bereiche[q.thema] = (bereiche[q.thema] || 0) + 1; });
     var h = '<p style="margin:16px 2px 4px">Teste dein Wissen mit Fragen aus den Artikeln von <b>„Warum eigentlich?“</b>. Jede Runde hat bis zu 10 Fragen.</p>';
     h += '<div class="bereiche"><button type="button" class="alle" data-b="">🎲 Alles gemischt<span class="rek">' + rekord("wissen-") + '</span></button>' +
-      Object.keys(bereiche).sort().map(function (b) {
-        return '<button type="button" data-b="' + esc(b) + '">' + esc(b) + ' <span class="rek">' + bereiche[b] + ' Fragen' + rekord("wissen-" + b) + '</span></button>';
-      }).join("") + '</div>';
+      Object.keys(bereiche).sort().map(function (b) { return '<button type="button" data-b="' + esc(b) + '">' + esc(b) + ' <span class="rek">' + bereiche[b] + ' Fragen' + rekord("wissen-" + b) + '</span></button>'; }).join("") + '</div>';
     return h;
   }
   function rekord(k) { var r = D.rekorde[k]; return r ? " · Rekord " + r : ""; }
@@ -278,9 +539,10 @@
     else if (modus === "quiz") view.innerHTML = quizAnsicht();
     else if (tab === "wissen") view.innerHTML = wissenAnsicht();
     else view.innerHTML = stapel ? stapelAnsicht() : stapelListe();
-    document.getElementById("tabs").hidden = modus !== "liste";
+    $("tabs").hidden = modus !== "liste";
+    var t = $("tippIn"); if (t && document.activeElement !== t) t.focus({ preventScroll: true });
   }
-  document.getElementById("tabs").addEventListener("click", function (e) {
+  $("tabs").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-v]"); if (!b) return;
     tab = b.dataset.v;
     this.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-selected", x === b ? "true" : "false"); });
@@ -291,12 +553,16 @@
   });
   view.addEventListener("click", function (e) {
     var t = e.target;
+    var laut = t.closest("[data-laut]"); if (laut) { e.stopPropagation(); sprechen(laut.dataset.laut, laut.dataset.lang); return; }
     var deck = t.closest("[data-s]"); if (deck) { stapel = D.stapel.find(function (s) { return s.id === deck.dataset.s; }); zeigen(); return; }
-    var kk = t.closest("[data-k]"); if (kk) { karteOeffnen(stapel.karten.find(function (k) { return k.id === kk.dataset.k; })); return; }
-    if (t.closest("#flip")) { if (!sitzung.um) { sitzung.um = true; zeigen(); } else { sitzung.um = false; zeigen(); } return; }
+    var ab = t.closest("[data-ab]"); if (ab) { var key = stapel.id + ab.dataset.ab; offenAbschnitt[key] = offenAbschnitt[key] === false; zeigen(); return; }
+    var kk = t.closest("[data-oeffne]"); if (kk) { karteOeffnen(stapel.karten.find(function (k) { return k.id === kk.dataset.oeffne; })); return; }
+    if (t.closest("#flip")) { sitzung.um = !sitzung.um; zeigen(); if (sitzung.um) { var f = sitzung.rest[0]; sprechen(antwortText(f), langAntwort(f)); } return; }
     var o = t.closest("[data-o]"); if (o && sitzung.gewaehlt === null) {
       sitzung.gewaehlt = +o.dataset.o;
-      if (sitzung.gewaehlt === sitzung.fragen[sitzung.i].richtig) sitzung.punkte++;
+      var fr = sitzung.fragen[sitzung.i];
+      if (sitzung.gewaehlt === fr.richtig) sitzung.punkte++;
+      if (fr.karte) { gelernt(); if (sitzung.gewaehlt === fr.richtig) fr.karte.ok = (fr.karte.ok || 0) + 1; else fr.karte.nok = (fr.karte.nok || 0) + 1; speichern(); }
       zeigen(); return;
     }
     var bb = t.closest("[data-b]"); if (bb) { wissenStart(bb.dataset.b); return; }
@@ -306,12 +572,17 @@
       case "stapelEdit": stapelOeffnen(stapel); break;
       case "zurueck": stapel = null; zeigen(); break;
       case "neuKarte": karteOeffnen(null); break;
-      case "lernen": lernStart(); break;
-      case "mc": mcAusStapel(); break;
+      case "einfuegen": impOeffnen(false); break;
+      case "scannen": impOeffnen(true); break;
+      case "lernOpt": optOeffnen(); break;
+      case "ziel": zielOeffnen(); break;
       case "gewusst": bewerten(true); break;
       case "nochmal": bewerten(false); break;
+      case "weissNicht": sitzung.eingabe = ""; sitzung.urteil = "falsch"; zeigen(); sprechen(antwortText(sitzung.rest[0]), langAntwort(sitzung.rest[0])); break;
+      case "tippWeiter": bewerten(sitzung.urteil !== "falsch"); break;
+      case "hatteRecht": bewerten(true); break;
       case "weiter": sitzung.i++; sitzung.gewaehlt = null; zeigen(); window.scrollTo(0, 0); break;
-      case "nochmalQuiz": if (sitzung.key.indexOf("stapel-") === 0) mcAusStapel(); else wissenStart(sitzung.key.slice(7)); break;
+      case "nochmalQuiz": if (sitzung.key.indexOf("stapel-") === 0) mcStart(shuffle(sitzung.fragen.map(function (q) { return { k: q.karte, rv: q.frage === q.karte.r && q.frage !== q.karte.v }; }))); else wissenStart(sitzung.key.slice(7)); break;
       case "zumStapel": modus = "liste"; sitzung = null; zeigen(); break;
       case "zumWissen": modus = "liste"; sitzung = null; tab = "wissen"; zeigen(); break;
       case "wissenNeu": wissenFehler = false; zeigen(); break;
@@ -319,61 +590,182 @@
   });
   document.addEventListener("keydown", function (e) {
     if (modus !== "lernen" || !sitzung || !sitzung.rest.length || document.querySelector("dialog[open]")) return;
+    if (sitzung.art === "tippen") { if (sitzung.urteil && e.key === "Enter" && e.target.id !== "tippIn") { e.preventDefault(); bewerten(sitzung.urteil !== "falsch"); } return; }
     if (e.key === " " && e.target === document.body) { e.preventDefault(); sitzung.um = !sitzung.um; zeigen(); }
     if (sitzung.um && e.key === "ArrowRight") bewerten(true);
     if (sitzung.um && e.key === "ArrowLeft") bewerten(false);
   });
+  document.addEventListener("click", function (e) { var z = e.target.closest("[data-zu]"); if (z) $(z.dataset.zu).close(); });
 
-  /* ---------- Karten + Stapel bearbeiten ---------- */
-  var kDlg = document.getElementById("kDlg"), kAkt = null, kWeiter = false;
+  /* ---------- Karte bearbeiten (mit Doppelt-Prüfung) ---------- */
+  var kDlg = $("kDlg"), kAkt = null, kOk = false;
+  function abschnittListe() { $("abschnitte").innerHTML = (stapel ? abschnitte(stapel) : []).map(function (a) { return '<option value="' + esc(a) + '">'; }).join(""); }
   function karteOeffnen(k) {
-    kAkt = k; kWeiter = false;
-    document.getElementById("kTitel").textContent = k ? "Karte bearbeiten" : "Neue Karte";
-    document.getElementById("kV").value = k ? k.v : ""; document.getElementById("kR").value = k ? k.r : "";
-    document.getElementById("kLoeschen").hidden = !k; document.getElementById("kNochEine").hidden = !!k;
-    kDlg.showModal(); setTimeout(function () { document.getElementById("kV").focus(); }, 50);
+    kAkt = k; kOk = false; abschnittListe();
+    $("kTitel").textContent = k ? "Karte bearbeiten" : "Neue Karte";
+    $("kVL").textContent = spr() ? spr().flagge + " " + spr().name : "Vorderseite (Frage, Wort …)"; $("kRL").textContent = spr() ? "🇩🇪 Deutsch" : "Rückseite (Antwort)";
+    var letzte = stapel.karten[stapel.karten.length - 1] || {};
+    $("kV").value = k ? k.v : ""; $("kR").value = k ? k.r : "";
+    $("kA").value = k ? (k.abschnitt || "") : (letzte.abschnitt || ""); $("kS").value = k ? (k.seite || "") : (letzte.seite || "");
+    $("kLoeschen").hidden = !k; $("kNochEine").hidden = !!k; $("kDup").hidden = true;
+    kDlg.showModal(); setTimeout(function () { $("kV").focus(); }, 50);
   }
+  function dupPruefen() {
+    var v = $("kV").value.trim(), r = $("kR").value.trim();
+    var f = v ? suchen(v, r, kAkt) : null, el = $("kDup");
+    if (!f) { el.hidden = true; return null; }
+    el.hidden = false;
+    el.innerHTML = f.art === "doppelt" ? "⚠️ <b>„" + esc(f.k.v) + " – " + esc(f.k.r) + "“</b> hast du schon" + (wo(f) ? " (" + esc(wo(f)) + ")" : "") + "." :
+      "💡 <b>„" + esc(f.k.v) + "“</b> gibt es schon mit der Bedeutung „" + esc(f.k.r) + "“" + (wo(f) ? " (" + esc(wo(f)) + ")" : "") + '. <button type="button" class="link" id="kErgaenzen">Bedeutung dort ergänzen</button>';
+    var b = $("kErgaenzen"); if (b) b.onclick = function () { f.k.r = f.k.r + ", " + r; speichern(); kDlg.close(); zeigen(); KW.toast("Bedeutung ergänzt."); };
+    return f;
+  }
+  $("kV").addEventListener("blur", dupPruefen); $("kR").addEventListener("blur", dupPruefen);
   function karteSpeichern() {
-    var v = document.getElementById("kV").value.trim(), r = document.getElementById("kR").value.trim();
+    var v = $("kV").value.trim(), r = $("kR").value.trim();
     if (!v || !r) return false;
-    if (kAkt) { kAkt.v = v; kAkt.r = r; }
-    else stapel.karten.push({ id: KW.id(), v: v, r: r, box: 0, faellig: KW.today() });
-    speichern(); return true;
+    var f = dupPruefen();
+    if (f && !kOk && !kAkt) { kOk = true; KW.toast(f.art === "doppelt" ? "Die Vokabel gibt es schon – nochmal tippen zum Trotzdem-Speichern." : "Neue Bedeutung? Ergänzen oder nochmal tippen für eigene Karte."); return false; }
+    var w = { v: v, r: r, abschnitt: $("kA").value.trim(), seite: +$("kS").value || null };
+    if (kAkt) Object.assign(kAkt, w);
+    else stapel.karten.push(Object.assign({ id: KW.id(), box: 0, faellig: KW.today() }, w));
+    kOk = false; speichern(); return true;
   }
-  document.getElementById("kForm").addEventListener("submit", function (e) { if (!karteSpeichern()) e.preventDefault(); else zeigen(); });
-  document.getElementById("kNochEine").onclick = function () {
-    if (!document.getElementById("kForm").reportValidity() || !karteSpeichern()) return;
+  $("kForm").addEventListener("submit", function (e) { if (!karteSpeichern()) e.preventDefault(); else zeigen(); });
+  $("kNochEine").onclick = function () {
+    if (!$("kForm").reportValidity() || !karteSpeichern()) return;
     zeigen(); KW.toast("Karte gespeichert.");
-    document.getElementById("kV").value = ""; document.getElementById("kR").value = ""; document.getElementById("kV").focus();
+    $("kV").value = ""; $("kR").value = ""; $("kDup").hidden = true; $("kV").focus();
   };
-  document.getElementById("kLoeschen").onclick = function () {
+  $("kLoeschen").onclick = function () {
     var i = stapel.karten.indexOf(kAkt), k = kAkt, s = stapel;
     s.karten.splice(i, 1); speichern(); kDlg.close(); zeigen();
     KW.toast("Karte gelöscht.", "Rückgängig", function () { s.karten.splice(i, 0, k); speichern(); zeigen(); });
   };
-  var sDlg = document.getElementById("sDlg"), sAkt = null;
+
+  /* ---------- Stapel ---------- */
+  var sDlg = $("sDlg"), sAkt = null;
   function stapelOeffnen(s) {
     sAkt = s;
-    document.getElementById("sTitel").textContent = s ? "Stapel umbenennen" : "Neuer Stapel";
-    document.getElementById("sName").value = s ? s.name : "";
-    document.getElementById("sLoeschen").hidden = !s;
-    sDlg.showModal(); setTimeout(function () { document.getElementById("sName").focus(); }, 50);
+    $("sTitel").textContent = s ? "Stapel bearbeiten" : "Neuer Stapel";
+    $("sName").value = s ? s.name : ""; $("sSprache").value = s ? (s.sprache || "") : "en";
+    $("sLoeschen").hidden = !s;
+    sDlg.showModal(); setTimeout(function () { $("sName").focus(); }, 50);
   }
-  document.getElementById("sAbbruch").onclick = function () { sDlg.close(); };
-  document.getElementById("sForm").addEventListener("submit", function (e) {
-    var n = document.getElementById("sName").value.trim();
+  $("sAbbruch").onclick = function () { sDlg.close(); };
+  $("sForm").addEventListener("submit", function (e) {
+    var n = $("sName").value.trim();
     if (!n) { e.preventDefault(); return; }
-    if (sAkt) sAkt.name = n;
-    else { var neu = { id: KW.id(), name: n, karten: [] }; D.stapel.push(neu); stapel = neu; }
+    if (sAkt) { sAkt.name = n; sAkt.sprache = $("sSprache").value; }
+    else { var neu = { id: KW.id(), name: n, sprache: $("sSprache").value, karten: [] }; D.stapel.push(neu); stapel = neu; }
     speichern(); zeigen();
   });
-  document.getElementById("sLoeschen").onclick = function () {
+  $("sLoeschen").onclick = function () {
     var s = sAkt, i = D.stapel.indexOf(s);
     D.stapel.splice(i, 1); speichern(); sDlg.close(); stapel = null; zeigen();
     KW.toast("Stapel „" + s.name + "“ gelöscht.", "Rückgängig", function () { D.stapel.splice(i, 0, s); speichern(); zeigen(); });
   };
 
-  KW.footer("quiz", function () { return D; }, function (d) { if (d && Array.isArray(d.stapel)) { D = d; D.rekorde = D.rekorde || {}; stapel = null; modus = "liste"; speichern(); zeigen(); } });
+  /* ---------- Tagesziel ---------- */
+  function zielOeffnen() {
+    $("zielWahl").innerHTML = [10, 20, 30, 50, 100].map(function (n) { return '<label><input type="radio" name="zw" value="' + n + '"' + (D.serie.ziel === n ? " checked" : "") + '>' + n + ' Karten</label>'; }).join("");
+    $("zielDlg").showModal();
+  }
+  $("zielForm").addEventListener("submit", function () { var v = +(document.querySelector('input[name="zw"]:checked') || {}).value; if (v) { D.serie.ziel = v; speichern(); zeigen(); } });
+
+  /* ---------- Liste einfügen & Seite scannen ---------- */
+  var IMP = [], impScan = false;
+  function impOeffnen(scan) {
+    impScan = scan; abschnittListe();
+    $("impTitel").textContent = scan ? "📷 Vokabelseite scannen" : "📋 Vokabelliste einfügen";
+    $("impScan").hidden = !scan; $("impText").hidden = scan; $("impLauf").hidden = true; $("impDatei").value = "";
+    $("impSchritt1").hidden = false; $("impSchritt2").hidden = true; $("impWeiter").disabled = false;
+    var letzte = stapel.karten[stapel.karten.length - 1] || {}; $("impA").value = letzte.abschnitt || ""; $("impS").value = "";
+    $("impDlg").showModal();
+  }
+  var DEUTSCH = /^(der|die|das|den|dem|des|ein|eine|einen|einem|sich|jdn\.?|jdm\.?|etw\.?|\(sich\)|\(etwas\))$/i;
+  function paare(text) {
+    var out = [], meta = {};
+    String(text || "").replace(/\r/g, "").split("\n").forEach(function (zeile) {
+      var z = zeile.replace(/\s+$/, "").replace(/^\s*(?:\d{1,3}[.)]\s+|[-•*·]\s+)/, "");
+      if (!z.trim()) return;
+      var m = z.trim().match(/^(unit|lesson|leçon|lecon|lektion|kapitel|chapter|step|station|unidad|module|modul|part|teil)\s*[\w.-]{0,6}\b/i);
+      if (m && z.trim().length < 30) { meta.abschnitt = meta.abschnitt || z.trim(); return; }
+      var sm = z.trim().match(/^(?:seite|page|s\.|p\.)\s*(\d{1,3})$/i) || z.trim().match(/^(\d{1,3})$/);
+      if (sm) { meta.seite = meta.seite || +sm[1]; return; }
+      var t = z.replace(/\[[^\]]{1,40}\]|\/[^\/\s][^\/]{0,38}\//g, " ‖ ");
+      var teile = t.split(/\t| ‖ |\s+[–—]\s+|\s+-\s+|\s+=\s+|\s*;\s*|\s{3,}/).map(function (x) { return x.replace(/‖/g, "").trim(); }).filter(Boolean);
+      var v, r, pruefen = false;
+      if (teile.length >= 2) { v = teile[0]; r = teile.slice(1).join(", "); }
+      else {
+        var w = z.trim().split(/\s+/), cut = -1;
+        for (var i = 1; i < w.length; i++) { if (DEUTSCH.test(w[i]) || (/^[a-zäöü]/.test(w[0]) && /^[A-ZÄÖÜ]/.test(w[i]))) { cut = i; break; } }
+        if (cut > 0) { v = w.slice(0, cut).join(" "); r = w.slice(cut).join(" "); pruefen = true; }
+        else { v = z.trim(); r = ""; pruefen = true; }
+      }
+      out.push({ v: v.replace(/[,;:]$/, ""), r: r, pruefen: pruefen, an: true, wie: "neu" });
+    });
+    return { liste: out, meta: meta };
+  }
+  function impStatus(p) {
+    var f = p.v ? suchen(p.v, p.r) : null;
+    // auch innerhalb der neuen Liste doppelt?
+    var vorher = IMP.slice(0, IMP.indexOf(p)).filter(function (x) { return x.an && kern(x.v) === kern(p.v); })[0];
+    p.dup = f; p.innerDup = !!vorher;
+    if (!p.wieGesetzt) { p.wie = f ? (f.art === "doppelt" ? "skip" : "ergaenzen") : vorher ? "skip" : "neu"; p.an = p.wie !== "skip"; }
+  }
+  function impZeigen() {
+    IMP.forEach(impStatus);
+    var neu = IMP.filter(function (p) { return p.an && p.wie === "neu"; }).length, erg = IMP.filter(function (p) { return p.an && p.wie === "ergaenzen"; }).length, dop = IMP.filter(function (p) { return p.dup && p.dup.art === "doppelt" || p.innerDup; }).length;
+    $("impInfo").textContent = IMP.length + " erkannt · " + neu + " neu" + (erg ? " · " + erg + " neue Bedeutung" : "") + (dop ? " · " + dop + " schon vorhanden" : "") + ". Prüf kurz die Liste – du kannst alles direkt ändern.";
+    $("impListe").innerHTML = IMP.map(function (p, i) {
+      var chip = p.innerDup ? '<span class="st st-dup">doppelt in dieser Liste</span>' : p.dup ? (p.dup.art === "doppelt" ? '<span class="st st-dup">schon da' + (wo(p.dup) ? ": " + esc(wo(p.dup)) : "") + '</span>' :
+        '<span class="st st-bed">neue Bedeutung? Bisher: „' + esc(p.dup.k.r) + '“</span><select class="inp mini" data-wie="' + i + '" aria-label="Was tun?"><option value="ergaenzen"' + (p.wie === "ergaenzen" ? " selected" : "") + '>Bedeutung ergänzen</option><option value="neu"' + (p.wie === "neu" ? " selected" : "") + '>Eigene Karte</option><option value="skip"' + (p.wie === "skip" ? " selected" : "") + '>Überspringen</option></select>') :
+        (!p.r ? '<span class="st st-warn">⚠️ Übersetzung fehlt</span>' : p.pruefen ? '<span class="st st-warn">bitte prüfen</span>' : '<span class="st st-neu">neu</span>');
+      return '<div class="imp' + (p.an ? "" : " aus") + '"><input type="checkbox" data-an="' + i + '"' + (p.an ? " checked" : "") + ' aria-label="Übernehmen"><input class="inp" data-iv="' + i + '" value="' + esc(p.v) + '" aria-label="Vokabel"><input class="inp" data-ir="' + i + '" value="' + esc(p.r) + '" aria-label="Übersetzung"><div class="imp-st">' + chip + '</div></div>';
+    }).join("") || '<p class="muted">Keine Vokabeln erkannt.</p>';
+    var n = IMP.filter(function (p) { return p.an && p.v && p.r; }).length;
+    $("impLos").textContent = n + (n === 1 ? " Vokabel" : " Vokabeln") + " übernehmen"; $("impLos").disabled = !n;
+  }
+  $("impListe").addEventListener("change", function (e) {
+    var t = e.target;
+    if (t.dataset.an != null) { var p = IMP[+t.dataset.an]; p.an = t.checked; p.wieGesetzt = true; if (p.an && p.wie === "skip") p.wie = "neu"; impZeigen(); }
+    if (t.dataset.wie != null) { var q = IMP[+t.dataset.wie]; q.wie = t.value; q.an = t.value !== "skip"; q.wieGesetzt = true; impZeigen(); }
+    if (t.dataset.iv != null || t.dataset.ir != null) { var x = IMP[+(t.dataset.iv || t.dataset.ir)]; if (t.dataset.iv != null) x.v = t.value.trim(); else x.r = t.value.trim(); x.pruefen = false; x.wieGesetzt = false; impZeigen(); }
+  });
+  function zuSchritt2(text) {
+    var r = paare(text); IMP = r.liste;
+    if (r.meta.abschnitt && !$("impA").value) $("impA").value = r.meta.abschnitt;
+    if (r.meta.seite) $("impS").value = r.meta.seite;
+    $("impSchritt1").hidden = true; $("impSchritt2").hidden = false; impZeigen();
+  }
+  var ocrGeladen = null;
+  function ocr() { if (window.KWOCR) return Promise.resolve(); if (!ocrGeladen) ocrGeladen = new Promise(function (ok, nein) { var s = document.createElement("script"); s.src = "../shared/ocr/kw-ocr.js"; s.onload = ok; s.onerror = function () { ocrGeladen = null; nein(); }; document.head.appendChild(s); }); return ocrGeladen; }
+  $("impWeiter").onclick = function () {
+    if (!impScan) { var t = $("impRoh").value; if (!t.trim()) { KW.toast("Füg zuerst eine Liste ein."); return; } zuSchritt2(t); return; }
+    var dateien = [].slice.call($("impDatei").files || []); if (!dateien.length) { KW.toast("Wähl erst ein Foto aus."); return; }
+    $("impLauf").hidden = false; $("impWeiter").disabled = true;
+    var texte = [], i = 0, sprache = (spr() && spr().ocr) || "deu";
+    function status(p, t) { $("impBalken").style.width = ((i + p / 100) / dateien.length * 100) + "%"; $("impStatus").textContent = t + (dateien.length > 1 ? " (Foto " + (i + 1) + " von " + dateien.length + ")" : ""); }
+    status(0, "Texterkennung wird geladen …");
+    ocr().then(function next() { if (i >= dateien.length) return; return KWOCR.erkenne(dateien[i], sprache, status).then(function (t) { texte.push(t); i++; return next(); }); })
+      .then(function () { zuSchritt2(texte.join("\n")); })
+      .catch(function () { $("impStatus").textContent = "😕 Das hat nicht geklappt. Versuch es mit einem schärferen Foto."; })
+      .then(function () { $("impWeiter").disabled = false; });
+  };
+  $("impZurueck").onclick = function () { $("impSchritt1").hidden = false; $("impSchritt2").hidden = true; };
+  $("impLos").onclick = function () {
+    var a = $("impA").value.trim(), s = +$("impS").value || null, n = 0, e = 0;
+    IMP.forEach(function (p) {
+      if (!p.an || !p.v || !p.r) return;
+      if (p.wie === "ergaenzen" && p.dup) { p.dup.k.r = p.dup.k.r + ", " + p.r; e++; return; }
+      stapel.karten.push({ id: KW.id(), v: p.v, r: p.r, box: 0, faellig: KW.today(), abschnitt: a, seite: s }); n++;
+    });
+    speichern(); $("impDlg").close(); zeigen();
+    KW.toast(n + (n === 1 ? " Vokabel" : " Vokabeln") + " hinzugefügt" + (e ? ", " + e + " Bedeutung(en) ergänzt" : "") + ". 🎉");
+  };
+
+  KW.footer("quiz", function () { return D; }, function (d) { if (d && Array.isArray(d.stapel)) { D = d; D.rekorde = D.rekorde || {}; D.serie = D.serie || { ziel: 20, tage: {} }; stapel = null; modus = "liste"; speichern(); zeigen(); } });
   zeigen();
 })();
 </script>
