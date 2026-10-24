@@ -1,0 +1,6 @@
+name = "kometenwerk-whatsapp"
+main = "src/index.js"
+compatibility_date = "2026-10-19"
+
+[observability]
+enabled = true

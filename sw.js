@@ -1,8 +1,13 @@
-const CACHE='krawallzoo-v11';
-const FILES=['./','./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/apple-touch-icon.png','./fonts/fonts.css','../shared/fonts/fonts.css'];
-self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()));});
-self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
-self.addEventListener('fetch',e=>{
-  const req=e.request;if(req.method!=='GET')return;
-  e.respondWith(fetch(req).then(res=>{const copy=res.clone();caches.open(CACHE).then(c=>c.put(req,copy)).catch(()=>{});return res;}).catch(()=>caches.match(req).then(r=>r||caches.match('./index.html'))));
+// Aufräumen: Hier lag aus Versehen der Offline-Speicher des Nachrichten-Hefts.
+// Diese Datei löscht ihn wieder und meldet sich dann selbst ab.
+// Das echte Nachrichten-Heft liegt unter /ND/ und hat seinen eigenen Speicher.
+self.addEventListener("install", function () { self.skipWaiting(); });
+self.addEventListener("activate", function (e) {
+  e.waitUntil((async function () {
+    var keys = await caches.keys();
+    await Promise.all(keys.filter(function (k) { return k.indexOf("heft-") === 0; }).map(function (k) { return caches.delete(k); }));
+    await self.registration.unregister();
+    var fenster = await self.clients.matchAll({ type: "window" });
+    fenster.forEach(function (c) { c.navigate(c.url); });
+  })());
 });

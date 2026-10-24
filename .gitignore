@@ -1,0 +1,9 @@
+# Geheimes und Zwischenspeicher nie hochladen
+.wrangler/
+node_modules/
+.env
+.env.*
+.dev.vars
+client_secret*.json
+*token*.json
+*.log

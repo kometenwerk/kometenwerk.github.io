@@ -1,0 +1,14 @@
+{
+  "name": "kometenwerk-youtube-local",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lokaler, privater YouTube-Uploadhelfer für Kometenwerk",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "googleapis": "^160.0.0",
+    "multer": "^2.0.2"
+  }
+}

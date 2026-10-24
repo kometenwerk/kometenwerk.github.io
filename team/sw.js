@@ -1,6 +1,6 @@
 // Offline-Speicher für Kometen-Team
-const V = "kw-team-2026-10-18a";
-const SHELL = ["./", "index.html", "ARBEITSORDNUNG.md", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "../shared/kw.css", "../shared/kw.js", "../shared/fonts/fonts.css", "../shared/fonts/space-grotesk-latin-400-normal.woff2", "../shared/fonts/space-grotesk-latin-500-normal.woff2", "../shared/fonts/space-grotesk-latin-600-normal.woff2"];
+const V = "kw-team-2026-10-18c";
+const SHELL = ["./", "index.html", "ARBEITSORDNUNG.md", "VIDEO_STILGUIDE.md", "DESIGN_LEITFADEN.md", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "../shared/kw.css", "../shared/kw.js", "../shared/fonts/fonts.css", "../shared/fonts/space-grotesk-latin-400-normal.woff2", "../shared/fonts/space-grotesk-latin-500-normal.woff2", "../shared/fonts/space-grotesk-latin-600-normal.woff2"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
