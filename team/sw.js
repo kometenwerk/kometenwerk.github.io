@@ -1,36 +1,13 @@
-// Offline-Speicher für Kometen-Team
-const V = "kw-team-2026-10-18c";
-const SHELL = ["./", "index.html", "ARBEITSORDNUNG.md", "VIDEO_STILGUIDE.md", "DESIGN_LEITFADEN.md", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "../shared/kw.css", "../shared/kw.js", "../shared/fonts/fonts.css", "../shared/fonts/space-grotesk-latin-400-normal.woff2", "../shared/fonts/space-grotesk-latin-500-normal.woff2", "../shared/fonts/space-grotesk-latin-600-normal.woff2"];
-self.addEventListener("install", e => {
-  e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
-});
-self.addEventListener("activate", e => {
-  e.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(k => k.startsWith("kw-team-") && k !== V).map(k => caches.delete(k))))
-    .then(() => self.clients.claim()));
-});
-const FREMD = ["raw.githubusercontent.com", "cdn.jsdelivr.net"];
-const NETZ = []; // diese Dateien immer frisch aus dem Netz holen (z. B. Einstellungen)
-self.addEventListener("fetch", e => {
-  const req = e.request;
-  if (req.method !== "GET") return;
-  const url = new URL(req.url);
-  const eigen = url.origin === location.origin;
-  if (!eigen && !FREMD.includes(url.hostname)) return;
-  if (req.mode === "navigate" || url.hostname === "raw.githubusercontent.com" || (eigen && NETZ.some(n => url.pathname.endsWith("/" + n)))) {
-    // Erst Netz (damit es aktuell ist), sonst gespeicherte Version
-    e.respondWith(fetch(req).then(r => {
-      if (r.ok) { const c = r.clone(); caches.open(V).then(x => x.put(req, c)); }
-      return r;
-    }).catch(() => caches.match(req).then(r => r || caches.match("index.html"))));
-    return;
-  }
-  // Sonst: sofort aus dem Speicher, im Hintergrund auffrischen
-  e.respondWith(caches.match(req).then(hit => {
-    const net = fetch(req).then(r => {
-      if (r.ok || r.type === "opaque") { const c = r.clone(); caches.open(V).then(x => x.put(req, c)); }
-      return r;
-    }).catch(() => hit);
-    return hit || net;
-  }));
+// Aufräumen: Hier lag der Offline-Speicher des alten Kometen-Team-Chats.
+// Diese Datei löscht ihn und meldet sich dann selbst ab. Die neuen Team-Apps
+// (team/omnivia, team/flaressa, …) haben jeweils ihren eigenen Speicher.
+self.addEventListener("install", function () { self.skipWaiting(); });
+self.addEventListener("activate", function (e) {
+  e.waitUntil((async function () {
+    var keys = await caches.keys();
+    await Promise.all(keys.filter(function (k) { return k.indexOf("kw-team-") === 0; }).map(function (k) { return caches.delete(k); }));
+    await self.registration.unregister();
+    var fenster = await self.clients.matchAll({ type: "window" });
+    fenster.forEach(function (c) { c.navigate(c.url); });
+  })());
 });

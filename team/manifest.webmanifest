@@ -1,25 +1,12 @@
 {
-  "name": "Kometen-Team",
-  "short_name": "Team",
-  "description": "Der Entwickler-Chat von Kometenwerk – nur für euer Team.",
+  "name": "OMNIVIA Teams",
+  "short_name": "Teams",
+  "description": "Die fünf Team-Apps der OMNIVIA Group – nur für das Team.",
   "lang": "de",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#1e293b",
-  "theme_color": "#1e293b",
-  "icons": [
-    {
-      "src": "icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ]
+  "background_color": "#0a0b10",
+  "theme_color": "#0a0b10",
+  "icons": [{ "src": "omnivia/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }, { "src": "omnivia/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }]
 }
