@@ -160,3 +160,31 @@ dialog::backdrop{background:rgba(5,6,10,.7);backdrop-filter:blur(3px)}
   .tipps button{flex:none}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* Kunden-Anfragen */
+.kunde{background:var(--panel);border:1px solid var(--linie);border-left:4px solid var(--f);border-radius:14px;padding:14px 16px;display:grid;gap:8px}
+.kunde.st-angenommen{border-left-color:var(--gut)}
+.kunde.st-fertig,.kunde.st-abgelehnt{border-left-color:var(--linie);opacity:.72}
+.kunde-kopf{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.kunde-kopf b{font-size:1.05rem}
+.kunde-kopf small{margin-left:auto;color:var(--leiser);font-size:.78rem}
+.kunde .st{font-size:.72rem;font-weight:600;padding:2px 9px;border-radius:999px;background:color-mix(in srgb,var(--f) 18%,transparent);color:var(--f)}
+.kunde.st-angenommen .st{background:color-mix(in srgb,var(--gut) 18%,transparent);color:var(--gut)}
+.kunde.st-fertig .st,.kunde.st-abgelehnt .st{background:var(--panel2);color:var(--leise)}
+.firma-chip{font-size:.72rem;font-weight:600;padding:2px 9px;border-radius:999px;border:1px solid var(--c);color:var(--c)}
+.kunde dl{margin:0;display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;font-size:.9rem}
+.kunde dt{color:var(--leiser)}
+.kunde dd{margin:0;overflow-wrap:anywhere}
+.kunde dd a{color:var(--f)}
+.kunde-text{margin:0;padding:10px 12px;border-radius:10px;background:var(--panel2);white-space:pre-wrap;overflow-wrap:anywhere;font-size:.92rem}
+.kunde .wer{margin:0;font-size:.78rem;color:var(--leiser)}
+.kunde .aktionen{display:flex;flex-wrap:wrap;gap:8px}
+@media (max-width:520px){.kunde dl{grid-template-columns:1fr}.kunde dt{margin-top:4px}}
+.kunde-hinweis{padding:12px 14px;border-radius:14px;background:color-mix(in srgb,var(--warn) 14%,var(--panel));border:1px solid color-mix(in srgb,var(--warn) 40%,transparent)}
+.mila{background:var(--panel);border:1px solid var(--linie);border-radius:14px;padding:14px 16px;display:grid;gap:8px;margin-top:6px}
+.mila-kopf{display:flex;gap:10px;align-items:center}
+.mila-kopf small{color:var(--leiser)}
+.balken-zeile{display:grid;grid-template-columns:minmax(110px,40%) 1fr 28px;gap:10px;align-items:center;font-size:.88rem}
+.balken{height:10px;border-radius:999px;background:var(--panel2);overflow:hidden}
+.balken i{display:block;height:100%;border-radius:inherit;background:var(--f)}
+.balken-zeile b{text-align:right}

@@ -65,8 +65,8 @@
 .pl-knoepfe{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:18px}
 .pl-feld{display:flex;flex-direction:column;gap:6px;margin:0 0 14px;font-weight:500}
 .pl-feld span{font-size:.92rem}
-.pl-feld input,.pl-feld textarea,.k-chef input,.k-chef textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;width:100%}
-.pl-feld input:focus,.pl-feld textarea:focus,.k-chef input:focus,.k-chef textarea:focus{outline:none;border-color:#ff8a3c;box-shadow:0 0 0 3px var(--accent-soft)}
+.pl-feld input,.pl-feld textarea,.pl-feld select,.k-chef input,.k-chef textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;width:100%}
+.pl-feld input:focus,.pl-feld textarea:focus,.pl-feld select:focus,.k-chef input:focus,.k-chef textarea:focus{outline:none;border-color:#ff8a3c;box-shadow:0 0 0 3px var(--accent-soft)}
 .pl-wahl{display:flex;flex-wrap:wrap;gap:8px}
 .pl-wahl label{position:relative;display:flex;align-items:center;gap:6px;min-height:44px;padding:8px 14px;border:1px solid var(--line);border-radius:12px;cursor:pointer}
 .pl-wahl label:has(input:checked){border-color:#ff8a3c;background:var(--accent-soft)}
@@ -132,8 +132,15 @@
 .c-reihe input[type="checkbox"]{width:auto}
 
 /* Hinweis */
-.k-toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;pointer-events:none;z-index:90;background:#0b111c;color:#fff;border:1px solid #ff8a3c;padding:12px 18px;border-radius:999px;font-weight:600;transition:all .3s;max-width:calc(100vw - 32px);text-align:center}
+.k-toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;pointer-events:none;z-index:90;background:#0b111c;color:#fff;border:1px solid #ff8a3c;padding:12px 18px;border-radius:18px;width:max-content;line-height:1.4;font-weight:600;transition:all .3s;max-width:calc(100vw - 32px);text-align:center}
 .k-toast.zeigen{opacity:1;transform:translate(-50%,0)}
 @media (prefers-reduced-motion:reduce){.pl-balken span,.pl-meter span,.probe .tel,.paket{transition:none}}
 .k-gruende{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
 .paket ul{align-content:start}
+
+/* Anfrage direkt ans Team */
+.pl-falle{position:absolute!important;left:-9999px;width:1px;height:1px;overflow:hidden}
+.pl-ok{display:flex;gap:10px;align-items:flex-start;margin:14px 0 4px;font-size:.92rem;line-height:1.45}
+.pl-ok input{width:20px;height:20px;flex:none;margin-top:1px;accent-color:var(--c,#3fe0b0)}
+.pl-fehler{margin-top:16px;padding:16px;border-radius:14px;background:#fde8e8;color:#7a1414}
+@media (prefers-color-scheme:dark){.pl-fehler{background:#3a1212;color:#ffc9c9}}

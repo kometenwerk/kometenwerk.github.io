@@ -102,6 +102,8 @@
 
       <div class="pl-schritt" data-s="2" hidden>
         <label class="pl-feld"><span>Name oder Verein / Betrieb</span><input id="kName" maxlength="80" autocomplete="organization" placeholder="z. B. SV Musterstadt"></label>
+        <label class="pl-feld"><span>E-Mail oder Telefon für unsere Antwort</span><input id="kKontakt" maxlength="120" autocomplete="email" placeholder="z. B. vorstand@sv-musterstadt.de"></label>
+        <label class="pl-feld pl-falle" aria-hidden="true"><span>Bitte leer lassen</span><input id="kWeb" tabindex="-1" autocomplete="off"></label>
         <label class="pl-feld"><span>Gibt es schon eine Website? (freiwillig)</span><input id="kAlt" maxlength="120" placeholder="z. B. www.alte-seite.de"></label>
         <label class="pl-feld"><span>Deine Nachricht (freiwillig)</span><textarea id="kText" rows="4" maxlength="800" placeholder="Was ist dir besonders wichtig? Gibt es einen Wunschtermin für die fertige Seite?"></textarea></label>
         <fieldset><legend>Wie sollen wir nach deiner Anfrage sprechen?</legend>
@@ -112,14 +114,16 @@
           </div>
           <p class="pl-klein">Wir antworten dir zuerst per E-Mail und schlagen dann einen Termin vor.</p>
         </fieldset>
+        <label class="pl-feld"><span>Wie hast du von uns erfahren? (freiwillig)</span><select id="kGefunden"><option value="">– bitte wählen –</option><option>Google-Suche</option><option>Empfehlung von Bekannten</option><option>Verein oder Schule</option><option>Messe oder Jugend forscht</option><option>Flyer oder Plakat</option><option>Soziale Medien</option><option>Über eine unserer Apps oder Spiele</option><option>Anders</option></select></label>
         <div class="pl-knoepfe"><button class="btn" type="button" data-weiter="1">‹ Zurück</button><button class="btn primary" type="button" data-weiter="3">Weiter ›</button></div>
       </div>
 
       <div class="pl-schritt" data-s="3" hidden>
         <div class="pl-zusammen" id="plZusammen"></div>
         <div class="pl-bald" id="plBald" hidden>🚧 <b>Anfragen sind bald möglich.</b> Wir richten gerade alles ein – schau in Kürze wieder vorbei. Deine Auswahl bleibt bis dahin auf diesem Gerät gespeichert.</div>
-        <p class="pl-klein">🔒 Diese Seite speichert nichts bei uns. Deine Anfrage geht als ganz normale E-Mail aus deinem eigenen E-Mail-Programm an uns. Bitte schick keine Passwörter oder Bankdaten.</p>
-        <div class="pl-knoepfe"><button class="btn" type="button" data-weiter="2">‹ Zurück</button><button class="btn primary" type="button" id="senden">✉️ Anfrage per E-Mail senden</button></div>
+        <label class="pl-ok"><input type="checkbox" id="kOk"> <span>Ich bin einverstanden, dass meine Angaben gespeichert werden, damit das Team meine Anfrage beantworten kann. Mehr dazu im <a href="../datenschutz/#anfragen">Datenschutz</a>.</span></label>
+        <p class="pl-klein">🔒 Deine Anfrage geht direkt an unser Team – ohne Werbung und ohne Weitergabe. Sie liegt in unserer Datenbank bei Google Firebase in Europa und wird gelöscht, wenn sie erledigt ist. Bitte schick keine Passwörter oder Bankdaten.</p>
+        <div class="pl-knoepfe"><button class="btn" type="button" data-weiter="2">‹ Zurück</button><button class="btn primary" type="button" id="senden">📨 Anfrage senden</button></div>
         <div class="pl-fertig" id="fertig" hidden aria-live="polite"></div>
       </div>
     </div>

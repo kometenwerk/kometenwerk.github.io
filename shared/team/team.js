@@ -55,9 +55,9 @@
       return {
         uid: auth.currentUser.uid,
         zeit: function () { return firebase.database.ServerValue.TIMESTAMP; },
-        hoer: function (pfad, cb, letzte) {
+        hoer: function (pfad, cb, letzte, beiFehler) {
           var ref = db.ref(pfad); if (letzte) ref = ref.limitToLast(letzte);
-          var f = function (s) { cb(s.val()); }; ref.on("value", f, function (e) { console.warn(pfad, e && e.message); });
+          var f = function (s) { cb(s.val()); }; ref.on("value", f, function (e) { console.warn(pfad, e && e.message); if (beiFehler) beiFehler(e); });
           return function () { ref.off("value", f); };
         },
         push: function (pfad, obj) { return db.ref(pfad).push(obj); },
@@ -169,7 +169,7 @@
   /* ================================================================
      Chat
      ================================================================ */
-  var kanaele = {}, aktiv = null, msgs = [], abmelden = null, gelesen = lade("omni-team-gelesen", {}), letzte = {}, aufgaben = {}, ansicht = "chat";
+  var kanaele = {}, aktiv = null, msgs = [], abmelden = null, gelesen = lade("omni-team-gelesen", {}), letzte = {}, aufgaben = {}, ansicht = "chat", kunden = {}, kundenGesperrt = false;
   var offeneAbt = lade("omni-team-abt-" + FIRMA, {});
   function istKiChat(k) { return k && k.indexOf(K("ki-")) === 0; }
   function kiAusKey(k) { var m = k.slice(K("ki-").length).split("~")[0]; return rolle(m); }
@@ -195,6 +195,13 @@
       seiteZeichnen();
     });
     B.hoer("team/msgs/" + K("aufgaben"), function (v) { aufgaben = v || {}; seiteZeichnen(); if (ansicht === "aufgaben") aufgabenZeichnen(); });
+    // Kunden-Anfragen von der Website (Kunden-Seite). Die Zentrale sieht alle, die Firmen nur ihre eigenen.
+    if (DEMO) demoAnfragen();
+    B.hoer("anfragen", function (v) {
+      kundenGesperrt = false; kunden = {};
+      Object.keys(v || {}).forEach(function (k) { var a = v[k]; if (a && a.name && (FIRMA === "omnivia" || a.firma === FIRMA)) kunden[k] = a; });
+      seiteZeichnen(); if (ansicht === "kunden") kundenZeichnen(); kopfZeichnen();
+    }, null, function () { kundenGesperrt = true; seiteZeichnen(); if (ansicht === "kunden") kundenZeichnen(); });
     KI.vorladen();
   }
   function standardKanaele() {
@@ -237,6 +244,7 @@
     $("zuMenue").onclick = schliesseMenue;
     var t = "", u = "";
     if (ansicht === "aufgaben") { t = "✓ Aufgaben"; u = offeneAufgaben() + " offen"; }
+    else if (ansicht === "kunden") { t = "📥 Anfragen"; u = neueKunden() + " neu · von der Kunden-Seite"; }
     else if (istKiChat(aktiv)) { var r = kiAusKey(aktiv); t = r ? r.em + " " + r.name : "KI"; u = r ? r.rolle + " · " + T.firmen[r.firma].name : ""; }
     else if (aktiv && kanaele[aktiv]) { t = "# " + kanaele[aktiv].name; u = F.voll; }
     $("kopfTitel").textContent = t; $("kopfUnter").textContent = u;
@@ -254,6 +262,8 @@
     });
     var oa = offeneAufgaben();
     h += '<button class="eintrag" type="button" data-a="aufgaben"' + (ansicht === "aufgaben" ? ' aria-current="true"' : "") + '><span class="hash">✓</span><span class="name">Aufgaben</span>' + (oa ? '<span class="zahl">' + oa + "</span>" : "") + "</button>";
+    var nk = neueKunden();
+    h += '<button class="eintrag" type="button" data-a="kunden"' + (ansicht === "kunden" ? ' aria-current="true"' : "") + '><span class="hash">📥</span><span class="name">Anfragen</span>' + (nk ? '<span class="zahl">' + nk + "</span>" : "") + "</button>";
     var na = Object.keys(anfragen).length;
     h += '<button class="eintrag" type="button" data-a="team"><span class="hash">👥</span><span class="name">Team &amp; Einstellungen</span>' + (istAdmin() && na ? '<span class="zahl">' + na + "</span>" : "") + "</button>";
     // KI-Team
@@ -280,6 +290,7 @@
     else if (b.dataset.ki) steckbrief(b.dataset.ki);
     else if (b.dataset.abt != null) { offeneAbt[b.dataset.abt] = b.getAttribute("aria-expanded") !== "true"; merke("omni-team-abt-" + FIRMA, offeneAbt); seiteZeichnen(); }
     else if (b.dataset.a === "aufgaben") aufgabenOeffnen();
+    else if (b.dataset.a === "kunden") kundenOeffnen();
     else if (b.dataset.a === "team") teamFenster();
     else if (b.dataset.a === "neueKi") neueKiFenster();
     else if (b.dataset.a === "neuKanal") neuerKanal();
@@ -555,6 +566,126 @@
     B.weg("team/msgs/" + K("aufgaben") + "/" + b.dataset.weg).catch(fehlerToast);
   });
 
+
+  /* ---------- Kunden-Anfragen (von der Kunden-Seite der Website) ---------- */
+  var STATUS = { neu: ["Neu", 0], angenommen: ["Angenommen", 1], fertig: ["Fertig", 2], abgelehnt: ["Abgelehnt", 3] };
+  function stat(a) { return STATUS[a.status] ? a.status : "neu"; }
+  function neueKunden() { return Object.keys(kunden).filter(function (k) { return stat(kunden[k]) === "neu"; }).length; }
+  function kundenKanal() { return kanaele[K("kunden")] ? K("kunden") : kanaele[K("auftraege")] ? K("auftraege") : ersterKanal(); }
+  function istMail(k) { return /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(String(k || "").trim()); }
+  function demoAnfragen() {
+    var fertigGeprueft = false, ab = B.hoer("anfragen", function (v) {
+      if (fertigGeprueft) return; fertigGeprueft = true; setTimeout(function () { ab(); }, 0);
+      if (v || lade("omni-team-demo-anfragen", false)) return; merke("omni-team-demo-anfragen", true);
+      var jetzt = Date.now();
+      B.set("anfragen/demo1", { firma: "fidelia", anliegen: "Neue Website", paket: "Verein", bausteine: "Startseite & Über uns, Kontakt & Anfahrt, Termine & Veranstaltungen, Mannschaften / Team", name: "SV Musterstadt (Beispiel)", kontakt: "vorstand@sv-musterstadt.example", alt: "", text: "Wir brauchen eine Seite mit Spielplan und Trainingszeiten. Wäre schön bis zum Saisonstart.", gespraech: "Telefon", gefunden: "Empfehlung von Bekannten", zeit: jetzt - 3600e3 });
+      B.set("anfragen/demo2", { firma: "fidelia", anliegen: "Kleine Web-App", paket: "App", bausteine: "Angebot, Preise oder Speisekarte, Öffnungszeiten", name: "Café Sonne (Beispiel)", kontakt: "0123 456789", alt: "www.cafe-sonne.example", text: "Eine Speisekarte, die wir selbst ändern können.", gespraech: "Persönliches Treffen", gefunden: "Google-Suche", zeit: jetzt - 26 * 3600e3 });
+    });
+  }
+  function kundenOeffnen() { ansicht = "kunden"; $("verlauf").hidden = true; $("eingabe").hidden = true; $("aufgabenAnsicht").hidden = false; kundenZeichnen(); kopfZeichnen(); seiteZeichnen(); schliesseMenue(); }
+  function datum(t) { var d = new Date(t || Date.now()); return tagText(t) + ", " + d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }); }
+  function milaStatistik(l) {
+    var z = {}, n = 0; l.forEach(function (a) { if (a.gefunden) { z[a.gefunden] = (z[a.gefunden] || 0) + 1; n++; } });
+    var mila = rolle("mila"), top = Object.keys(z).sort(function (a, b) { return z[b] - z[a]; });
+    var h = '<div class="mila"><div class="mila-kopf"><span class="av" aria-hidden="true">' + esc(mila.em) + '</span><div><b>' + esc(mila.name) + '</b> · ' + esc(mila.rolle) + '<br><small>So haben uns die Kunden gefunden</small></div></div>';
+    if (!n) return h + '<p class="hinweis">Noch keine Angaben. Sobald Kunden „Wie hast du von uns erfahren?“ ausfüllen, zähle ich hier mit, welche Werbung wirklich wirkt.</p></div>';
+    h += top.map(function (k) { return '<div class="balken-zeile"><span>' + esc(k) + '</span><span class="balken"><i style="width:' + Math.round(z[k] / z[top[0]] * 100) + '%"></i></span><b>' + z[k] + "</b></div>"; }).join("");
+    return h + '<p class="hinweis">' + (top.length > 1 || n > 2 ? "Am meisten bringt gerade: <b>" + esc(top[0]) + "</b>. " : "") + "Ich zähle nur – wer was angegeben hat, spielt keine Rolle.</p></div>";
+  }
+  function kundenZeichnen() {
+    if (ansicht !== "kunden") return;
+    var l = Object.keys(kunden).map(function (k) { var a = kunden[k]; a.id = k; return a; })
+      .sort(function (a, b) { return STATUS[stat(a)][1] - STATUS[stat(b)][1] || (b.zeit || 0) - (a.zeit || 0); });
+    var h = "";
+    if (kundenGesperrt) h += '<div class="kunde-hinweis">🔒 <b>Die Anfragen sind noch gesperrt.</b> In Firebase fehlt noch die Regel für „anfragen“. Sobald du sie eingefügt hast, erscheinen hier die Anfragen von der Kunden-Seite.</div>';
+    if (!l.length) h += '<div class="leer"><div class="gross">📥</div><b>Noch keine Anfragen.</b><span>Wenn jemand auf der Kunden-Seite ein Projekt anfragt, landet es hier' + (FIRMA === "omnivia" ? " – die Zentrale sieht die Anfragen aller Firmen." : ".") + "</span></div>";
+    l.forEach(function (a) {
+      var st = stat(a), fr = T.firmen[a.firma] || F, kontakt = istMail(a.kontakt) ? '<a href="mailto:' + esc(a.kontakt) + '">' + esc(a.kontakt) + "</a>" : esc(a.kontakt);
+      h += '<article class="kunde st-' + st + '"><div class="kunde-kopf"><b>' + esc(a.name) + '</b><span class="st">' + STATUS[st][0] + "</span>" +
+        (FIRMA === "omnivia" ? '<span class="firma-chip" style="--c:' + fr.farbe + '">' + esc(fr.name) + "</span>" : "") + '<small>' + esc(datum(a.zeit)) + "</small></div>" +
+        '<dl><dt>Anliegen</dt><dd>' + esc(a.anliegen || "–") + (a.paket && a.paket !== "–" ? " · Paket „" + esc(a.paket) + "“" : "") + "</dd>" +
+        (a.bausteine ? "<dt>Bausteine</dt><dd>" + esc(a.bausteine) + "</dd>" : "") +
+        "<dt>Kontakt</dt><dd>" + kontakt + " · möchte: " + esc(a.gespraech || "–") + "</dd>" +
+        (a.alt ? "<dt>Alte Seite</dt><dd>" + esc(a.alt) + "</dd>" : "") +
+        (a.gefunden ? "<dt>Gefunden über</dt><dd>" + esc(a.gefunden) + "</dd>" : "") + "</dl>" +
+        (a.text ? '<p class="kunde-text">' + esc(a.text) + "</p>" : "") +
+        (a.bearbeitet ? '<p class="wer">bearbeitet von ' + esc(a.bearbeitet) + "</p>" : "") +
+        '<div class="aktionen">' +
+        (st === "neu" ? '<button class="knopf klein haupt" type="button" data-kannehmen="' + esc(a.id) + '">✅ Annehmen &amp; planen</button>' : "") +
+        (st === "neu" || st === "angenommen" ? '<button class="knopf klein" type="button" data-kantwort="' + esc(a.id) + '">✍️ Antwort-Entwurf</button>' : "") +
+        (st === "angenommen" ? '<button class="knopf klein" type="button" data-kfertig="' + esc(a.id) + '">🏁 Projekt fertig</button>' : "") +
+        (st === "neu" ? '<button class="knopf klein" type="button" data-kab="' + esc(a.id) + '">Ablehnen</button>' : "") +
+        (st === "fertig" || st === "abgelehnt" ? '<button class="knopf klein" type="button" data-kneu="' + esc(a.id) + '">Wieder öffnen</button>' : "") +
+        (istAdmin() ? '<button class="knopf klein gefahr" type="button" data-klosch="' + esc(a.id) + '">Löschen</button>' : "") + "</div></article>";
+    });
+    if (l.length) h += milaStatistik(l);
+    h += '<p class="hinweis">Datenschutz: Lösch eine Anfrage, sobald sie erledigt ist. Die KIs schreiben Kunden nie von allein – Antworten schickst du selbst.</p>';
+    $("aufgabenAnsicht").innerHTML = h;
+  }
+  function kundenStatus(id, st) { var u = {}; u["anfragen/" + id + "/status"] = st; u["anfragen/" + id + "/bearbeitet"] = ich.name; return B.update(u); }
+  function annehmen(a) {
+    var text = "Kundenanfrage von " + a.name + ": " + (a.anliegen || "Projekt") + (a.paket && a.paket !== "–" ? ", Paket " + a.paket : "") +
+      (a.bausteine ? ". Bausteine: " + a.bausteine : "") + (a.text ? ". Wunsch: " + a.text : "");
+    kundenStatus(a.id, "angenommen").then(function () {
+      return B.push("team/msgs/" + K("aufgaben"), { uid: uid, name: ich.name, text: ("Kundenprojekt: " + a.name + " – " + (a.anliegen || "")).slice(0, 300), t: B.zeit(), erledigt: false });
+    }).then(function () {
+      var key = kundenKanal(); oeffne(key);
+      toast("Angenommen! Das Team plant jetzt in #" + ((kanaele[key] || {}).name || "allgemein") + ".");
+      return auftragBesprechen(key, text.slice(0, 600));
+    }).catch(fehlerToast);
+  }
+  function fertigMelden(a) {
+    kundenStatus(a.id, "fertig").then(function () {
+      var jana = rolle("jana"), key = kundenKanal(); oeffne(key);
+      return B.push("team/msgs/" + key, { uid: uid, name: jana.name, rolle: "jana", ki: true, t: B.zeit(),
+        text: "🎉 Das Projekt für " + a.name + " ist fertig – glückwunsch! Idee von der Werbung: Wenn " + a.name + " einverstanden ist, zeigen wir das Projekt als Beispiel auf unserer Website. Bitte vorher ausdrücklich um Erlaubnis fragen – ohne Ja kein Beispiel. Und die Anfrage selbst kannst du jetzt löschen." });
+    }).catch(fehlerToast);
+  }
+  function entwurfVorlage(a) {
+    var fr = T.firmen[a.firma] || F, g = String(a.gespraech || "");
+    var wie = /telefon/i.test(g) ? "kurz am Telefon" : /pers/i.test(g) ? "bei einem persönlichen Treffen" : "erst einmal per E-Mail";
+    return "Hallo " + a.name + ",\n\nvielen Dank für deine Anfrage bei " + fr.voll + "! Wir haben sie gelesen und freuen uns über dein Interesse an „" + (a.anliegen || "deinem Projekt") + "“." +
+      (a.paket && a.paket !== "–" ? " Nach deiner Auswahl passt das Paket „" + a.paket + "“ gut – das schauen wir uns gemeinsam genauer an." : "") +
+      "\n\nGern besprechen wir alles " + wie + ". Wann passt es dir in den nächsten Tagen?\n\nViele Grüße\n" + ich.name + "\n" + fr.voll + " · OMNIVIA Group";
+  }
+  function antwortEntwurf(a) {
+    var ella = rolle("ella"), mail = istMail(a.kontakt);
+    fenster('<div class="fenster"><h3>✍️ Antwort an ' + esc(a.name) + '</h3><p class="hinweis" id="ellaStatus">' + esc(ella.em + " " + ella.name) + ' hat einen Entwurf geschrieben. Lies ihn durch und ändere, was du willst.</p>' +
+      '<div class="feld"><label for="entwurf">Text</label><textarea id="entwurf" rows="12">' + esc(entwurfVorlage(a)) + '</textarea></div>' +
+      '<p class="hinweis">Abschicken musst du selbst – die KI schreibt Kunden nie von allein.' + (mail ? "" : " Kontakt ist eine Telefonnummer: " + esc(a.kontakt) + " – der Text hilft dir beim Anrufen.") + '</p>' +
+      '<div class="reihe"><button class="knopf" type="button" data-zu>Schließen</button><span style="flex:1"></span><button class="knopf" type="button" id="entwurfKopie">📋 Kopieren</button>' +
+      (mail ? '<button class="knopf haupt" type="button" id="entwurfMail">✉️ In E-Mail öffnen</button>' : "") + "</div></div>");
+    $("entwurfKopie").onclick = function () { var t = $("entwurf").value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { toast("Text kopiert."); }).catch(function () { toast("Kopieren ging nicht – markiere den Text von Hand."); }); };
+    if ($("entwurfMail")) $("entwurfMail").onclick = function () { location.href = "mailto:" + a.kontakt.trim() + "?subject=" + encodeURIComponent("Deine Anfrage bei " + (T.firmen[a.firma] || F).voll) + "&body=" + encodeURIComponent($("entwurf").value); };
+    // Mit Browser-KI schreibt Ella den Text persönlicher, sonst bleibt die Vorlage
+    KI.bereit().then(function (e) {
+      if (!e || !$("entwurf")) return;
+      $("ellaStatus").textContent = ella.em + " " + ella.name + " formuliert den Text gerade persönlicher …";
+      var vorher = $("entwurf").value;
+      return KI.denken(ella, null, "Schreibe eine kurze, freundliche Antwort-E-Mail an einen Kunden. Du-Form, ehrlich, keine Preise oder Termine erfinden, kein Betreff. Schließe mit 'Viele Grüße' und dem Namen " + ich.name + ".",
+        "Anfrage: " + JSON.stringify({ name: a.name, anliegen: a.anliegen, paket: a.paket, bausteine: a.bausteine, nachricht: a.text, gespraech: a.gespraech })).then(function (t) {
+        if (!$("entwurf")) return;
+        if (t && $("entwurf").value === vorher && t.indexOf("Steckbrief") < 0) { $("entwurf").value = t; $("ellaStatus").textContent = ella.em + " " + ella.name + " hat den Entwurf geschrieben. Lies ihn durch und ändere, was du willst."; }
+        else $("ellaStatus").textContent = ella.em + " " + ella.name + " hat einen Entwurf geschrieben. Lies ihn durch und ändere, was du willst.";
+      });
+    }).catch(function () { /* Vorlage bleibt */ });
+  }
+  var loeschWarten = null;
+  $("aufgabenAnsicht").addEventListener("click", function (e) {
+    if (ansicht !== "kunden") return;
+    var b = e.target.closest("button"); if (!b) return;
+    var d = b.dataset, a = kunden[d.kannehmen || d.kantwort || d.kfertig || d.kab || d.kneu || d.klosch]; if (!a) return;
+    if (d.kannehmen) annehmen(a);
+    else if (d.kantwort) antwortEntwurf(a);
+    else if (d.kfertig) fertigMelden(a);
+    else if (d.kab) kundenStatus(a.id, "abgelehnt").then(function () { toast("Abgelehnt. Schreib " + a.name + " am besten trotzdem eine kurze, freundliche Absage."); }).catch(fehlerToast);
+    else if (d.kneu) kundenStatus(a.id, "neu").catch(fehlerToast);
+    else if (d.klosch) {
+      if (loeschWarten !== a.id) { loeschWarten = a.id; b.textContent = "Wirklich löschen?"; setTimeout(function () { if (loeschWarten === a.id) { loeschWarten = null; kundenZeichnen(); } }, 4000); return; }
+      loeschWarten = null; B.weg("anfragen/" + a.id).then(function () { toast("Anfrage gelöscht."); }).catch(fehlerToast);
+    }
+  });
+
   /* ---------- Fenster: Steckbrief, neue KI, Team ---------- */
   var dlg = $("fenster");
   function fenster(html) { $("fensterInhalt").innerHTML = html; if (!dlg.open) dlg.showModal(); }
@@ -620,7 +751,7 @@
       if (n && n !== ich.name) B.set("team/members/" + uid, { name: n, rolle: ich.rolle }).catch(fehlerToast);
       dlg.close();
     };
-    if ($("demoReset")) $("demoReset").onclick = function () { try { localStorage.removeItem("omni-team-demo"); } catch (e) { /* egal */ } location.reload(); };
+    if ($("demoReset")) $("demoReset").onclick = function () { try { localStorage.removeItem("omni-team-demo"); localStorage.removeItem("omni-team-demo-anfragen"); } catch (e) { /* egal */ } location.reload(); };
     $("fensterInhalt").onclick = function (e) {
       var b = e.target.closest("button"); if (!b) return;
       if (b.dataset.ja) { var a = anfragen[b.dataset.ja], u = {}; u["team/members/" + b.dataset.ja] = { name: a.name, rolle: "mitglied" }; u["team/requests/" + b.dataset.ja] = null; B.update(u).then(function () { toast(a.name + " ist im Team! 🎉"); teamFenster(); }).catch(fehlerToast); }

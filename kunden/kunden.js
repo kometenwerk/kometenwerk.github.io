@@ -1,4 +1,4 @@
-/* FIDELIA Digital (OMNIVIA) für Kunden – Pakete, Projekt-Planer, Anfrage per E-Mail und Chef-Modus (?chef) */
+/* FIDELIA Digital (OMNIVIA) für Kunden – Pakete, Projekt-Planer, Anfrage direkt ans Team (Firebase, E-Mail als Notlösung) und Chef-Modus (?chef) */
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
@@ -39,7 +39,7 @@
     return o;
   }
   function emailOk() { return /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(C.email) && !/example\.(com|org|net)$/i.test(C.email); }
-  function freigeschaltet() { return emailOk() && C.impressum.length > 10; }
+  function freigeschaltet() { return C.impressum.length > 10; }
 
   /* ---------- Anzeige ---------- */
   function pakete() {
@@ -104,6 +104,7 @@
     var b = e.target.closest("[data-weiter]"); if (!b) return;
     var s = +b.dataset.weiter;
     if (s === 3 && !$("kName").value.trim()) { toast("Schreib bitte kurz deinen Namen oder Verein dazu."); $("kName").focus(); return; }
+    if (s === 3 && !kontaktOk($("kKontakt").value)) { toast("Schreib bitte eine E-Mail-Adresse oder Telefonnummer dazu, damit wir antworten können."); $("kKontakt").focus(); return; }
     zuSchritt(s);
   });
   document.addEventListener("click", function (e) {
@@ -119,13 +120,13 @@
     var anl = (ANLIEGEN.filter(function (a) { return a[0] === P.art; })[0] || ANLIEGEN[0])[1].replace(/^\S+\s/, "");
     var bs = BAUSTEINE.filter(function (b) { return P.wahl[b[0]]; }).map(function (b) { return b[2]; });
     var i = empfehlung(), paket = i >= 0 && P.art !== "frage" ? C.angebote[i].name : "–";
-    var name = $("kName").value.trim(), alt = $("kAlt").value.trim(), text = $("kText").value.trim();
+    var name = $("kName").value.trim(), alt = $("kAlt").value.trim(), text = $("kText").value.trim(), kontakt = $("kKontakt").value.trim(), gefunden = $("kGefunden").value;
     var betreff = "Projektanfrage: " + anl + (name ? " – " + name : "");
     var s = function (x) { return String(x).replace(/[|\n\r]/g, " ").trim(); };
     var body = "Hallo FIDELIA-Team,\n\nich interessiere mich für ein Projekt.\n\nAnliegen: " + anl + "\nPassendes Paket laut Planer: " + paket +
-      "\nGewünschte Bausteine: " + (bs.length ? bs.join(", ") : "–") + "\nName / Verein: " + (name || "–") + (alt ? "\nBisherige Website: " + alt : "") +
+      "\nGewünschte Bausteine: " + (bs.length ? bs.join(", ") : "–") + "\nName / Verein: " + (name || "–") + "\nKontakt: " + (kontakt || "–") + (alt ? "\nBisherige Website: " + alt : "") +
       "\nGespräch am liebsten: " + art + (text ? "\n\nNachricht:\n" + text : "") + "\n\nViele Grüße\n\n---\nKW-TERMIN: - | " + s(anl) + " | " + s(name || "–") + " | " + s(art);
-    return { betreff: betreff, body: body, bs: bs, paket: paket, anl: anl, art: art, name: name };
+    return { betreff: betreff, body: body, bs: bs, paket: paket, anl: anl, art: art, name: name, kontakt: kontakt, alt: alt, text: text, gefunden: gefunden };
   }
   function zusammenHtml() {
     var a = anfrage();
@@ -134,17 +135,52 @@
       (a.paket !== "–" ? '<dt>Passendes Paket</dt><dd>' + esc(a.paket) + '</dd>' : "") +
       '<dt>Bausteine</dt><dd>' + (a.bs.length ? a.bs.map(function (b) { return '<span class="pl-tag">' + esc(b) + '</span>'; }).join("") : "–") + '</dd>' +
       '<dt>Name / Verein</dt><dd>' + esc(a.name || "–") + '</dd>' +
+      '<dt>Kontakt</dt><dd>' + esc(a.kontakt || "–") + '</dd>' +
       '<dt>Gespräch</dt><dd>' + esc(a.art) + '</dd></dl>';
   }
-  $("senden").addEventListener("click", function () {
-    if (!freigeschaltet()) return;
-    var a = anfrage(), voll = "Betreff: " + a.betreff + "\n\n" + a.body;
+  /* Anfrage direkt in die Team-App (Firebase). Klappt das nicht, bleibt die E-Mail als Notlösung. */
+  var DB = "https://krawallzoo-default-rtdb.europe-west1.firebasedatabase.app";
+  var geladenUm = Date.now(), sendetGerade = false;
+  function kontaktOk(k) { k = String(k || "").trim(); return /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(k) || k.replace(/[^\d]/g, "").length >= 6; }
+  function eintrag(a) {
+    var kurz = function (x, n) { return String(x || "").trim().slice(0, n); };
+    return { firma: "fidelia", anliegen: kurz(a.anl, 60), paket: kurz(a.paket, 60), bausteine: kurz(a.bs.join(", "), 400), name: kurz(a.name, 80),
+      kontakt: kurz(a.kontakt, 120), alt: kurz(a.alt, 120), text: kurz(a.text, 800), gespraech: kurz(a.art, 40), gefunden: kurz(a.gefunden, 60), zeit: { ".sv": "timestamp" } };
+  }
+  function mailNotloesung(a, grund) {
+    var voll = "Betreff: " + a.betreff + "\n\n" + a.body;
+    if (!emailOk()) { $("fertig").hidden = true; fehler(grund + " Bitte versuch es später noch einmal."); return; }
     $("fertig").hidden = false;
-    $("fertig").innerHTML = '<b>Fast geschafft! ✉️</b><p>Dein E-Mail-Programm sollte sich jetzt öffnen. Schick die E-Mail einfach ab – wir melden uns meist innerhalb von drei Tagen.</p>' +
+    $("fertig").innerHTML = '<b>Plan B: per E-Mail ✉️</b><p>' + esc(grund) + ' Dein E-Mail-Programm sollte sich jetzt öffnen – schick die E-Mail einfach ab.</p>' +
       '<p class="pl-klein">Hat sich nichts geöffnet? Dann schick diesen Text an <b>' + esc(C.email) + '</b>:</p><pre>' + esc(voll) + '</pre>' +
       '<button class="btn" type="button" id="kopieren">📋 Text kopieren</button>';
     $("kopieren").onclick = function () { (navigator.clipboard ? navigator.clipboard.writeText(voll) : Promise.reject()).then(function () { toast("Kopiert."); }).catch(function () {}); };
     location.href = "mailto:" + C.email + "?subject=" + encodeURIComponent(a.betreff) + "&body=" + encodeURIComponent(a.body);
+  }
+  function fehler(t) { var el = $("fertig"); el.hidden = false; el.className = "pl-fehler"; el.innerHTML = "<b>Das hat leider nicht geklappt.</b><p>" + esc(t) + "</p>"; }
+  $("senden").addEventListener("click", function () {
+    if (!freigeschaltet() || sendetGerade) return;
+    var a = anfrage();
+    $("fertig").className = "pl-fertig";
+    if (!kontaktOk(a.kontakt)) { zuSchritt(2); toast("Schreib bitte eine E-Mail-Adresse oder Telefonnummer dazu."); return; }
+    if (!$("kOk").checked) { toast("Bitte setz noch den Haken beim Einverständnis."); $("kOk").focus(); return; }
+    // Roboter-Falle: verstecktes Feld ausgefüllt oder unmöglich schnell → so tun, als ob alles klappt
+    var bot = $("kWeb").value || Date.now() - geladenUm < 4000;
+    var zuletzt = laden("kw-kunden-gesendet", 0);
+    if (Date.now() - zuletzt < 10 * 60 * 1000) { fehler("Du hast gerade schon eine Anfrage geschickt. Wir melden uns – für Ergänzungen warte bitte ein paar Minuten."); return; }
+    sendetGerade = true; $("senden").disabled = true; $("senden").textContent = "⏳ Wird gesendet …";
+    var fertig = function () { sendetGerade = false; $("senden").disabled = !freigeschaltet(); $("senden").textContent = "📨 Anfrage senden"; };
+    var ctrl = "AbortController" in window ? new AbortController() : null; if (ctrl) setTimeout(function () { ctrl.abort(); }, 12000);
+    (bot ? Promise.resolve({ ok: true }) : fetch(DB + "/anfragen.json", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(eintrag(a)), signal: ctrl ? ctrl.signal : undefined }))
+      .then(function (r) {
+        fertig();
+        if (!r.ok) throw new Error(r.status === 401 || r.status === 403 ? "gesperrt" : "Fehler " + r.status);
+        speichern("kw-kunden-gesendet", Date.now());
+        $("fertig").hidden = false;
+        $("fertig").innerHTML = '<b>Danke, ' + esc(a.name) + '! Deine Anfrage ist angekommen. 🎉</b><p>Unser Team schaut sie sich an und meldet sich meist innerhalb von drei Tagen unter <b>' + esc(a.kontakt) + '</b>.</p>';
+        $("fertig").scrollIntoView({ behavior: "smooth", block: "center" });
+      })
+      .catch(function (e) { fertig(); console.warn(e); mailNotloesung(a, e && e.message === "gesperrt" ? "Unser Anfrage-Postfach ist gerade noch nicht freigeschaltet." : "Die Verbindung zu unserem Team hat nicht geklappt."); });
   });
 
   /* ---------- Chef-Modus: Einstellungen zusammenklicken und für GitHub kopieren ---------- */
@@ -154,9 +190,9 @@
     function json() { return JSON.stringify(Object.assign({}, ONLINE || {}, { _anleitung: "Am einfachsten änderst du diese Datei über kometenwerk.github.io/kunden/?chef" }, sauber(E)), null, 2); }
     function zeichnen() {
       el.innerHTML = '<div class="wrap"><h2>🛠️ Chef-Modus</h2><p>Hier stellst du alles ein. Die Seite darunter zeigt sofort, wie es aussieht. Danach kopierst du das Ergebnis und ersetzt auf GitHub die Datei <b>kunden/einstellungen.json</b>. Nur das, was auf GitHub steht, sehen die Kunden.</p>' +
-        (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(E.email) ? '<p class="c-warn">⚠️ Trag eine echte Kometenwerk-E-Mail ein. Ohne sie sind Anfragen gesperrt.</p>' : "") +
+        (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(E.email) ? '<p class="c-warn">ℹ️ Ohne E-Mail gibt es keine Notlösung, falls die Datenbank mal nicht erreichbar ist. Anfragen landen trotzdem in der Team-App unter 📥 Anfragen.</p>' : "") +
         (E.impressum.length <= 10 ? '<p class="c-warn">⚠️ Ohne Impressum (Name und Postanschrift) bleiben Anfragen gesperrt. Klärt mit deinen Eltern, wessen Angaben dort stehen.</p>' : "") +
-        '<label class="pl-feld"><span>E-Mail für Anfragen</span><input data-f="email" type="email" value="' + esc(E.email) + '"></label>' +
+        '<label class="pl-feld"><span>E-Mail als Notlösung (falls die Team-App nicht erreichbar ist)</span><input data-f="email" type="email" value="' + esc(E.email) + '"></label>' +
         '<label class="pl-feld"><span>Kurz über uns</span><textarea data-f="ueberUns" rows="3">' + esc(E.ueberUns) + '</textarea></label>' +
         '<div class="pl-feld"><span>Pakete</span>' + E.angebote.map(function (a, i) {
           return '<div class="c-paket"><input data-a="' + i + '" data-k="name" value="' + esc(a.name) + '" aria-label="Name des Pakets">' +

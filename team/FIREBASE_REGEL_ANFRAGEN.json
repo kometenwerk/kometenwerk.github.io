@@ -1,0 +1,24 @@
+{
+  "anfragen": {
+    ".read": "auth != null && root.child('team/members/' + auth.uid).exists()",
+    ".indexOn": ["zeit"],
+    "$id": {
+      ".write": "(!data.exists() && newData.exists()) || (auth != null && root.child('team/members/' + auth.uid).exists())",
+      ".validate": "newData.hasChildren(['firma', 'name', 'kontakt', 'zeit'])",
+      "firma": { ".validate": "newData.isString() && newData.val().matches(/^(omnivia|flaressa|fidelia|aoris|kometenwerk)$/)" },
+      "anliegen": { ".validate": "newData.isString() && newData.val().length <= 60" },
+      "paket": { ".validate": "newData.isString() && newData.val().length <= 60" },
+      "bausteine": { ".validate": "newData.isString() && newData.val().length <= 400" },
+      "name": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 80" },
+      "kontakt": { ".validate": "newData.isString() && newData.val().length >= 5 && newData.val().length <= 120" },
+      "alt": { ".validate": "newData.isString() && newData.val().length <= 120" },
+      "text": { ".validate": "newData.isString() && newData.val().length <= 800" },
+      "gespraech": { ".validate": "newData.isString() && newData.val().length <= 40" },
+      "gefunden": { ".validate": "newData.isString() && newData.val().length <= 60" },
+      "zeit": { ".validate": "newData.isNumber() && newData.val() <= now && (data.exists() ? newData.val() == data.val() : newData.val() > now - 60000)" },
+      "status": { ".validate": "auth != null && root.child('team/members/' + auth.uid).exists() && newData.isString() && newData.val().matches(/^(neu|angenommen|fertig|abgelehnt)$/)" },
+      "bearbeitet": { ".validate": "auth != null && root.child('team/members/' + auth.uid).exists() && newData.isString() && newData.val().length <= 30" },
+      "$sonst": { ".validate": false }
+    }
+  }
+}
