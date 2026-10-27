@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="de" data-firma="omnivia" data-marke="omnivia">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<title>OMNIVIA Team</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0a0b10">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../../shared/fonts/fonts.css">
+<link rel="stylesheet" href="../../shared/team/team.css">
+</head>
+<body>
+<script src="../../shared/intro.js"></script>
+
+<section class="screen" id="sLaden" aria-live="polite"><div class="karte" style="justify-items:center;text-align:center"><div class="spinner" aria-hidden="true"></div><p>Verbinde mit dem OMNIVIA Team …</p></div></section>
+
+<section class="screen" id="sFehler" hidden><div class="karte">
+  <h1>Keine Verbindung</h1>
+  <p id="fehlerText">Der Chat-Server ist gerade nicht erreichbar.</p>
+  <div class="reihe"><button class="knopf haupt" type="button" id="nochmal">Nochmal versuchen</button><button class="knopf" type="button" id="demoStart">Demo ausprobieren</button></div>
+  <p class="hinweis">In der Demo läuft alles nur auf diesem Gerät. Nichts wird an das Team geschickt.</p>
+</div></section>
+
+<section class="screen" id="sGruenden" hidden><form class="karte" id="gruendenForm">
+  <h1>OMNIVIA-Team gründen</h1>
+  <p>Es gibt noch kein Team. Du wirst der Chef und kannst danach andere aufnehmen.</p>
+  <div class="feld"><label for="gName">Dein Name</label><input id="gName" required maxlength="30" autocomplete="nickname"></div>
+  <button class="knopf haupt" type="submit">Team gründen</button>
+</form></section>
+
+<section class="screen" id="sBeitreten" hidden><form class="karte" id="beitretenForm">
+  <h1>Dem Team beitreten</h1>
+  <p>Schick eine Anfrage an das <b id="teamNameB">OMNIVIA</b>-Team. Der Chef nimmt dich auf.</p>
+  <div class="feld"><label for="bName">Dein Name</label><input id="bName" required maxlength="30" autocomplete="nickname"></div>
+  <button class="knopf haupt" type="submit">Anfrage schicken</button>
+</form></section>
+
+<section class="screen" id="sWarten" hidden><div class="karte" style="text-align:center">
+  <h1>Warte auf Aufnahme</h1>
+  <p>Zeig dem Chef diesen Code. Er sieht ihn bei „Team &amp; Einstellungen“.</p>
+  <div class="code" id="meinCode">----</div>
+  <button class="knopf" type="button" id="anfrageZurueck">Anfrage zurückziehen</button>
+</div></section>
+
+<div class="app" id="app" hidden>
+  <aside class="seite" aria-label="Kanäle und KI-Team">
+    <div class="seite-kopf" id="seiteKopf"></div>
+    <nav class="seite-inhalt" id="seiteInhalt"></nav>
+  </aside>
+  <main class="haupt">
+    <header class="kopf">
+      <button class="menu" type="button" id="menu" aria-label="Menü öffnen"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <div style="min-width:0"><h2 id="kopfTitel">…</h2><div class="unter" id="kopfUnter"></div></div>
+      <div class="rechts"><span class="status" id="status">…</span></div>
+    </header>
+    <div class="verlauf" id="verlauf" aria-live="polite"></div>
+    <div class="aufgaben" id="aufgabenAnsicht" hidden></div>
+    <div class="tippt" id="tippt" hidden><i></i><i></i><i></i><span id="tipptText"></span></div>
+    <div class="eingabe" id="eingabe">
+      <div class="ki-leiste" id="kiLeiste" hidden><span id="kiText">KI wird geladen …</span><div class="balken"><i id="kiBalken"></i></div></div>
+      <div class="tipps" id="tipps"></div>
+      <div class="vorschlaege" id="vorschlaege" role="listbox" aria-label="KI vorschlagen" hidden></div>
+      <form id="sendenForm">
+        <button class="rund" type="button" id="auftragKnopf" aria-label="Auftrag besprechen" title="Auftrag besprechen">🧩</button>
+        <label for="text" class="vh">Nachricht</label>
+        <textarea id="text" rows="1" placeholder="Nachricht … (@Name ruft eine KI)" maxlength="2000" autocomplete="off"></textarea>
+        <button class="rund senden" type="submit" aria-label="Senden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l16-8-6 16-3-7z"/></svg></button>
+      </form>
+    </div>
+  </main>
+</div>
+
+<dialog id="fenster"><div id="fensterInhalt"></div></dialog>
+
+<script src="../../shared/team/rollen.js"></script>
+<script src="../../shared/team/team.js"></script>
+</body>
+</html>
