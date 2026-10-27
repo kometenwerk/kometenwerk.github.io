@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="de">
+<html lang="de" data-marke="kometenwerk">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Kometen-Werkstatt</title>
+<title>Kometenwerk Werkstatt</title>
 <meta name="description" content="Technik-Projekte zum Nachbauen – mit Bauteilen, Schaltplan und Code.">
 <meta name="theme-color" content="#d4561a">
 <link rel="manifest" href="manifest.webmanifest">
@@ -59,9 +59,10 @@ ul.ideen{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
 </style>
 </head>
 <body>
+<script src="../shared/intro.js"></script>
 <header class="kw-bar">
-  <a class="kw-home" href="../" aria-label="Zurück zu Kometenwerk"><svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="currentColor" stroke-opacity=".6" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)" fill="currentColor"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="15" fill="#ff8a3c"/></g></svg></a>
-  <h1>Kometen-Werkstatt</h1>
+  <a class="kw-home" href="../" aria-label="Zurück zur OMNIVIA-Startseite"><img src="../shared/marken/omnivia-zeichen.webp" alt="" width="40" height="21" style="width:40px;height:auto;display:block"></a>
+  <h1>Kometenwerk Werkstatt</h1>
   <span id="kwBarExtra" style="display:contents"></span>
   <button class="kw-install" id="kwInstall" type="button" hidden>Als App installieren</button>
 </header>
@@ -92,7 +93,7 @@ ul.ideen{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
       ],
       erklaerung: "Der Taster braucht keinen eigenen Widerstand: Mit INPUT_PULLUP schaltet der Arduino intern einen ein. Dadurch ist der Pin normal HIGH und beim Drücken LOW.",
       code: [
-        "// Reaktionstester – Kometen-Werkstatt",
+        "// Reaktionstester – Kometenwerk Werkstatt",
         "const int LED_PIN = 8;",
         "const int TASTER_PIN = 2;",
         "unsigned long bestzeit = 0;",
@@ -175,7 +176,7 @@ ul.ideen{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
       ],
       erklaerung: "Die Reihenfolge ist wie an einer echten deutschen Ampel: Grün, Gelb, Rot, und vor dem nächsten Grün kommt Rot und Gelb zusammen.",
       code: [
-        "// Fussgaengerampel – Kometen-Werkstatt",
+        "// Fussgaengerampel – Kometenwerk Werkstatt",
         "const int AUTO_ROT = 12, AUTO_GELB = 11, AUTO_GRUEN = 10;",
         "const int FUSS_ROT = 9, FUSS_GRUEN = 8;",
         "const int TASTER = 2;",
@@ -222,7 +223,7 @@ ul.ideen{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
       ],
       erklaerung: "Ein Fotowiderstand hat bei Licht wenig Widerstand und im Dunkeln viel. Mit dem 10-kΩ-Widerstand zusammen entsteht an A0 eine Spannung, die der Arduino als Zahl von 0 (dunkel) bis 1023 (hell) misst.",
       code: [
-        "// Automatisches Nachtlicht – Kometen-Werkstatt",
+        "// Automatisches Nachtlicht – Kometenwerk Werkstatt",
         "const int SENSOR = A0;",
         "const int LED = 9;        // Pin mit ~ (PWM) zum Dimmen",
         "int schwelle = 400;       // ab hier wird es \"dunkel\" – ausprobieren!",
@@ -294,7 +295,7 @@ ul.ideen{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
     var m = location.hash.match(/^#\/p\/([\w-]+)/);
     var p = m && PROJEKTE.find(function (x) { return x.id === m[1]; });
     view.innerHTML = p ? projekt(p) : liste();
-    document.querySelector(".kw-bar h1").textContent = p ? p.titel : "Kometen-Werkstatt";
+    document.querySelector(".kw-bar h1").textContent = p ? p.titel : "Kometenwerk Werkstatt";
     window.scrollTo(0, 0);
     if (p) verbinden(p);
   }

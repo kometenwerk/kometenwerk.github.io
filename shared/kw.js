@@ -1,4 +1,4 @@
-/* Kometenwerk – gemeinsame Helfer für alle Apps */
+/* OMNIVIA – gemeinsame Helfer für alle Apps (FIDELIA, AORIS, Kometenwerk Robotics) */
 (function () {
   "use strict";
   var KW = window.KW = {};
@@ -129,7 +129,8 @@
   KW.footer = function (name, getData, setData) {
     var f = document.createElement("footer");
     f.className = "kw-foot";
-    f.innerHTML = '<span>Ein Projekt von <a href="../">Kometenwerk</a> · Deine Daten bleiben auf diesem Gerät.</span>' +
+    var MARKE = { fidelia: ["FIDELIA Digital", "../apps/"], aoris: ["AORIS Tech", "../lab/"], kometenwerk: ["Kometenwerk Robotics", "../robotics/"], flaressa: ["FLARESSA Gaming", "../spiele/"] }[document.documentElement.getAttribute("data-marke")];
+    f.innerHTML = '<span>' + (MARKE ? 'Eine App von <a href="' + MARKE[1] + '">' + MARKE[0] + '</a> · ' : '') + 'Ein Angebot der <a href="../">OMNIVIA Group</a> · Deine Daten bleiben auf diesem Gerät.</span>' +
       '<span><button type="button" data-a="save">Sicherung speichern</button> · <button type="button" data-a="load">Sicherung laden</button></span>';
     f.querySelector('[data-a="save"]').onclick = function () { KW.backup(name, getData()); };
     f.querySelector('[data-a="load"]').onclick = function () {

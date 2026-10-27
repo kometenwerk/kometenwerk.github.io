@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="de">
+<html lang="de" data-marke="flaressa" data-intro="immer">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#130a2b">
-<meta name="description" content="Krawallzoo: Tiere mit Waffen kämpfen in der Arena. 8 Tiere, 6 Spielmodi, Mischtiere, Skins und Krawall-Pass. Ein Spiel von Kometenwerk.">
+<meta name="description" content="Krawallzoo: Tiere mit Waffen kämpfen in der Arena. 8 Tiere, 6 Spielmodi, Mischtiere, Skins und Krawall-Pass. Ein Spiel von FLARESSA Gaming (OMNIVIA Group).">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -405,42 +405,9 @@ body:not(.fighting) #emoteBtn{display:none}
 .apad .joyknob{width:40px;height:40px;margin:-20px 0 0 -20px;background:rgba(255,255,255,.8)}
 </style>
 
-<div id="splash" role="img" aria-label="Kometenwerk präsentiert Krawallzoo">
-  <div class="sp-stars"></div>
-  <div class="sp-center">
-    <svg class="sp-logo" viewBox="0 0 320 300" aria-hidden="true">
-      <defs>
-        <linearGradient id="sp-a" x1="190" y1="128" x2="50" y2="250" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffffff"></stop><stop offset="1" stop-color="#ffffff" stop-opacity="0"></stop></linearGradient>
-        <linearGradient id="sp-b" x1="212" y1="150" x2="120" y2="246" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ff8a3c"></stop><stop offset="1" stop-color="#ff8a3c" stop-opacity="0"></stop></linearGradient>
-        <linearGradient id="sp-c" x1="180" y1="106" x2="96" y2="162" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9aa7bd"></stop><stop offset="1" stop-color="#9aa7bd" stop-opacity="0"></stop></linearGradient>
-      </defs>
-      <circle cx="108" cy="40" r="2.5" fill="#9aa7bd" class="sp-orbit"></circle>
-      <ellipse class="sp-orbit" cx="220" cy="110" rx="92" ry="32" transform="rotate(-24 220 110)" fill="none" stroke="#9aa7bd" stroke-width="2.5" stroke-dasharray="2 7" stroke-linecap="round"></ellipse>
-      <path class="sp-streak s3" d="M180 106 L96 162" stroke="url(#sp-c)" stroke-width="6" stroke-linecap="round" pathLength="100"></path>
-      <path class="sp-streak s1" d="M190 128 L50 250" stroke="url(#sp-a)" stroke-width="22" stroke-linecap="round" pathLength="100"></path>
-      <path class="sp-streak s2" d="M212 150 L120 246" stroke="url(#sp-b)" stroke-width="9" stroke-linecap="round" pathLength="100"></path>
-      <g class="sp-head">
-        <g transform="translate(220 110)"><g class="sp-gear">
-          <g fill="#ffffff"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"></rect><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"></rect><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"></rect><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"></rect><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"></rect><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"></rect><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"></rect><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"></rect></g>
-          <circle r="42" fill="#ffffff"></circle>
-          <circle r="30" fill="none" stroke="#101826" stroke-width="3"></circle>
-          <circle r="15" fill="#ff8a3c"></circle>
-        </g><circle cx="-5" cy="-5" r="4" fill="#ffd2b0"></circle></g>
-      </g>
-      <circle class="sp-planet" cx="303" cy="76" r="5" fill="#ff8a3c"></circle>
-      <path class="sp-twinkle" d="M64 62 l3 8 l8 3 l-8 3 l-3 8 l-3 -8 l-8 -3 l8 -3 z" fill="#9aa7bd"></path>
-    </svg>
-    <div class="sp-text">
-      <div class="sp-word"><span>K</span><span>o</span><span>m</span><span>e</span><span>t</span><span>e</span><span>n</span><span class="l">w</span><span class="l">e</span><span class="l">r</span><span class="l">k</span></div>
-      <div class="sp-line"><i></i><b></b></div>
-      <div class="sp-sub">präsentiert</div>
-    </div>
-  </div>
-  <div class="sp-flash"></div>
-  <p class="sp-skip">Tippen zum Überspringen</p>
-</div>
 </head>
 <body>
+<script src="../shared/intro.js"></script>
 <div id="app">
   <div id="stage">
     <canvas id="cv" aria-label="Kampfarena"></canvas>

@@ -1,4 +1,4 @@
-/* Kometenwerk für Kunden – Pakete, Projekt-Planer, Anfrage per E-Mail und Chef-Modus (?chef) */
+/* FIDELIA Digital (OMNIVIA) für Kunden – Pakete, Projekt-Planer, Anfrage per E-Mail und Chef-Modus (?chef) */
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
@@ -10,7 +10,7 @@
 
   var STANDARD = {
     email: "",
-    ueberUns: "Kometenwerk ist ein junges Studio aus Deutschland. Wir bauen Websites, Apps und Spiele – modern, schnell und fürs Handy gemacht.",
+    ueberUns: "FIDELIA Digital ist die Website- und App-Marke der OMNIVIA Group, einem jungen Studio aus Deutschland (früher Kometenwerk). Wir bauen Websites und Apps – modern, schnell und fürs Handy gemacht.",
     angebote: [],
     impressum: ""
   };
@@ -122,7 +122,7 @@
     var name = $("kName").value.trim(), alt = $("kAlt").value.trim(), text = $("kText").value.trim();
     var betreff = "Projektanfrage: " + anl + (name ? " – " + name : "");
     var s = function (x) { return String(x).replace(/[|\n\r]/g, " ").trim(); };
-    var body = "Hallo Kometenwerk,\n\nich interessiere mich für ein Projekt.\n\nAnliegen: " + anl + "\nPassendes Paket laut Planer: " + paket +
+    var body = "Hallo FIDELIA-Team,\n\nich interessiere mich für ein Projekt.\n\nAnliegen: " + anl + "\nPassendes Paket laut Planer: " + paket +
       "\nGewünschte Bausteine: " + (bs.length ? bs.join(", ") : "–") + "\nName / Verein: " + (name || "–") + (alt ? "\nBisherige Website: " + alt : "") +
       "\nGespräch am liebsten: " + art + (text ? "\n\nNachricht:\n" + text : "") + "\n\nViele Grüße\n\n---\nKW-TERMIN: - | " + s(anl) + " | " + s(name || "–") + " | " + s(art);
     return { betreff: betreff, body: body, bs: bs, paket: paket, anl: anl, art: art, name: name };

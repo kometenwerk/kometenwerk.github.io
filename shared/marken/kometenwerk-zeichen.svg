@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 300">
+  <!-- Schweif-Streifen (hinter dem Zahnrad) -->
+  <g stroke-linecap="round" fill="none">
+    <path d="M190 128 L50 250" stroke="#ffffff" stroke-width="22"/>
+    <path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9"/>
+    <path d="M180 106 L96 162" stroke="#9aa7bd" stroke-width="6"/>
+  </g>
+  <!-- Umlaufbahn, hinterer Teil -->
+  <g transform="translate(220 110) rotate(-24)">
+    <ellipse cx="0" cy="0" rx="92" ry="32" fill="none" stroke="#9aa7bd" stroke-width="2.4" stroke-dasharray="1 7" stroke-linecap="round"/>
+  </g>
+  <!-- Zahnrad -->
+  <g transform="translate(220 110)">
+    <g fill="#ffffff">
+      <rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/>
+      <rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/>
+      <rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/>
+      <rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/>
+      <rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/>
+      <rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/>
+      <rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/>
+      <rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/>
+      <circle r="42"/>
+    </g>
+    <circle r="30" fill="none" stroke="#0a0b10" stroke-width="2.5"/>
+    <circle r="15" fill="#ff8a3c"/>
+    <circle cx="-5" cy="-5" r="3.6" fill="#ffffff" opacity="0.9"/>
+  </g>
+  <!-- Umlaufbahn, vorderer Teil + Planet -->
+  <g transform="translate(220 110) rotate(-24)">
+    <path d="M -92 0 A 92 32 0 0 0 92 0" fill="none" stroke="#9aa7bd" stroke-width="2.4" stroke-dasharray="1 7" stroke-linecap="round"/>
+    <circle cx="64" cy="23" r="7" fill="#ff8a3c"/>
+  </g>
+  <!-- Funkelstern -->
+  <path d="M96 52 Q99 64 110 66 Q99 68 96 80 Q93 68 82 66 Q93 64 96 52 Z" fill="#ffffff"/>
+</svg>

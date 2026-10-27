@@ -1,0 +1,105 @@
+/* OMNIVIA – Marken-Farben und Bausteine für Startseite und Marken-Seiten */
+:root{
+  --omnivia:#f2c46d;--flaressa:#a66bff;--fidelia:#3fe0b0;--aoris:#3b9cff;--robotics:#ff8a3c;
+  --nacht:#0a0b10;--nacht2:#11131b;--nacht-linie:#232633;
+}
+
+/* ---------- Kopf: OMNIVIA statt Kometenwerk ---------- */
+.hero{background:radial-gradient(1100px 560px at 78% 8%,rgba(242,196,109,.13) 0%,rgba(242,196,109,0) 60%),radial-gradient(800px 500px at 8% 92%,rgba(166,107,255,.12) 0%,rgba(166,107,255,0) 60%),linear-gradient(180deg,#0a0b10 0%,#11131b 100%)}
+.hero h1 em{background-image:linear-gradient(90deg,#f2c46d,#ffe6b3)}
+.hero .wort .omni-wort{font-size:1.1rem;letter-spacing:.32em;font-weight:500}
+.hero .wort .unter{color:var(--omnivia)}
+.hero-art .omni-gross{width:min(420px,92%);height:auto;filter:drop-shadow(0 18px 60px rgba(242,196,109,.22))}
+.btn.gold{background:var(--omnivia);border-color:var(--omnivia);color:#14110a;font-weight:600}
+.btn.gold:hover{filter:brightness(1.06)}
+
+/* ---------- Die fünf Marken ---------- */
+.marken-sec{background:var(--nacht);color:#fff;padding:76px 0}
+.marken-sec .lead{color:#b9c1d3}
+.marken-sec .kicker{color:var(--omnivia)}
+.marken-sec .kicker::before{background:var(--omnivia)}
+.marken{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));margin-top:34px}
+.marke{--c:var(--omnivia);position:relative;display:flex;flex-direction:column;gap:14px;padding:26px 22px 22px;border-radius:22px;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,0)) ,var(--nacht2);border:1px solid var(--nacht-linie);color:#fff;text-decoration:none;overflow:hidden;transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease}
+.marke::before{content:"";position:absolute;inset:auto -40% 62% -40%;height:220px;background:radial-gradient(closest-side,var(--c),transparent);opacity:.13;transition:opacity .25s}
+.marke:hover{transform:translateY(-4px);border-color:var(--c);box-shadow:0 18px 44px rgba(0,0,0,.45)}
+.marke:hover::before{opacity:.26}
+.marke .m-logo{height:120px;display:grid;place-items:center;position:relative}
+.marke .m-logo img{max-height:120px;max-width:100%;width:auto;height:auto}
+.marke .m-was{font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;color:var(--c);font-weight:600;margin:0}
+.marke p{margin:0;color:#b9c1d3;font-size:.98rem}
+.marke .m-mehr{margin-top:auto;color:var(--c);font-weight:600;font-size:.95rem}
+.marke.gross{grid-column:1/-1;flex-direction:row;align-items:center;gap:28px}
+.marke.gross .m-logo{flex:0 0 260px;height:150px}
+.marke.gross .m-logo img{max-height:150px}
+@media (max-width:700px){.marke.gross{flex-direction:column;align-items:stretch}.marke.gross .m-logo{flex:none}}
+.m-flaressa{--c:var(--flaressa)}.m-fidelia{--c:var(--fidelia)}.m-aoris{--c:var(--aoris)}.m-robotics{--c:var(--robotics)}
+
+/* Werk-Komet als Logo der Robotik-Marke */
+.kw-logo{display:flex;flex-direction:column;align-items:center;gap:8px}
+.kw-logo svg{width:96px;height:auto}
+.kw-logo .kw-name{font-size:1.02rem;letter-spacing:.22em;font-weight:500;color:#fff;line-height:1.1}
+.kw-logo .kw-unter{font-size:.6rem;letter-spacing:.48em;color:var(--robotics);font-weight:500;margin-top:-2px}
+.kw-logo{gap:6px}
+
+/* ---------- Wie die Marken zusammenarbeiten ---------- */
+.verbund{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-top:30px}
+.verbund .v{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;border-top:3px solid var(--c)}
+.verbund .v h3{margin:0 0 6px;font-size:1.05rem}
+.verbund .v p{margin:0;color:var(--muted)}
+
+/* ---------- Marken-Seiten ---------- */
+.hero.marken-kopf{--c:var(--omnivia);background:radial-gradient(900px 480px at 80% 0%,color-mix(in srgb,var(--c) 22%,transparent) 0%,transparent 62%),linear-gradient(180deg,#0a0b10 0%,#11131b 100%)}
+.marken-kopf .hero-in{grid-template-columns:1.1fr .9fr}
+.marken-kopf .kicker{color:var(--c)}
+.marken-kopf .kicker::before{background:var(--c)}
+.marken-kopf h1 em{background-image:linear-gradient(90deg,var(--c),#fff)}
+.marken-kopf .kopf-logo{display:grid;place-items:center}
+.marken-kopf .kopf-logo img{width:min(380px,90%);height:auto;filter:drop-shadow(0 18px 50px color-mix(in srgb,var(--c) 30%,transparent))}
+.marken-kopf .btn.farbe{background:var(--c);border-color:var(--c);color:#0a0b10;font-weight:600}
+@media (max-width:860px){.marken-kopf .hero-in{grid-template-columns:1fr}.marken-kopf .kopf-logo{order:-1}.marken-kopf .kopf-logo img{width:min(260px,70%)}}
+.zurueck-omni{display:inline-flex;align-items:center;gap:8px;font-size:.85rem;color:#b9c1d3;text-decoration:none;margin-bottom:6px}
+.zurueck-omni:hover{color:#fff}
+.zurueck-omni img{height:16px;width:auto}
+
+.produkte{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));margin-top:30px}
+.produkt{--c:var(--omnivia);background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.produkt::after{content:"";position:absolute;left:0;top:0;right:0;height:4px;background:var(--c)}
+.produkt .p-kopf{display:flex;align-items:center;gap:12px}
+.produkt .p-icon{width:54px;height:54px;border-radius:14px;display:grid;place-items:center;font-size:1.7rem;background:color-mix(in srgb,var(--c) 16%,transparent);flex:none;overflow:hidden}
+.produkt .p-icon img{width:100%;height:100%;object-fit:cover}
+.produkt h3{margin:0;font-size:1.2rem}
+.produkt p{margin:0;color:var(--muted)}
+.produkt .btn{margin-top:auto;align-self:flex-start}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:.76rem;font-weight:600;padding:3px 10px;border-radius:999px;width:max-content}
+.st-fertig{background:rgba(63,224,176,.16);color:#0f8a66}
+.st-arbeit{background:rgba(255,138,60,.16);color:#b84f0c}
+.st-plan{background:rgba(59,156,255,.16);color:#1f63b8}
+@media (prefers-color-scheme:dark){.st-fertig{color:#6ff0c8}.st-arbeit{color:#ffb27e}.st-plan{color:#8cc4ff}}
+
+.schritte{list-style:none;margin:28px 0 0;padding:0;display:grid;gap:12px;counter-reset:s}
+.schritte li{counter-increment:s;display:grid;grid-template-columns:44px 1fr;gap:14px;align-items:start;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.schritte li::before{content:counter(s);width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-weight:600;background:color-mix(in srgb,var(--c,#ff8a3c) 18%,transparent);color:var(--ink)}
+.schritte h3{margin:2px 0 4px;font-size:1.05rem}
+.schritte p{margin:0;color:var(--muted)}
+
+.frage-box{--c:var(--robotics);margin-top:28px;padding:26px;border-radius:22px;background:var(--nacht);color:#fff;border:1px solid color-mix(in srgb,var(--c) 45%,transparent)}
+.frage-box .kicker{color:var(--c)}.frage-box .kicker::before{background:var(--c)}
+.frage-box p.gross{font-size:clamp(1.25rem,3vw,1.7rem);line-height:1.25;margin:0;font-weight:500}
+.frage-box p.klein{color:#b9c1d3;margin:12px 0 0}
+.nav-cta{background:var(--omnivia)!important;color:#14110a!important}
+.hero .facts b{color:#fff}
+
+/* OMNIVIA-Gold als Akzent auf den öffentlichen Seiten */
+:root{--accent:#f2c46d;--accent-ink:#8a6414;--accent-soft:rgba(242,196,109,.18)}
+@media (prefers-color-scheme:dark){:root{--accent-ink:#f2c46d;--accent-soft:rgba(242,196,109,.16)}}
+.btn.primary{color:#14110a}
+.zurueck-omni{display:flex;width:max-content;margin-bottom:14px}
+.marken-seite .sec .kicker{color:var(--c)}
+.marken-seite .sec .kicker::before{background:var(--c)}
+.marken-kopf .hero-art svg.big{width:min(420px,100%)}
+@media (max-width:860px){.hero-art .omni-gross{width:min(240px,64%)}}
+/* FIDELIA-Seiten (Apps, Kunden) in Mint */
+.seite-fidelia{--c:#3fe0b0;--accent:#3fe0b0;--accent-ink:#0f8a66;--accent-soft:rgba(63,224,176,.16)}
+@media (prefers-color-scheme:dark){.seite-fidelia{--accent-ink:#3fe0b0}}
+.seite-fidelia .hero h1 em{background-image:linear-gradient(90deg,#3fe0b0,#d6fff2)}
+.seite-fidelia .nav-cta{background:var(--omnivia)!important}

@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="de">
+<html lang="de" data-marke="fidelia">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Kometen-Notizen</title>
+<title>FIDELIA Notizen</title>
 <meta name="description" content="Notizen und Listen zum Abhaken – schnell aufgeschrieben, schnell gefunden.">
 <meta name="theme-color" content="#a36b00">
 <link rel="manifest" href="manifest.webmanifest">
@@ -59,9 +59,10 @@
 </style>
 </head>
 <body>
+<script src="../shared/intro.js"></script>
 <header class="kw-bar">
-  <a class="kw-home" href="../" aria-label="Zurück zu Kometenwerk"><svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="currentColor" stroke-opacity=".6" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)" fill="currentColor"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="15" fill="#ff8a3c"/></g></svg></a>
-  <h1>Kometen-Notizen</h1>
+  <a class="kw-home" href="../" aria-label="Zurück zur OMNIVIA-Startseite"><img src="../shared/marken/omnivia-zeichen.webp" alt="" width="40" height="21" style="width:40px;height:auto;display:block"></a>
+  <h1>FIDELIA Notizen</h1>
   <span id="kwBarExtra" style="display:contents"></span>
   <button class="kw-install" id="kwInstall" type="button" hidden>Als App installieren</button>
 </header>
@@ -111,7 +112,7 @@
   var FARB_NAMEN = { weiss: "Weiß", gelb: "Gelb", gruen: "Grün", blau: "Blau", lila: "Lila", rosa: "Rosa", orange: "Orange" };
   var D = KW.load(KEY, null);
   if (!D || !Array.isArray(D.notizen)) {
-    D = { notizen: [{ id: KW.id(), titel: "Willkommen bei Kometen-Notizen 👋", typ: "text", farbe: "gelb", pin: true, geaendert: new Date().toISOString(),
+    D = { notizen: [{ id: KW.id(), titel: "Willkommen bei FIDELIA Notizen 👋", typ: "text", farbe: "gelb", pin: true, geaendert: new Date().toISOString(),
       text: "Tippe auf + um eine Notiz oder eine Liste anzulegen.\nMit 📌 bleibt eine Notiz immer oben.\nDeine Notizen bleiben nur auf diesem Gerät.", punkte: [] }] };
   }
   function speichern() { KW.save(KEY, D); }

@@ -1,4 +1,4 @@
-/* Kometenwerk – Kopfleiste und Fußzeile für alle öffentlichen Seiten (auch Kunden-Seite) */
+/* OMNIVIA – Kopfleiste und Fußzeile für alle öffentlichen Seiten (auch Kunden-Seite) */
 .nav,.foot{font-family:'Space Grotesk','Helvetica Neue',Arial,sans-serif;line-height:1.55}
 .nav :focus-visible,.foot :focus-visible{outline:3px solid #ff8a3c;outline-offset:2px}
 /* ---------- Kopfleiste ---------- */
@@ -17,7 +17,7 @@
 .nav-cta:hover{filter:brightness(1.06)}
 .burger{display:none;width:44px;height:44px;border:0;border-radius:12px;background:rgba(255,255,255,.07);color:#fff;cursor:pointer;place-items:center}
 .burger svg{width:22px;height:22px}
-@media (max-width:760px){
+@media (max-width:1000px){
   .burger{display:grid}
   .nav-links{display:none;position:absolute;left:0;right:0;top:100%;flex-direction:column;align-items:stretch;gap:2px;padding:10px 12px 16px;background:rgba(11,17,28,.97);border-bottom:1px solid rgba(255,255,255,.08)}
   .nav.open .nav-links{display:flex}
@@ -40,3 +40,16 @@
 .foot .wrap{max-width:1120px;margin:0 auto;padding:0 16px}
 .skip{position:absolute;left:12px;top:-60px;background:#ff8a3c;color:#101826;padding:10px 14px;border-radius:10px;z-index:100;font-weight:600;text-decoration:none}
 .skip:focus{top:12px}
+
+/* ---------- OMNIVIA-Marke in Kopf- und Fußzeile ---------- */
+.nav,.foot{background:#0a0b10}
+.brand img{height:30px;width:auto;flex:none;display:block}
+.brand .omni{font-weight:500;letter-spacing:.24em;font-size:1.02rem;color:#fff}
+.brand .omni small{display:block;font-size:.58rem;letter-spacing:.42em;color:#f2c46d;font-weight:500;margin-top:-2px}
+.nav-links a[aria-current="page"]{background:rgba(242,196,109,.14);box-shadow:inset 0 -2px 0 var(--marke,#f2c46d)}
+.nav-links .m-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px;vertical-align:1px;background:var(--d)}
+@media (max-width:1000px){.nav-links{background:rgba(10,11,16,.98)}}
+.foot-bottom{border-top-color:#232633}
+.foot .marken-zeile{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.foot .marken-zeile a{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;padding:5px 10px;border-radius:999px;border:1px solid #2a2d3a;color:#c9d2e3}
+.foot .marken-zeile a:hover{border-color:var(--d);color:#fff;text-decoration:none}

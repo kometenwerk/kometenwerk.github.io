@@ -1,4 +1,4 @@
-/* Kometen-Küche – Rezepte aus Text verstehen (Zutaten, Schritte, Portionen, Zeit) */
+/* FIDELIA Küche – Rezepte aus Text verstehen (Zutaten, Schritte, Portionen, Zeit) */
 (function () {
   "use strict";
   var EINHEITEN = "kg|g|mg|ml|cl|dl|l|liter|gramm|kilogramm|el|tl|esslöffel|teelöffel|prise|prisen|msp|messerspitze|pck|päckchen|pkg|packung|stk|stück|becher|dose|dosen|bund|zehe|zehen|scheibe|scheiben|tasse|tassen|glas|gläser|handvoll|spritzer|würfel|blatt|blätter|zweig|zweige|tropfen|cup|cups|tbsp|tsp|oz|lb";

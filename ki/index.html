@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="de">
+<html lang="de" data-marke="aoris">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Kometen-KI</title>
+<title>AORIS KI</title>
 <meta name="description" content="Eine KI, die direkt auf deinem Gerät läuft – Testversion.">
 <meta name="theme-color" content="#0f766e">
 <link rel="manifest" href="manifest.webmanifest">
@@ -51,16 +51,17 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
 </style>
 </head>
 <body>
+<script src="../shared/intro.js"></script>
 <header class="kw-bar">
-  <a class="kw-home" href="../" aria-label="Zurück zu Kometenwerk"><svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="currentColor" stroke-opacity=".6" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)" fill="currentColor"><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(0)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="15" fill="#ff8a3c"/></g></svg></a>
-  <h1>Kometen-KI</h1>
+  <a class="kw-home" href="../" aria-label="Zurück zur OMNIVIA-Startseite"><img src="../shared/marken/omnivia-zeichen.webp" alt="" width="40" height="21" style="width:40px;height:auto;display:block"></a>
+  <h1>AORIS KI</h1>
   <span id="kwBarExtra" style="display:contents"></span>
   <button class="kw-install" id="kwInstall" type="button" hidden>Als App installieren</button>
 </header>
 <main class="kw-main">
   <section class="start" id="start">
     <h2>Deine eigene KI – auf deinem Gerät</h2>
-    <p>Die Kometen-KI läuft komplett in deinem Browser. Nichts von dem, was du schreibst, wird irgendwohin geschickt. Dafür lädt sie einmal ein KI-Modell herunter.</p>
+    <p>Die AORIS KI läuft komplett in deinem Browser. Nichts von dem, was du schreibst, wird irgendwohin geschickt. Dafür lädt sie einmal ein KI-Modell herunter.</p>
     <div class="info warn" id="keinGPU" hidden></div>
     <div class="wahl" id="wahl">
       <label class="modell card"><input type="radio" name="m" value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC" checked><span><b>Klein und schnell</b><small>Läuft auf mehr Geräten. Download: einige hundert MB. Antwortet einfacher und macht öfter Fehler.</small></span></label>
@@ -81,7 +82,7 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
   </div>
   <form class="eingabe" id="form" hidden>
     <label class="vh" for="text">Nachricht</label>
-    <textarea class="inp" id="text" rows="1" placeholder="Frag die Kometen-KI …" maxlength="2000" enterkeyhint="send"></textarea>
+    <textarea class="inp" id="text" rows="1" placeholder="Frag die AORIS KI …" maxlength="2000" enterkeyhint="send"></textarea>
     <button class="btn primary" type="submit" id="senden">Senden</button>
   </form>
   <p class="unten" id="unten" hidden>Läuft nur auf deinem Gerät · Kann Fehler machen · <a href="#" id="neuChat">Neues Gespräch</a></p>
@@ -91,7 +92,7 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
 <script type="module">
 "use strict";
 const WEBLLM = "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.84/lib/index.js";
-const SYSTEM = "Du bist die Kometen-KI von Kometenwerk, ein freundlicher Lernhelfer für Schülerinnen und Schüler. " +
+const SYSTEM = "Du bist die AORIS KI von AORIS Tech, einer Marke der OMNIVIA Group, ein freundlicher Lernhelfer für Schülerinnen und Schüler. " +
   "Antworte immer auf Deutsch, kurz, einfach und ehrlich. Wenn du dir nicht sicher bist, sag das offen. " +
   "Bei Hausaufgaben erklärst du den Weg Schritt für Schritt, statt nur die Lösung zu verraten. " +
   "Du schreibst nichts über Gewalt, Sex, Drogen oder gefährliche Dinge. Du fragst nie nach Namen, Adressen oder anderen persönlichen Daten. " +
@@ -144,7 +145,7 @@ $("#laden").addEventListener("click", async () => {
     KW.save("kw-ki-modell", modell);
     $("#start").hidden = true;
     ["#chat", "#ideen", "#form", "#unten"].forEach(s => $(s).hidden = false);
-    blase("ki", "Hallo! Ich bin die Kometen-KI. 👋 Ich laufe nur auf deinem Gerät. Frag mich etwas, zum Beispiel zu einem Schulthema.");
+    blase("ki", "Hallo! Ich bin die AORIS KI. 👋 Ich laufe nur auf deinem Gerät. Frag mich etwas, zum Beispiel zu einem Schulthema.");
     $("#text").focus();
   } catch (e) {
     console.error(e);

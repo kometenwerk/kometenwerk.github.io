@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="de">
+<html lang="de" data-marke="fidelia">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Kometen-Küche</title>
+<title>FIDELIA Küche</title>
 <meta name="description" content="Alle deine Rezepte an einem Ort: per Link, Foto oder Text hinzufügen, schnell finden und Schritt für Schritt kochen – ohne Werbung.">
 <meta name="theme-color" content="#7c2d12">
 <link rel="manifest" href="manifest.webmanifest">
@@ -111,9 +111,10 @@ mark{background:rgba(255,138,60,.3);color:inherit;border-radius:3px}
 </style>
 </head>
 <body>
+<script src="../shared/intro.js"></script>
 <header class="kw-bar">
-  <a class="kw-home" href="../" aria-label="Zurück zu Kometenwerk"><svg viewBox="36 44 250 216" aria-hidden="true"><path d="M190 128 L50 250" stroke="currentColor" stroke-opacity=".6" stroke-width="22" stroke-linecap="round"/><path d="M212 150 L120 246" stroke="#ff8a3c" stroke-width="9" stroke-linecap="round"/><g transform="translate(220 110)" fill="currentColor"><rect x="-11" y="-58" width="22" height="24" rx="4"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(45)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(90)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(135)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(180)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(225)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(270)"/><rect x="-11" y="-58" width="22" height="24" rx="4" transform="rotate(315)"/><circle r="42"/><circle r="15" fill="#ff8a3c"/></g></svg></a>
-  <h1>Kometen-Küche</h1>
+  <a class="kw-home" href="../" aria-label="Zurück zur OMNIVIA-Startseite"><img src="../shared/marken/omnivia-zeichen.webp" alt="" width="40" height="21" style="width:40px;height:auto;display:block"></a>
+  <h1>FIDELIA Küche</h1>
   <button class="kw-install" id="kwInstall" type="button" hidden>Als App installieren</button>
 </header>
 <main class="kw-main" id="view" aria-live="polite"></main>
@@ -315,7 +316,7 @@ mark{background:rgba(255,138,60,.3);color:inherit;border-radius:3px}
   });
   $("view").addEventListener("change", function (e) { if (e.target.dataset.z != null) abgehakt[e.target.dataset.z] = e.target.checked; });
 
-  /* Einkaufsliste → Kometen-Notizen */
+  /* Einkaufsliste → FIDELIA Notizen */
   function einkauf(r) {
     var punkte = r.zutaten.filter(function (z, i) { return !abgehakt[i]; }).map(function (z) { return { id: KW.id(), t: (Rezept.mengeText(z, faktor) + " " + z.name).trim(), ok: false }; });
     if (!punkte.length) { KW.toast("Du hast schon alles abgehakt. 👍"); return; }
@@ -323,7 +324,7 @@ mark{background:rgba(255,138,60,.3);color:inherit;border-radius:3px}
     if (!N || !Array.isArray(N.notizen)) N = { notizen: [] };
     N.notizen.unshift({ id: KW.id(), titel: "🛒 " + r.titel + (r.portionen && portionen !== r.portionen ? " (" + portionen + " Portionen)" : ""), typ: "liste", farbe: "gruen", pin: true, geaendert: new Date().toISOString(), text: "", punkte: punkte });
     KW.save("kw-notizen", N);
-    KW.toast(punkte.length + " Zutaten in Kometen-Notizen gespeichert.", "Öffnen", function () { location.href = "../notizen/"; });
+    KW.toast(punkte.length + " Zutaten in FIDELIA Notizen gespeichert.", "Öffnen", function () { location.href = "../notizen/"; });
   }
 
   /* ---------- Koch-Modus ---------- */

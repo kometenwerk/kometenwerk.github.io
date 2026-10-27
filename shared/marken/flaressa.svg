@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 130">
+  <defs>
+    <linearGradient id="fl-v" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#7b4dff"/><stop offset="1" stop-color="#c08cff"/></linearGradient>
+    <linearGradient id="fl-o" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#f58fb0"/><stop offset="1" stop-color="#ffb84a"/></linearGradient>
+  </defs>
+  <polygon points="64,2 81,24 47,61 33,46" fill="url(#fl-v)"/>
+  <polygon points="25,47 64,57 50,74 5,97" fill="url(#fl-v)"/>
+  <polygon points="7,99 77,80 65,101 81,127" fill="url(#fl-v)"/>
+  <polygon points="109,22 96,58 59,75 73,39" fill="url(#fl-o)"/>
+  <polygon points="113,58 102,80 79,91 91,69" fill="url(#fl-o)"/>
+  <polygon points="70,79 79,74 77,83" fill="url(#fl-o)"/>
+  <rect x="122" y="13" width="10" height="10" transform="rotate(45 127 18)" fill="#ffc35c"/>
+  <rect x="145" y="7" width="7" height="7" transform="rotate(45 148.5 10.5)" fill="#ffc35c"/>
+  <rect x="134.5" y="34.5" width="7" height="7" transform="rotate(45 138 38)" fill="#ffc35c"/>
+  <rect x="114" y="41" width="8" height="8" transform="rotate(45 118 45)" fill="#e05ad8"/>
+  <rect x="117.5" y="62.5" width="7" height="7" transform="rotate(45 121 66)" fill="#f7a07a"/>
+  <rect x="89.5" y="100.5" width="9" height="9" transform="rotate(45 94 105)" fill="#e05ad8"/>
+</svg>
