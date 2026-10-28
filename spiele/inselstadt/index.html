@@ -75,17 +75,26 @@ h3{margin:0 0 6px;font-size:.75rem;letter-spacing:.14em;text-transform:uppercase
 #frage button{border:0;border-radius:11px;min-width:48px;min-height:44px;font-size:1.1rem;font-weight:700}
 #ja{background:var(--gut);color:#06210f}
 #nein{background:rgba(255,255,255,.1)}
-#fach{display:grid;gap:6px;padding:8px;width:min(760px,100%)}
+#fach{display:grid;gap:6px;padding:6px;width:min(760px,100%)}
+#optionen{position:fixed;left:max(8px,env(safe-area-inset-left));top:calc(max(8px,env(safe-area-inset-top)) + 62px);max-height:calc(100vh - 170px);overflow-y:auto;display:flex;flex-direction:column;gap:4px;padding:6px;z-index:5;max-width:190px;scrollbar-width:none}
+#optionen::-webkit-scrollbar{display:none}
+#optionen .ftitel{font-weight:700;font-size:.82rem;padding:2px 4px 4px;white-space:nowrap}
+#optionen .chip{min-height:32px;padding:5px 9px;font-size:.78rem;text-align:left;white-space:nowrap}
+#optionen .trenn{height:1px;width:auto;align-self:stretch;background:var(--linie);margin:2px 0}
+#optionen small{font-size:.72rem;color:var(--leise);white-space:normal}
+#optionen .zeilebox{display:flex;align-items:center;gap:4px;font-size:.78rem;white-space:nowrap}
+body.baut #fach{display:none!important}
+#frage.blase{position:fixed;z-index:7;max-width:min(420px,calc(100vw - 16px))}
 #fach .fkopf{display:flex;gap:6px;align-items:center;overflow-x:auto;scrollbar-width:none}
 #fach .fkopf::-webkit-scrollbar,#fach .fkarten::-webkit-scrollbar{display:none}
 #fach .ftitel{font-weight:700;font-size:.9rem;margin-right:4px;white-space:nowrap}
 #fach .trenn{width:1px;align-self:stretch;background:var(--linie);flex:none;margin:4px 2px}
 #fach .chip{flex:none;min-height:36px;padding:6px 10px}
 #fach .fkarten{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
-.kk{flex:none;width:96px;min-height:92px;border:1px solid var(--linie);background:rgba(255,255,255,.05);border-radius:13px;display:grid;justify-items:center;align-content:center;gap:2px;padding:8px 4px;text-align:center;position:relative}
-.kk .em{font-size:1.75rem;line-height:1.1}
-.kk b{font-size:.74rem;font-weight:600;line-height:1.15}
-.kk small{font-size:.7rem;color:var(--leise);font-variant-numeric:tabular-nums}
+.kk{flex:none;width:80px;min-height:70px;border:1px solid var(--linie);background:rgba(255,255,255,.05);border-radius:13px;display:grid;justify-items:center;align-content:center;gap:2px;padding:8px 4px;text-align:center;position:relative}
+.kk .em{font-size:1.4rem;line-height:1.1}
+.kk b{font-size:.66rem;font-weight:600;line-height:1.15}
+.kk small{font-size:.62rem;color:var(--leise);font-variant-numeric:tabular-nums}
 .kk[aria-pressed=true]{background:var(--f);border-color:var(--f);color:#14082a}
 .kk[aria-pressed=true] small{color:#2a1450}
 .kk[data-zu]{opacity:.55}
@@ -149,11 +158,10 @@ h3{margin:0 0 6px;font-size:.75rem;letter-spacing:.14em;text-transform:uppercase
   #zeitleiste{padding:2px}#zeitleiste button{min-width:32px;min-height:32px}
   #vollKnopf,#ansichtKnopf,#menueKnopf{width:40px;height:40px}#ansichtKnopf{right:calc(max(8px,env(safe-area-inset-right)) + 46px)}#vollKnopf{right:calc(max(8px,env(safe-area-inset-right)) + 92px)}
   #oben{right:max(150px,calc(env(safe-area-inset-right) + 150px))}
-  #unten{bottom:max(6px,env(safe-area-inset-bottom));padding-right:calc(min(250px,32vw) + 16px)}
-  #fach{position:fixed;right:max(8px,env(safe-area-inset-right));top:calc(max(8px,env(safe-area-inset-top)) + 52px);bottom:max(8px,env(safe-area-inset-bottom));width:min(250px,32vw);overflow-y:auto;align-content:start}
-  #fach{display:flex;flex-direction:column;gap:6px}
-  #fach .fkopf{flex:none;flex-wrap:wrap;overflow:visible}#fach .fkarten{flex:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));overflow:visible}
-  .kk{width:auto;min-height:74px;padding:6px 3px}.kk .em{font-size:1.4rem}.kk b{font-size:.68rem}
+  #unten{bottom:max(4px,env(safe-area-inset-bottom));gap:4px;padding-left:calc(max(8px,env(safe-area-inset-left)) + 170px)}
+  #optionen{max-height:calc(100vh - 120px)}
+  #fach{padding:4px}.kk{width:66px;min-height:56px;padding:4px 2px}.kk .em{font-size:1.15rem}.kk b{font-size:.6rem}.kk small{display:none}
+  #optionen{top:calc(max(6px,env(safe-area-inset-top)) + 50px);max-height:calc(100vh - 130px);max-width:160px}#optionen .chip{min-height:28px;padding:3px 7px}
   #werkzeug button{width:44px;height:42px;font-size:1.25rem}
   #info{top:calc(max(8px,env(safe-area-inset-top)) + 52px);left:calc(50% - min(125px,16vw))}
   #legende{top:calc(max(8px,env(safe-area-inset-top)) + 50px)}
@@ -178,7 +186,7 @@ h3{margin:0 0 6px;font-size:.75rem;letter-spacing:.14em;text-transform:uppercase
     <div class="kz"><small>Zufrieden</small><b id="wFroh">😊 –</b></div>
     <div class="kz"><small>Versorgung</small><b id="versorgungKopf" class="vkopf"></b></div>
     <div id="bedarf" title="Bedarf: Wohnen, Gewerbe, Büros, Industrie"><span style="--c:var(--w)"><span class="saeule"><i></i></span><em>W</em></span><span style="--c:var(--l)"><span class="saeule"><i></i></span><em>G</em></span><span style="--c:#3fd6c9"><span class="saeule"><i></i></span><em>B</em></span><span style="--c:var(--i)"><span class="saeule"><i></i></span><em>I</em></span></div></button>
-  <div id="zeitleiste" class="glas"><button type="button" data-t="0" aria-label="Pause">⏸️</button><button type="button" data-t="1" aria-label="Normal">▶️</button><button type="button" data-t="2" aria-label="Schnell">⏩</button><button type="button" data-t="4" aria-label="Sehr schnell">⏭️</button><span id="datum"></span></div>
+  <div id="zeitleiste" class="glas"><button type="button" data-t="0" aria-label="Pause">⏸️</button><button type="button" data-t="1" aria-label="Normal">▶️</button><button type="button" data-t="2" aria-label="Schnell">⏩</button><button type="button" data-t="3" aria-label="Sehr schnell">⏭️</button><span id="datum"></span></div>
 </div>
 <button id="vollKnopf" class="glas" type="button" aria-label="Vollbild" title="Vollbild">⛶</button>
 <button id="ansichtKnopf" class="glas" type="button" aria-label="Info-Ansichten" aria-pressed="false" title="Info-Ansichten">🔍</button>
@@ -192,6 +200,7 @@ h3{margin:0 0 6px;font-size:.75rem;letter-spacing:.14em;text-transform:uppercase
   <div><h3>Spielstand</h3><div class="reihe"><button type="button" class="chip gefahr" id="neuAnfangen">🗑️ Diese Stadt löschen</button></div><small>Wird automatisch auf diesem Gerät gespeichert.</small></div>
 </div>
 <div id="info" class="glas" hidden></div>
+<div id="optionen" class="glas" hidden></div>
 <div id="budget" class="glas" hidden></div>
 
 <div id="unten">

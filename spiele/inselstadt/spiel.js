@@ -59,7 +59,7 @@ const MEILEN = [
   { name: "Weltstadt", ab: 20000, gebiete: 24, geld: 60000, frei: [] }
 ];
 const GEBIET_PREIS = (n) => 15000 + 10000 * n;
-const TAG_SEK = 4;   // ein Spieltag dauert bei ▶️ 4 Sekunden
+const TAG_SEK = 12;   // ein Spieltag dauert bei ▶️ 12 Sekunden (ruhiger wie in Cities: Skylines 2)
 const WOCHENTAGE = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 const STUFEN = { niedrig: { name: "Niedrig", pr: 1, schatten: 0, autos: 45, leute: 30, details: 0 }, mittel: { name: "Mittel", pr: 1.5, schatten: 1024, autos: 90, leute: 60, details: 1 }, hoch: { name: "Hoch", pr: 2, schatten: 2048, autos: 150, leute: 100, details: 1 } };
 let stufe = lade("inselstadt-qualitaet", null) || (Math.min(screen.width, screen.height) < 500 ? "mittel" : "hoch");
@@ -1322,8 +1322,8 @@ function dienstTakt(dt) {
       if (simZeit - b.t > (a.feuer ? 45 : 28)) { tipp("🔥 " + hausName(h) + " ist abgebrannt" + (a.feuer ? "." : " – bau eine Feuerwache in der Nähe!"), 4000); h.brand = null; hausWeg(h); }
     }
   }
-  if (verlassenGemeldet && simZeit - problemTippZeit > 25) { problemTippZeit = simZeit; tipp("🏚️ Leute ziehen weg! Häuser ohne Strom, Wasser oder Müllabfuhr werden verlassen.", 5000); verlassenGemeldet = 0; }
-  else if (simZeit - problemTippZeit > 40) {
+  if (verlassenGemeldet && simZeit - problemTippZeit > 60) { problemTippZeit = simZeit; tipp("🏚️ Leute ziehen weg! Häuser ohne Strom, Wasser oder Müllabfuhr werden verlassen.", 5000); verlassenGemeldet = 0; }
+  else if (simZeit - problemTippZeit > 120) {
     const top = Object.entries(probleme).sort((a, b) => b[1] - a[1])[0];
     if (top && top[1] >= 3) { problemTippZeit = simZeit; const hilfe = { strom: "Bau ein Windrad oder Kraftwerk (🏛️ Dienste → ⚡ Strom).", wasser: "Bau eine Wasserpumpe am Ufer (🏛️ Dienste → 💧 Wasser).", abwasser: "Bau eine Kläranlage am Ufer (🏛️ Dienste → 💧 Wasser).", muell: "Bau eine Mülldeponie (🏛️ Dienste → 🗑️ Müll)." }; tipp(PROBLEM_TEXT[top[0]] + " bei " + top[1] + " Häusern. " + hilfe[top[0]], 6000); }
   }
@@ -1681,7 +1681,7 @@ function wachsTakt() {
   const kand = {};
   for (const z of zellen.values()) if (z.zone && !z.haus && z.r === 0 && zoneFrei(z.zone)) (kand[z.zone] = kand[z.zone] || []).push(z);
   for (const zone of Object.keys(kand).map(Number)) {
-    const Z = ZONEN[zone], L = kand[zone], bd = bedarf[Z.gruppe], p = (bd > 0 ? 0.08 + bd / 100 * 0.75 : 0.03) * (zone >= 7 ? 0.7 : 1);
+    const Z = ZONEN[zone], L = kand[zone], bd = bedarf[Z.gruppe], p = (bd > 0 ? 0.04 + bd / 100 * 0.3 : 0.012) * (zone >= 7 ? 0.7 : 1);
     if (Math.random() > p) continue;
     for (let versuch = 0; versuch < 5; versuch++) {
       const a = L[Math.floor(Math.random() * L.length)], ziel = Z.breite[0] + Math.floor(Math.random() * (Z.breite[1] - Z.breite[0] + 1));
@@ -1698,7 +1698,7 @@ function wachsTakt() {
     }
   }
   const liste = [...haeuser.values()].filter((h) => { const Z = ZONEN[h.zone]; return !h.verlassen && !(h.problem && h.problem !== "krimi" && h.problem !== "krank") && stufeBildungOk(h) && h.stufe < Z.max && simZeit - (h.simGeboren || 0) > 25 && bedarf[Z.gruppe] > 5 && (h.wert || 0) >= (BODENWERT_FUER[Z.gruppe][h.stufe + 1] || 0); });
-  if (liste.length && Math.random() < 0.45) {
+  if (liste.length && Math.random() < 0.18) {
     const h = liste[Math.floor(Math.random() * liste.length)]; h.stufe++; h.geboren = jetztS; h.simGeboren = simZeit; h.ab = 0.35; h.teile = hausTeile(h); h.box = null; haeuserNeu = true;
     h.hoehe = hoeheVon(h); hochZeigen(h, h.hoehe);
     if (gruppe(h) === "i") dreckZeichnen();
@@ -2623,6 +2623,7 @@ const boden = new THREE.Plane(new THREE.Vector3(0, 1, 0), -G), strahl = new THRE
 function ndc(e) { const r = renderer.domElement.getBoundingClientRect(); _ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); return _ndc; }
 function bodenPunkt(e) { strahl.setFromCamera(ndc(e), kamera); return strahl.ray.intersectPlane(boden, _treffer) ? { x: _treffer.x, z: _treffer.z } : null; }
 let tippTimer = 0;
+function tippEinmal(key, t, ms) { const k = "inselstadt-gesehen-" + key; if (lade(k, false)) return; merke(k, true); tipp(t, ms); }
 function tipp(t, ms) { const el = $("tipp"); el.textContent = t; el.classList.remove("weg"); clearTimeout(tippTimer); tippTimer = setTimeout(() => el.classList.add("weg"), ms || 4000); }
 let infoTimer = 0;
 function infoZeigen(html, ms) { const el = $("info"); el.innerHTML = html; el.hidden = false; clearTimeout(infoTimer); infoTimer = setTimeout(() => { el.hidden = true; }, ms || 5000); }
@@ -2668,6 +2669,7 @@ const TIPPS = {
 const kk = (attr, wert, em, name, preis, an, zu) => `<button class="kk" type="button" ${attr}="${wert}" aria-pressed="${!!an}"${zu ? ' data-zu="1"' : ""}><span class="em">${em}</span><b>${name}</b>${preis ? `<small>${preis}</small>` : ""}</button>`;
 const chip = (attr, wert, txt, an) => `<button class="chip" type="button" ${attr}="${wert}" aria-pressed="${!!an}">${txt}</button>`;
 const rueckChip = '<button class="chip" type="button" id="rueck">↩️ Rückgängig</button>';
+let fachZu = false;
 function unterleiste() {
   const u = $("fach"); let kopf = "", karten = "";
   if (werkzeug === "ansehen") {
@@ -2693,8 +2695,8 @@ function unterleiste() {
   } else if (werkzeug === "verkehr") {
     const L = linieWahl && linien.get(linieWahl);
     kopf = '<span class="ftitel">🚌 Nahverkehr</span>' + chip("data-bmodus", "halt", "🚏 Haltestelle", busModus === "halt") + chip("data-bmodus", "linie", "🚌 Neue Buslinie", busModus === "linie") + chip("data-bmodus", "tram", (meilenstein >= 3 ? "🚋" : "🔒") + " Neue Straßenbahn", busModus === "tram") + chip("data-bmodus", "weg", "🧹 Entfernen", busModus === "weg") + '<span class="trenn"></span>' + rueckChip;
-    kopf += `<span class="trenn"></span><button class="chip" type="button" id="ticketMinus">−</button><span style="white-space:nowrap">🎫 ${ticketPreis.toFixed(2).replace(".", ",")} €</span><button class="chip" type="button" id="ticketPlus">+</button>`;
-    if (L) kopf += `<span class="trenn"></span><span class="ftitel" style="color:#${L.farbe.toString(16).padStart(6, "0")}">Linie ${L.nr}</span>${L.keinDepot ? `<span style="color:#ff9b9b;white-space:nowrap">⚠️ Kein ${L.art === "tram" ? "Straßenbahn-Depot" : "Busdepot"}!</span>` : ""}<button class="chip" type="button" id="busMinus">−</button><span style="white-space:nowrap">⏱️ alle ${L.takt || 40} s · ${L.art === "tram" ? "🚋" : "🚌"} ${L.busse || 1}</span><button class="chip" type="button" id="busPlus">+</button><span style="white-space:nowrap;color:var(--leise)">👥 ${zahl(L.letzteWoche || 0)}/Wo · ${Math.round((L.auslastung || 0) * 100)} % voll</span>${chip("data-bmodus", "bearbeiten", "✏️ Bearbeiten", busModus === "bearbeiten")}${L.art !== "tram" ? `<button class="chip" type="button" id="busModell">${BUS_MODELLE[L.modell || "mix"]}</button>` : ""}<button class="chip gefahr" type="button" id="linieLoeschen">🗑️</button>`;
+    kopf += `<span class="trenn"></span><div class="zeilebox"><button class="chip" type="button" id="ticketMinus">−</button><span>🎫 ${ticketPreis.toFixed(2).replace(".", ",")} €</span><button class="chip" type="button" id="ticketPlus">+</button></div>`;
+    if (L) kopf += `<span class="trenn"></span><span class="ftitel" style="color:#${L.farbe.toString(16).padStart(6, "0")}">Linie ${L.nr}</span>${L.keinDepot ? `<span style="color:#ff9b9b;white-space:nowrap">⚠️ Kein ${L.art === "tram" ? "Straßenbahn-Depot" : "Busdepot"}!</span>` : ""}<div class="zeilebox"><button class="chip" type="button" id="busMinus">−</button><span>⏱️ ${L.takt || 40} s · ${L.art === "tram" ? "🚋" : "🚌"} ${L.busse || 1}</span><button class="chip" type="button" id="busPlus">+</button></div><span style="white-space:nowrap;color:var(--leise)">👥 ${zahl(L.letzteWoche || 0)}/Wo · ${Math.round((L.auslastung || 0) * 100)} % voll</span>${chip("data-bmodus", "bearbeiten", "✏️ Bearbeiten", busModus === "bearbeiten")}${L.art !== "tram" ? `<button class="chip" type="button" id="busModell">${BUS_MODELLE[L.modell || "mix"]}</button>` : ""}<button class="chip gefahr" type="button" id="linieLoeschen">🗑️</button>`;
     karten = ["busdepot", "tramdepot", "bahnhof", "hafen"].map((k) => { const D = DIENSTE[k], f = dienstFrei(k); return kk("data-dienst", k, D.em, D.name, f ? euro(D.preis) : "ab " + MEILEN[D.ab].name, busModus === "bau" && dienstWahl === k, !f); }).join("") + [...linien.values()].map((x) => kk("data-linie", x.id, `<span style="display:inline-block;width:26px;height:26px;border-radius:50%;background:#${x.farbe.toString(16).padStart(6, "0")};color:#fff;font-size:.9rem;line-height:26px;font-weight:700">${x.nr}</span>`, "Linie " + x.nr, x.halte.length + " Halte · " + x.busse + " 🚌", x.id === linieWahl)).join("") || "";
     if (!linien.size) karten += `<small style="color:var(--leise);padding:8px">Noch keine Linie. 1. Haltestellen bauen · 2. „Neue Linie“ und Haltestellen antippen · ${zahl(busAbdeckung.fahrgaeste)} Fahrgäste</small>`;
   } else if (werkzeug === "gebiet") {
@@ -2703,33 +2705,37 @@ function unterleiste() {
   } else if (werkzeug === "abriss") {
     kopf = '<span class="ftitel">🧹 Abriss</span><small style="color:var(--leise)">Straße antippen · über Häuser wischen</small><span class="trenn"></span>' + rueckChip;
   }
-  u.innerHTML = (kopf ? `<div class="fkopf">${kopf}</div>` : "") + (karten ? `<div class="fkarten">${karten}</div>` : "");
-  u.hidden = !kopf && !karten; rueckKnopf();
+  const o = $("optionen");
+  o.innerHTML = kopf ? kopf.replace('<span class="ftitel">', '<span class="ftitel"><button class="chip" type="button" id="hilfeKnopf" style="float:right;min-height:24px;padding:0 7px;margin-left:6px">?</button>') : ""; o.hidden = !kopf || werkzeug === "ansehen";
+  u.innerHTML = karten ? `<div class="fkarten">${karten}</div>` : "";
+  u.hidden = fachZu || !karten; rueckKnopf();
 }
-$("fach").addEventListener("click", (e) => {
+$("optionen").addEventListener("click", (e) => { if (e.target.closest("#hilfeKnopf")) { const t = TIPPS[werkzeug]; tipp(typeof t === "function" ? t() : t, 6000); return; } fachKlick(e); });
+$("fach").addEventListener("click", (e) => fachKlick(e));
+function fachKlick(e) {
   const b = e.target.closest("button"); if (!b) return;
   if (b.id === "rueck") { rueckgaengig(); return; }
   if (b.id === "fahrenKnopf") { fahrenStarten(); return; }
   if (b.id === "budgetKarte") { budgetZeigen(); return; }
   if (b.id === "ansichtKarte") { ansichtenAufZu(); return; }
   if (b.dataset.typ) { if (!typFrei(b.dataset.typ)) { const m = MEILEN.find((x) => x.frei.includes(b.dataset.typ)); tipp("🔒 " + TYP[b.dataset.typ].name + " gibt es ab " + (m ? m.name + " (" + zahl(m.ab) + " Einwohner)" : "später") + ".", 3000); return; } strTyp = b.dataset.typ; merke("inselstadt-strtyp", strTyp); planNeu(); }
-  if (b.dataset.modus) { strModus = b.dataset.modus; merke("inselstadt-strmodus", strModus); bauAbbrechen(); tipp(TIPPS.strasse(), 3500); }
-  if (b.dataset.zone != null) { const z = +b.dataset.zone; if (z && !zoneFrei(z)) { tipp("🔒 " + ZONEN[z].name + " gibt es ab dem Meilenstein " + MEILEN[ZONEN[z].ab].name + " (" + zahl(MEILEN[ZONEN[z].ab].ab) + " Einwohner).", 3500); return; } zoneWahl = z; if (z) tipp(ZONEN[z].em + " " + ZONEN[z].name + ": " + ZONEN_TEXT[z], 4000); }
-  if (b.dataset.pinsel) { pinsel = b.dataset.pinsel; tipp(TIPPS.zone(), 3500); }
-  if (b.dataset.gmodus) { if (b.dataset.gmodus === "bahnhof" && !dienstFrei("bahnhof")) { tipp("🔒 Bahnhöfe gibt es ab " + MEILEN[DIENSTE.bahnhof.ab].name + ".", 2500); return; } gleisModus = b.dataset.gmodus; zuglinieBau = []; bauAbbrechen(); vorschauWeg(); if (gleisModus === "bahnhof") dienstWahl = "bahnhof"; tipp(TIPPS.gleis(), 3500); }
+  if (b.dataset.modus) { strModus = b.dataset.modus; merke("inselstadt-strmodus", strModus); bauAbbrechen(); tippEinmal("m-" + strModus, TIPPS.strasse(), 3500); }
+  if (b.dataset.zone != null) { const z = +b.dataset.zone; if (z && !zoneFrei(z)) { tipp("🔒 " + ZONEN[z].name + " gibt es ab dem Meilenstein " + MEILEN[ZONEN[z].ab].name + " (" + zahl(MEILEN[ZONEN[z].ab].ab) + " Einwohner).", 3500); return; } zoneWahl = z; if (z) tippEinmal("z-" + z, ZONEN[z].em + " " + ZONEN[z].name + ": " + ZONEN_TEXT[z], 4000); }
+  if (b.dataset.pinsel) { pinsel = b.dataset.pinsel; tippEinmal("p-" + pinsel, TIPPS.zone(), 3500); }
+  if (b.dataset.gmodus) { if (b.dataset.gmodus === "bahnhof" && !dienstFrei("bahnhof")) { tipp("🔒 Bahnhöfe gibt es ab " + MEILEN[DIENSTE.bahnhof.ab].name + ".", 2500); return; } gleisModus = b.dataset.gmodus; zuglinieBau = []; bauAbbrechen(); vorschauWeg(); if (gleisModus === "bahnhof") dienstWahl = "bahnhof"; tippEinmal("g-" + gleisModus, TIPPS.gleis(), 3500); }
   if (b.dataset.zlinie) zuglinieWahl = +b.dataset.zlinie === zuglinieWahl ? null : +b.dataset.zlinie;
   if (b.id === "zuglinieLoeschen") { const L = zuglinien.get(zuglinieWahl); if (L) { merkeRueck(); zuglinien.delete(L.id); zuege = zuege.filter((z) => z.linie !== L.id); zuglinieWahl = null; busRechnen(); speichernBald(); } }
   if (b.dataset.bmodus === "tram" && meilenstein < 3) { tipp("🔒 Straßenbahnen gibt es ab " + MEILEN[3].name + " (" + zahl(MEILEN[3].ab) + " Einwohner).", 3000); return; }
-  if (b.dataset.bmodus) { busModus = b.dataset.bmodus; vorschauWeg(); linieBau = []; frageZu(); linienNeu = true; tipp(TIPPS.verkehr(), 3500); }
+  if (b.dataset.bmodus) { busModus = b.dataset.bmodus; vorschauWeg(); linieBau = []; frageZu(); linienNeu = true; tippEinmal("b-" + busModus, TIPPS.verkehr(), 3500); }
   if (b.dataset.linie) { linieWahl = +b.dataset.linie === linieWahl ? null : +b.dataset.linie; }
   if (b.id === "busPlus" || b.id === "busMinus") { const L = linien.get(linieWahl); if (L) { L.takt = klemme((L.takt || 40) + (b.id === "busPlus" ? -10 : 10), 10, 180); L.busse = busseFuer(L); speichernBald(); zeigeWerte(); tipp("⏱️ Linie " + L.nr + ": alle " + L.takt + " s ein Fahrzeug (" + L.busse + " unterwegs)", 2200); } }
   if (b.id === "ticketPlus" || b.id === "ticketMinus") { ticketPreis = klemme(Math.round((ticketPreis + (b.id === "ticketPlus" ? 0.25 : -0.25)) * 100) / 100, 0, 4); tipp("🎫 Ticket: " + ticketPreis.toFixed(2).replace(".", ",") + " € – " + (ticketPreis <= 1 ? "billig, mehr Fahrgäste" : ticketPreis >= 2.5 ? "teuer, weniger Fahrgäste" : "normal"), 2200); speichernBald(); }
   if (b.id === "busModell") { const L = linien.get(linieWahl); if (L) { const ks = Object.keys(BUS_MODELLE), i = ks.indexOf(L.modell || "mix"); L.modell = ks[(i + 1) % ks.length]; for (const f of fahrzeuge) if (f.linie === L.id) fahrzeugWeg(f); fahrzeuge = fahrzeuge.filter((f) => !f.weg); tipp("Linie " + L.nr + ": " + BUS_MODELLE[L.modell], 2000); speichernBald(); } }
   if (b.id === "linieLoeschen") { const L = linien.get(linieWahl); if (L) { merkeRueck(); linieWeg(L); linieWahl = null; busRechnen(); speichernBald(); } }
   if (b.dataset.dkat) { dienstKat = b.dataset.dkat; dienstWahl = Object.keys(DIENSTE).find((k) => DIENSTE[k].kat === dienstKat); vorschauWeg(); frageZu(); }
-  if (b.dataset.dienst) { const k = b.dataset.dienst, D = DIENSTE[k]; if (!dienstFrei(k)) { tipp("🔒 " + D.name + " gibt es ab " + MEILEN[D.ab].name + " (" + zahl(MEILEN[D.ab].ab) + " Einwohner).", 3500); return; } dienstWahl = k; if (werkzeug === "verkehr") busModus = "bau"; vorschauWeg(); frageZu(); tipp(D.em + " " + D.name + ": " + D.text + " Tipp neben eine Straße.", 4500); }
+  if (b.dataset.dienst) { const k = b.dataset.dienst, D = DIENSTE[k]; if (!dienstFrei(k)) { tipp("🔒 " + D.name + " gibt es ab " + MEILEN[D.ab].name + " (" + zahl(MEILEN[D.ab].ab) + " Einwohner).", 3500); return; } dienstWahl = k; if (werkzeug === "verkehr") busModus = "bau"; vorschauWeg(); frageZu(); tipp(D.em + " " + D.name + ": " + D.text, 3500); }
   unterleiste();
-});
+}
 /* Info-Ansichten (oben rechts) */
 const ANSICHTEN = {
   verkehr: { em: "🚦", name: "Verkehr", legende: ["#3ddc6b", "#ffd23d", "#ff3b30", "frei", "Stau"], an: () => { verkehrsAnsicht = true; stauMessen(); }, aus: () => { verkehrsAnsicht = false; stauMessen(); } },
@@ -2772,11 +2778,15 @@ function werkzeugWaehlen(w) {
   const bauend = w !== "ansehen";
   steuerung.touches.ONE = bauend ? -1 : THREE.TOUCH.PAN; steuerung.mouseButtons.LEFT = bauend ? -1 : THREE.MOUSE.PAN;
   bauAbbrechen(); frageZu(); vorschauWeg(); linieBau = []; zuglinieBau = []; if (w === "gleis") { aussenGleisBauen(); if (gleisModus === "bahnhof") dienstWahl = "bahnhof"; } linienNeu = true; linienMesh.visible = w === "verkehr" || ansicht === "bus"; $("info").hidden = true; zellenNeu = true; if (w === "park") { if (!PARK_KATS.includes(dienstKat)) dienstKat = "park"; } else if (w === "dienst" && (PARK_KATS.includes(dienstKat) || dienstKat === "verkehr")) dienstKat = "strom"; if (DIENSTE[dienstWahl].kat !== dienstKat) dienstWahl = Object.keys(DIENSTE).find((k) => DIENSTE[k].kat === dienstKat); unterleiste(); gebieteZeichnen();
-  const t = TIPPS[w]; tipp(typeof t === "function" ? t() : t, 4500);
+  const t = TIPPS[w]; tippEinmal("w-" + w, typeof t === "function" ? t() : t, 5000);
 }
-$("werkzeug").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) werkzeugWaehlen(b.dataset.w); });
+$("werkzeug").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; if (b.dataset.w === werkzeug && werkzeug !== "ansehen") { fachZu = !fachZu; unterleiste(); return; } fachZu = false; werkzeugWaehlen(b.dataset.w); });
 let frageJa = null;
-function frage(text, ok, beiJa) { $("frage").hidden = false; $("frageText").textContent = text; $("frageText").classList.toggle("falsch", !ok); $("ja").disabled = !ok || !beiJa; frageJa = ok ? beiJa : null; }
+let letzterTipp = null;
+function frage(text, ok, beiJa) {
+  const el = $("frage"); el.hidden = false;
+  if (letzterTipp && performance.now() - letzterTipp.t < 4000) { el.classList.add("blase"); requestAnimationFrame(() => { const w = el.offsetWidth, h = el.offsetHeight; let x = letzterTipp.x - w / 2, y = letzterTipp.y - h - 46; if (y < 70) y = letzterTipp.y + 40; el.style.left = klemme(x, 8, innerWidth - w - 8) + "px"; el.style.top = klemme(y, 60, innerHeight - h - 70) + "px"; }); }
+  else { el.classList.remove("blase"); el.style.left = el.style.top = ""; } $("frageText").textContent = text; $("frageText").classList.toggle("falsch", !ok); $("ja").disabled = !ok || !beiJa; frageJa = ok ? beiJa : null; }
 function frageZu() { $("frage").hidden = true; frageJa = null; }
 $("ja").onclick = () => { if (frageJa) frageJa(); };
 $("nein").onclick = () => { frageZu(); bauAbbrechen(); vorschauWeg(); linieBau = []; zuglinieBau = []; linienNeu = true; };
@@ -2930,7 +2940,7 @@ function loslassen(e) {
   else if (werkzeug === "verkehr" && !a.bewegt) busTippen(a.letzte);
   else if (werkzeug === "gebiet" && !a.bewegt) gebietAntippen(e);
 }
-renderer.domElement.addEventListener("pointerup", loslassen);
+renderer.domElement.addEventListener("pointerup", (e) => { letzterTipp = { x: e.clientX, y: e.clientY, t: performance.now() }; loslassen(e); });
 renderer.domElement.addEventListener("pointercancel", (e) => { finger.delete(e.pointerId); if (aktion && aktion.id === e.pointerId) { aktion = null; bau.kandidat = null; planNeu(); } });
 renderer.domElement.addEventListener("contextmenu", (e) => e.preventDefault());
 
@@ -3050,13 +3060,13 @@ function fahrenStarten() {
   const e = naechsteKante(steuerung.target, 400, (k) => TYP[k.typ].autos), p = spurPunkt(e.k, 1, e.s, TYP[e.k.typ].spuren[0]);
   Object.assign(spieler, { an: true, x: p.x, z: p.z, rot: Math.atan2(-p.tz, p.tx), vx: 0, vz: 0, gier: 0, lenk: 0 });
   spieler.gruppe.visible = true; steuerung.enabled = false;
-  ["unten", "oben", "menueKnopf", "ansichtKnopf", "vollKnopf", "ansichten", "legende"].forEach((id) => { $(id).hidden = true; }); $("fahrpult").hidden = false; $("tacho").hidden = false; $("info").hidden = true; $("budget").hidden = true;
+  ["unten", "oben", "menueKnopf", "ansichtKnopf", "vollKnopf", "ansichten", "legende", "optionen"].forEach((id) => { $(id).hidden = true; }); $("fahrpult").hidden = false; $("tacho").hidden = false; $("info").hidden = true; $("budget").hidden = true;
   kamera.position.set(p.x - p.tx * 3, 1.8, p.z - p.tz * 3);
   tipp("🚗 Gas ▲, Bremse/Rückwärts ▼, Lenken ◀ ▶. Zu schnell in die Kurve? Dann driftest du!", 4000);
 }
 function fahrenBeenden() {
   spieler.an = false; spieler.gruppe.visible = false;
-  ["unten", "oben", "menueKnopf", "ansichtKnopf", "vollKnopf"].forEach((id) => { $(id).hidden = false; }); if (ansicht) $("legende").hidden = false; $("fahrpult").hidden = true; $("tacho").hidden = true;
+  ["unten", "oben", "menueKnopf", "ansichtKnopf", "vollKnopf"].forEach((id) => { $(id).hidden = false; }); unterleiste(); if (ansicht) $("legende").hidden = false; $("fahrpult").hidden = true; $("tacho").hidden = true;
   steuerung.target.set(spieler.x, 0, spieler.z); kamera.position.set(spieler.x + 10, 14, spieler.z + 14); steuerung.enabled = true; steuerung.update();
 }
 $("aussteigen").onclick = fahrenBeenden;
@@ -3228,7 +3238,7 @@ function schleife() {
   const t = performance.now() / 1000, dt = Math.min(0.05, t - letzte); letzte = t; jetztS = t;
   const sdt = dt * tempo; simZeit += sdt;
   U.uTime.value = t % 1000;
-  if (zeitModus === "auto") zeit = (zeit + sdt / 150) % 1;
+  if (zeitModus === "auto") zeit = (zeit + sdt / 360) % 1;
   else if (zeitZiel != null) { let d = zeitZiel - zeit; if (d < -0.5) d += 1; if (d > 0.5) d -= 1; zeit = (zeit + Math.sign(d) * Math.min(Math.abs(d), dt * 0.35) + 1) % 1; if (Math.abs(d) < 0.0005) zeitZiel = null; }
   licht(zeit);
   if (sdt > 0) {
@@ -3242,6 +3252,7 @@ function schleife() {
   stauTakt += dt; if (stauTakt > 1) { stauTakt = 0; stauMessen(); }
   if (zellenNeu) zellenZeichnen();
   if (haeuserNeu) haeuserZeichnen();
+  document.body.classList.toggle("baut", (istBau() && bau.punkte.length > 0) || !!dienstPlanAktuell || linieBau.length > 0 || zuglinieBau.length > 0);
   rauchZeichnen(); fahrzeugeZeichnen(); ampelnZeichnen(); fussgaengerTakt(dt, kz.e); hochZeichnen(); warnZeichnen(); drehZeichnen(); if (linienNeu) linienZeichnen(); zugTakt(dt * (tempo || 0)); bahnHafenZeichnen(dt * (tempo || 0)); schrankenZeichnen(dt); if (ansicht && ansicht !== "verkehr" && jetztS - wertZeit > 2) wertZeichnen();
   boote.forEach((b) => { b.w += b.v * dt; b.g.position.set(b.mx + Math.cos(b.w) * b.rad, WASSER + 0.02 + Math.sin(t * 1.6 + b.ph) * 0.05, b.mz + Math.sin(b.w) * b.rad); b.g.rotation.set(Math.sin(t * 1.3 + b.ph) * 0.05, -b.w + (b.v > 0 ? -Math.PI / 2 : Math.PI / 2), 0); });
   if (leuchtturm) leuchtturm.userData.strahl.rotation.y = t * 0.8;
