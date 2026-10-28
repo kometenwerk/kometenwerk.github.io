@@ -527,6 +527,7 @@ function kantenMesh(k) {
     if (k.typ === "haupt") { linie(pos, col, k, 0.05, SF.gelb); linie(pos, col, k, -0.05, SF.gelb); striche(pos, col, k, 0.43, SF.strich, 0.45, 0.65); striche(pos, col, k, -0.43, SF.strich, 0.45, 0.65); }
     else if (!k.einbahn) striche(pos, col, k, 0, SF.strich, 0.5, 0.6);
   }
+  if (k.busspur) for (const sei of [1, -1]) band(pos, col, k.pts, 0.2, Y(0.0205), farbe(0x8a3a3a), sei * 0.64);
   if (k.ebene > 0) { const c = farbe(0xb9b4a8), unten = (p) => G - 0.1 + ebeneY(k, p.s), oben = (p) => G + 0.09 + ebeneY(k, p.s); for (const sei of [1, -1]) wand(pos, col, k.pts, sei * T.halb, unten, oben, c); band(pos, col, k.pts, T.halb, unten, farbe(0x8c877c)); }
   if (k.einbahn) { const w = farbe(0xffffff); for (let s2 = 1.6; s2 < k.len - 1.4; s2 += 2.4) { const S = k.einbahn > 0 ? s2 : k.len - s2, p = punktBei(k, S), tx = p.tx * k.einbahn, tz = p.tz * k.einbahn, y = G + 0.025 + ebeneY(k, S); for (const off of TYP[k.typ].spuren.length > 1 ? [0.22, 0.64, -0.22, -0.64] : [0.21, -0.21]) { const cx = p.x - tz * off, cz = p.z + tx * off; pos.push(cx + tx * 0.22, y, cz + tz * 0.22, cx - tx * 0.05 - tz * 0.1, y, cz - tz * 0.05 + tx * 0.1, cx - tx * 0.05 + tz * 0.1, y, cz - tz * 0.05 - tx * 0.1); for (let v = 0; v < 3; v++) col.push(w.r, w.g, w.b); pos.push(cx - tx * 0.05 - tz * 0.035, y, cz - tz * 0.05 + tx * 0.035, cx - tx * 0.25 - tz * 0.035, y, cz - tz * 0.25 + tx * 0.035, cx - tx * 0.05 + tz * 0.035, y, cz - tz * 0.05 - tx * 0.035, cx - tx * 0.05 + tz * 0.035, y, cz - tz * 0.05 - tx * 0.035, cx - tx * 0.25 - tz * 0.035, y, cz - tz * 0.25 + tx * 0.035, cx - tx * 0.25 + tz * 0.035, y, cz - tz * 0.25 - tx * 0.035); for (let v = 0; v < 6; v++) col.push(w.r, w.g, w.b); } } }
   const m = new THREE.Mesh(geoAus(pos, col), M.strasse); m.receiveShadow = true; return m;
@@ -557,7 +558,7 @@ function kanteTeilen(k, t) {
   const a = knoten.get(k.a), b = knoten.get(k.b), m = bez(a, k.c, b, t), n = neuerKnoten(m);
   const c1 = lerp(a, k.c, t), c2 = lerp(k.c, b, t), aId = k.a, bId = k.b, typ = k.typ, ax = { x: a.x, z: a.z }, bx = { x: b.x, z: b.z };
   kanteWeg(k); if (!knoten.has(aId)) neuerKnoten(ax, aId); if (!knoten.has(bId)) neuerKnoten(bx, bId);
-  const opt = { aussen: k.aussen, einbahn: k.einbahn, ring: k.ring, kreisel: k.kreisel }, e1 = neueKante(aId, n.id, c1, typ, null, opt), e2 = neueKante(n.id, bId, c2, typ, null, opt); return n;
+  const opt = { aussen: k.aussen, einbahn: k.einbahn, ring: k.ring, kreisel: k.kreisel, busspur: k.busspur }, e1 = neueKante(aId, n.id, c1, typ, null, opt), e2 = neueKante(n.id, bId, c2, typ, null, opt); return n;
 }
 const fangRadius = () => Math.min(3, Math.max(1.1, kameraAbstand() / 32));
 function naechsterKnoten(p, r) { let best = null, bd = r; for (const n of knoten.values()) { const d = abst(n, p); if (d < bd) { bd = d; best = n; } } return best; }
@@ -1058,6 +1059,8 @@ const DIENSTE = {
   leuchtturm: { kat: "wahrzeichen", name: "Leuchtturm", em: "🗼", preis: 20000, unterhalt: 100, w: 2, d: 2, radius: 15, wert: 12, froh: 2, einzig: true, amWasser: true, ab: 1, text: "Wahrzeichen am Ufer." },
   riesenrad: { kat: "wahrzeichen", name: "Riesenrad", em: "🎡", preis: 30000, unterhalt: 200, w: 3, d: 3, radius: 20, wert: 15, froh: 2, einzig: true, ab: 2, text: "Wahrzeichen – man sieht es von überall." },
   fernsehturm: { kat: "wahrzeichen", name: "Fernsehturm", em: "📡", preis: 50000, unterhalt: 300, w: 2, d: 2, radius: 30, wert: 15, froh: 3, einzig: true, ab: 3, text: "Das höchste Gebäude der Stadt." },
+  busdepot: { kat: "verkehr", name: "Busdepot", em: "🅿️", preis: 8000, unterhalt: 120, w: 3, d: 3, depot: "bus", text: "Hier starten die Busse. Ohne Depot fahren keine Busse." },
+  tramdepot: { kat: "verkehr", name: "Straßenbahn-Depot", em: "🚋", preis: 15000, unterhalt: 200, w: 3, d: 3, depot: "tram", ab: 3, text: "Hier starten die Straßenbahnen." },
   bahnhof: { kat: "verkehr", name: "Bahnhof", em: "🚆", preis: 25000, unterhalt: 300, w: 3, d: 3, ab: 2, text: "Züge bringen Pendler und Touristen – mehr Bedarf an Wohnungen und Läden." },
   hafen: { kat: "verkehr", name: "Frachthafen", em: "🚢", preis: 30000, unterhalt: 350, w: 4, d: 3, ab: 1, amWasser: true, dreck: 5, text: "Schiffe bringen Waren – mehr Bedarf an Industrie, Lkw fahren vom Hafen los. Muss am Ufer stehen." }
 };
@@ -1101,6 +1104,7 @@ function dienstTeile(d) {
     case "grundschule": case "gymnasium": { const gr = d.typ === "gymnasium", c = gr ? 0xe3c9a8 : 0xf3d58a; boden(0xb9b49f); box("haus", 0, vorn - 0.35, W * 0.84, gr ? 1.0 : 0.65, 0.6, c); dach(0, vorn - 0.35, W * 0.84, 0.6, gr ? 1.0 : 0.65, 0xb2513a); box("haus", -W * 0.3, -0.1, W * 0.26, gr ? 1.0 : 0.65, D * 0.45, c); dach(-W * 0.3, -0.1, W * 0.26, D * 0.45, gr ? 1.0 : 0.65, 0xb2513a);
       if (gr) { flach(W * 0.15, -D * 0.28, W * 0.5, D * 0.36, 0x4f9a3a); box("flach", W * 0.15, -D * 0.28, W * 0.46, 0.002, 0.02, 0xffffff, { ly: 0.017 }); } else { flach(W * 0.15, -D * 0.25, W * 0.45, D * 0.3, 0xd8c7a0); baum(W * 0.3, -D * 0.38, 0.45); } break; }
     case "uni": boden(0x8fcf68); box("haus", 0, vorn - 0.45, W * 0.8, 1.1, 0.8, 0xe8dcc8); dach(0, vorn - 0.45, W * 0.8, 0.8, 1.1); zyl(0, vorn - 0.45, 0.6, 0.5, 0xe8dcc8, { ly: 1.1 }); zyl(0, vorn - 0.45, 0.66, 0.06, 0x7fa3b8, { ly: 1.6 }); box("haus", -W * 0.3, -D * 0.25, 0.9, 1.3, 0.9, 0xd8c3a5); box("haus", W * 0.3, -D * 0.25, 0.9, 0.9, 0.9, 0xd8c3a5); flach(0, -0.1, 0.2, D * 0.6, 0xd8c7a0); for (let k = 0; k < 4; k++) baum((r() - 0.5) * W * 0.8, (r() - 0.3) * D * 0.4, 0.5); break;
+    case "busdepot": case "tramdepot": { const tr = d.typ === "tramdepot"; boden(0x9a9a92); box("haus", 0, -0.2, W * 0.86, 0.75, D * 0.6, tr ? 0xd8c3a5 : 0xc4c9cc); box("dach", 0, -0.2, W * 0.9, 0.25, D * 0.64, 0x5d6470, { ly: 0.75 }); for (let k = 0; k < 4; k++) box("flach", -W * 0.32 + k * W * 0.21, -0.2 + D * 0.3 + 0.006, W * 0.16, 0.5, 0.01, 0x2a2d33); for (let k = 0; k < 3; k++) box("flach", -W * 0.25 + k * W * 0.25, vorn - 0.25, 0.22, 0.28, tr ? 0.9 : 0.6, LINIEN_FARBEN[k], { ly: 0.01 }); break; }
     case "bahnhof": boden(0xb5b3ad); box("haus", 0, vorn - 0.45, W * 0.8, 0.75, 0.75, 0xd8c3a5); box("dach", 0, vorn - 0.45, W * 0.84, 0.3, 0.8, 0x5d6470, { ly: 0.75 }); box("haus", 0, vorn - 0.06, 0.4, 1.15, 0.2, 0xd8c3a5); box("flach", 0, vorn + 0.05, 0.22, 0.22, 0.02, 0xf4f4f4, { ly: 0.8 }); box("flach", 0, -D * 0.2, W * 0.9, 0.04, D * 0.5, 0x6d737a, { ly: 0.55 }); for (const sx of [-1, 1]) for (const sz of [-0.38, 0]) box("flach", sx * W * 0.4, sz, 0.05, 0.55, 0.05, 0x6d737a); flach(0, -D * 0.2, W * 0.86, D * 0.5, 0x9a9a92); break;
     case "hafen": boden(0x8c8a84); for (let k = 0; k < 6; k++) box("flach", -W * 0.32 + (k % 3) * 0.5, vorn - 0.6 - Math.floor(k / 3) * 0.32, 0.42, 0.14 * (1 + (k % 2)), 0.24, CONTAINER[(d.id + k) % CONTAINER.length]); box("haus", W * 0.33, vorn - 0.4, 0.6, 0.45, 0.5, 0xd9d4c7); for (const sx of [-0.25, 0.35]) { box("flach", sx * W, -D * 0.38, 0.06, 1.3, 0.06, 0xf2c14e); box("flach", sx * W, -D * 0.38 - 0.25, 0.06, 0.06, 0.8, 0xf2c14e, { ly: 1.25 }); } box("flach", 0, -D / 2 + 0.08, W * 0.98, 0.1, 0.2, 0x7a7a72); break;
     case "spielplatz": boden(0x7fc463); flach(-0.15, 0.1, 0.35, 0.35, 0xe8d39a); box("flach", 0.2, -0.15, 0.04, 0.3, 0.04, 0xe8493f); box("flach", 0.2, 0.05, 0.08, 0.02, 0.4, 0xf2c14e, { ly: 0.15, rx: 0.5 }); box("flach", -0.25, -0.25, 0.4, 0.03, 0.03, 0x3f7fe8, { ly: 0.28 }); box("flach", -0.43, -0.25, 0.03, 0.28, 0.03, 0x3f7fe8); box("flach", -0.07, -0.25, 0.03, 0.28, 0.03, 0x3f7fe8); baum(0.3, 0.32, 0.4); break;
@@ -1450,14 +1454,30 @@ function halteNeuAnkern() {
 function linieWeg(L) { linien.delete(L.id); for (const f of fahrzeuge) if (f.linie === L.id) fahrzeugWeg(f); fahrzeuge = fahrzeuge.filter((f) => !f.weg); linienNeu = true; }
 const haltPunkt = (h) => ({ k: h.k, S: klemme(h.s, 0.6, kanten.get(h.k).len - 0.6) });
 function linieErreichbar(ids) { for (let i = 0; i < ids.length; i++) { const a = halte.get(ids[i]), b = halte.get(ids[(i + 1) % ids.length]); if (!a || !b || !kanten.has(a.k) || !kanten.has(b.k)) return false; if (!wegSuchen(haltPunkt(a), haltPunkt(b))) return false; } return true; }
+let ticketPreis = 1.5, nvWoche = { fahrten: 0, einnahmen: 0 }, nvLetzte = { fahrten: 0, einnahmen: 0 };
+const ticketFak = () => klemme(1.6 - ticketPreis * 0.4, 0.3, 1.4);
+function depotFuer(L, nahe) { let best = null, bd = 1e9; for (const d of dienste.values()) { if (DIENSTE[d.typ].depot !== (L.art === "tram" ? "tram" : "bus")) continue; const e = Math.hypot(d.x - nahe.x, d.z - nahe.z); if (e < bd) { bd = e; best = d; } } return best; }
+function umlaufZeit(L) { let len = 0; for (let i = 0; i < L.halte.length; i++) { const a = halte.get(L.halte[i]), b = halte.get(L.halte[(i + 1) % L.halte.length]); if (!a || !b || !kanten.has(a.k) || !kanten.has(b.k)) continue; const w = wegSuchen(haltPunkt(a), haltPunkt(b)); if (w) for (const st of w.route) len += kanten.get(st.k).len; } return len / 1.7 + L.halte.length * 3.5; }
+function busseFuer(L) { if (L.umlaufV !== netzVersion) { L.umlauf = umlaufZeit(L); L.umlaufV = netzVersion; } return klemme(Math.ceil(L.umlauf / (L.takt || 40)), 1, 24); }
 function busStarten(L, i) {
-  const a = halte.get(L.halte[i % L.halte.length]), b = halte.get(L.halte[(i + 1) % L.halte.length]); if (!a || !b) return null;
-  const tram = L.art === "tram", mod = L.modell && L.modell !== "mix" ? L.modell : wahl(Math.random, ["bus", "bus", "gelenkbus", "doppeldecker", "ebus", "minibus"]), f = fahrzeugAusWeg(wegSuchen(haltPunkt(a), haltPunkt(b)), tram ? "tram" : mod, null, "Linie " + L.nr, "Haltestelle", "aussen"); if (!f) return null;
-  f.linie = L.id; f.ziel = (i + 1) % L.halte.length; f.farbe = L.farbe; f.nachText = "🚏 Haltestelle " + (f.ziel + 1); f.vonText = (tram ? "🚋" : "🚌") + " Linie " + L.nr; return f;
+  const a = halte.get(L.halte[i % L.halte.length]); if (!a) return null;
+  const dep = depotFuer(L, a); L.keinDepot = !dep; if (!dep) return null;
+  const za = zufahrt(dep); if (!za) return null;
+  const tram = L.art === "tram", mod = L.modell && L.modell !== "mix" ? L.modell : wahl(Math.random, ["bus", "bus", "gelenkbus", "doppeldecker", "ebus", "minibus"]), f = fahrzeugAusWeg(wegSuchen(za, haltPunkt(a)), tram ? "tram" : mod, null, DIENSTE[dep.typ].name, "Haltestelle", "haus"); if (!f) return null;
+  f.linie = L.id; f.ziel = i % L.halte.length; f.farbe = L.farbe; f.insassen = 0; f.nachText = "🚏 Haltestelle " + (f.ziel + 1); f.vonText = (tram ? "🚋" : "🚌") + " Linie " + L.nr; return f;
+}
+function haltestelleBedienen(f) {
+  const L = linien.get(f.linie), h = L && halte.get(L.halte[f.ziel % L.halte.length]); if (!h) return 2;
+  const kap = PLAETZE[f.typ] || 50; f.insassen = f.insassen || 0;
+  const aus = Math.round(f.insassen * (0.3 + Math.random() * 0.4)); f.insassen -= aus;
+  const ein = Math.max(0, Math.min(Math.floor(h.wartend), kap - f.insassen)); h.wartend -= ein; f.insassen += ein;
+  L.fahrgaeste = (L.fahrgaeste || 0) + ein; L.plaetzeSumme = (L.plaetzeSumme || 0) + kap; L.besetztSumme = (L.besetztSumme || 0) + f.insassen;
+  nvWoche.fahrten += ein; nvWoche.einnahmen += ein * ticketPreis; geld += ein * ticketPreis;
+  return 1.6 + (ein + aus) * 0.02;
 }
 function busWeiter(f) {
   const L = linien.get(f.linie); if (!L) { fahrzeugWeg(f); return; }
-  const a = halte.get(L.halte[f.ziel % L.halte.length]); if (a) a.wartend = 0;
+  const a = halte.get(L.halte[f.ziel % L.halte.length]);
   const n = (f.ziel + 1) % L.halte.length, b = halte.get(L.halte[n]); if (!a || !b) { fahrzeugWeg(f); return; }
   const kk = kanten.get(f.route[f.ri].k), weg = kk && wegSuchen({ k: kk.id, S: f.route[f.ri].dir > 0 ? f.s : kk.len - f.s }, haltPunkt(b));
   if (!weg) { f.halt = 3; return; }
@@ -1466,10 +1486,12 @@ function busWeiter(f) {
 }
 function linienTakt() {
   for (const L of linien.values()) {
-    const da = fahrzeuge.filter((f) => f.linie === L.id).length;
-    if (da < L.busse) busStarten(L, Math.floor(Math.random() * L.halte.length));
+    L.busse = busseFuer(L);
+    const da = fahrzeuge.filter((f) => f.linie === L.id), n = da.length;
+    if (n < L.busse && (!L.letzterStart || simZeit - L.letzterStart > (L.takt || 40) * 0.6)) { if (busStarten(L, n % L.halte.length)) L.letzterStart = simZeit; }
+    if (n > L.busse + 1) { fahrzeugWeg(da[0]); fahrzeuge = fahrzeuge.filter((f) => !f.weg); }
   }
-  for (const h of halte.values()) h.wartend = Math.min(5, h.wartend + (h.inLinie ? 0.15 + h.umgebung * 0.004 : 0));
+  for (const h of halte.values()) h.wartend = Math.min(150, h.wartend + (h.inLinie ? 0.05 + h.umgebung * 0.0025 * ticketFak() : 0));
 }
 /* Wer wohnt oder arbeitet nah an einer Haltestelle mit Linie? */
 let busAbdeckung = { leute: 0, jobs: 0, anteil: 0, fahrgaeste: 0 };
@@ -1484,8 +1506,8 @@ function busRechnen() {
   let tramPlus = 0; for (const L of linien.values()) if (L.art === "tram") tramPlus += L.busse;
   busAbdeckung = { leute: l, jobs: j, anteil: alle ? Math.min(1, l / alle * (1 + Math.min(0.4, tramPlus * 0.08))) : 0, fahrgaeste: Math.round((l * 0.6 + j * 0.3) * (1 + Math.min(0.5, tramPlus * 0.1))) };
 }
-const busKosten = () => { let b = 0; for (const L of linien.values()) b += L.busse * (L.art === "tram" ? 2 : 1); return b * BUS_UNTERHALT + halte.size * 5; };
-const busEinnahmen = () => busAbdeckung.fahrgaeste * 0.8;
+const busKosten = () => { let b = 0; for (const L of linien.values()) b += (L.busse || 1) * (L.art === "tram" ? 2 : 1); return b * BUS_UNTERHALT + halte.size * 5; };
+const busEinnahmen = () => 0;   // Tickets werden direkt beim Einsteigen bezahlt
 /* Linien auf der Karte */
 const linienMesh = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false, toneMapped: false }));
 linienMesh.renderOrder = 4; linienMesh.visible = false; szene.add(linienMesh);
@@ -1533,6 +1555,12 @@ function busTippen(p) {
     merkeRueck(); geld -= HALT_PREIS; neueHalte({ k: e.k.id, s: e.s }); busRechnen(); zeigeWerte(); speichernBald(); tipp("🚏 Haltestelle gebaut. Verbinde Haltestellen mit „🚌 Neue Linie“.", 3000);
   } else if (busModus === "bau") {
     dienstVorschau(p);
+  } else if (busModus === "bearbeiten") {
+    const L = linien.get(linieWahl), h = halteBei(p, 1.6); if (!L) { busModus = "halt"; return; } if (!h) { tipp("Tipp auf eine Haltestelle: dazu oder weg.", 2000); return; }
+    merkeRueck();
+    if (L.halte.includes(h.id)) { if (L.halte.length <= 2) { tipp("Eine Linie braucht mindestens 2 Haltestellen.", 2000); return; } L.halte = L.halte.filter((x) => x !== h.id); tipp("➖ Haltestelle aus Linie " + L.nr + " entfernt.", 1800); }
+    else { let best = 0, bk = 1e9; for (let i = 0; i < L.halte.length; i++) { const a = halte.get(L.halte[i]), b = halte.get(L.halte[(i + 1) % L.halte.length]); const k = Math.hypot(a.x - h.x, a.z - h.z) + Math.hypot(b.x - h.x, b.z - h.z) - Math.hypot(a.x - b.x, a.z - b.z); if (k < bk) { bk = k; best = i + 1; } } L.halte.splice(best, 0, h.id); if (!linieErreichbar(L.halte)) { L.halte.splice(best, 1); tipp("⚠️ Diese Haltestelle ist nicht mit der Linie verbunden.", 2500); return; } tipp("➕ Haltestelle zu Linie " + L.nr + " hinzugefügt.", 1800); }
+    L.umlaufV = -1; for (const f of fahrzeuge) if (f.linie === L.id) f.ziel = Math.min(f.ziel, L.halte.length - 1); busRechnen(); linienNeu = true; speichernBald(); unterleiste();
   } else if (busModus === "linie" || busModus === "tram") {
     const h = halteBei(p, 1.6); if (!h) { tipp("Tipp auf eine Haltestelle 🚏.", 2000); return; }
     if (linieBau.length >= 2 && h.id === linieBau[0]) { linieFertig(); return; }
@@ -1543,6 +1571,10 @@ function busTippen(p) {
     merkeRueck(); halteWeg(h); busRechnen(); speichernBald(); tipp("Haltestelle entfernt.", 1800); unterleiste();
   }
 }
+function haltInfo(h) {
+  const ls = [...linien.values()].filter((L) => L.halte.includes(h.id));
+  infoZeigen(`<b>🚏 Haltestelle</b>🧍 ${Math.floor(h.wartend)} warten${ls.length ? "<br>Linien: " + ls.map((L) => `<span style="color:#${L.farbe.toString(16).padStart(6, "0")};font-weight:700">${L.art === "tram" ? "🚋" : "🚌"} ${L.nr}</span>`).join(" ") : "<br><small>Noch keine Linie hält hier.</small>"}<br><small>👥 ${zahl(h.umgebung || 0)} Leute wohnen oder arbeiten in der Nähe</small>`, 6000);
+}
 function linienVorschau() {
   const n = linieBau.length;
  frage((busModus === "tram" ? "🚋 Neue Straßenbahn: " : "🚌 Neue Linie: ") + n + " Haltestelle" + (n === 1 ? "" : "n") + (n >= 2 ? " – ✓ zum Fertigstellen (oder erste Haltestelle antippen)" : " – tipp die nächste an"), n >= 2, linieFertig);
@@ -1552,10 +1584,11 @@ function linieFertig() {
   if (linieBau.length < 2) return;
   if (!linieErreichbar(linieBau)) { tipp("⚠️ Zwischen den Haltestellen gibt es keinen Weg. Verbinde die Straßen.", 3500); return; }
   merkeRueck();
-  const nr = Math.max(0, ...[...linien.values()].map((L) => L.nr)) + 1, tram = busModus === "tram", L = { id: linieId++, nr, art: tram ? "tram" : "bus", farbe: LINIEN_FARBEN[(nr - 1) % LINIEN_FARBEN.length], halte: linieBau.slice(), busse: Math.max(1, Math.round(linieBau.length / (tram ? 3 : 2))) };
+  const nr = Math.max(0, ...[...linien.values()].map((L) => L.nr)) + 1, tram = busModus === "tram", L = { id: linieId++, nr, takt: 40, art: tram ? "tram" : "bus", farbe: LINIEN_FARBEN[(nr - 1) % LINIEN_FARBEN.length], halte: linieBau.slice(), busse: Math.max(1, Math.round(linieBau.length / (tram ? 3 : 2))) };
   if (tram) { let lang = 0; for (let i = 0; i < L.halte.length; i++) { const w = wegSuchen(haltPunkt(halte.get(L.halte[i])), haltPunkt(halte.get(L.halte[(i + 1) % L.halte.length]))); if (w) for (const st of w.route) lang += kanten.get(st.k).len; } const preis = Math.round(lang * 120); if (geld < preis) { tipp("Die Schienen kosten " + euro(preis) + " – zu wenig Geld.", 3000); return; } geld -= preis; }
   linien.set(L.id, L); linieBau = []; linieWahl = L.id; frageZu(); busModus = "halt"; busRechnen(); linienNeu = true; speichernBald(); unterleiste();
-  tipp((tram ? "🚋 Straßenbahn " : "🚌 Linie ") + nr + " fährt! Mit + und − änderst du die Zahl der Fahrzeuge.", 3500);
+  const dep = depotFuer(L, halte.get(L.halte[0]));
+  tipp(dep ? (tram ? "🚋 Straßenbahn " : "🚌 Linie ") + nr + " fährt! Mit + und − änderst du den Takt." : "⚠️ Linie " + nr + " ist fertig – bau noch ein " + (tram ? "Straßenbahn-Depot" : "Busdepot") + ", dann fahren die Fahrzeuge los.", 4500);
 }
 
 
@@ -1594,6 +1627,7 @@ function meilensteinPruefen() {
   }
 }
 function wocheTakt() {
+  nvLetzte = nvWoche; nvWoche = { fahrten: 0, einnahmen: 0 }; for (const L of linien.values()) { L.letzteWoche = L.fahrgaeste || 0; L.auslastung = L.plaetzeSumme ? L.besetztSumme / L.plaetzeSumme : 0; L.fahrgaeste = 0; L.plaetzeSumme = L.besetztSumme = 0; }
   const k = kennzahlen(); geld += k.saldo; letzteWoche = k; zeigeWerte();
   if (geld < 0 && geld - k.saldo >= 0) tipp("⚠️ Dein Geld ist im Minus! Senk die Ausgaben oder erhöh die Steuern.", 5000);
   if (werkzeug === "gebiet") gebieteZeichnen(); if (!$("budget").hidden) budgetZeigen(); speichernBald();
@@ -1619,7 +1653,7 @@ function budgetZeigen() {
   const GR = ["w", "g", "b", "i"];
   const fort = n ? Math.min(100, (k.e - m.ab) / (n.ab - m.ab) * 100) : 100;
   el.innerHTML = `<h2>💶 Budget &amp; Steuern<button type="button" id="budgetZu" aria-label="Schließen">✕</button></h2>
-    <div><h3>Pro Woche</h3>${GR.map((z) => zeile(GRUPPEN[z].em + " Steuern " + GRUPPEN[z].name, "<span class='plus'>+" + euro(k.ein[z]) + "</span>")).join("")}${zeile("🛣️ Unterhalt Straßen", "<span class='minus'>−" + euro(k.strassen) + "</span>")}${k.dienste ? zeile("🏛️ Unterhalt Dienste", "<span class='minus'>−" + euro(k.dienste) + "</span>") : ""}${k.nvK || k.nvE ? zeile("🚌 Nahverkehr, Bahn & Hafen (" + zahl(busAbdeckung.fahrgaeste) + " Fahrgäste)", "<span class='" + (k.nvE >= k.nvK ? "plus" : "minus") + "'>" + (k.nvE - k.nvK >= 0 ? "+" : "−") + euro(Math.abs(k.nvE - k.nvK)) + "</span>") : ""}${zeile("Ergebnis", "<span class='" + (k.saldo >= 0 ? "plus" : "minus") + "'>" + (k.saldo >= 0 ? "+" : "−") + euro(Math.abs(k.saldo)) + "</span>", "summe")}</div>
+    <div><h3>Pro Woche</h3>${GR.map((z) => zeile(GRUPPEN[z].em + " Steuern " + GRUPPEN[z].name, "<span class='plus'>+" + euro(k.ein[z]) + "</span>")).join("")}${zeile("🛣️ Unterhalt Straßen", "<span class='minus'>−" + euro(k.strassen) + "</span>")}${k.dienste ? zeile("🏛️ Unterhalt Dienste", "<span class='minus'>−" + euro(k.dienste) + "</span>") : ""}${k.nvK || k.nvE ? zeile("🚌 Nahverkehr, Bahn & Hafen (" + zahl(nvLetzte.fahrten) + " Fahrgäste, Tickets +" + euro(nvLetzte.einnahmen) + ")", "<span class='" + (k.nvE >= k.nvK ? "plus" : "minus") + "'>" + (k.nvE - k.nvK >= 0 ? "+" : "−") + euro(Math.abs(k.nvE - k.nvK)) + "</span>") : ""}${zeile("Ergebnis", "<span class='" + (k.saldo >= 0 ? "plus" : "minus") + "'>" + (k.saldo >= 0 ? "+" : "−") + euro(Math.abs(k.saldo)) + "</span>", "summe")}</div>
     <div><h3>Steuern</h3><div style="display:grid;gap:10px">${GR.map(regler).join("")}</div><small style="color:var(--leise);display:block;margin-top:8px">Hohe Steuern bringen mehr Geld, aber weniger Zuzug. 9 % ist ausgeglichen.</small></div>
     <div><h3>Budget pro Bereich</h3><div style="display:grid;gap:8px">${Object.keys(budgetBereich).map((k) => `<div class="steuer" style="--c:#a66bff"><span>${DIENST_KAT[k].em} ${DIENST_KAT[k].name}</span><input type="range" min="50" max="150" step="5" value="${budgetBereich[k]}" data-dbudget="${k}" aria-label="Budget ${DIENST_KAT[k].name}"><b>${budgetBereich[k]} %</b></div>`).join("")}</div><small style="color:var(--leise);display:block;margin-top:6px">Mehr Geld = mehr Leistung und weitere Reichweite, aber höhere Kosten.</small></div>
     <div><h3>Versorgung</h3>${Object.keys(RESSOURCEN).map((r) => { const [pr, vb] = versorgung[r], ok = pr >= vb; return zeile(RESSOURCEN[r].em + " " + RESSOURCEN[r].name, `<span class="${ok ? "plus" : "minus"}">${zahl(vb)} / ${zahl(pr)}</span>`); }).join("")}<small style="color:var(--leise)">Gebraucht / vorhanden. Zu wenig? Bau mehr unter 🏛️ Dienste.</small></div>
@@ -1731,6 +1765,7 @@ const FZ = {
   bus: { name: "Bus", L: 1.3, B: 0.29, rad: 0.056, achsen: [0.43, -0.36], beschl: 1.5, brems: 5, vf: 0.82, lack: 0xf2c14e, form: { art: "kasten", sill: 0.06, belt: 0.18, roof: 0.4, nase: 0.18, hf: 0.645, wf: 0.635, glasBis: 0.645, band: true, extra: (t) => { t.push(kiste(0, 0.408, 0, 1.0, 0.02, 0.24, 0xd8d8d8), kiste(0.66, 0.36, 0, 0.01, 0.03, 0.14, SCHWARZ)); } } },
   lkw: { name: "Lkw", L: 0.95, B: 0.28, rad: 0.055, achsen: [0.07], beschl: 1.3, brems: 4.5, vf: 0.8, vorneL: 0.15, hintenL: 0.8, form: { art: "kasten", L: 0.27, sill: 0.06, belt: 0.2, roof: 0.36, nase: 0.18, hf: 0.13, wf: 0.115, glasBis: 0.06, extra: (t) => { t.push(kiste(-0.2, 0.065, 0, 0.16, 0.05, 0.2, ZIER), kiste(-0.09, 0.27, 0, 0.04, 0.14, 0.22, ZIER)); } } }
 };
+const PLAETZE = { bus: 50, gelenkbus: 90, doppeldecker: 80, ebus: 50, minibus: 20, tram: 150 };
 for (const [k, t] of Object.entries(FZ)) {
   const f = t.form, o = Object.assign({ L: t.L, B: t.B }, f);
   t.ly = (f.sill + f.nase) / 2 + 0.01; t.lyh = f.art === "kasten" ? f.belt : f.belt - 0.03; t.lx = f.x0 ? f.x0 + o.L / 2 : t.L / 2;
@@ -1926,6 +1961,7 @@ function spurWaehlen(f) {
   const n = TYP[k.typ].spuren.length; if (n < 2) { f.spur = 0; return; }
   const nx = f.route[f.ri + 1]; const a = nx ? abbiegen(k, st.dir, nx) : "rechts";
   f.spur = a === "links" || a === "wenden" ? 0 : a === "rechts" ? 1 : (f.spur != null ? Math.min(f.spur, 1) : 1);
+  if (k.busspur && !(f.linie || FZ[f.typ].blau || f.typ === "taxi")) f.spur = 0;
 }
 function ampelZustand(n, kid) {
   const ph = simZeit % 20, gr = n.gruppe.get(kid) || 0;
@@ -2093,7 +2129,7 @@ function verkehrTakt(dt, ziel) {
       if (f.ausparken && Math.abs(f.off - zielOff) < 0.04) f.ausparken = false;
       f.blink = f.ausparken ? -1 : f.ist !== f.spur ? (f.spur < f.ist ? -1 : 1) : nx && (ab === "links" || ab === "rechts") && rest < 4.5 ? (ab === "links" ? -1 : 1) : letzte && rest < 3 ? 1 : 0;
       if (f.s >= e) {
-        if (letzte && f.linie) { f.s = e; f.v = 0; f.halt = 2.5; continue; }
+        if (letzte && f.linie) { f.s = e; f.v = 0; f.halt = haltestelleBedienen(f); continue; }
         if (letzte) { f.s = e; f.parkt = 0.001; f.blink = 0; if (f.beiAnkunft) { const cb = f.beiAnkunft; f.beiAnkunft = null; cb(f); } continue; }
         if (f.frei) { uebergangStarten(f, kk, st, nx); f.frei = false; } else f.s = e;
       }
@@ -2235,7 +2271,7 @@ function fussgaengerTakt(dt, einwohner) {
     koepfe.setMatrixAt(i, _o.matrix); koepfe.setColorAt(i, _farbe.setHex(p.haut)); _o.rotation.order = "XYZ";
   });
   let mi = leuteListe.length;
-  for (const h of halte.values()) { const k = kanten.get(h.k); if (!k) continue; const o = TYP[k.typ].halb - 0.05; for (let j = 0; j < Math.floor(h.wartend) && mi < 118; j++) { const sei = j % 2 ? 1 : -1, cs = Math.cos(h.rot), sn = Math.sin(h.rot), lx = -0.18 + (j >> 1) * 0.14, lz = sei * o; _o.position.set(h.x + lx * cs + lz * sn, G + 0.012, h.z - lx * sn + lz * cs); _o.rotation.set(0, h.rot + (sei > 0 ? Math.PI : 0), 0); _o.scale.setScalar(0.95); _o.updateMatrix(); menschen.setMatrixAt(mi, _o.matrix); menschen.setColorAt(mi, _farbe.setHex(KLEIDUNG[(h.id + j) % KLEIDUNG.length])); koepfe.setMatrixAt(mi, _o.matrix); koepfe.setColorAt(mi, _farbe.setHex(HAUT[(h.id * 3 + j) % HAUT.length])); mi++; } }
+  for (const h of halte.values()) { const k = kanten.get(h.k); if (!k) continue; const o = TYP[k.typ].halb - 0.05; for (let j = 0; j < Math.min(8, Math.ceil(h.wartend / 6)) && mi < 118; j++) { const sei = j % 2 ? 1 : -1, cs = Math.cos(h.rot), sn = Math.sin(h.rot), lx = -0.18 + (j >> 1) * 0.14, lz = sei * o; _o.position.set(h.x + lx * cs + lz * sn, G + 0.012, h.z - lx * sn + lz * cs); _o.rotation.set(0, h.rot + (sei > 0 ? Math.PI : 0), 0); _o.scale.setScalar(0.95); _o.updateMatrix(); menschen.setMatrixAt(mi, _o.matrix); menschen.setColorAt(mi, _farbe.setHex(KLEIDUNG[(h.id + j) % KLEIDUNG.length])); koepfe.setMatrixAt(mi, _o.matrix); koepfe.setColorAt(mi, _farbe.setHex(HAUT[(h.id * 3 + j) % HAUT.length])); mi++; } }
   menschen.count = koepfe.count = mi; menschen.instanceMatrix.needsUpdate = koepfe.instanceMatrix.needsUpdate = true; if (menschen.instanceColor) menschen.instanceColor.needsUpdate = true; if (koepfe.instanceColor) koepfe.instanceColor.needsUpdate = true;
 }
 
@@ -2288,11 +2324,11 @@ function zustand() {
     v: 3, zonenV: 2, karte, geld: Math.round(geld), besitz: [...besitz], gekauft, steuern, meilenstein, tage: Math.round(tage * 100) / 100, ids: { n: nId, k: kId, z: zId, g: gId, h: hId, d: dId, hs: haltId, l: linieId },
     meta: { einwohner: k.e, gespeichert: Date.now() },
     knoten: [...knoten.values()].map((n) => [n.id, r(n.x), r(n.z), n.manuell ? (n.ampel ? 1 : 0) : -1, n.aussen ? 1 : 0]),
-    kanten: [...kanten.values()].map((k) => [k.id, k.a, k.b, r(k.c.x), r(k.c.z), k.typ, k.aussen ? 1 : 0, k.einbahn || 0, k.ebene || 0, k.ring ? 1 : 0]), kreisel,
+    kanten: [...kanten.values()].map((k) => [k.id, k.a, k.b, r(k.c.x), r(k.c.z), k.typ, k.aussen ? 1 : 0, k.einbahn || 0, k.ebene || 0, k.ring ? 1 : 0, k.busspur ? 1 : 0]), kreisel,
     zellen: [...zellen.values()].map((z) => [z.id, r(z.x), r(z.z), r(z.rot), z.zone, z.g, z.seite, z.i, z.r]),
     haeuser: [...haeuser.values()].map((h) => [h.id, h.zone, h.stufe, h.w, h.d, h.variante, h.zellen]),
     dienste: [...dienste.values()].map((d) => [d.id, d.typ, r(d.x), r(d.z), r(d.rot), d.ausbau || 0]), dienstV: 2, budgetBereich,
-    halte: [...halte.values()].map((h) => [h.id, h.k, r(h.s)]), linien: [...linien.values()].map((L) => [L.id, L.nr, L.farbe, L.halte, L.busse, L.art, L.modell || "mix"]),
+    halte: [...halte.values()].map((h) => [h.id, h.k, r(h.s)]), linien: [...linien.values()].map((L) => [L.id, L.nr, L.farbe, L.halte, L.busse, L.art, L.modell || "mix", L.takt || 40]), ticketPreis,
     baeume: baeume.filter((b) => b.weg).map((b) => b.idx)
   };
 }
@@ -2314,7 +2350,7 @@ function zustandRein(d) {
     d.zellen = d.zellen.map((c) => { const n = c.slice(); n[4] = zz.get(c[0]) || um[c[4]] || 0; return n; });
   }
   d.knoten.forEach(([id, x, z, am, au]) => { const n = neuerKnoten({ x, z }, id); if (am != null && am >= 0) { n.manuell = true; n.ampel = am === 1; } if (au) { n.aussen = true; aussenKnoten = id; } });
-  d.kanten.forEach(([id, a, b, cx, cz, typ, au, eb, ebe, ri]) => { if (knoten.has(a) && knoten.has(b)) neueKante(a, b, { x: cx, z: cz }, TYP[typ] ? typ : "klein", id, { aussen: !!au, einbahn: eb || 0, ebene: ebe || 0, ring: !!ri }); });
+  d.kanten.forEach(([id, a, b, cx, cz, typ, au, eb, ebe, ri, bs]) => { if (knoten.has(a) && knoten.has(b)) neueKante(a, b, { x: cx, z: cz }, TYP[typ] ? typ : "klein", id, { aussen: !!au, einbahn: eb || 0, ebene: ebe || 0, ring: !!ri, busspur: !!bs }); });
   kreisel.length = 0; (d.kreisel || []).forEach((q) => kreisel.push(q));
   for (const k of kanten.values()) if (k.ring) { let bi = 0, bd = 1e9; kreisel.forEach((q, i) => { const e = Math.hypot(k.c.x - q.x, k.c.z - q.z); if (e < bd) { bd = e; bi = i; } }); k.kreisel = bi; }
   for (const n of [...knoten.values()]) if (!n.kanten.size) knotenWeg(n);
@@ -2325,8 +2361,10 @@ function zustandRein(d) {
   if (d.budgetBereich) Object.assign(budgetBereich, d.budgetBereich); else for (const k in budgetBereich) budgetBereich[k] = 100; bahnGleiseZeichnen();
   if (d.ids.d) dId = Math.max(dId, d.ids.d);
   (d.halte || []).forEach(([id, k, s2]) => { if (kanten.has(k)) neueHalte({ id, k, s: s2 }, true); });
-  (d.linien || []).forEach(([id, nr, f, hs, busse, art, modell]) => { const L = { id, nr, farbe: f, halte: hs.filter((x) => halte.has(x)), busse, art: art || "bus", modell: modell || "mix" }; if (L.halte.length >= 2) linien.set(id, L); linieId = Math.max(linieId, id + 1); });
+  if (d.ticketPreis != null) ticketPreis = d.ticketPreis;
+  (d.linien || []).forEach(([id, nr, f, hs, busse, art, modell, takt]) => { const L = { id, nr, farbe: f, halte: hs.filter((x) => halte.has(x)), busse, art: art || "bus", modell: modell || "mix", takt: takt || 40 }; if (L.halte.length >= 2) linien.set(id, L); linieId = Math.max(linieId, id + 1); });
   haltId = Math.max(haltId, d.ids.hs || 1); linieId = Math.max(linieId, d.ids.l || 1); linienNeu = true;
+  if (linien.size && ![...dienste.values()].some((x) => DIENSTE[x.typ].depot)) warteListe.push({ t: simZeit + 1, fn: () => infoZeigen("<b>🅿️ Neu: Depots!</b>Busse und Straßenbahnen starten jetzt im Depot.<br>Bau ein Busdepot (🚌 → Karten), sonst fahren deine Linien nicht.", 10000) });
   if (!d.dienstV && d.haeuser.length > 8) { geld += 20000; warteListe.push({ t: simZeit + 0.5, fn: () => infoZeigen("<b>🏛️ Neu: Dienste!</b>Deine Häuser brauchen jetzt Strom, Wasser, Abwasser und Müllabfuhr – sonst ziehen die Leute weg.<br>Du bekommst <b>20.000 €</b> Zuschuss, um sie zu bauen.<br><small>Unten: 🏛️ Dienste und 🌳 Parks</small>", 12000) }); }
   nId = Math.max(nId, d.ids.n); kId = Math.max(kId, d.ids.k); zId = Math.max(zId, d.ids.z); gId = Math.max(gId, d.ids.g); hId = Math.max(hId, d.ids.h);
   haeuserNeu = zellenNeu = true; netzGeaendert(); gebieteZeichnen(); werteAuffrischen(); dreckZeichnen(); bedarfBerechnen(); zeigeWerte(); datumZeigen();
@@ -2382,8 +2420,13 @@ let infoTimer = 0;
 function infoZeigen(html, ms) { const el = $("info"); el.innerHTML = html; el.hidden = false; clearTimeout(infoTimer); infoTimer = setTimeout(() => { el.hidden = true; }, ms || 5000); }
 
 let strTyp = lade("inselstadt-strtyp", "klein"), strModus = lade("inselstadt-strmodus", "gerade"), zoneWahl = 1, pinsel = "klein";
-if (!TYP[strTyp]) strTyp = "klein"; if (!["gerade", "kurve", "ampel", "bruecke", "tunnel", "einbahn", "kreisel"].includes(strModus)) strModus = "gerade";
-const zweiPunkte = () => ["gerade", "bruecke", "tunnel"].includes(strModus), tippModus = () => ["ampel", "einbahn", "kreisel"].includes(strModus);
+if (!TYP[strTyp]) strTyp = "klein"; if (!["gerade", "kurve", "ampel", "bruecke", "tunnel", "einbahn", "kreisel", "busspur"].includes(strModus)) strModus = "gerade";
+function busspurUmschalten(p) {
+  const e = naechsteKante(p, Math.max(0.9, fangRadius() * 0.6), (k) => TYP[k.typ].autos); if (!e) { tipp("Tipp genau auf eine Hauptstraße.", 1800); return; }
+  if (e.k.typ !== "haupt") { tipp("🚌 Busspuren gibt es nur auf Hauptstraßen (zwei Spuren pro Richtung).", 2600); return; }
+  merkeRueck(); e.k.busspur = !e.k.busspur; kanteNeuZeichnen(e.k); netzGeaendert(); tipp(e.k.busspur ? "🚌 Busspur: Die rechte Spur ist nur für Busse, Taxis und Einsatzfahrzeuge." : "Busspur entfernt.", 2600);
+}
+const zweiPunkte = () => ["gerade", "bruecke", "tunnel"].includes(strModus), tippModus = () => ["ampel", "einbahn", "kreisel", "busspur"].includes(strModus);
 const ebeneModus = () => strModus === "bruecke" ? 1 : strModus === "tunnel" ? -1 : 0;
 const ZONEN_TEXT = {
   1: "Einfamilienhäuser und Villen – wird bei hohem Bodenwert immer schöner (5 Stufen).",
@@ -2397,10 +2440,10 @@ const ZONEN_TEXT = {
 };
 const TIPPS = {
   ansehen: "👆 Ein Finger: verschieben · ✌️ Zwei Finger: drehen & zoomen · Haus antippen: Infos",
-  strasse: () => strModus === "ampel" ? "🚦 Tipp auf eine Kreuzung, um die Ampel ein- oder auszuschalten." : strModus === "einbahn" ? "➡️ Tipp auf eine Straße: Einbahnstraße in eine Richtung, nochmal tippen dreht sie um, beim dritten Mal wieder normal." : strModus === "kreisel" ? "⭕ Tipp auf eine Kreuzung mit 3 oder mehr Straßen, um einen Kreisverkehr zu bauen." : strModus === "bruecke" ? "🌉 Brücke: Anfang und Ende antippen. Sie führt über Wasser und über andere Straßen." : strModus === "tunnel" ? "🚇 Tunnel: Anfang und Ende antippen. Er führt unter allem hindurch." : strModus === "gerade" ? "🛣️ Tipp auf den Anfang, dann aufs Ende. Dann ✓ zum Bauen." : "〰️ Tipp auf den Anfang, dann den Kurvenpunkt, dann das Ende. Dann ✓.",
+  strasse: () => strModus === "busspur" ? "🚌 Tipp auf eine Hauptstraße, um eine Busspur ein- oder auszuschalten." : strModus === "ampel" ? "🚦 Tipp auf eine Kreuzung, um die Ampel ein- oder auszuschalten." : strModus === "einbahn" ? "➡️ Tipp auf eine Straße: Einbahnstraße in eine Richtung, nochmal tippen dreht sie um, beim dritten Mal wieder normal." : strModus === "kreisel" ? "⭕ Tipp auf eine Kreuzung mit 3 oder mehr Straßen, um einen Kreisverkehr zu bauen." : strModus === "bruecke" ? "🌉 Brücke: Anfang und Ende antippen. Sie führt über Wasser und über andere Straßen." : strModus === "tunnel" ? "🚇 Tunnel: Anfang und Ende antippen. Er führt unter allem hindurch." : strModus === "gerade" ? "🛣️ Tipp auf den Anfang, dann aufs Ende. Dann ✓ zum Bauen." : "〰️ Tipp auf den Anfang, dann den Kurvenpunkt, dann das Ende. Dann ✓.",
   dienst: "🏛️ Wähl ein Gebäude und tipp neben eine Straße. Dann ✓ zum Bauen.",
   park: "🌳 Wähl einen Park und tipp neben eine Straße. Dann ✓ zum Bauen.",
-  verkehr: () => busModus === "bau" ? "Tipp neben eine Straße, um zu bauen." : busModus === "tram" ? "🚋 Tipp die Haltestellen der Reihe nach an. Die Straßenbahn bekommt Schienen auf der Straße. Dann ✓." : busModus === "halt" ? "🚏 Tipp auf eine Straße, um eine Haltestelle zu bauen (" + HALT_PREIS + " €)." : busModus === "linie" ? "🚌 Tipp die Haltestellen der Reihe nach an. Dann ✓." : "🧹 Tipp auf eine Haltestelle, um sie zu entfernen.",
+  verkehr: () => busModus === "bearbeiten" ? "✏️ Tipp auf eine Haltestelle: ist sie in der Linie, fliegt sie raus – sonst kommt sie dazu." : busModus === "bau" ? "Tipp neben eine Straße, um zu bauen." : busModus === "tram" ? "🚋 Tipp die Haltestellen der Reihe nach an. Die Straßenbahn bekommt Schienen auf der Straße. Dann ✓." : busModus === "halt" ? "🚏 Tipp auf eine Straße, um eine Haltestelle zu bauen (" + HALT_PREIS + " €)." : busModus === "linie" ? "🚌 Tipp die Haltestellen der Reihe nach an. Dann ✓." : "🧹 Tipp auf eine Haltestelle, um sie zu entfernen.",
   zone: () => pinsel === "fuellen" ? "🪣 Tipp neben eine Straße – die ganze Straßenseite wird angemalt." : "🖌️ Wisch über die grauen Felder neben den Straßen, um sie anzumalen.",
   gebiet: "🗺️ Tipp auf ein Preisschild, um das Gebiet zu kaufen.",
   abriss: "🧹 Tipp auf eine Straße, um sie abzureißen. Über Häuser und Zonen wischen löscht sie."
@@ -2415,7 +2458,7 @@ function unterleiste() {
     kopf = '<span class="ftitel">👆 Ansehen</span><small style="color:var(--leise)">Haus oder Auto antippen für Infos</small>';
     karten = kk("id", "fahrenKnopf", "🚗", "Selbst fahren", "", false) + kk("id", "budgetKarte", "💶", "Budget &amp; Steuern", "", false) + kk("id", "ansichtKarte", "🔍", "Info-Ansichten", "", false);
   } else if (werkzeug === "strasse") {
-    kopf = '<span class="ftitel">🛣️ Straßen</span>' + chip("data-modus", "gerade", "📏 Gerade", strModus === "gerade") + chip("data-modus", "kurve", "〰️ Kurve", strModus === "kurve") + chip("data-modus", "bruecke", "🌉 Brücke", strModus === "bruecke") + chip("data-modus", "tunnel", "🚇 Tunnel", strModus === "tunnel") + chip("data-modus", "einbahn", "➡️ Einbahn", strModus === "einbahn") + chip("data-modus", "kreisel", "⭕ Kreisverkehr", strModus === "kreisel") + chip("data-modus", "ampel", "🚦 Ampeln", strModus === "ampel") + '<span class="trenn"></span>' + rueckChip;
+    kopf = '<span class="ftitel">🛣️ Straßen</span>' + chip("data-modus", "gerade", "📏 Gerade", strModus === "gerade") + chip("data-modus", "kurve", "〰️ Kurve", strModus === "kurve") + chip("data-modus", "bruecke", "🌉 Brücke", strModus === "bruecke") + chip("data-modus", "tunnel", "🚇 Tunnel", strModus === "tunnel") + chip("data-modus", "einbahn", "➡️ Einbahn", strModus === "einbahn") + chip("data-modus", "kreisel", "⭕ Kreisverkehr", strModus === "kreisel") + chip("data-modus", "busspur", "🚌 Busspur", strModus === "busspur") + chip("data-modus", "ampel", "🚦 Ampeln", strModus === "ampel") + '<span class="trenn"></span>' + rueckChip;
     karten = Object.keys(TYP).map((k) => { const frei = typFrei(k), m = MEILEN.find((x) => x.frei.includes(k)); return kk("data-typ", k, TYP[k].em, TYP[k].name, frei ? TYP[k].preis + " €/Feld" : "ab " + (m ? m.name : ""), k === strTyp, !frei); }).join("");
   } else if (werkzeug === "zone") {
     kopf = '<span class="ftitel">🏘️ Zonen</span>' + chip("data-pinsel", "klein", "🖌️ Klein", pinsel === "klein") + chip("data-pinsel", "gross", "🖌️ Groß", pinsel === "gross") + chip("data-pinsel", "fuellen", "🪣 Füllen", pinsel === "fuellen") + '<span class="trenn"></span>' + rueckChip;
@@ -2427,8 +2470,9 @@ function unterleiste() {
   } else if (werkzeug === "verkehr") {
     const L = linieWahl && linien.get(linieWahl);
     kopf = '<span class="ftitel">🚌 Nahverkehr</span>' + chip("data-bmodus", "halt", "🚏 Haltestelle", busModus === "halt") + chip("data-bmodus", "linie", "🚌 Neue Buslinie", busModus === "linie") + chip("data-bmodus", "tram", (meilenstein >= 3 ? "🚋" : "🔒") + " Neue Straßenbahn", busModus === "tram") + chip("data-bmodus", "weg", "🧹 Entfernen", busModus === "weg") + '<span class="trenn"></span>' + rueckChip;
-    if (L) kopf += `<span class="trenn"></span><span class="ftitel" style="color:#${L.farbe.toString(16).padStart(6, "0")}">Linie ${L.nr}</span><button class="chip" type="button" id="busMinus">−</button><span style="white-space:nowrap">🚌 ${L.busse}</span><button class="chip" type="button" id="busPlus">+</button>${L.art !== "tram" ? `<button class="chip" type="button" id="busModell">${BUS_MODELLE[L.modell || "mix"]}</button>` : ""}<button class="chip gefahr" type="button" id="linieLoeschen">🗑️</button>`;
-    karten = ["bahnhof", "hafen"].map((k) => { const D = DIENSTE[k], f = dienstFrei(k); return kk("data-dienst", k, D.em, D.name, f ? euro(D.preis) : "ab " + MEILEN[D.ab].name, busModus === "bau" && dienstWahl === k, !f); }).join("") + [...linien.values()].map((x) => kk("data-linie", x.id, `<span style="display:inline-block;width:26px;height:26px;border-radius:50%;background:#${x.farbe.toString(16).padStart(6, "0")};color:#fff;font-size:.9rem;line-height:26px;font-weight:700">${x.nr}</span>`, "Linie " + x.nr, x.halte.length + " Halte · " + x.busse + " 🚌", x.id === linieWahl)).join("") || "";
+    kopf += `<span class="trenn"></span><button class="chip" type="button" id="ticketMinus">−</button><span style="white-space:nowrap">🎫 ${ticketPreis.toFixed(2).replace(".", ",")} €</span><button class="chip" type="button" id="ticketPlus">+</button>`;
+    if (L) kopf += `<span class="trenn"></span><span class="ftitel" style="color:#${L.farbe.toString(16).padStart(6, "0")}">Linie ${L.nr}</span>${L.keinDepot ? `<span style="color:#ff9b9b;white-space:nowrap">⚠️ Kein ${L.art === "tram" ? "Straßenbahn-Depot" : "Busdepot"}!</span>` : ""}<button class="chip" type="button" id="busMinus">−</button><span style="white-space:nowrap">⏱️ alle ${L.takt || 40} s · ${L.art === "tram" ? "🚋" : "🚌"} ${L.busse || 1}</span><button class="chip" type="button" id="busPlus">+</button><span style="white-space:nowrap;color:var(--leise)">👥 ${zahl(L.letzteWoche || 0)}/Wo · ${Math.round((L.auslastung || 0) * 100)} % voll</span>${chip("data-bmodus", "bearbeiten", "✏️ Bearbeiten", busModus === "bearbeiten")}${L.art !== "tram" ? `<button class="chip" type="button" id="busModell">${BUS_MODELLE[L.modell || "mix"]}</button>` : ""}<button class="chip gefahr" type="button" id="linieLoeschen">🗑️</button>`;
+    karten = ["busdepot", "tramdepot", "bahnhof", "hafen"].map((k) => { const D = DIENSTE[k], f = dienstFrei(k); return kk("data-dienst", k, D.em, D.name, f ? euro(D.preis) : "ab " + MEILEN[D.ab].name, busModus === "bau" && dienstWahl === k, !f); }).join("") + [...linien.values()].map((x) => kk("data-linie", x.id, `<span style="display:inline-block;width:26px;height:26px;border-radius:50%;background:#${x.farbe.toString(16).padStart(6, "0")};color:#fff;font-size:.9rem;line-height:26px;font-weight:700">${x.nr}</span>`, "Linie " + x.nr, x.halte.length + " Halte · " + x.busse + " 🚌", x.id === linieWahl)).join("") || "";
     if (!linien.size) karten += `<small style="color:var(--leise);padding:8px">Noch keine Linie. 1. Haltestellen bauen · 2. „Neue Linie“ und Haltestellen antippen · ${zahl(busAbdeckung.fahrgaeste)} Fahrgäste</small>`;
   } else if (werkzeug === "gebiet") {
     const m = MEILEN[meilenstein], frei = m.gebiete - gekauft;
@@ -2452,7 +2496,8 @@ $("fach").addEventListener("click", (e) => {
   if (b.dataset.bmodus === "tram" && meilenstein < 3) { tipp("🔒 Straßenbahnen gibt es ab " + MEILEN[3].name + " (" + zahl(MEILEN[3].ab) + " Einwohner).", 3000); return; }
   if (b.dataset.bmodus) { busModus = b.dataset.bmodus; vorschauWeg(); linieBau = []; frageZu(); linienNeu = true; tipp(TIPPS.verkehr(), 3500); }
   if (b.dataset.linie) { linieWahl = +b.dataset.linie === linieWahl ? null : +b.dataset.linie; }
-  if (b.id === "busPlus" || b.id === "busMinus") { const L = linien.get(linieWahl); if (L) { L.busse = klemme(L.busse + (b.id === "busPlus" ? 1 : -1), 1, 12); if (b.id === "busMinus") { const fz = fahrzeuge.filter((f) => f.linie === L.id); if (fz.length > L.busse) fahrzeugWeg(fz[0]); fahrzeuge = fahrzeuge.filter((f) => !f.weg); } speichernBald(); zeigeWerte(); } }
+  if (b.id === "busPlus" || b.id === "busMinus") { const L = linien.get(linieWahl); if (L) { L.takt = klemme((L.takt || 40) + (b.id === "busPlus" ? -10 : 10), 10, 180); L.busse = busseFuer(L); speichernBald(); zeigeWerte(); tipp("⏱️ Linie " + L.nr + ": alle " + L.takt + " s ein Fahrzeug (" + L.busse + " unterwegs)", 2200); } }
+  if (b.id === "ticketPlus" || b.id === "ticketMinus") { ticketPreis = klemme(Math.round((ticketPreis + (b.id === "ticketPlus" ? 0.25 : -0.25)) * 100) / 100, 0, 4); tipp("🎫 Ticket: " + ticketPreis.toFixed(2).replace(".", ",") + " € – " + (ticketPreis <= 1 ? "billig, mehr Fahrgäste" : ticketPreis >= 2.5 ? "teuer, weniger Fahrgäste" : "normal"), 2200); speichernBald(); }
   if (b.id === "busModell") { const L = linien.get(linieWahl); if (L) { const ks = Object.keys(BUS_MODELLE), i = ks.indexOf(L.modell || "mix"); L.modell = ks[(i + 1) % ks.length]; for (const f of fahrzeuge) if (f.linie === L.id) fahrzeugWeg(f); fahrzeuge = fahrzeuge.filter((f) => !f.weg); tipp("Linie " + L.nr + ": " + BUS_MODELLE[L.modell], 2000); speichernBald(); } }
   if (b.id === "linieLoeschen") { const L = linien.get(linieWahl); if (L) { merkeRueck(); linieWeg(L); linieWahl = null; busRechnen(); speichernBald(); } }
   if (b.dataset.dkat) { dienstKat = b.dataset.dkat; dienstWahl = Object.keys(DIENSTE).find((k) => DIENSTE[k].kat === dienstKat); vorschauWeg(); frageZu(); }
@@ -2644,9 +2689,9 @@ function loslassen(e) {
   finger.delete(e.pointerId);
   if (!aktion || aktion.id !== e.pointerId) return;
   const a = aktion; aktion = null;
-  if (werkzeug === "strasse") { if (tippModus()) { if (!a.bewegt) (strModus === "ampel" ? ampelUmschalten : strModus === "einbahn" ? einbahnUmschalten : kreiselBauen)(a.letzte); } else { if (bau.kandidat) { bau.punkte.push(bau.kandidat); bau.kandidat = null; } planNeu(); } }
+  if (werkzeug === "strasse") { if (tippModus()) { if (!a.bewegt) (strModus === "ampel" ? ampelUmschalten : strModus === "einbahn" ? einbahnUmschalten : strModus === "busspur" ? busspurUmschalten : kreiselBauen)(a.letzte); } else { if (bau.kandidat) { bau.punkte.push(bau.kandidat); bau.kandidat = null; } planNeu(); } }
   else if (werkzeug === "abriss" && !a.bewegt) abreissenStrasse(a.letzte);
-  else if (werkzeug === "ansehen" && !a.bewegt) { const f = fahrzeugBei(a.letzte), d = inDienst(a.letzte.x, a.letzte.z, 0.1); if (f) fahrzeugInfo(f); else if (d) dienstInfo(d); else hausInfo(a.letzte); }
+  else if (werkzeug === "ansehen" && !a.bewegt) { const f = fahrzeugBei(a.letzte), d = inDienst(a.letzte.x, a.letzte.z, 0.1), hs = halteBei(a.letzte, 0.7); if (f) fahrzeugInfo(f); else if (hs) haltInfo(hs); else if (d) dienstInfo(d); else hausInfo(a.letzte); }
   else if ((werkzeug === "dienst" || werkzeug === "park") && !a.bewegt) dienstVorschau(a.letzte);
   else if (werkzeug === "verkehr" && !a.bewegt) busTippen(a.letzte);
   else if (werkzeug === "gebiet" && !a.bewegt) gebietAntippen(e);
@@ -2879,7 +2924,7 @@ let folgen = null;
 function fahrzeugBei(p) { let best = null, bd = Math.max(0.5, fangRadius() * 0.45); for (const f of fahrzeuge) { if (!f.pos) continue; const d = Math.hypot(f.pos.x - p.x, f.pos.z - p.z); if (d < bd) { bd = d; best = f; } } return best; }
 function fahrzeugInfo(f) {
   const ladung = f.anh ? "<br>📦 Ladung: " + AUFLIEGER[f.anh].name : f.typ === "liefer" ? "<br>📦 Lieferung" : "";
-  infoZeigen(`<b>${mitAuflieger(f.typ) || f.typ === "kipper" ? "🚛" : f.linie ? (f.typ === "tram" ? "🚋" : "🚌") : FZ[f.typ].blau ? "🚨" : f.typ === "liefer" ? "🚐" : "🚗"} ${f.name}</b>fährt von <b style="display:inline;font-size:inherit">${f.vonText}</b> nach <b style="display:inline;font-size:inherit">${f.nachText}</b>${ladung}<br><small>Tempo: ${Math.round(f.v * 8 * 3.6)} km/h</small><div style="margin-top:8px"><button class="chip" type="button" data-folgen="${f.id}">📷 Folgen</button></div>`, 7000);
+  infoZeigen(`<b>${mitAuflieger(f.typ) || f.typ === "kipper" ? "🚛" : f.linie ? (f.typ === "tram" ? "🚋" : "🚌") : FZ[f.typ].blau ? "🚨" : f.typ === "liefer" ? "🚐" : "🚗"} ${f.name}</b>fährt von <b style="display:inline;font-size:inherit">${f.vonText}</b> nach <b style="display:inline;font-size:inherit">${f.nachText}</b>${ladung}${f.linie ? "<br>🧍 " + (f.insassen || 0) + " / " + (PLAETZE[f.typ] || 50) + " Fahrgäste" : ""}<br><small>Tempo: ${Math.round(f.v * 8 * 3.6)} km/h</small><div style="margin-top:8px"><button class="chip" type="button" data-folgen="${f.id}">📷 Folgen</button></div>`, 7000);
 }
 $("info").addEventListener("click", (e) => { const b = e.target.closest("[data-folgen]"); if (!b) return; const f = fahrzeuge.find((x) => x.id === +b.dataset.folgen); if (f) folgenStart(f); });
 function folgenStart(f) {
