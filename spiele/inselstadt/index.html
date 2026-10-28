@@ -33,6 +33,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .kz.geld b{color:#ffe08a}
 #trend{font-style:normal;font-size:.72rem}
 #trend.plus{color:var(--gut)}#trend.minus{color:var(--schlecht)}
+.vkopf{display:flex;gap:2px}.vk{font-size:.78rem;border-radius:6px;padding:0 2px}.vk.gelb{background:rgba(255,210,61,.35)}.vk.rot{background:rgba(255,80,70,.55)}.vk.gruen{opacity:.75}
 #bedarf{display:flex;gap:4px;padding-left:4px;border-left:1px solid var(--linie)}
 #bedarf span{display:grid;justify-items:center;gap:1px}
 #bedarf .saeule{height:26px;width:9px;border-radius:3px;background:rgba(255,255,255,.08);display:flex;align-items:flex-end;overflow:hidden}
@@ -174,6 +175,7 @@ h3{margin:0 0 6px;font-size:.75rem;letter-spacing:.14em;text-transform:uppercase
     <div class="kz"><small>Einwohner</small><b>👥 <span id="wEinw">0</span></b></div>
     <div class="kz jobs"><small>Jobs</small><b>💼 <span id="wJobs">0</span></b></div>
     <div class="kz"><small>Zufrieden</small><b id="wFroh">😊 –</b></div>
+    <div class="kz"><small>Versorgung</small><b id="versorgungKopf" class="vkopf"></b></div>
     <div id="bedarf" title="Bedarf: Wohnen, Gewerbe, Büros, Industrie"><span style="--c:var(--w)"><span class="saeule"><i></i></span><em>W</em></span><span style="--c:var(--l)"><span class="saeule"><i></i></span><em>G</em></span><span style="--c:#3fd6c9"><span class="saeule"><i></i></span><em>B</em></span><span style="--c:var(--i)"><span class="saeule"><i></i></span><em>I</em></span></div></button>
   <div id="zeitleiste" class="glas"><button type="button" data-t="0" aria-label="Pause">⏸️</button><button type="button" data-t="1" aria-label="Normal">▶️</button><button type="button" data-t="2" aria-label="Schnell">⏩</button><button type="button" data-t="4" aria-label="Sehr schnell">⏭️</button><span id="datum"></span></div>
 </div>

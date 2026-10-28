@@ -1000,38 +1000,79 @@ function alleeZeichnen() {
    Dienste: Strom, Wasser, Müll, Polizei, Feuerwehr, Gesundheit, Bildung, Parks
    ================================================================ */
 const DIENST_KAT = {
-  verkehr: { em: "🚆", name: "Bahn & Hafen" },
+  verkehr: { em: "🚆", name: "Bahn & Hafen" }, freizeit: { em: "🎡", name: "Freizeit" }, wahrzeichen: { em: "🗼", name: "Wahrzeichen" },
   strom: { em: "⚡", name: "Strom" }, wasser: { em: "💧", name: "Wasser" }, muell: { em: "🗑️", name: "Müll" },
   polizei: { em: "🚓", name: "Polizei" }, feuer: { em: "🚒", name: "Feuerwehr" }, gesund: { em: "🏥", name: "Gesundheit" }, bildung: { em: "🎓", name: "Bildung" }, park: { em: "🌳", name: "Parks" }
 };
 const DIENSTE = {
-  windrad: { kat: "strom", name: "Windrad", em: "🌬️", preis: 3000, unterhalt: 60, w: 1, d: 1, strom: 90, text: "Sauberer Strom, aber nicht viel." },
-  solar: { kat: "strom", name: "Solarpark", em: "☀️", preis: 9000, unterhalt: 140, w: 3, d: 3, strom: 380, ab: 1, text: "Viel sauberer Strom, braucht aber Platz." },
-  kohle: { kat: "strom", name: "Kohlekraftwerk", em: "🏭", preis: 16000, unterhalt: 320, w: 4, d: 4, strom: 1500, dreck: 9, ab: 2, text: "Sehr viel Strom – aber Rauch und Dreck." },
-  pumpe: { kat: "wasser", name: "Wasserpumpe", em: "🚰", preis: 2500, unterhalt: 50, w: 1, d: 2, wasser: 450, amWasser: true, text: "Pumpt Wasser aus See oder Meer. Muss am Ufer stehen." },
-  wasserturm: { kat: "wasser", name: "Wasserturm", em: "🗼", preis: 4500, unterhalt: 90, w: 2, d: 2, wasser: 220, text: "Wasser auch weit weg vom Ufer." },
-  klaer: { kat: "wasser", name: "Kläranlage", em: "🚽", preis: 4000, unterhalt: 80, w: 2, d: 3, abwasser: 520, text: "Reinigt das Abwasser der Stadt." },
-  deponie: { kat: "muell", name: "Mülldeponie", em: "🗑️", preis: 4000, unterhalt: 100, w: 3, d: 3, muell: 550, dreck: 4, text: "Müllautos holen den Müll bei den Häusern ab." },
-  verbrennung: { kat: "muell", name: "Müllverbrennung", em: "♨️", preis: 15000, unterhalt: 260, w: 3, d: 3, muell: 2200, strom: 150, dreck: 5, ab: 3, text: "Verbrennt viel Müll und macht nebenbei Strom." },
-  polizei: { kat: "polizei", name: "Polizeiwache", em: "🚓", preis: 6000, unterhalt: 120, w: 2, d: 2, radius: 13, text: "Weniger Kriminalität im Kreis. Streifenwagen fahren Runden." },
-  praesidium: { kat: "polizei", name: "Polizeipräsidium", em: "👮", preis: 20000, unterhalt: 340, w: 3, d: 3, radius: 24, ab: 4, text: "Großer Wirkungskreis." },
-  feuerwache: { kat: "feuer", name: "Feuerwache", em: "🚒", preis: 6000, unterhalt: 120, w: 2, d: 2, radius: 13, text: "Löschzüge fahren zu Bränden im Kreis." },
-  hauptwache: { kat: "feuer", name: "Hauptfeuerwache", em: "🧯", preis: 20000, unterhalt: 340, w: 3, d: 3, radius: 24, ab: 4, text: "Großer Wirkungskreis." },
-  arzt: { kat: "gesund", name: "Arztpraxis", em: "🩺", preis: 3000, unterhalt: 70, w: 1, d: 2, radius: 8, text: "Kleine Praxis für die Nachbarschaft." },
-  krankenhaus: { kat: "gesund", name: "Krankenhaus", em: "🏥", preis: 15000, unterhalt: 300, w: 3, d: 3, radius: 22, ab: 2, text: "Krankenwagen für die ganze Gegend." },
-  grundschule: { kat: "bildung", name: "Grundschule", em: "🏫", preis: 5000, unterhalt: 110, w: 2, d: 3, radius: 11, bildung: 1, text: "Bildung Stufe 1 – Wohnhäuser können auf Stufe 3+ wachsen." },
-  gymnasium: { kat: "bildung", name: "Gymnasium", em: "🎒", preis: 12000, unterhalt: 220, w: 3, d: 3, radius: 17, bildung: 2, ab: 2, text: "Bildung Stufe 2 – Stufe 5 und mehr Büros statt Fabriken." },
-  uni: { kat: "bildung", name: "Universität", em: "🎓", preis: 30000, unterhalt: 480, w: 4, d: 4, radius: 32, bildung: 3, ab: 4, text: "Bildung Stufe 3 – die klügste Stadt." },
-  bahnhof: { kat: "verkehr", name: "Bahnhof", em: "🚆", preis: 25000, unterhalt: 300, w: 3, d: 3, ab: 2, text: "Züge bringen Pendler und Touristen – mehr Bedarf an Wohnungen und Läden." },
-  hafen: { kat: "verkehr", name: "Frachthafen", em: "🚢", preis: 30000, unterhalt: 350, w: 4, d: 3, ab: 1, amWasser: true, dreck: 5, text: "Schiffe bringen Waren – mehr Bedarf an Industrie, Lkw fahren vom Hafen los. Muss am Ufer stehen." },
+  windrad: { kat: "strom", name: "Windrad", em: "🌬️", preis: 3000, unterhalt: 60, w: 1, d: 1, strom: 250, text: "Sauberer Strom, aber nicht viel." },
+  solar: { kat: "strom", name: "Solarpark", em: "☀️", preis: 9000, unterhalt: 140, w: 3, d: 3, strom: 900, ab: 1, text: "Viel sauberer Strom, braucht aber Platz." },
+  kohle: { kat: "strom", name: "Kohlekraftwerk", em: "🏭", preis: 16000, unterhalt: 320, w: 4, d: 4, strom: 3500, dreck: 9, ab: 2, text: "Sehr viel Strom – aber Rauch und Dreck." },
+  gas: { kat: "strom", name: "Gaskraftwerk", em: "🔥", preis: 22000, unterhalt: 380, w: 3, d: 3, strom: 4500, dreck: 4, ab: 2, text: "Viel Strom, weniger Dreck als Kohle." },
+  geothermie: { kat: "strom", name: "Geothermie", em: "🌋", preis: 20000, unterhalt: 260, w: 2, d: 2, strom: 2400, ab: 3, text: "Wärme aus der Erde – sauber und zuverlässig." },
+  wasserkraft: { kat: "strom", name: "Wasserkraftwerk", em: "🌊", preis: 26000, unterhalt: 300, w: 3, d: 2, strom: 3600, amWasser: true, ab: 3, text: "Sauberer Strom aus Wasser. Muss am Ufer stehen." },
+  atom: { kat: "strom", name: "Atomkraftwerk", em: "☢️", preis: 60000, unterhalt: 900, w: 4, d: 4, strom: 14000, ab: 5, text: "Riesig viel Strom für eine Metropole." },
+  pumpe: { kat: "wasser", name: "Wasserpumpe", em: "🚰", preis: 2500, unterhalt: 50, w: 1, d: 2, wasser: 1200, amWasser: true, text: "Pumpt Wasser aus See oder Meer. Muss am Ufer stehen." },
+  wasserturm: { kat: "wasser", name: "Wasserturm", em: "🗼", preis: 4500, unterhalt: 90, w: 2, d: 2, wasser: 600, text: "Wasser auch weit weg vom Ufer." },
+  wasserwerk: { kat: "wasser", name: "Großes Wasserwerk", em: "🏭", preis: 15000, unterhalt: 250, w: 3, d: 3, wasser: 4500, amWasser: true, ab: 3, text: "Sehr viel Wasser. Muss am Ufer stehen." },
+  klaer: { kat: "wasser", name: "Kläranlage", em: "🚽", preis: 4000, unterhalt: 80, w: 2, d: 3, abwasser: 1200, text: "Reinigt das Abwasser der Stadt." },
+  aufbereitung: { kat: "wasser", name: "Wasseraufbereitung", em: "💠", preis: 12000, unterhalt: 200, w: 2, d: 2, abwasser: 2000, ab: 2, text: "Reinigt Abwasser besonders sauber – kein Dreck." },
+  grossklaer: { kat: "wasser", name: "Großkläranlage", em: "🛢️", preis: 18000, unterhalt: 280, w: 3, d: 3, abwasser: 4500, ab: 3, text: "Für sehr große Städte." },
+  deponie: { kat: "muell", name: "Mülldeponie", em: "🗑️", preis: 4000, unterhalt: 100, w: 3, d: 3, muell: 1200, dreck: 4, text: "Müllautos holen den Müll bei den Häusern ab." },
+  recycling: { kat: "muell", name: "Recyclinghof", em: "♻️", preis: 9000, unterhalt: 150, w: 2, d: 2, muell: 1500, ab: 2, recycling: true, text: "Weniger Müll in der ganzen Stadt (−10 % je Hof)." },
+  verbrennung: { kat: "muell", name: "Müllverbrennung", em: "♨️", preis: 15000, unterhalt: 260, w: 3, d: 3, muell: 4500, strom: 300, dreck: 5, ab: 3, text: "Verbrennt viel Müll und macht nebenbei Strom." },
+  muellheiz: { kat: "muell", name: "Müllheizkraftwerk", em: "🏭", preis: 30000, unterhalt: 450, w: 3, d: 3, muell: 9000, strom: 900, dreck: 6, ab: 4, text: "Riesige Anlage: Müll wird zu Strom." },
+  polizei: { kat: "polizei", name: "Polizeiwache", em: "🚓", preis: 6000, unterhalt: 120, w: 2, d: 2, radius: 13, kap: 1800, text: "Weniger Kriminalität. Streifenwagen fahren Runden." },
+  praesidium: { kat: "polizei", name: "Polizeipräsidium", em: "👮", preis: 20000, unterhalt: 340, w: 3, d: 3, radius: 24, kap: 7000, ab: 4, text: "Große Reichweite und viel Platz." },
+  polizeiheli: { kat: "polizei", name: "Polizei-Hubschrauber", em: "🚁", preis: 25000, unterhalt: 400, w: 2, d: 2, radius: 40, kap: 6000, luft: true, ab: 4, text: "Fliegt über alles – wirkt im großen Kreis." },
+  gefaengnis: { kat: "polizei", name: "Gefängnis", em: "⛓️", preis: 18000, unterhalt: 300, w: 3, d: 3, gefaengnis: true, ab: 3, text: "Weniger Kriminalität in der ganzen Stadt." },
+  feuerklein: { kat: "feuer", name: "Kleine Feuerwache", em: "🧯", preis: 3000, unterhalt: 60, w: 1, d: 2, radius: 8, kap: 800, zuege: 1, text: "Klein und günstig für Wohngebiete." },
+  feuerwache: { kat: "feuer", name: "Feuerwache", em: "🚒", preis: 6000, unterhalt: 120, w: 2, d: 2, radius: 13, kap: 2500, zuege: 2, text: "Löschzüge fahren zu Bränden." },
+  hauptwache: { kat: "feuer", name: "Hauptfeuerwache", em: "🚒", preis: 20000, unterhalt: 340, w: 3, d: 3, radius: 24, kap: 8000, zuege: 5, ab: 4, text: "Große Reichweite und Drehleiter für Hochhäuser." },
+  waldbrand: { kat: "feuer", name: "Waldbrand-Wache", em: "🌲", preis: 6000, unterhalt: 90, w: 2, d: 2, radius: 18, kap: 1200, zuege: 1, luft: true, ab: 1, text: "Schützt Felder, Wälder und Außenbezirke im großen Kreis." },
+  loeschheli: { kat: "feuer", name: "Löschhubschrauber", em: "🚁", preis: 25000, unterhalt: 400, w: 2, d: 2, radius: 40, kap: 6000, zuege: 2, luft: true, ab: 4, text: "Löscht von oben – wirkt im großen Kreis." },
+  arzt: { kat: "gesund", name: "Arztpraxis", em: "🩺", preis: 3000, unterhalt: 70, w: 1, d: 2, radius: 8, kap: 700, text: "Kleine Praxis für die Nachbarschaft." },
+  kinderarzt: { kat: "gesund", name: "Kinderarzt", em: "🧸", preis: 3500, unterhalt: 70, w: 1, d: 2, radius: 9, kap: 800, text: "Für Familien – macht Wohngebiete beliebter." },
+  krankenhaus: { kat: "gesund", name: "Krankenhaus", em: "🏥", preis: 15000, unterhalt: 300, w: 3, d: 3, radius: 22, kap: 5000, ab: 2, text: "Krankenwagen für die ganze Gegend." },
+  altenheim: { kat: "gesund", name: "Altenheim", em: "👵", preis: 6000, unterhalt: 120, w: 2, d: 2, radius: 10, kap: 900, ab: 1, text: "Für ältere Leute – macht die Gegend zufriedener." },
+  rettungsheli: { kat: "gesund", name: "Rettungshubschrauber", em: "🚁", preis: 25000, unterhalt: 400, w: 2, d: 2, radius: 40, kap: 6000, luft: true, ab: 4, text: "Hilft schnell im großen Kreis." },
+  friedhof: { kat: "gesund", name: "Friedhof", em: "🪦", preis: 4000, unterhalt: 60, w: 2, d: 3, froh: 2, einzig: true, ab: 1, text: "Ein ruhiger Ort – die Stadt ist etwas zufriedener." },
+  krematorium: { kat: "gesund", name: "Krematorium", em: "⚱️", preis: 9000, unterhalt: 120, w: 2, d: 2, froh: 2, einzig: true, dreck: 3, ab: 3, text: "Die Stadt ist etwas zufriedener." },
+  kindergarten: { kat: "bildung", name: "Kindergarten", em: "🧒", preis: 3000, unterhalt: 70, w: 1, d: 2, radius: 8, bildung: 1, kap: 250, text: "Für die Kleinsten – Bildung Stufe 1." },
+  grundschule: { kat: "bildung", name: "Grundschule", em: "🏫", preis: 5000, unterhalt: 110, w: 2, d: 3, radius: 11, bildung: 1, kap: 400, text: "Bildung Stufe 1 – Wohnhäuser können auf Stufe 3+ wachsen." },
+  bibliothek: { kat: "bildung", name: "Bibliothek", em: "📚", preis: 6000, unterhalt: 100, w: 2, d: 2, radius: 14, bildung: 1, kap: 1500, wert: 5, ab: 1, text: "Bildung Stufe 1 für viele – und schöner Wohnen." },
+  gymnasium: { kat: "bildung", name: "Gymnasium", em: "🎒", preis: 12000, unterhalt: 220, w: 3, d: 3, radius: 17, bildung: 2, kap: 1000, ab: 2, text: "Bildung Stufe 2 – Stufe 5 und mehr Büros statt Fabriken." },
+  berufsschule: { kat: "bildung", name: "Berufsschule", em: "🛠️", preis: 10000, unterhalt: 190, w: 3, d: 2, radius: 16, bildung: 2, kap: 800, ab: 2, text: "Bildung Stufe 2 mit Werkstätten." },
+  uni: { kat: "bildung", name: "Universität", em: "🎓", preis: 30000, unterhalt: 480, w: 4, d: 4, radius: 32, bildung: 3, kap: 3000, ab: 4, text: "Bildung Stufe 3 – die klügste Stadt." },
   spielplatz: { kat: "park", name: "Spielplatz", em: "🛝", preis: 600, unterhalt: 10, w: 1, d: 1, radius: 5, wert: 8, text: "Macht die Nachbarschaft schöner." },
   park: { kat: "park", name: "Park", em: "🌳", preis: 1500, unterhalt: 25, w: 2, d: 2, radius: 7, wert: 12, text: "Bäume und Wege – höherer Bodenwert." },
   brunnen: { kat: "park", name: "Brunnenplatz", em: "⛲", preis: 2500, unterhalt: 35, w: 2, d: 2, radius: 7, wert: 14, ab: 1, text: "Ein schöner Platz mit Brunnen." },
   sportplatz: { kat: "park", name: "Sportplatz", em: "⚽", preis: 4000, unterhalt: 60, w: 3, d: 2, radius: 9, wert: 10, ab: 1, text: "Fußball für alle." },
-  grosspark: { kat: "park", name: "Großer Park", em: "🏞️", preis: 6000, unterhalt: 80, w: 3, d: 3, radius: 12, wert: 18, ab: 2, text: "Großer Park mit Teich." }
+  grosspark: { kat: "park", name: "Großer Park", em: "🏞️", preis: 6000, unterhalt: 80, w: 3, d: 3, radius: 12, wert: 18, ab: 2, text: "Großer Park mit Teich." },
+  schwimmbad: { kat: "freizeit", name: "Schwimmbad", em: "🏊", preis: 8000, unterhalt: 120, w: 3, d: 2, radius: 12, wert: 12, ab: 1, text: "Abkühlung für die ganze Gegend." },
+  rathaus: { kat: "freizeit", name: "Rathaus", em: "🏛️", preis: 15000, unterhalt: 150, w: 3, d: 3, radius: 15, wert: 10, froh: 3, einzig: true, ab: 1, text: "Das Herz der Stadt – alle sind etwas zufriedener." },
+  museum: { kat: "freizeit", name: "Museum", em: "🖼️", preis: 20000, unterhalt: 250, w: 3, d: 3, radius: 18, wert: 16, ab: 2, text: "Kultur – und Touristen kommen." },
+  stadion: { kat: "freizeit", name: "Stadion", em: "🏟️", preis: 40000, unterhalt: 500, w: 4, d: 4, radius: 25, wert: 15, froh: 2, ab: 3, text: "Großer Sport – die ganze Stadt jubelt." },
+  zoo: { kat: "freizeit", name: "Zoo", em: "🦁", preis: 30000, unterhalt: 400, w: 4, d: 4, radius: 20, wert: 18, ab: 3, text: "Tiere ansehen – sehr beliebt bei Familien." },
+  freizeitpark: { kat: "freizeit", name: "Freizeitpark", em: "🎢", preis: 45000, unterhalt: 550, w: 4, d: 4, radius: 22, wert: 20, froh: 2, ab: 4, text: "Achterbahn und Spaß für alle." },
+  leuchtturm: { kat: "wahrzeichen", name: "Leuchtturm", em: "🗼", preis: 20000, unterhalt: 100, w: 2, d: 2, radius: 15, wert: 12, froh: 2, einzig: true, amWasser: true, ab: 1, text: "Wahrzeichen am Ufer." },
+  riesenrad: { kat: "wahrzeichen", name: "Riesenrad", em: "🎡", preis: 30000, unterhalt: 200, w: 3, d: 3, radius: 20, wert: 15, froh: 2, einzig: true, ab: 2, text: "Wahrzeichen – man sieht es von überall." },
+  fernsehturm: { kat: "wahrzeichen", name: "Fernsehturm", em: "📡", preis: 50000, unterhalt: 300, w: 2, d: 2, radius: 30, wert: 15, froh: 3, einzig: true, ab: 3, text: "Das höchste Gebäude der Stadt." },
+  bahnhof: { kat: "verkehr", name: "Bahnhof", em: "🚆", preis: 25000, unterhalt: 300, w: 3, d: 3, ab: 2, text: "Züge bringen Pendler und Touristen – mehr Bedarf an Wohnungen und Läden." },
+  hafen: { kat: "verkehr", name: "Frachthafen", em: "🚢", preis: 30000, unterhalt: 350, w: 4, d: 3, ab: 1, amWasser: true, dreck: 5, text: "Schiffe bringen Waren – mehr Bedarf an Industrie, Lkw fahren vom Hafen los. Muss am Ufer stehen." }
 };
 const RESSOURCEN = { strom: { em: "⚡", name: "Strom" }, wasser: { em: "💧", name: "Wasser" }, abwasser: { em: "🚽", name: "Abwasser" }, muell: { em: "🗑️", name: "Müllabfuhr" } };
 const dienste = new Map(); let dId = 1;
+const PARK_KATS = ["park", "freizeit", "wahrzeichen"];
+const budgetBereich = { strom: 100, wasser: 100, muell: 100, polizei: 100, feuer: 100, gesund: 100, bildung: 100, park: 100 };
+const bKat = (kat) => PARK_KATS.includes(kat) || kat === "verkehr" ? "park" : kat;
+const ausbauFak = (d) => 1 + 0.6 * (d.ausbau || 0), budgetFak = (kat) => (budgetBereich[bKat(kat)] || 100) / 100;
+const leistungVon = (d, r) => (DIENSTE[d.typ][r] || 0) * ausbauFak(d) * budgetFak(DIENSTE[d.typ].kat);
+const kapVon = (d) => (DIENSTE[d.typ].kap || 0) * ausbauFak(d) * budgetFak(DIENSTE[d.typ].kat);
+const reichVon = (d) => DIENSTE[d.typ].radius * (1 + 0.15 * (d.ausbau || 0)) * Math.sqrt(budgetFak(DIENSTE[d.typ].kat));
+const unterhaltVon = (d) => DIENSTE[d.typ].unterhalt * (1 + 0.5 * (d.ausbau || 0)) * budgetFak(DIENSTE[d.typ].kat);
+const ausbaubar = (D) => !PARK_KATS.includes(D.kat) && D.kat !== "verkehr" && !D.einzig && !D.gefaengnis;
+const globalFroh = () => { let f = 0; for (const d of dienste.values()) f += DIENSTE[d.typ].froh || 0; return Math.min(12, f); };
 const dienstFrei = (t) => meilenstein >= (DIENSTE[t].ab || 0);
 function dienstTeile(d) {
   const D0 = DIENSTE[d.typ], W = D0.w * ZELLE, D = D0.d * ZELLE, vorn = D / 2 - 0.08, T = [], r = zufall(d.id * 977 + 13);
@@ -1066,8 +1107,37 @@ function dienstTeile(d) {
     case "park": boden(0x6fbf55); flach(0, 0, 0.18, D * 0.95, 0xd8c7a0); flach(0, 0, W * 0.95, 0.18, 0xd8c7a0); for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) baum(a * W * 0.27, b * D * 0.27, 0.55 + r() * 0.25); box("flach", 0.2, 0.12, 0.2, 0.05, 0.06, 0x8b5a2b, { ly: 0.05 }); break;
     case "brunnen": boden(0xd8d0c0); zyl(0, 0, 0.75, 0.1, 0xb9b4a8); zyl(0, 0, 0.65, 0.01, 0x5fc8e8, { ly: 0.1 }); zyl(0, 0, 0.08, 0.3, 0xb9b4a8); zyl(0, 0, 0.22, 0.04, 0x5fc8e8, { ly: 0.3 }); for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) baum(a * W * 0.38, b * D * 0.38, 0.45); break;
     case "sportplatz": boden(0x4f9a3a); flach(0, 0, W * 0.86, D * 0.8, 0x5aa845); box("flach", 0, 0, W * 0.86, 0.002, 0.02, 0xffffff, { ly: 0.017 }); box("flach", 0, 0, 0.02, 0.002, D * 0.8, 0xffffff, { ly: 0.017 }); for (const s of [-1, 1]) { box("flach", s * W * 0.42, 0, 0.02, 0.14, 0.36, 0xffffff); } break;
+    case "gas": boden(0x9a9a92); box("haus", -W * 0.15, vorn - 0.5, W * 0.6, 0.7, 0.9, 0xc4c9cc); dach(-W * 0.15, vorn - 0.5, W * 0.6, 0.9, 0.7, 0x6d737a); zyl(W * 0.32, -D * 0.25, 0.7, 0.5, 0xe9ecef); zyl(W * 0.32, -D * 0.25, 0.74, 0.05, 0xd8dade, { ly: 0.5 }); zyl(-W * 0.3, -D * 0.3, 0.14, 2.2, 0xd9d9d9, { schlot: true }); zyl(-W * 0.1, -D * 0.3, 0.14, 2.2, 0xd9d9d9); break;
+    case "geothermie": boden(0x8a7a6a); box("haus", 0, vorn - 0.35, W * 0.7, 0.55, 0.55, 0xe6dccb); dach(0, vorn - 0.35, W * 0.7, 0.55, 0.55, 0xb2513a); zyl(-0.35, -0.4, 0.22, 1.4, 0xf2f2f2, { schlot: true }); box("flach", 0.1, -0.35, 0.8, 0.08, 0.08, 0x9aa0a8, { ly: 0.3 }); zyl(0.4, -0.4, 0.3, 0.3, 0x9aa0a8); break;
+    case "wasserkraft": boden(0x9a9a92); box("haus", 0, -D * 0.3, W * 0.96, 0.9, 0.45, 0xb9b4a8); for (let k = 0; k < 3; k++) box("flach", -W * 0.3 + k * W * 0.3, -D / 2 + 0.05, 0.3, 0.6, 0.06, 0x5fb8d8); box("haus", 0, vorn - 0.3, W * 0.5, 0.5, 0.4, 0xd9d4c7); dach(0, vorn - 0.3, W * 0.5, 0.4, 0.5); break;
+    case "atom": boden(0xa9a9a0); for (const sx of [-1, 1]) { zyl(sx * W * 0.25, -D * 0.2, 1.4, 2.0, 0xe6e8ea); zyl(sx * W * 0.25, -D * 0.2, 1.15, 0.04, 0xa9adb3, { ly: 2.0 }); } zyl(0, vorn - 0.6, 0.9, 0.9, 0xd9dde2); zyl(0, vorn - 0.6, 0.62, 0.25, 0xd9dde2, { ly: 0.9 }); zyl(0, vorn - 0.6, 0.3, 0.15, 0xd9dde2, { ly: 1.15 }); box("haus", W * 0.32, vorn - 0.45, 0.8, 0.6, 0.7, 0xc4c9cc); break;
+    case "wasserwerk": boden(0xb5b3ad); for (let k = 0; k < 3; k++) { zyl(-W * 0.3 + k * W * 0.3, -D * 0.2, 0.7, 0.18, 0xa8b0a8); zyl(-W * 0.3 + k * W * 0.3, -D * 0.2, 0.6, 0.01, 0x5fb8d8, { ly: 0.18 }); } box("haus", 0, vorn - 0.35, W * 0.7, 0.6, 0.55, 0xdfe7ee); dach(0, vorn - 0.35, W * 0.7, 0.55, 0.6, 0x3f7fe8); break;
+    case "aufbereitung": boden(0xb5b3ad); zyl(-0.35, -0.35, 0.6, 0.3, 0xdfe7ee); zyl(0.35, -0.35, 0.6, 0.3, 0xdfe7ee); box("haus", 0, vorn - 0.3, W * 0.7, 0.45, 0.45, 0xf2f4f7); dach(0, vorn - 0.3, W * 0.7, 0.45, 0.45, 0x2fb8c9); break;
+    case "grossklaer": boden(0xb5b3ad); for (let k = 0; k < 4; k++) { const x = (k % 2 ? 0.45 : -0.45) * W * 0.6, z = (k < 2 ? -0.5 : 0.25); zyl(x, z, 0.85, 0.14, 0xa8b0a8); zyl(x, z, 0.74, 0.01, 0x6f9a7f, { ly: 0.14 }); } box("haus", W * 0.35, vorn - 0.25, 0.6, 0.4, 0.4, 0xe9e4da); break;
+    case "recycling": boden(0x9a9a92); box("haus", -0.2, vorn - 0.4, W * 0.55, 0.5, 0.6, 0x4f9a5a); dach(-0.2, vorn - 0.4, W * 0.55, 0.6, 0.5, 0x2f6b3a); for (let k = 0; k < 4; k++) box("flach", -0.6 + k * 0.4, -D * 0.32, 0.3, 0.22, 0.3, [0x3f7fe8, 0xf2c14e, 0x4fbf7a, 0x8a96a3][k]); break;
+    case "muellheiz": boden(0x9a9a92); box("haus", -W * 0.12, vorn - 0.7, W * 0.7, 1.0, 1.2, 0xd9dde2); dach(-W * 0.12, vorn - 0.7, W * 0.7, 1.2, 1.0, 0x5d6470); zyl(W * 0.33, -D * 0.25, 0.32, 3.4, 0xe9ecef, { schlot: true }); box("flach", W * 0.33, -D * 0.25, 0.34, 0.08, 0.34, 0x2fbf6a, { ly: 3.0 }); break;
+    case "polizeiheli": case "loeschheli": case "rettungsheli": { const c = d.typ === "polizeiheli" ? 0x1f4fbf : d.typ === "loeschheli" ? 0xd9302f : 0xf6f6f6; boden(0x8c8a84); flach(0, -0.1, 1.2, 1.2, 0x3a3f47); box("flach", 0, -0.1, 0.1, 0.012, 0.6, 0xffffff, { ly: 0.016 }); box("flach", 0, -0.1, 0.4, 0.012, 0.1, 0xffffff, { ly: 0.016 }); box("haus", W * 0.32, vorn - 0.2, 0.5, 0.45, 0.35, c); box("flach", -0.45, -0.1, 0.42, 0.15, 0.14, c, { ly: 0.04 }); box("flach", -0.45, -0.1, 0.8, 0.01, 0.04, 0x2a2d33, { ly: 0.22, ry: 0.5, dreh: 0 }); break; }
+    case "gefaengnis": boden(0x9a9a92); zaun(0x6d737a); for (const s2 of [-1, 1]) box("flach", s2 * W * 0.47, 0, 0.04, 0.5, D * 0.94, 0x8a8f96); box("haus", 0, -0.1, W * 0.6, 0.8, D * 0.5, 0xc4b8a8); dach(0, -0.1, W * 0.6, D * 0.5, 0.8, 0x6d737a); box("haus", W * 0.4, D * 0.4, 0.25, 1.0, 0.25, 0x8a8f96); break;
+    case "feuerklein": boden(0xb5b3ad); box("haus", 0, vorn - 0.42, 0.78, 0.55, 0.7, 0xc23b2f); dach(0, vorn - 0.42, 0.78, 0.7, 0.55, 0x5d6470); box("flach", 0, vorn - 0.06, 0.4, 0.35, 0.01, 0x2a2d33); break;
+    case "waldbrand": boden(0x8a7a5a); box("haus", 0, vorn - 0.35, W * 0.6, 0.5, 0.5, 0x9c7a55); box("dach", 0, vorn - 0.35, W * 0.64, 0.25, 0.55, 0xc23b2f, { ly: 0.5 }); box("haus", -W * 0.32, -D * 0.25, 0.22, 1.6, 0.22, 0x8b5a2b); box("haus", -W * 0.32, -D * 0.25, 0.4, 0.2, 0.4, 0x9c7a55, { ly: 1.6 }); break;
+    case "kinderarzt": case "altenheim": { const k2 = d.typ === "kinderarzt"; boden(0xb9b49f); box("haus", 0, vorn - 0.42, W * 0.82, k2 ? 0.55 : 0.75, 0.7, k2 ? 0xf3d58a : 0xe9e4da); dach(0, vorn - 0.42, W * 0.82, 0.7, k2 ? 0.55 : 0.75, k2 ? 0x3f7fe8 : 0xb2513a); baum(-W * 0.25, -D * 0.3, 0.5); baum(W * 0.25, -D * 0.32, 0.45); break; }
+    case "friedhof": boden(0x6fa855); zaun(0x6d737a); for (let a2 = 0; a2 < 4; a2++) for (let b2 = 0; b2 < 5; b2++) box("flach", -W * 0.32 + a2 * W * 0.2, -D * 0.35 + b2 * D * 0.15, 0.1, 0.1, 0.04, 0x9aa0a8); baum(W * 0.38, -D * 0.38, 0.55); box("haus", 0, vorn - 0.15, 0.4, 0.35, 0.25, 0xd8d0c0); break;
+    case "krematorium": boden(0xb5b3ad); box("haus", 0, vorn - 0.4, W * 0.7, 0.55, 0.6, 0xd8d0c0); dach(0, vorn - 0.4, W * 0.7, 0.6, 0.55, 0x5d6470); zyl(W * 0.3, -D * 0.3, 0.14, 1.2, 0x9aa0a8, { schlot: true }); baum(-W * 0.3, -D * 0.3, 0.5); break;
+    case "kindergarten": boden(0x7fc463); box("haus", 0, vorn - 0.4, 0.8, 0.45, 0.6, 0xf3d58a); dach(0, vorn - 0.4, 0.8, 0.6, 0.45, 0xe8493f); flach(0, -0.5, 0.6, 0.5, 0xe8d39a); box("flach", 0.2, -0.5, 0.04, 0.25, 0.04, 0x3f7fe8); break;
+    case "bibliothek": boden(0xd8d0c0); box("haus", 0, vorn - 0.45, W * 0.8, 0.85, 0.75, 0xe3c9a8); dach(0, vorn - 0.45, W * 0.8, 0.75, 0.85); for (let k = 0; k < 4; k++) zyl(-W * 0.3 + k * W * 0.2, vorn - 0.04, 0.08, 0.7, 0xf2efe8); baum(0, -D * 0.3, 0.5); break;
+    case "berufsschule": boden(0xb9b49f); box("haus", 0, vorn - 0.35, W * 0.84, 0.8, 0.6, 0xd0c8b8); dach(0, vorn - 0.35, W * 0.84, 0.6, 0.8, 0x5d6470); box("haus", W * 0.25, -D * 0.25, W * 0.4, 0.5, D * 0.35, 0xc4c9cc); box("dach", W * 0.25, -D * 0.25, W * 0.42, 0.18, D * 0.37, 0x8b9096, { ly: 0.5 }); break;
+    case "schwimmbad": boden(0xd8d0c0); flach(-W * 0.12, -0.1, W * 0.6, D * 0.55, 0x4fc0e8); box("flach", -W * 0.12, -0.1, W * 0.6, 0.002, 0.02, 0xffffff, { ly: 0.018 }); box("haus", W * 0.36, vorn - 0.35, 0.6, 0.45, 0.5, 0xf2f4f7); box("flach", -W * 0.4, -D * 0.3, 0.05, 0.3, 0.05, 0xe8493f); break;
+    case "rathaus": boden(0xd8d0c0); box("haus", 0, vorn - 0.6, W * 0.84, 1.0, 1.0, 0xe9dcc4); dach(0, vorn - 0.6, W * 0.84, 1.0, 1.0); box("haus", 0, vorn - 0.6, 0.45, 1.9, 0.45, 0xe9dcc4); box("dach", 0, vorn - 0.6, 0.5, 0.4, 0.5, 0x3f7f6a, { ly: 1.9 }); box("flach", 0, vorn - 0.37, 0.18, 0.18, 0.02, 0xffffff, { ly: 1.55 }); for (let k = 0; k < 5; k++) zyl(-W * 0.3 + k * W * 0.15, vorn - 0.06, 0.08, 0.8, 0xf2efe8); break;
+    case "museum": boden(0xd8d0c0); box("haus", 0, vorn - 0.6, W * 0.84, 0.95, 1.1, 0xf2efe8); box("dach", 0, vorn - 0.6, W * 0.88, 0.35, 1.15, 0xd8d0c0, { ly: 0.95 }); for (let k = 0; k < 6; k++) zyl(-W * 0.36 + k * W * 0.144, vorn - 0.02, 0.09, 0.9, 0xffffff); box("flach", 0, -D * 0.3, 0.5, 0.5, 0.5, 0x2f6fd9); break;
+    case "stadion": boden(0x9a9a92); zyl(0, -0.1, Math.min(W, D) * 0.95, 0.7, 0xd9dde2); zyl(0, -0.1, Math.min(W, D) * 0.72, 0.02, 0x4f9a3a, { ly: 0.7 }); zyl(0, -0.1, Math.min(W, D) * 0.98, 0.05, 0xe8493f, { ly: 0.7 }); for (let k = 0; k < 4; k++) box("flach", Math.cos(k * 1.57 + 0.78) * W * 0.46, -0.1 + Math.sin(k * 1.57 + 0.78) * D * 0.46, 0.05, 1.5, 0.05, 0x9aa0a8); break;
+    case "zoo": boden(0x7fb85a); zaun(0x8b5a2b); flach(-W * 0.2, -D * 0.2, 1.2, 0.9, 0x5fb8d8); flach(W * 0.22, D * 0.1, 1.1, 1.0, 0xd9c08a); for (let k = 0; k < 8; k++) baum((r() - 0.5) * W * 0.85, (r() - 0.5) * D * 0.85, 0.45 + r() * 0.3); for (let k = 0; k < 4; k++) box("flach", W * 0.22 + (r() - 0.5) * 0.7, D * 0.1 + (r() - 0.5) * 0.6, 0.18, 0.14, 0.08, wahl(r, [0xe8b04a, 0x8a8f96, 0x2c2f36])); box("haus", -W * 0.35, vorn - 0.25, 0.6, 0.4, 0.35, 0xe6dccb); break;
+    case "freizeitpark": boden(0x9fd27a); for (let k = 0; k < 10; k++) box("flach", -W * 0.4 + k * W * 0.09, -D * 0.25 + Math.sin(k * 0.9) * 0.4, 0.06, 0.4 + Math.abs(Math.sin(k * 0.7)) * 1.2, 0.06, 0xe8493f); box("flach", 0, -D * 0.25, W * 0.85, 0.04, 0.1, 0xf2c14e, { ly: 1.2 }); zyl(W * 0.3, D * 0.15, 0.9, 0.12, 0x9a5be8); box("dach", W * 0.3, D * 0.15, 0.9, 0.5, 0.9, 0xe85b9a, { ly: 0.12 }); box("haus", -W * 0.35, vorn - 0.25, 0.5, 0.4, 0.35, 0xf2c14e); break;
+    case "leuchtturm": boden(0xd8d0c0); zyl(0, -0.1, 0.42, 2.4, 0xf2f2f2); for (let k = 0; k < 3; k++) zyl(0, -0.1, 0.44, 0.3, 0xe8493f, { ly: 0.4 + k * 0.7 }); zyl(0, -0.1, 0.36, 0.3, 0xffe9a0, { ly: 2.4 }); box("dach", 0, -0.1, 0.46, 0.25, 0.46, 0xe8493f, { ly: 2.7 }); box("haus", 0.45, vorn - 0.2, 0.4, 0.3, 0.3, 0xf2f2f2); break;
+    case "riesenrad": { boden(0xd8d0c0); for (const s2 of [-1, 1]) for (const zz of [-0.18, 0.02]) box("flach", s2 * 0.32, zz, 0.05, 1.5, 0.05, 0xc9ced6, { rz: s2 * 0.22 }); const R = 1.05; for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2; box("flach", 0, -0.08, 0.025, R, 0.025, 0xe8e8e8, { ly: 1.5, rz: a }); box("flach", -Math.sin(a) * R, -0.08, 0.13, 0.13, 0.13, PAL.markise[k % PAL.markise.length], { ly: 1.44 + Math.cos(a) * R }); } zyl(0, -0.08, 0.14, 0.14, 0x9aa0a8, { ly: 1.43, rx: Math.PI / 2 }); break; }
+    case "fernsehturm": boden(0xd8d0c0); zyl(0, 0, 0.32, 4.6, 0xd9dde2); zyl(0, 0, 0.9, 0.4, 0xc9ced6, { ly: 3.6 }); zyl(0, 0, 0.7, 0.3, 0x9aa0a8, { ly: 3.3 }); zyl(0, 0, 0.5, 0.2, 0x7fa3b8, { ly: 4.0 }); zyl(0, 0, 0.06, 1.4, 0xe8493f, { ly: 4.6 }); break;
     case "grosspark": boden(0x6fbf55); flach(W * 0.12, -D * 0.12, 1.1, 0.9, 0x5fb8d8); flach(-W * 0.2, 0.2, 0.16, D * 0.9, 0xd8c7a0); for (let k = 0; k < 9; k++) { const a = (r() - 0.5) * W * 0.85, b = (r() - 0.5) * D * 0.85; if (Math.hypot(a - W * 0.12, b + D * 0.12) > 0.7) baum(a, b, 0.5 + r() * 0.35); } break;
   }
+  if (d.ausbau && ausbaubar(D0)) for (let i = 0; i < d.ausbau; i++) { box("haus", -W * 0.36 + i * 0.36, -D / 2 + 0.25, 0.3, 0.35 + 0.15 * i, 0.3, 0xd9d4c7); box("flach", -W * 0.36 + i * 0.36, -D / 2 + 0.25, 0.06, 0.06, 0.06, 0xf2c14e, { ly: 0.42 + 0.15 * i }); }
   return T;
 }
 function inDienst(x, z, rand) {
@@ -1077,7 +1147,7 @@ function inDienst(x, z, rand) {
 }
 function hoeheVon(h) { let y = 0; for (const t of h.teile) if (!t.fest) y = Math.max(y, (t.ly || 0) + t.sy); return y; }
 function neuerDienst(o, alt) {
-  const D = DIENSTE[o.typ], d = { id: o.id || dId++, typ: o.typ, x: o.x, z: o.z, rot: o.rot, w: D.w, d: D.d, variante: (o.id || dId) * 7919, geboren: alt ? -100 : jetztS, ab: 0, zug: null, dienst: true, timer: 2 + Math.random() * 4 };
+  const D = DIENSTE[o.typ], d = { id: o.id || dId++, typ: o.typ, x: o.x, z: o.z, rot: o.rot, w: D.w, d: D.d, ausbau: o.ausbau || 0, variante: (o.id || dId) * 7919, geboren: alt ? -100 : jetztS, ab: 0, zug: null, dienst: true, timer: 2 + Math.random() * 4 };
   dId = Math.max(dId, d.id + 1); d.teile = dienstTeile(d); d.hoehe = hoeheVon(d); dienste.set(d.id, d); haeuserNeu = true; versorgungZeit = -99;
   const rr = Math.max(D.w, D.d) * 0.72; baeumeFaellen({ x0: d.x - rr, x1: d.x + rr, z0: d.z - rr, z1: d.z + rr }, (bx, bz) => !!inDienst(bx, bz, 0.15));
   return d;
@@ -1104,6 +1174,7 @@ function dienstPlan(p, typ) {
   plan.haeuser = hs.size;
   const fail = (g) => { plan.ok = false; plan.grund = g; return plan; };
   if (!dienstFrei(typ)) return fail("🔒 Gibt es ab " + MEILEN[D.ab].name);
+  if (D.einzig && [...dienste.values()].some((x) => x.typ === typ)) return fail("Das gibt es nur einmal in der Stadt");
   if (!bes) return fail("Außerhalb deiner Gebiete");
   if (!land) return fail("Hier ist Wasser");
   if (zuNah) return fail("Zu nah an einer Straße oder einem Gebäude");
@@ -1129,10 +1200,11 @@ function komponenten() {
   netzKomp = new Map(); for (const k of kanten.values()) netzKomp.set(k.id, f(k.a));
 }
 const kompVon = (o) => { const z = zufahrt(o); return z ? netzKomp.get(z.k) : null; };
-function bedarfVon(h, r) { const b = leute(h) + jobs(h) * (gruppe(h) === "i" ? 1.0 : 0.6); return r === "abwasser" ? b * 0.9 : r === "muell" ? b * 0.8 : b; }
+let recyclingFak = 1;
+function bedarfVon(h, r) { const b = leute(h) + jobs(h) * (gruppe(h) === "i" ? 1.0 : 0.6); return r === "abwasser" ? b * 0.9 : r === "muell" ? b * 0.8 * recyclingFak : b; }
 let versorgung = { strom: [0, 0], wasser: [0, 0], abwasser: [0, 0], muell: [0, 0] }, versorgungZeit = -99, warteListe = [];
 /* Reichweite über die Straßen (wie bei Cities: Skylines): Wie weit kommen die Fahrzeuge in einer bestimmten Zeit? */
-const STRASSEN_DIENST = new Set(["polizei", "feuer", "gesund", "bildung"]), REICH_FAKTOR = 1.5 / 2.1;
+const STRASSEN_DIENST = new Set(["polizei", "feuer", "gesund", "bildung"]), REICH_FAKTOR = 2.0 / 2.1;
 const autoKante = (k) => TYP[k.typ].autos && !k.ring && !k.ebene;
 function reichweite(start, T) {
   const k0 = kanten.get(start.k), r = { T, t: new Map(), k0: start.k, S: start.S }; if (!k0) return r;
@@ -1145,13 +1217,13 @@ function reichweite(start, T) {
 function zeitBis(r, k, S) { const v = TYP[k.typ].tempo; let t = 1e9; if (k.id === r.k0) t = Math.abs(S - r.S) / v; const e = r.t.get(k.id); if (e) t = Math.min(t, e[0] + S / v, e[1] + (k.len - S) / v); return t; }
 let reichCache = { key: "", m: new Map() };
 function reichAktuell() {
-  const key = netzVersion + "|" + [...dienste.keys()].join(","); if (reichCache.key === key) return reichCache.m;
-  const m = new Map(); for (const d of dienste.values()) { const D = DIENSTE[d.typ]; if (!STRASSEN_DIENST.has(D.kat) || !D.radius) continue; const z = zufahrt(d); if (z) m.set(d.id, reichweite(z, D.radius * REICH_FAKTOR)); }
+  const key = netzVersion + "|" + [...dienste.values()].map((d) => d.id + ":" + (d.ausbau || 0)).join(",") + "|" + Object.values(budgetBereich).join(","); if (reichCache.key === key) return reichCache.m;
+  const m = new Map(); for (const d of dienste.values()) { const D = DIENSTE[d.typ]; if (!STRASSEN_DIENST.has(D.kat) || !D.radius || D.luft) continue; const z = zufahrt(d); if (z) m.set(d.id, reichweite(z, reichVon(d) * REICH_FAKTOR)); }
   reichCache = { key, m }; return m;
 }
 function abdeckungStrasse(k, S, kat, nur) {
   if (!k) return 0; let best = 0; const m = reichAktuell();
-  for (const d of dienste.values()) { const D = DIENSTE[d.typ]; if (D.kat !== kat || (nur && d !== nur)) continue; const r = m.get(d.id); if (!r) continue; const t = zeitBis(r, k, S); if (t <= r.T) best = Math.max(best, kat === "bildung" ? D.bildung : 1 - t / r.T * 0.5); }
+  for (const d of dienste.values()) { const D = DIENSTE[d.typ]; if (D.kat !== kat || (nur && d !== nur)) continue; if (D.luft) { const T = reichVon(d), p = punktBei(k, S), e = Math.hypot(d.x - p.x, d.z - p.z); if (e <= T) best = Math.max(best, kat === "bildung" ? D.bildung : 1 - e / T * 0.5); continue; } const r = m.get(d.id); if (!r) continue; const t = zeitBis(r, k, S); if (t <= r.T) best = Math.max(best, kat === "bildung" ? D.bildung : 1 - t / r.T * 0.5); }
   return best;
 }
 const abdHaus = (h, kat, nur) => { const z = zufahrt(h); return z ? abdeckungStrasse(kanten.get(z.k), z.S, kat, nur) : 0; };
@@ -1162,13 +1234,13 @@ function abdeckung(x, z, kat) {
 function abdeckungKreis(x, z, kat) { let best = 0; for (const d of dienste.values()) { const D = DIENSTE[d.typ]; if (D.kat !== kat || !D.radius) continue; const e = Math.hypot(d.x - x, d.z - z); if (e < D.radius) best = Math.max(best, kat === "bildung" ? D.bildung : 1 - e / D.radius * 0.5); } return best; }
 function versorgungRechnen() {
   komponenten();
+  recyclingFak = 1 - Math.min(0.3, 0.1 * [...dienste.values()].filter((d) => DIENSTE[d.typ].recycling).length);
   const prod = new Map(), RS = ["strom", "wasser", "abwasser", "muell"];
   const gesamt = { strom: [0, 0], wasser: [0, 0], abwasser: [0, 0], muell: [0, 0] };
-  for (const d of dienste.values()) { const D = DIENSTE[d.typ]; d.komp = kompVon(d); if (d.komp == null) continue; if (!prod.has(d.komp)) prod.set(d.komp, { strom: 0, wasser: 0, abwasser: 0, muell: 0, q: [] }); const p = prod.get(d.komp); for (const r of RS) if (D[r]) { p[r] += D[r]; gesamt[r][0] += D[r]; } p.q.push(d); }
+  for (const d of dienste.values()) { const D = DIENSTE[d.typ]; d.komp = kompVon(d); if (d.komp == null) continue; if (!prod.has(d.komp)) prod.set(d.komp, { strom: 0, wasser: 0, abwasser: 0, muell: 0, q: [] }); const p = prod.get(d.komp); for (const r of RS) if (D[r]) { const l = leistungVon(d, r); p[r] += l; gesamt[r][0] += l; } p.q.push(d); }
   const proKomp = new Map();
   for (const h of haeuser.values()) {
     h.hat = h.hat || {}; h.komp = kompVon(h);
-    h.abd = { polizei: abdHaus(h, "polizei"), feuer: abdHaus(h, "feuer"), gesund: abdHaus(h, "gesund") }; h.bildung = abdHaus(h, "bildung");
     if (h.verlassen) continue;
     if (h.komp == null) { for (const r of RS) { h.hat[r] = false; gesamt[r][1] += bedarfVon(h, r); } continue; }
     if (!proKomp.has(h.komp)) proKomp.set(h.komp, []); proKomp.get(h.komp).push(h);
@@ -1184,10 +1256,41 @@ function versorgungRechnen() {
     }
   }
   versorgung = gesamt;
+  for (const kat of ["polizei", "feuer", "gesund", "bildung"]) zuteilen(kat);
+  for (const d of dienste.values()) { const D = DIENSTE[d.typ]; if (d.komp == null) continue; const p = prod.get(d.komp); for (const r of RS) if (D[r] && p) { let used = 0; for (const h of proKomp.get(d.komp) || []) if (h.hat[r]) used += bedarfVon(h, r); d.last = p[r] ? Math.min(1.5, used / p[r]) : 0; } }
+  auslastungWarnen();
+}
+/* Kapazität: Dienste versorgen die nächsten Häuser zuerst, bis sie voll sind */
+const SCHUELER = { 1: 0.22, 2: 0.12, 3: 0.08 };
+function bedarfDienst(h, kat) { return kat === "gesund" ? leute(h) + jobs(h) * 0.2 : leute(h) + jobs(h); }
+function zuteilen(kat) {
+  const ds = [...dienste.values()].filter((d) => DIENSTE[d.typ].kat === kat && DIENSTE[d.typ].radius), m = reichAktuell(), paare = [];
+  for (const d of ds) { d.genutzt = 0; d.kapazitaet = kapVon(d); }
+  for (const h of haeuser.values()) {
+    if (kat === "bildung") { h.bildung = 0; h.bl = {}; } else { h.abd = h.abd || {}; h.abd[kat] = 0; }
+    if (h.verlassen) continue; const z = zufahrt(h), k = z && kanten.get(z.k);
+    for (const d of ds) { const D = DIENSTE[d.typ]; let t; if (D.luft) { const T = reichVon(d), e = Math.hypot(d.x - h.x, d.z - h.z); if (e > T) continue; t = e / T; } else { const r = m.get(d.id); if (!r || !k) continue; const tt = zeitBis(r, k, z.S); if (tt > r.T) continue; t = tt / r.T; } paare.push([t, d, h]); }
+  }
+  paare.sort((a, b) => a[0] - b[0]);
+  for (const [t, d, h] of paare) {
+    const D = DIENSTE[d.typ];
+    if (kat === "bildung") { const L = D.bildung; if (h.bl[L] || !leute(h)) continue; const bed = leute(h) * SCHUELER[L]; if (d.genutzt + bed > d.kapazitaet) continue; d.genutzt += bed; h.bl[L] = true; h.bildung = Math.max(h.bildung, L); }
+    else { if (h.abd[kat]) continue; const bed = bedarfDienst(h, kat); if (d.genutzt + bed > d.kapazitaet) continue; d.genutzt += bed; h.abd[kat] = 1 - t * 0.5; }
+  }
+  for (const d of ds) d.last = d.kapazitaet ? d.genutzt / d.kapazitaet : 0;
+}
+let warnZeiten = {};
+function auslastungWarnen() {
+  for (const r of ["strom", "wasser", "abwasser", "muell"]) {
+    const [pr, vb] = versorgung[r]; if (!vb) continue; const q = pr ? vb / pr : 9;
+    if (q > 0.9 && q <= 1 && simZeit - (warnZeiten[r] || -99) > 60) { warnZeiten[r] = simZeit; tipp(RESSOURCEN[r].em + " " + RESSOURCEN[r].name + " fast aufgebraucht (" + Math.round(q * 100) + " %) – bau bald mehr oder bau aus.", 4500); }
+  }
+  const kopf = $("versorgungKopf"); if (kopf) kopf.innerHTML = Object.keys(RESSOURCEN).map((r) => { const [pr, vb] = versorgung[r], q = pr ? vb / pr : vb ? 9 : 0; return `<span class="vk ${q > 1 ? "rot" : q > 0.9 ? "gelb" : "gruen"}" title="${RESSOURCEN[r].name}: ${zahl(vb)} von ${zahl(pr)}">${RESSOURCEN[r].em}</span>`; }).join("");
 }
 const PROBLEM_TEXT = { strom: "⚡ Kein Strom", wasser: "💧 Kein Wasser", abwasser: "🚽 Abwasser wird nicht abgeholt", muell: "🗑️ Müll wird nicht abgeholt", feuer: "🔥 Es brennt!", krimi: "🦹 Viel Kriminalität", krank: "🤒 Kranke Bewohner", verlassen: "🏚️ Verlassen" };
-let verlassenGemeldet = 0, problemTippZeit = -99;
+let verlassenGemeldet = 0, problemTippZeit = -99, gefaengnisFak = 1;
 function dienstTakt(dt) {
+  gefaengnisFak = 1 - Math.min(0.6, 0.3 * [...dienste.values()].filter((d) => DIENSTE[d.typ].gefaengnis).length);
   if (simZeit - versorgungZeit > 2) { versorgungZeit = simZeit; versorgungRechnen(); busRechnen(); }
   linienTakt();
   warteListe = warteListe.filter((w) => { if (simZeit >= w.t) { w.fn(); return false; } return true; });
@@ -1196,7 +1299,7 @@ function dienstTakt(dt) {
     if (h.verlassen) { if (simZeit - h.verlassen > 50) hausWeg(h); continue; }
     const hat = h.hat || {}, a = h.abd || {};
     const lebt = leute(h) + jobs(h) > 0, jung = simZeit - (h.simGeboren || 0) < 12;
-    h.krimi = a.polizei ? Math.max(0, (h.krimi || 0) - dt * 3) : (h.krimi || 0) + dt * (lebt ? 0.6 + Math.min(1, leute(h) / 40) : 0);
+    h.krimi = a.polizei ? Math.max(0, (h.krimi || 0) - dt * 3) : (h.krimi || 0) + dt * (lebt ? 0.6 + Math.min(1, leute(h) / 40) : 0) * gefaengnisFak;
     h.krank = a.gesund ? Math.max(0, (h.krank || 0) - dt * 3) : (h.krank || 0) + dt * (gruppe(h) === "w" ? 0.5 : 0.15);
     let p = null;
     if (h.brand) p = "feuer";
@@ -1233,7 +1336,7 @@ function dienstTakt(dt) {
     else d.timer = 5;
   }
 }
-const naechsteWache = (h, kat) => { const z = zufahrt(h), k = z && kanten.get(z.k); if (!k) return null; const m = reichAktuell(); let best = null, bd = 1e9; for (const d of dienste.values()) { const D = DIENSTE[d.typ], r = m.get(d.id); if (D.kat !== kat || !r) continue; const t = zeitBis(r, k, z.S); if (t <= r.T && t < bd) { bd = t; best = d; } } return best; };
+const naechsteWache = (h, kat) => { const z = zufahrt(h), k = z && kanten.get(z.k); if (!k) return null; const m = reichAktuell(); let best = null, bd = 1e9; for (const d of dienste.values()) { const D = DIENSTE[d.typ], r = m.get(d.id); if (D.kat !== kat || !r || D.luft) continue; if (eigeneFahrzeuge(d) >= (D.zuege || 2) * ausbauFak(d)) continue; const t = zeitBis(r, k, z.S); if (t <= r.T && t < bd) { bd = t; best = d; } } return best; };
 const eigeneFahrzeuge = (d) => fahrzeuge.filter((f) => f.dienstId === d.id).length;
 function einsatz(d, h, typ, beiAnkunft, zurueck) {
   const za = zufahrt(d), zb = zufahrt(h); if (!za || !zb) return null;
@@ -1242,7 +1345,7 @@ function einsatz(d, h, typ, beiAnkunft, zurueck) {
   f.beiAnkunft = () => { if (beiAnkunft) beiAnkunft(); if (zurueck && dienste.has(d.id)) warteListe.push({ t: simZeit + 3, fn: () => { const z1 = zufahrt(h), z2 = zufahrt(d); if (z1 && z2 && dienste.has(d.id)) { const g = fahrzeugAusWeg(wegSuchen(z1, z2), typ, null, hausName(h), DIENSTE[d.typ].name, "haus"); if (g) g.dienstId = d.id; } } }); };
   return f;
 }
-function dienstKosten() { let s = 0; for (const d of dienste.values()) s += DIENSTE[d.typ].unterhalt; return s; }
+function dienstKosten() { let s = 0; for (const d of dienste.values()) s += unterhaltVon(d); return s; }
 /* Warnsymbole über Häusern */
 const WARN = { strom: "⚡", wasser: "💧", abwasser: "🚽", muell: "🗑️", feuer: "🔥", krimi: "🦹", krank: "🤒", verlassen: "🏚️" };
 const warnMat = {};
@@ -1300,10 +1403,16 @@ function kreiseZeichnen(kat) {
 function dienstInfo(d) {
   const D = DIENSTE[d.typ];
   let leistung = "";
-  for (const r of ["strom", "wasser", "abwasser", "muell"]) if (D[r]) { const v = versorgung[r]; leistung += `<br>${RESSOURCEN[r].em} ${RESSOURCEN[r].name}: ${zahl(D[r])} · Stadt: ${zahl(v[1])} von ${zahl(v[0])} gebraucht`; }
-  if (D.radius) leistung += STRASSEN_DIENST.has(D.kat) ? `<br>🛣️ Reichweite: ca. ${Math.round(D.radius * 1.5)} Felder über die Straßen (Hauptstraßen weiter)` : `<br>⭕ Wirkungskreis: ${D.radius} Felder`;
+  const balken = (q) => `<div class="leiste" style="margin:4px 0 2px"><i style="width:${Math.min(100, q * 100)}%;background:${q > 1 ? "#ff6b6b" : q > 0.9 ? "#ffd23d" : "#4fd27a"}"></i></div><small>Auslastung ${Math.round(q * 100)} %</small>`;
+  for (const r of ["strom", "wasser", "abwasser", "muell"]) if (D[r]) { const v = versorgung[r]; leistung += `<br>${RESSOURCEN[r].em} ${RESSOURCEN[r].name}: ${zahl(leistungVon(d, r))} · Stadt: ${zahl(v[1])} von ${zahl(v[0])} gebraucht${balken(v[0] ? v[1] / v[0] : 0)}`; }
+  if (D.kap) leistung += `<br>👥 Kapazität: ${zahl(d.genutzt || 0)} von ${zahl(kapVon(d))}${D.zuege ? " · 🚒 " + Math.round(D.zuege * ausbauFak(d)) + " Löschzüge" : ""}${balken(d.last || 0)}`;
+  if (D.radius) leistung += STRASSEN_DIENST.has(D.kat) && !D.luft ? `<br>🛣️ Reichweite: ca. ${Math.round(reichVon(d) * 2)} Felder über die Straßen (Hauptstraßen weiter)` : `<br>⭕ Wirkungskreis: ${Math.round(D.luft ? reichVon(d) : D.radius)} Felder`;
+  if (D.froh) leistung += `<br>😊 Ganze Stadt +${D.froh} % zufriedener`;
   if (D.wert) leistung += `<br>💎 Bodenwert +${D.wert} in der Nähe`;
-  infoZeigen(`<b>${D.em} ${D.name}</b><small>${DIENST_KAT[D.kat].name} · ${euro(D.unterhalt)} Unterhalt pro Woche</small>${leistung}${d.komp == null ? "<br>⚠️ Nicht an eine Straße angeschlossen" : ""}<br><small>${D.text}</small><br><button class="chip gefahr" type="button" id="dienstAbriss" style="margin-top:6px">🧹 Abreißen (+${euro(D.preis * 0.3)})</button>`, 9000);
+  const aus = d.ausbau || 0, ausPreis = Math.round(D.preis * 0.6 * (aus + 1));
+  const ausKnopf = ausbaubar(D) ? (aus < 2 ? `<button class="chip" type="button" id="dienstAusbau" style="margin-top:6px;margin-right:6px">⬆️ Ausbauen auf Stufe ${aus + 2} (${euro(ausPreis)})</button>` : `<small>⭐ Voll ausgebaut</small><br>`) : "";
+  infoZeigen(`<b>${D.em} ${D.name}${aus ? " ⭐".repeat(aus) : ""}</b><small>${DIENST_KAT[D.kat].name}${ausbaubar(D) ? " · Stufe " + (aus + 1) + "/3" : ""} · ${euro(unterhaltVon(d))} Unterhalt pro Woche</small>${leistung}${d.komp == null ? "<br>⚠️ Nicht an eine Straße angeschlossen" : ""}<br><small>${D.text}</small><br>${ausKnopf}<button class="chip gefahr" type="button" id="dienstAbriss" style="margin-top:6px">🧹 Abreißen (+${euro(D.preis * 0.3)})</button>`, 9000);
+  if ($("dienstAusbau")) $("dienstAusbau").onclick = () => { if (geld < ausPreis) { tipp("Zu wenig Geld für den Ausbau.", 2000); return; } merkeRueck(); geld -= ausPreis; d.ausbau = aus + 1; d.teile = dienstTeile(d); d.box = null; d.hoehe = hoeheVon(d); d.geboren = jetztS; d.ab = 0.6; haeuserNeu = true; versorgungZeit = -99; versorgungRechnen(); zeigeWerte(); speichernBald(); hochZeigen(d, d.hoehe); tipp("⬆️ " + D.name + " ausgebaut: mehr Leistung und Reichweite!", 2600); dienstInfo(d); };
   $("dienstAbriss").onclick = () => { merkeRueck(); dienstWeg(d); geld += D.preis * 0.3; $("info").hidden = true; zeigeWerte(); tipp("🧹 " + D.name + " abgerissen.", 2000); };
 }
 
@@ -1491,7 +1600,7 @@ function wocheTakt() {
 }
 function zufriedenheit() {
   let n = 0, sum = 0;
-  for (const h of wohnListe) { const a = h.abd || {}; let v = 52 + ((h.wert || 30) - 30) * 0.3 - (h.dreck || 0) * 0.5 + (a.polizei ? 5 : 0) + (a.feuer ? 5 : 0) + (a.gesund ? 5 : 0) + (h.bildung || 0) * 3 + (h.bus ? 3 : 0); if (h.problem) v -= ["krimi", "krank"].includes(h.problem) ? 10 : 25; sum += v * leute(h); n += leute(h); }
+  for (const h of wohnListe) { const a = h.abd || {}; let v = 52 + ((h.wert || 30) - 30) * 0.3 - (h.dreck || 0) * 0.5 + (a.polizei ? 5 : 0) + (a.feuer ? 5 : 0) + (a.gesund ? 5 : 0) + (h.bildung || 0) * 3 + (h.bus ? 3 : 0) + globalFroh(); if (h.problem) v -= ["krimi", "krank"].includes(h.problem) ? 10 : 25; sum += v * leute(h); n += leute(h); }
   const st = (steuern.w + steuern.g + steuern.b + steuern.i) / 4;
   return Math.round(klemme((n ? sum / n : 70) - (st - 9) * 3, 0, 100));
 }
@@ -1512,13 +1621,14 @@ function budgetZeigen() {
   el.innerHTML = `<h2>💶 Budget &amp; Steuern<button type="button" id="budgetZu" aria-label="Schließen">✕</button></h2>
     <div><h3>Pro Woche</h3>${GR.map((z) => zeile(GRUPPEN[z].em + " Steuern " + GRUPPEN[z].name, "<span class='plus'>+" + euro(k.ein[z]) + "</span>")).join("")}${zeile("🛣️ Unterhalt Straßen", "<span class='minus'>−" + euro(k.strassen) + "</span>")}${k.dienste ? zeile("🏛️ Unterhalt Dienste", "<span class='minus'>−" + euro(k.dienste) + "</span>") : ""}${k.nvK || k.nvE ? zeile("🚌 Nahverkehr, Bahn & Hafen (" + zahl(busAbdeckung.fahrgaeste) + " Fahrgäste)", "<span class='" + (k.nvE >= k.nvK ? "plus" : "minus") + "'>" + (k.nvE - k.nvK >= 0 ? "+" : "−") + euro(Math.abs(k.nvE - k.nvK)) + "</span>") : ""}${zeile("Ergebnis", "<span class='" + (k.saldo >= 0 ? "plus" : "minus") + "'>" + (k.saldo >= 0 ? "+" : "−") + euro(Math.abs(k.saldo)) + "</span>", "summe")}</div>
     <div><h3>Steuern</h3><div style="display:grid;gap:10px">${GR.map(regler).join("")}</div><small style="color:var(--leise);display:block;margin-top:8px">Hohe Steuern bringen mehr Geld, aber weniger Zuzug. 9 % ist ausgeglichen.</small></div>
+    <div><h3>Budget pro Bereich</h3><div style="display:grid;gap:8px">${Object.keys(budgetBereich).map((k) => `<div class="steuer" style="--c:#a66bff"><span>${DIENST_KAT[k].em} ${DIENST_KAT[k].name}</span><input type="range" min="50" max="150" step="5" value="${budgetBereich[k]}" data-dbudget="${k}" aria-label="Budget ${DIENST_KAT[k].name}"><b>${budgetBereich[k]} %</b></div>`).join("")}</div><small style="color:var(--leise);display:block;margin-top:6px">Mehr Geld = mehr Leistung und weitere Reichweite, aber höhere Kosten.</small></div>
     <div><h3>Versorgung</h3>${Object.keys(RESSOURCEN).map((r) => { const [pr, vb] = versorgung[r], ok = pr >= vb; return zeile(RESSOURCEN[r].em + " " + RESSOURCEN[r].name, `<span class="${ok ? "plus" : "minus"}">${zahl(vb)} / ${zahl(pr)}</span>`); }).join("")}<small style="color:var(--leise)">Gebraucht / vorhanden. Zu wenig? Bau mehr unter 🏛️ Dienste.</small></div>
     <div><h3>Bedarf</h3>${GR.map((z) => zeile(GRUPPEN[z].em + " " + GRUPPEN[z].name, z === "b" && !zoneFrei(5) ? "🔒 ab " + MEILEN[ZONEN[5].ab].name : bedarf[z] > 40 ? "hoch" : bedarf[z] > 10 ? "mittel" : bedarf[z] > 0 ? "wenig" : "keiner")).join("")}</div>
     <div><h3>Meilenstein: ${m.name}</h3>${n ? `<div class="leiste"><i style="width:${fort}%"></i></div><small style="color:var(--leise)">Nächster: <b>${n.name}</b> bei ${zahl(n.ab)} Einwohnern (jetzt ${zahl(k.e)})${(() => { const f = n.frei.map((t) => TYP[t].name).concat(Object.values(ZONEN).filter((z) => z.ab === meilenstein + 1).map((z) => z.name)); return f.length ? " – schaltet " + f.join(", ") + " frei" : ""; })()}</small>` : "<small>Höchster Meilenstein erreicht!</small>"}</div>`;
   el.hidden = false;
   $("budgetZu").onclick = () => { el.hidden = true; };
 }
-$("budget").addEventListener("input", (e) => { const z = e.target.dataset.steuer; if (!z) return; steuern[z] = +e.target.value; e.target.nextElementSibling.textContent = steuern[z] + " %"; bedarfBerechnen(); zeigeWerte(); speichernBald(); });
+$("budget").addEventListener("input", (e) => { const db = e.target.dataset.dbudget; if (db) { budgetBereich[db] = +e.target.value; e.target.nextElementSibling.textContent = budgetBereich[db] + " %"; versorgungZeit = -99; zeigeWerte(); speichernBald(); return; } const z = e.target.dataset.steuer; if (!z) return; steuern[z] = +e.target.value; e.target.nextElementSibling.textContent = steuern[z] + " %"; bedarfBerechnen(); zeigeWerte(); speichernBald(); });
 $("budget").addEventListener("change", () => budgetZeigen());
 
 /* Wachstum nach Bedarf */
@@ -2181,7 +2291,7 @@ function zustand() {
     kanten: [...kanten.values()].map((k) => [k.id, k.a, k.b, r(k.c.x), r(k.c.z), k.typ, k.aussen ? 1 : 0, k.einbahn || 0, k.ebene || 0, k.ring ? 1 : 0]), kreisel,
     zellen: [...zellen.values()].map((z) => [z.id, r(z.x), r(z.z), r(z.rot), z.zone, z.g, z.seite, z.i, z.r]),
     haeuser: [...haeuser.values()].map((h) => [h.id, h.zone, h.stufe, h.w, h.d, h.variante, h.zellen]),
-    dienste: [...dienste.values()].map((d) => [d.id, d.typ, r(d.x), r(d.z), r(d.rot)]), dienstV: 1,
+    dienste: [...dienste.values()].map((d) => [d.id, d.typ, r(d.x), r(d.z), r(d.rot), d.ausbau || 0]), dienstV: 2, budgetBereich,
     halte: [...halte.values()].map((h) => [h.id, h.k, r(h.s)]), linien: [...linien.values()].map((L) => [L.id, L.nr, L.farbe, L.halte, L.busse, L.art, L.modell || "mix"]),
     baeume: baeume.filter((b) => b.weg).map((b) => b.idx)
   };
@@ -2211,7 +2321,8 @@ function zustandRein(d) {
   d.zellen.forEach(([id, x, z, rot, zone, g, seite, i, r]) => neueZelle({ id, x, z, rot, zone, g, seite, i, r }));
   d.haeuser.forEach(([id, zone, stufe, w, dd, variante, ids]) => { if (ids.every((z) => zellen.has(z) && !zellen.get(z).haus)) neuesHaus({ id, zone, stufe, w, d: dd, variante, zellen: ids }, true); });
   d.baeume.forEach((i) => { const b = baeume[i]; if (b) { b.weg = true; baumSetzen(b); } });
-  (d.dienste || []).forEach(([id, typ, x, z, rot]) => { if (DIENSTE[typ]) neuerDienst({ id, typ, x, z, rot }, true); }); bahnGleiseZeichnen();
+  (d.dienste || []).forEach(([id, typ, x, z, rot, aus]) => { if (DIENSTE[typ]) neuerDienst({ id, typ, x, z, rot, ausbau: aus || 0 }, true); });
+  if (d.budgetBereich) Object.assign(budgetBereich, d.budgetBereich); else for (const k in budgetBereich) budgetBereich[k] = 100; bahnGleiseZeichnen();
   if (d.ids.d) dId = Math.max(dId, d.ids.d);
   (d.halte || []).forEach(([id, k, s2]) => { if (kanten.has(k)) neueHalte({ id, k, s: s2 }, true); });
   (d.linien || []).forEach(([id, nr, f, hs, busse, art, modell]) => { const L = { id, nr, farbe: f, halte: hs.filter((x) => halte.has(x)), busse, art: art || "bus", modell: modell || "mix" }; if (L.halte.length >= 2) linien.set(id, L); linieId = Math.max(linieId, id + 1); });
@@ -2310,8 +2421,8 @@ function unterleiste() {
     kopf = '<span class="ftitel">🏘️ Zonen</span>' + chip("data-pinsel", "klein", "🖌️ Klein", pinsel === "klein") + chip("data-pinsel", "gross", "🖌️ Groß", pinsel === "gross") + chip("data-pinsel", "fuellen", "🪣 Füllen", pinsel === "fuellen") + '<span class="trenn"></span>' + rueckChip;
     karten = Object.keys(ZONEN).map(Number).map((z) => { const f = zoneFrei(z), Z = ZONEN[z]; return kk("data-zone", z, Z.em, Z.name, f ? GRUPPEN[Z.gruppe].name : "ab " + MEILEN[Z.ab].name, z === zoneWahl, !f); }).join("") + kk("data-zone", 0, "🧽", "Zone entfernen", "", zoneWahl === 0);
   } else if (werkzeug === "dienst" || werkzeug === "park") {
-    if (werkzeug === "dienst") kopf = '<span class="ftitel">🏛️ Dienste</span>' + Object.keys(DIENST_KAT).filter((k) => k !== "park" && k !== "verkehr").map((k) => chip("data-dkat", k, DIENST_KAT[k].em + " " + DIENST_KAT[k].name, dienstKat === k)).join("");
-    else kopf = '<span class="ftitel">🌳 Parks</span><small style="color:var(--leise)">Parks machen den Boden wertvoller und die Leute froher</small>';
+    if (werkzeug === "dienst") kopf = '<span class="ftitel">🏛️ Dienste</span>' + Object.keys(DIENST_KAT).filter((k) => !PARK_KATS.includes(k) && k !== "verkehr").map((k) => chip("data-dkat", k, DIENST_KAT[k].em + " " + DIENST_KAT[k].name, dienstKat === k)).join("");
+    else kopf = '<span class="ftitel">🌳 Parks & Freizeit</span>' + PARK_KATS.map((k) => chip("data-dkat", k, DIENST_KAT[k].em + " " + DIENST_KAT[k].name, dienstKat === k)).join("");
     karten = Object.keys(DIENSTE).filter((k) => DIENSTE[k].kat === dienstKat).map((k) => { const D = DIENSTE[k], f = dienstFrei(k); return kk("data-dienst", k, D.em, D.name, f ? euro(D.preis) : "ab " + MEILEN[D.ab].name, k === dienstWahl, !f); }).join("");
   } else if (werkzeug === "verkehr") {
     const L = linieWahl && linien.get(linieWahl);
@@ -2371,7 +2482,7 @@ Object.assign(ANSICHTEN, {
   park: { em: "🌳", name: "Parks", legende: [...ROT_GRUEN, "keine", "viel Grün"], wert: deckung("park"), kat: "park" }
 });
 for (const k of Object.keys(ANSICHTEN)) { const A = ANSICHTEN[k]; if (A.wert) { A.an = () => { wertAnsicht = true; versorgungRechnen(); busRechnen(); listenAuffrischen(); wertZeichnen(); if (STRASSEN_DIENST.has(A.kat)) reichZeichnen(A.kat); else kreiseZeichnen(A.kat); if (k === "bus") { linienMesh.visible = true; linienNeu = true; } }; A.aus = () => { wertAnsicht = false; wertZeichnen(); kreiseZeichnen(null); reichZeichnen(null); if (k === "bus") linienMesh.visible = werkzeug === "verkehr"; }; } }
-function hausFroh(h) { const a = h.abd || {}; let v = 52 + ((h.wert || 30) - 30) * 0.3 - (h.dreck || 0) * 0.5 + (a.polizei ? 5 : 0) + (a.feuer ? 5 : 0) + (a.gesund ? 5 : 0) + (h.bildung || 0) * 3 + (h.bus ? 3 : 0); if (h.problem) v -= ["krimi", "krank"].includes(h.problem) ? 10 : 25; const st = (steuern.w + steuern.g + steuern.b + steuern.i) / 4; return Math.round(klemme(v - (st - 9) * 3, 0, 100)); }
+function hausFroh(h) { const a = h.abd || {}; let v = 52 + ((h.wert || 30) - 30) * 0.3 - (h.dreck || 0) * 0.5 + (a.polizei ? 5 : 0) + (a.feuer ? 5 : 0) + (a.gesund ? 5 : 0) + (h.bildung || 0) * 3 + (h.bus ? 3 : 0) + globalFroh(); if (h.problem) v -= ["krimi", "krank"].includes(h.problem) ? 10 : 25; const st = (steuern.w + steuern.g + steuern.b + steuern.i) / 4; return Math.round(klemme(v - (st - 9) * 3, 0, 100)); }
 let ansicht = null;
 function ansichtSetzen(n) {
   if (ansicht && ANSICHTEN[ansicht]) ANSICHTEN[ansicht].aus();
@@ -2389,7 +2500,7 @@ function werkzeugWaehlen(w) {
   werkzeug = w; document.querySelectorAll("#werkzeug button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.w === w)));
   const bauend = w !== "ansehen";
   steuerung.touches.ONE = bauend ? -1 : THREE.TOUCH.PAN; steuerung.mouseButtons.LEFT = bauend ? -1 : THREE.MOUSE.PAN;
-  bauAbbrechen(); frageZu(); vorschauWeg(); linieBau = []; linienNeu = true; linienMesh.visible = w === "verkehr" || ansicht === "bus"; $("info").hidden = true; zellenNeu = true; if (w === "park") dienstKat = "park"; else if (w === "dienst" && dienstKat === "park") dienstKat = "strom"; if (DIENSTE[dienstWahl].kat !== dienstKat) dienstWahl = Object.keys(DIENSTE).find((k) => DIENSTE[k].kat === dienstKat); unterleiste(); gebieteZeichnen();
+  bauAbbrechen(); frageZu(); vorschauWeg(); linieBau = []; linienNeu = true; linienMesh.visible = w === "verkehr" || ansicht === "bus"; $("info").hidden = true; zellenNeu = true; if (w === "park") { if (!PARK_KATS.includes(dienstKat)) dienstKat = "park"; } else if (w === "dienst" && (PARK_KATS.includes(dienstKat) || dienstKat === "verkehr")) dienstKat = "strom"; if (DIENSTE[dienstWahl].kat !== dienstKat) dienstWahl = Object.keys(DIENSTE).find((k) => DIENSTE[k].kat === dienstKat); unterleiste(); gebieteZeichnen();
   const t = TIPPS[w]; tipp(typeof t === "function" ? t() : t, 4500);
 }
 $("werkzeug").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) werkzeugWaehlen(b.dataset.w); });
