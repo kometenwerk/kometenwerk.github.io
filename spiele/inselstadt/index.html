@@ -3,55 +3,91 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Inselstadt · Aussehen-Test · FLARESSA</title>
+<title>Inselstadt · Bau-Test · FLARESSA</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#0b1020">
 <link rel="icon" href="../../shared/marken/flaressa-zeichen.webp" type="image/webp">
 <link rel="stylesheet" href="../../shared/fonts/fonts.css">
 <script src="../../shared/intro.js"></script>
 <style>
-:root{--f:#a66bff;--glas:rgba(12,14,26,.62);--linie:rgba(255,255,255,.12);--text:#f4f2ff;--leise:#b9b4d6;color-scheme:dark}
+:root{--f:#a66bff;--glas:rgba(12,14,26,.66);--linie:rgba(255,255,255,.12);--text:#f4f2ff;--leise:#b9b4d6;--wohnen:#4fd27a;--laden:#4aa8ff;--industrie:#ffc23d;--abriss:#ff6b6b;color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overflow:hidden;background:#0b1020;color:var(--text);font:15px/1.4 'Space Grotesk','Helvetica Neue',Arial,sans-serif;-webkit-tap-highlight-color:transparent;touch-action:none;user-select:none;-webkit-user-select:none}
 canvas{display:block;position:fixed;inset:0;width:100%;height:100%;outline:none}
+button{font:inherit;color:inherit;cursor:pointer}
 .glas{background:var(--glas);border:1px solid var(--linie);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:16px}
-#kopf{position:fixed;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));display:flex;align-items:center;gap:10px;padding:8px 14px 8px 10px;z-index:5}
-#kopf img{width:30px;height:30px}
-#kopf b{display:block;font-size:1rem;letter-spacing:.02em}
-#kopf small{display:block;color:var(--leise);font-size:.75rem}
-#fps{position:fixed;top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));padding:6px 10px;font-size:.75rem;color:var(--leise);z-index:5;font-variant-numeric:tabular-nums}
-#leiste{position:fixed;left:50%;transform:translateX(-50%);bottom:max(12px,env(safe-area-inset-bottom));display:flex;gap:6px;padding:6px;z-index:5;max-width:calc(100vw - 24px);overflow-x:auto;scrollbar-width:none}
-#leiste::-webkit-scrollbar{display:none}
-#leiste button{flex:none;border:0;background:transparent;color:var(--text);font:inherit;font-size:.88rem;padding:10px 12px;border-radius:11px;min-height:44px;white-space:nowrap;cursor:pointer}
-#leiste button[aria-pressed=true]{background:var(--f);color:#14082a;font-weight:600}
-#leiste button:hover:not([aria-pressed=true]){background:rgba(255,255,255,.08)}
-#leiste .trenn{width:1px;background:var(--linie);margin:6px 2px;flex:none}
-#tipp{position:fixed;left:50%;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 70px);transform:translateX(-50%);padding:10px 16px;font-size:.88rem;text-align:center;z-index:5;transition:opacity .6s;max-width:calc(100vw - 32px);width:max-content}
+#kopf{position:fixed;top:max(10px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));display:flex;align-items:center;gap:10px;padding:7px 14px 7px 9px;z-index:5;max-width:calc(100vw - 86px)}
+#kopf img{width:28px;height:28px;flex:none}
+#kopf b{display:block;font-size:.95rem}
+#werte{display:flex;gap:12px;font-size:.8rem;color:var(--leise);font-variant-numeric:tabular-nums;white-space:nowrap}
+#werte span b{color:var(--text);font-size:.8rem;display:inline}
+#menueKnopf{position:fixed;top:max(10px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));width:46px;height:46px;border-radius:14px;z-index:6;font-size:1.2rem}
+#menue{position:fixed;top:calc(max(10px,env(safe-area-inset-top)) + 54px);right:max(10px,env(safe-area-inset-right));width:min(290px,calc(100vw - 20px));padding:14px;z-index:6;display:grid;gap:12px}
+#menue[hidden]{display:none}
+#menue h3{margin:0;font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--leise);font-weight:600}
+.reihe{display:flex;flex-wrap:wrap;gap:6px}
+.reihe button,#menue .knopf{border:1px solid var(--linie);background:rgba(255,255,255,.05);padding:8px 11px;border-radius:10px;font-size:.86rem;min-height:40px}
+.reihe button[aria-pressed=true]{background:var(--f);border-color:var(--f);color:#14082a;font-weight:600}
+#menue .knopf.gefahr{color:#ff9b9b;border-color:rgba(255,107,107,.4)}
+#menue a{color:var(--leise);font-size:.82rem}
+#menue small{color:var(--leise)}
+#werkzeug{position:fixed;left:50%;transform:translateX(-50%);bottom:max(10px,env(safe-area-inset-bottom));display:flex;gap:4px;padding:5px;z-index:5;max-width:calc(100vw - 16px);overflow-x:auto;scrollbar-width:none}
+#werkzeug::-webkit-scrollbar{display:none}
+#werkzeug button{flex:none;border:0;background:transparent;display:grid;justify-items:center;gap:1px;padding:7px 9px 6px;border-radius:12px;min-width:58px;min-height:54px}
+#werkzeug button span{font-size:1.3rem;line-height:1.1}
+#werkzeug button small{font-size:.7rem;color:var(--leise)}
+#werkzeug button[aria-pressed=true]{background:var(--wf,var(--f))}
+#werkzeug button[aria-pressed=true] small{color:#10131c;font-weight:600}
+#tipp{position:fixed;left:50%;bottom:calc(max(10px,env(safe-area-inset-bottom)) + 76px);transform:translateX(-50%);padding:9px 15px;font-size:.86rem;text-align:center;z-index:5;transition:opacity .5s;max-width:calc(100vw - 28px);width:max-content}
 #tipp.weg{opacity:0;pointer-events:none}
+#start{position:fixed;inset:0;display:grid;place-items:center;z-index:7;background:rgba(5,8,18,.55);padding:16px}
+#start[hidden]{display:none}
+#start .karte{max-width:380px;padding:22px;display:grid;gap:12px}
+#start h2{margin:0;font-size:1.3rem}
+#start ol{margin:0;padding-left:20px;display:grid;gap:8px;color:#dcd8f0}
+#start button{justify-self:start;background:var(--f);color:#14082a;font-weight:600;border:0;border-radius:12px;padding:12px 20px;min-height:46px}
 #laden{position:fixed;inset:0;display:grid;place-items:center;background:#0b1020;z-index:8;transition:opacity .5s}
 #laden.weg{opacity:0;pointer-events:none}
 #laden div{text-align:center;color:var(--leise)}
 #laden b{display:block;color:var(--text);font-size:1.2rem;margin-bottom:6px}
 #fehler{position:fixed;inset:0;display:none;place-items:center;padding:24px;text-align:center;z-index:9;background:#0b1020}
-@media (max-width:520px){#leiste button{padding:10px 10px;font-size:.84rem}#kopf small{display:none}}
+@media (max-width:420px){#werkzeug button{min-width:52px;padding:7px 6px 6px}#kopf b{display:none}}
 </style>
 <script type="importmap">{"imports":{"three":"../../shared/vendor/three-0.160.0/three.module.min.js","three/addons/":"../../shared/vendor/three-0.160.0/"}}</script>
 </head>
 <body>
-<div id="laden"><div><b>🏝️ Inselstadt</b>Die Insel wird gebaut …</div></div>
+<div id="laden"><div><b>🏝️ Inselstadt</b>Die Insel wird geladen …</div></div>
 <div id="fehler"><div><b>Das klappt auf diesem Gerät leider nicht.</b><p>Dein Browser kann kein 3D (WebGL). Probier es mit einem aktuellen Chrome, Safari oder Firefox.</p></div></div>
-<header id="kopf" class="glas"><img src="../../shared/marken/flaressa-zeichen.webp" alt=""><div><b>Inselstadt</b><small>Aussehen-Test · FLARESSA Gaming</small></div></header>
-<div id="fps" class="glas" aria-hidden="true">– FPS</div>
-<div id="tipp" class="glas">👆 Ein Finger: verschieben · ✌️ Zwei Finger: drehen &amp; zoomen</div>
-<nav id="leiste" class="glas" aria-label="Steuerung">
-  <button type="button" data-zeit="tag">☀️ Tag</button>
-  <button type="button" data-zeit="abend">🌅 Abend</button>
-  <button type="button" data-zeit="nacht">🌙 Nacht</button>
-  <button type="button" data-zeit="auto" aria-pressed="true">🔁 Ablauf</button>
-  <span class="trenn"></span>
-  <button type="button" id="qualitaet">⚙️ Mittel</button>
-  <button type="button" id="neu">🏗️ Neue Stadt</button>
+
+<header id="kopf" class="glas"><img src="../../shared/marken/flaressa-zeichen.webp" alt=""><div><b>Inselstadt</b><div id="werte"><span>👥 <b id="wEinw">0</b></span><span>💼 <b id="wJobs">0</b></span><span>🏠 <b id="wHaeuser">0</b></span></div></div></header>
+<button id="menueKnopf" class="glas" type="button" aria-label="Menü" aria-expanded="false">☰</button>
+<div id="menue" class="glas" hidden>
+  <div><h3>Tageszeit</h3><div class="reihe" id="zeiten"><button type="button" data-zeit="tag">☀️ Tag</button><button type="button" data-zeit="abend">🌅 Abend</button><button type="button" data-zeit="nacht">🌙 Nacht</button><button type="button" data-zeit="auto">🔁 Ablauf</button></div></div>
+  <div><h3>Grafik</h3><div class="reihe" id="grafik"><button type="button" data-q="niedrig">Niedrig</button><button type="button" data-q="mittel">Mittel</button><button type="button" data-q="hoch">Hoch</button></div><small id="fps">– FPS</small></div>
+  <div><h3>Spielstand</h3><div class="reihe"><button type="button" class="knopf gefahr" id="neuAnfangen">🗑️ Neu anfangen</button></div><small>Deine Stadt wird automatisch auf diesem Gerät gespeichert.</small></div>
+  <a href="aussehen.html">Zum Aussehen-Test (fertige Stadt ansehen)</a>
+</div>
+
+<div id="tipp" class="glas weg"></div>
+<nav id="werkzeug" class="glas" aria-label="Werkzeuge">
+  <button type="button" data-w="ansehen" aria-pressed="true"><span>👆</span><small>Ansehen</small></button>
+  <button type="button" data-w="strasse" style="--wf:#c9c4e8"><span>🛣️</span><small>Straße</small></button>
+  <button type="button" data-w="wohnen" style="--wf:var(--wohnen)"><span>🏠</span><small>Wohnen</small></button>
+  <button type="button" data-w="laden" style="--wf:var(--laden)"><span>🛍️</span><small>Läden</small></button>
+  <button type="button" data-w="industrie" style="--wf:var(--industrie)"><span>🏭</span><small>Industrie</small></button>
+  <button type="button" data-w="abriss" style="--wf:var(--abriss)"><span>🧹</span><small>Abriss</small></button>
 </nav>
-<script type="module" src="stadt.js"></script>
+
+<div id="start" hidden><div class="karte glas">
+  <h2>🏝️ Willkommen auf deiner Insel!</h2>
+  <ol>
+    <li>Tipp auf <b>🛣️ Straße</b> und zieh mit einem Finger eine Straße – auch in Kurven.</li>
+    <li>Wähl <b>🏠 Wohnen</b>, <b>🛍️ Läden</b> oder <b>🏭 Industrie</b> und mal die Felder neben der Straße an.</li>
+    <li>Schau zu, wie deine Stadt wächst. Häuser werden mit der Zeit größer.</li>
+  </ol>
+  <p style="margin:0;color:var(--leise);font-size:.88rem">Kamera: zwei Finger zum Drehen und Zoomen. Mit 👆 Ansehen verschiebst du mit einem Finger.</p>
+  <button type="button" id="los">Los geht's</button>
+</div></div>
+<script type="module" src="spiel.js"></script>
 </body>
 </html>
