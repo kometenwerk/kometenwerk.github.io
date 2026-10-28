@@ -151,7 +151,8 @@ h3{margin:0 0 6px;font-size:.75rem;letter-spacing:.14em;text-transform:uppercase
   #oben{right:max(150px,calc(env(safe-area-inset-right) + 150px))}
   #unten{bottom:max(6px,env(safe-area-inset-bottom));padding-right:calc(min(250px,32vw) + 16px)}
   #fach{position:fixed;right:max(8px,env(safe-area-inset-right));top:calc(max(8px,env(safe-area-inset-top)) + 52px);bottom:max(8px,env(safe-area-inset-bottom));width:min(250px,32vw);overflow-y:auto;align-content:start}
-  #fach .fkopf{flex-wrap:wrap}#fach .fkarten{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));overflow:visible}
+  #fach{display:flex;flex-direction:column;gap:6px}
+  #fach .fkopf{flex:none;flex-wrap:wrap;overflow:visible}#fach .fkarten{flex:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));overflow:visible}
   .kk{width:auto;min-height:74px;padding:6px 3px}.kk .em{font-size:1.4rem}.kk b{font-size:.68rem}
   #werkzeug button{width:44px;height:42px;font-size:1.25rem}
   #info{top:calc(max(8px,env(safe-area-inset-top)) + 52px);left:calc(50% - min(125px,16vw))}
