@@ -7,6 +7,10 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#0b1020">
 <link rel="icon" href="../../shared/marken/flaressa-zeichen.webp" type="image/webp">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="../../shared/fonts/fonts.css">
 <script src="../../shared/intro.js"></script>
 <style>
@@ -19,7 +23,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .glas{background:var(--glas);border:1px solid var(--linie);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:16px}
 [hidden]{display:none!important}
 /* Kopf */
-#oben{position:fixed;top:max(8px,env(safe-area-inset-top));left:max(8px,env(safe-area-inset-left));right:max(116px,calc(env(safe-area-inset-right) + 116px));display:flex;flex-wrap:wrap;gap:6px;z-index:5;pointer-events:none}
+#oben{position:fixed;top:max(8px,env(safe-area-inset-top));left:max(8px,env(safe-area-inset-left));right:max(170px,calc(env(safe-area-inset-right) + 170px));display:flex;flex-wrap:wrap;gap:6px;z-index:5;pointer-events:none}
 #oben>*{pointer-events:auto}
 #kopf{display:flex;align-items:center;gap:14px;padding:6px 12px 6px 10px;border:1px solid var(--linie);text-align:left}
 #kopf img{width:28px;height:28px;flex:none}
@@ -38,6 +42,12 @@ button:disabled{opacity:.4;cursor:not-allowed}
 #zeitleiste button{border:0;background:transparent;border-radius:9px;min-width:36px;min-height:36px;font-size:.95rem}
 #zeitleiste button[aria-pressed=true]{background:var(--f);color:#14082a}
 #datum{font-size:.78rem;color:var(--leise);padding:0 8px 0 4px;font-variant-numeric:tabular-nums;white-space:nowrap}
+#vollKnopf{position:fixed;top:max(8px,env(safe-area-inset-top));right:calc(max(8px,env(safe-area-inset-right)) + 108px);width:46px;height:46px;border-radius:14px;z-index:6;font-size:1.2rem}
+#drehen{position:fixed;inset:0;z-index:20;display:none;place-items:center;text-align:center;padding:24px;background:#0b1020;color:var(--text)}
+#drehen .dreh{font-size:3.4rem;display:inline-block;animation:dreh 2.2s ease-in-out infinite}
+@keyframes dreh{0%,20%{transform:rotate(0)}50%,70%{transform:rotate(-90deg)}100%{transform:rotate(-90deg)}}
+#drehen button{margin-top:14px;border:0;border-radius:12px;padding:12px 18px;background:var(--f);color:#14082a;font-weight:700}
+@media (orientation:portrait) and (pointer:coarse) and (max-width:820px){body.laeuft #drehen{display:grid}}
 #ansichtKnopf{position:fixed;top:max(8px,env(safe-area-inset-top));right:calc(max(8px,env(safe-area-inset-right)) + 54px);width:46px;height:46px;border-radius:14px;z-index:6;font-size:1.2rem}
 #ansichtKnopf[aria-pressed=true]{background:var(--f);color:#14082a}
 #ansichten{position:fixed;top:calc(max(8px,env(safe-area-inset-top)) + 54px);right:max(8px,env(safe-area-inset-right));width:min(330px,calc(100vw - 16px));padding:14px;z-index:6;display:grid;gap:10px;max-height:calc(100vh - 80px);overflow:auto}
@@ -133,12 +143,27 @@ h3{margin:0 0 6px;font-size:.75rem;letter-spacing:.14em;text-transform:uppercase
 #laden div{text-align:center;color:var(--leise)}
 #laden b{display:block;color:var(--text);font-size:1.2rem;margin-bottom:6px}
 #fehler{position:fixed;inset:0;display:none;place-items:center;padding:24px;text-align:center;z-index:10;background:#0b1020}
+@media (orientation:landscape) and (max-height:520px){
+  #kopf{padding:4px 10px;gap:10px}#kopf img{display:none}.kz small{display:none}.kz b{font-size:.92rem}#kopf .kz.jobs{display:none}#bedarf .saeule{height:20px}
+  #zeitleiste{padding:2px}#zeitleiste button{min-width:32px;min-height:32px}
+  #vollKnopf,#ansichtKnopf,#menueKnopf{width:40px;height:40px}#ansichtKnopf{right:calc(max(8px,env(safe-area-inset-right)) + 46px)}#vollKnopf{right:calc(max(8px,env(safe-area-inset-right)) + 92px)}
+  #oben{right:max(150px,calc(env(safe-area-inset-right) + 150px))}
+  #unten{bottom:max(6px,env(safe-area-inset-bottom));padding-right:calc(min(250px,32vw) + 16px)}
+  #fach{position:fixed;right:max(8px,env(safe-area-inset-right));top:calc(max(8px,env(safe-area-inset-top)) + 52px);bottom:max(8px,env(safe-area-inset-bottom));width:min(250px,32vw);overflow-y:auto;align-content:start}
+  #fach .fkopf{flex-wrap:wrap}#fach .fkarten{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));overflow:visible}
+  .kk{width:auto;min-height:74px;padding:6px 3px}.kk .em{font-size:1.4rem}.kk b{font-size:.68rem}
+  #werkzeug button{width:44px;height:42px;font-size:1.25rem}
+  #info{top:calc(max(8px,env(safe-area-inset-top)) + 52px);left:calc(50% - min(125px,16vw))}
+  #legende{top:calc(max(8px,env(safe-area-inset-top)) + 50px)}
+  #ansichten,#menue{top:calc(max(8px,env(safe-area-inset-top)) + 52px);max-height:calc(100vh - 64px)}
+}
 @media (max-width:560px){#kopf img{display:none}#kopf .kz.jobs{display:none}.kz small{display:none}#kopf{gap:10px}}
 @media (max-width:440px){#datum{display:none}#werkzeug button{width:44px}.kk{width:84px;min-height:84px}.kz b{font-size:.9rem}#kopf{gap:8px;padding:5px 8px}#bedarf{gap:2px;padding-left:3px}#bedarf .saeule{width:7px}#trend{font-size:.66rem}}
 </style>
 <script type="importmap">{"imports":{"three":"../../shared/vendor/three-0.160.0/three.module.min.js","three/addons/":"../../shared/vendor/three-0.160.0/"}}</script>
 </head>
 <body>
+<div id="drehen"><div><span class="dreh">📱</span><h2 style="margin:12px 0 6px">Bitte dreh dein Handy</h2><p style="color:var(--leise);margin:0">Inselstadt spielt man im Querformat.</p><button type="button" id="drehVoll">⛶ Vollbild & quer</button></div></div>
 <div id="hauptmenue"><div class="box" id="hmBox"></div></div>
 <div id="laden" class="weg"><div><b>🏝️ Inselstadt</b>Die Karte wird gebaut …</div></div>
 <div id="fehler"><div><b>Das klappt auf diesem Gerät leider nicht.</b><p>Dein Browser kann kein 3D (WebGL). Probier es mit einem aktuellen Chrome, Safari oder Firefox.</p></div></div>
@@ -152,6 +177,7 @@ h3{margin:0 0 6px;font-size:.75rem;letter-spacing:.14em;text-transform:uppercase
     <div id="bedarf" title="Bedarf: Wohnen, Gewerbe, Büros, Industrie"><span style="--c:var(--w)"><span class="saeule"><i></i></span><em>W</em></span><span style="--c:var(--l)"><span class="saeule"><i></i></span><em>G</em></span><span style="--c:#3fd6c9"><span class="saeule"><i></i></span><em>B</em></span><span style="--c:var(--i)"><span class="saeule"><i></i></span><em>I</em></span></div></button>
   <div id="zeitleiste" class="glas"><button type="button" data-t="0" aria-label="Pause">⏸️</button><button type="button" data-t="1" aria-label="Normal">▶️</button><button type="button" data-t="2" aria-label="Schnell">⏩</button><button type="button" data-t="4" aria-label="Sehr schnell">⏭️</button><span id="datum"></span></div>
 </div>
+<button id="vollKnopf" class="glas" type="button" aria-label="Vollbild" title="Vollbild">⛶</button>
 <button id="ansichtKnopf" class="glas" type="button" aria-label="Info-Ansichten" aria-pressed="false" title="Info-Ansichten">🔍</button>
 <div id="ansichten" class="glas" hidden><h3>Info-Ansichten</h3><div class="liste" id="ansichtListe"></div><small style="color:var(--leise)">Zeigt die Stadt eingefärbt – nochmal antippen schaltet aus.</small></div>
 <div id="legende" class="glas" hidden></div>

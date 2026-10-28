@@ -2660,16 +2660,24 @@ function fahrenStarten() {
   const e = naechsteKante(steuerung.target, 400, (k) => TYP[k.typ].autos), p = spurPunkt(e.k, 1, e.s, TYP[e.k.typ].spuren[0]);
   Object.assign(spieler, { an: true, x: p.x, z: p.z, rot: Math.atan2(-p.tz, p.tx), vx: 0, vz: 0, gier: 0, lenk: 0 });
   spieler.gruppe.visible = true; steuerung.enabled = false;
-  ["unten", "oben", "menueKnopf", "ansichtKnopf", "ansichten", "legende"].forEach((id) => { $(id).hidden = true; }); $("fahrpult").hidden = false; $("tacho").hidden = false; $("info").hidden = true; $("budget").hidden = true;
+  ["unten", "oben", "menueKnopf", "ansichtKnopf", "vollKnopf", "ansichten", "legende"].forEach((id) => { $(id).hidden = true; }); $("fahrpult").hidden = false; $("tacho").hidden = false; $("info").hidden = true; $("budget").hidden = true;
   kamera.position.set(p.x - p.tx * 3, 1.8, p.z - p.tz * 3);
   tipp("🚗 Gas ▲, Bremse/Rückwärts ▼, Lenken ◀ ▶. Zu schnell in die Kurve? Dann driftest du!", 4000);
 }
 function fahrenBeenden() {
   spieler.an = false; spieler.gruppe.visible = false;
-  ["unten", "oben", "menueKnopf", "ansichtKnopf"].forEach((id) => { $(id).hidden = false; }); if (ansicht) $("legende").hidden = false; $("fahrpult").hidden = true; $("tacho").hidden = true;
+  ["unten", "oben", "menueKnopf", "ansichtKnopf", "vollKnopf"].forEach((id) => { $(id).hidden = false; }); if (ansicht) $("legende").hidden = false; $("fahrpult").hidden = true; $("tacho").hidden = true;
   steuerung.target.set(spieler.x, 0, spieler.z); kamera.position.set(spieler.x + 10, 14, spieler.z + 14); steuerung.enabled = true; steuerung.update();
 }
 $("aussteigen").onclick = fahrenBeenden;
+/* Vollbild und Querformat auf dem Handy */
+async function vollbildQuer() {
+  try { if (!document.fullscreenElement && document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen({ navigationUI: "hide" }); } catch (e) { /* nicht erlaubt */ }
+  try { if (screen.orientation && screen.orientation.lock) await screen.orientation.lock("landscape"); } catch (e) { /* geht nur im Vollbild oder gar nicht */ }
+}
+$("vollKnopf").onclick = () => { if (document.fullscreenElement) document.exitFullscreen(); else vollbildQuer(); };
+$("drehVoll").onclick = vollbildQuer;
+document.addEventListener("fullscreenchange", () => { $("vollKnopf").textContent = document.fullscreenElement ? "🗗" : "⛶"; setTimeout(() => dispatchEvent(new Event("resize")), 200); });
 $("kameraWechsel").onclick = () => { spieler.kamera = spieler.kamera === "hinten" ? "innen" : "hinten"; };
 document.querySelectorAll("#fahrpult button").forEach((b) => {
   const an = (v) => (e) => { e.preventDefault(); spieler[b.dataset.f] = v; b.classList.toggle("an", v); };
@@ -2813,7 +2821,7 @@ function starten(n, daten, neueKarte) {
     if (daten) zustandRein(daten);
     else { geld = KARTEN[karte].geld; netzGeaendert(); gebieteZeichnen(); bedarfBerechnen(); zeigeWerte(); datumZeigen(); }
     if (!aussenKnoten) aussenBauen();
-    spielLaeuft = true; speichernBald(); unterleiste(); zeitKnoepfe(); menueKnoepfe();
+    spielLaeuft = true; document.body.classList.add("laeuft"); if (matchMedia("(pointer:coarse)").matches) vollbildQuer(); speichernBald(); unterleiste(); zeitKnoepfe(); menueKnoepfe();
     if (!daten) { $("info").hidden = true; infoZeigen(`<b>${KARTEN[karte].em} Willkommen in deiner neuen Stadt!</b>1. 🛣️ Straßen: Anfang antippen, Ende antippen, ✓<br>2. 🏘️ Zonen: Felder neben der Straße anmalen<br>3. Zuschauen: Häuser wachsen, Autos fahren, Steuern bringen Geld<br><small>Tipp oben auf dein Geld für Budget &amp; Steuern.</small>`, 12000); werkzeugWaehlen("strasse"); }
     else tipp("Willkommen zurück!", 2500);
     renderer.setAnimationLoop(schleife);
