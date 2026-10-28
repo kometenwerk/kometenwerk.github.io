@@ -599,7 +599,7 @@ function zellenFuer(k) {
     const p = punktBei(k, rand + (i + 0.5) * ZELLE), nx = -p.tz, nz = p.tx;
     for (const seite of [1, -1]) for (let r = 0; r < REIHEN; r++) {
       const d = T.halb + ZELLE / 2 + 0.02 + r * ZELLE, x = p.x + nx * seite * d, z = p.z + nz * seite * d;
-      if (!aufLand(x, z, 3.6) || !imBesitz(x, z) || strassenFrei({ x, z }) < 0.45 || zellenNahe(x, z, 0.86).length) break;
+      if (!aufLand(x, z, 3.6) || !imBesitz(x, z) || strassenFrei({ x, z }) < 0.45 || zellenNahe(x, z, 0.86).length || inDienst(x, z, 0.35)) break;
       neueZelle({ x, z, rot: Math.atan2(-nx * seite, -nz * seite), g, seite, i, r });
     }
   }
@@ -754,18 +754,19 @@ function neuesHaus(d, alt) {
   const h = Object.assign({ id: d.id || hId++, geboren: alt ? -100 : jetztS, simGeboren: alt ? -100 : simZeit, ab: 0, zug: null }, d); hId = Math.max(hId, h.id + 1);
   let x = 0, z = 0, sx = 0, sz = 0; h.zellen.forEach((id) => { const c = zellen.get(id); c.haus = h.id; x += c.x; z += c.z; sx += Math.sin(c.rot); sz += Math.cos(c.rot); });
   h.x = x / h.zellen.length; h.z = z / h.zellen.length; h.rot = Math.atan2(sx, sz);
-  h.teile = hausTeile(h); haeuser.set(h.id, h); haeuserNeu = zellenNeu = true;
+  h.teile = hausTeile(h); h.hoehe = hoeheVon(h); haeuser.set(h.id, h); haeuserNeu = zellenNeu = true;
   const rr = Math.max(h.w, h.d) * 0.62 + 0.2; baeumeFaellen({ x0: h.x - rr, x1: h.x + rr, z0: h.z - rr, z1: h.z + rr }, (bx, bz) => Math.hypot(bx - h.x, bz - h.z) < rr);
   return h;
 }
-const leute = (h) => LEUTE[h.zone] ? LEUTE[h.zone][Math.min(h.stufe, 5)] * h.zellen.length : 0;
-const jobs = (h) => { const t = JOBS[h.zone]; return t ? t[Math.min(h.stufe, t.length - 1)] * h.zellen.length : 0; };
+const leute = (h) => h.verlassen ? 0 : LEUTE[h.zone] ? LEUTE[h.zone][Math.min(h.stufe, 5)] * h.zellen.length : 0;
+const jobs = (h) => { if (h.verlassen) return 0; const t = JOBS[h.zone]; return t ? t[Math.min(h.stufe, t.length - 1)] * h.zellen.length : 0; };
 const gruppe = (h) => ZONEN[h.zone].gruppe;
 const zoneFrei = (z) => meilenstein >= (ZONEN[z].ab || 0);
 /* Bodenwert (0–100): Bäume, Alleen, Wasser und Läden heben ihn – Hauptstraßen und Dreck senken ihn */
 function dreckBei(x, z, ohne) {
   let d = 0;
   for (const q of industrieListe) { if (q === ohne) continue; const r = q.zone === 6 ? 5 + q.stufe : q.zone === 7 ? 3 : 4, e = Math.hypot(q.x - x, q.z - z); if (e < r) d += (1 - e / r) * (q.zone === 6 ? 45 : 18); }
+  for (const q of dienste.values()) { const r = DIENSTE[q.typ].dreck; if (!r) continue; const e = Math.hypot(q.x - x, q.z - z); if (e < r) d += (1 - e / r) * 50; }
   return Math.min(100, d);
 }
 function bodenwert(x, z, ohne) {
@@ -777,6 +778,9 @@ function bodenwert(x, z, ohne) {
   if (naechsteKante({ x, z }, 2.6, (k) => k.typ === "haupt" && !k.aussen)) w -= 10;
   let laeden = 0; for (const q of ladenListe) if (Math.hypot(q.x - x, q.z - z) < 6) laeden++;
   w += Math.min(14, laeden * 4);
+  let park = 0, dienstPlus = 0; const gedeckt = new Set();
+  for (const q of dienste.values()) { const D = DIENSTE[q.typ]; if (!D.radius) continue; const e = Math.hypot(q.x - x, q.z - z); if (e >= D.radius) continue; if (D.wert) park += D.wert * (1 - e / D.radius); else gedeckt.add(D.kat); }
+  w += Math.min(26, park) + gedeckt.size * 3;
   const dreck = dreckBei(x, z, ohne);
   return { wert: klemme(Math.round(w - dreck * 0.9), 0, 100), dreck: Math.round(dreck) };
 }
@@ -792,6 +796,11 @@ function dreckZeichnen() {
     const r = h.zone === 6 ? 5 + h.stufe : h.zone === 7 ? 3 : 4;
     _o.position.set(h.x, G + 0.006, h.z); _o.rotation.set(0, h.variante % 6, 0); _o.scale.set(r, 1, r); _o.updateMatrix(); dreckMesh.setMatrixAt(i, _o.matrix);
     dreckMesh.setColorAt(i, _farbe.setHex(h.zone === 6 ? 0x6b5233 : h.zone === 7 ? 0x8a6a3a : 0x6d5a3a)); i++;
+  }
+  for (const h of dienste.values()) {
+    const r = DIENSTE[h.typ].dreck; if (!r || i >= 800) continue;
+    _o.position.set(h.x, G + 0.006, h.z); _o.rotation.set(0, h.variante % 6, 0); _o.scale.set(r, 1, r); _o.updateMatrix(); dreckMesh.setMatrixAt(i, _o.matrix);
+    dreckMesh.setColorAt(i, _farbe.setHex(0x5a4a33)); i++;
   }
   dreckMesh.count = i; dreckMesh.instanceMatrix.needsUpdate = true; if (dreckMesh.instanceColor) dreckMesh.instanceColor.needsUpdate = true;
 }
@@ -812,12 +821,14 @@ const wertMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.92, 0.92).rot
 wertMesh.count = 0; wertMesh.frustumCulled = false; wertMesh.renderOrder = 3; wertMesh.setColorAt(0, new THREE.Color()); wertMesh.visible = false; szene.add(wertMesh);
 let wertAnsicht = false, wertZeit = -9;
 function wertFarbe(v) { const rot = farbe(0xff4a3d), gelb = farbe(0xffd23d), gruen = farbe(0x2fd66b); return v < 50 ? rot.lerp(gelb, v / 50) : gelb.lerp(gruen, (v - 50) / 50); }
+function wertFarbeU(v) { const a = farbe(0x8a5a2b), b2 = farbe(0xffd23d), c = farbe(0x2fd66b); return v < 50 ? a.lerp(b2, v / 50) : b2.lerp(c, (v - 50) / 50); }
 function wertZeichnen() {
   wertMesh.visible = wertAnsicht; if (!wertAnsicht) return; wertZeit = jetztS; listenAuffrischen();
   let i = 0;
   for (const z of zellen.values()) {
-    const h = z.haus && haeuser.get(z.haus), v = h ? (h.wert ?? 0) : bodenwert(z.x, z.z).wert;
-    _o.position.set(z.x, h ? BODEN + 0.02 : G + 0.04, z.z); _o.rotation.set(0, z.rot, 0); _o.scale.set(1, 1, 1); _o.updateMatrix(); wertMesh.setMatrixAt(i, _o.matrix); wertMesh.setColorAt(i, wertFarbe(v)); i++;
+    const h = z.haus && haeuser.get(z.haus), A = ansicht && ANSICHTEN[ansicht], v = A && A.wert ? A.wert(z, h) : h ? (h.wert ?? 0) : bodenwert(z.x, z.z).wert;
+    if (v == null) continue;
+    _o.position.set(z.x, h ? BODEN + 0.02 : G + 0.04, z.z); _o.rotation.set(0, z.rot, 0); _o.scale.set(1, 1, 1); _o.updateMatrix(); wertMesh.setMatrixAt(i, _o.matrix); wertMesh.setColorAt(i, A && A.umgekehrt ? wertFarbeU(v) : wertFarbe(v)); i++;
   }
   wertMesh.count = i; wertMesh.instanceMatrix.needsUpdate = true; if (wertMesh.instanceColor) wertMesh.instanceColor.needsUpdate = true;
 }
@@ -832,7 +843,8 @@ const federn = (t) => { const c = 1.4; return 1 + (c + 1) * Math.pow(t - 1, 3) +
 let rauchTeile = [];
 function haeuserZeichnen() {
   let anim = false; const n = { haus: 0, flach: 0, dach: 0, zyl: 0, garten: 0 }; rauchTeile = [];
-  for (const h of haeuser.values()) {
+  drehListe = [];
+  for (const h of [...haeuser.values(), ...dienste.values()]) {
     const p = Math.min(1, Math.max(0, (jetztS - h.geboren) / 0.7)); if (p < 1) anim = true;
     const e = h.ab + (1 - h.ab) * (1 - Math.pow(1 - p, 3)), cs = Math.cos(h.rot), sn = Math.sin(h.rot);
     for (const t of h.teile) {
@@ -841,14 +853,21 @@ function haeuserZeichnen() {
       if (t.rund) { const f = p >= 1 ? 1 : (p > 0 ? federn(p) : 0); _o.position.set(wx, BODEN + (t.ly || 0) * e, wz); _o.scale.set(t.sx * f + 1e-4, t.sy * f + 1e-4, t.sz * f + 1e-4); }
       else if (t.fest) { _o.position.set(wx, G + 0.012, wz); _o.scale.set(t.sx, t.sy, t.sz); }
       else { _o.position.set(wx, BODEN + t.ly * e, wz); _o.scale.set(t.sx, Math.max(t.sy * e, 1e-4), t.sz); }
-      _o.rotation.set(0, h.rot + (t.ry || 0), 0); _o.updateMatrix(); m.setMatrixAt(n[t.b], _o.matrix);
-      if (t.c != null) m.setColorAt(n[t.b], _farbe.setHex(t.c)); else m.setColorAt(n[t.b], _farbe.setRGB(0.85 + (h.variante % 7) * 0.02, 0.9, 0.85));
+      _o.rotation.set(t.rx || 0, h.rot + (t.ry || 0), t.rz || 0, "YXZ"); _o.updateMatrix(); m.setMatrixAt(n[t.b], _o.matrix);
+      if (t.dreh) drehListe.push({ m, i: n[t.b], h, t, x: _o.position.x, y: _o.position.y, z: _o.position.z });
+      if (t.c != null) _farbe.setHex(t.c); else _farbe.setRGB(0.85 + (h.variante % 7) * 0.02, 0.9, 0.85);
+      if (h.verlassen) _farbe.lerp(GRAU, 0.65); m.setColorAt(n[t.b], _farbe);
       n[t.b]++;
       if (t.schlot && p >= 1) rauchTeile.push({ x: wx, y: BODEN + t.sy, z: wz, ph: (h.variante % 100) / 13 });
     }
   }
   for (const k in n) { const m = B[k]; m.count = n[k]; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
-  haeuserNeu = anim;
+  _o.rotation.order = "XYZ"; haeuserNeu = anim;
+}
+const GRAU = new THREE.Color(0x77736c); let drehListe = [];
+function drehZeichnen() {
+  for (const e of drehListe) { _o.position.set(e.x, e.y, e.z); _o.rotation.set(e.t.rx || 0, e.h.rot + (e.t.ry || 0), (e.t.rz || 0) + jetztS * e.t.dreh, "YXZ"); _o.scale.set(e.t.sx, e.t.sy, e.t.sz); _o.updateMatrix(); e.m.setMatrixAt(e.i, _o.matrix); e.m.instanceMatrix.needsUpdate = true; }
+  _o.rotation.order = "XYZ";
 }
 function rauchZeichnen() {
   let i = 0; const m = B.rauch;
@@ -857,12 +876,279 @@ function rauchZeichnen() {
     _o.position.set(r.x + f * 0.5 + Math.sin(jetztS + k) * 0.05, r.y + 0.05 + f * 1.3, r.z + f * 0.2); _o.rotation.set(f, f * 2, 0); _o.scale.set(s, s, s); _o.updateMatrix();
     m.setMatrixAt(i, _o.matrix); m.setColorAt(i, _farbe.setScalar(1 - f * 0.25)); i++;
   }
+  for (const h of haeuser.values()) {
+    if (!h.brand) continue;
+    for (let k = 0; k < 10 && i < 800; k++) {
+      const f = ((jetztS * (k < 5 ? 1.4 : 0.5) + k / 5 + h.id * 0.13) % 1), feuer = k < 5, s = feuer ? 0.25 * (1 - f) + 0.08 : 0.2 + f * 0.45;
+      _o.position.set(h.x + Math.sin(k * 2.1 + jetztS) * 0.18, BODEN + (feuer ? (h.hoehe || 0.6) * 0.5 + f * 0.7 : (h.hoehe || 0.6) + 0.3 + f * 1.6), h.z + Math.cos(k * 1.7) * 0.18); _o.rotation.set(f, f * 2, 0); _o.scale.set(s, s, s); _o.updateMatrix();
+      m.setMatrixAt(i, _o.matrix); m.setColorAt(i, feuer ? _farbe.setRGB(1, 0.35 + f * 0.4, 0.05) : _farbe.setRGB(0.25, 0.24, 0.24)); i++;
+    }
+  }
   m.count = i; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true;
 }
 function alleeZeichnen() {
   let i = 0;
   for (const k of kanten.values()) { if (k.typ !== "allee") continue; for (let s = 1.2; s < k.len - 1.0 && i < 5990; s += 1.6) { const p = punktBei(k, s); for (const sei of [1, -1]) { _o.position.set(p.x - p.tz * 0.6 * sei, G + 0.016, p.z + p.tx * 0.6 * sei); _o.rotation.set(0, s * 3.7, 0); _o.scale.setScalar(0.62 + ((s * 7.3) % 0.2)); _o.updateMatrix(); alleeBaeume.setMatrixAt(i, _o.matrix); alleeBaeume.setColorAt(i, _farbe.setRGB(0.9, 1, 0.9)); i++; } } }
   alleeBaeume.count = i; alleeBaeume.instanceMatrix.needsUpdate = true; if (alleeBaeume.instanceColor) alleeBaeume.instanceColor.needsUpdate = true;
+}
+
+/* ================================================================
+   Dienste: Strom, Wasser, Müll, Polizei, Feuerwehr, Gesundheit, Bildung, Parks
+   ================================================================ */
+const DIENST_KAT = {
+  strom: { em: "⚡", name: "Strom" }, wasser: { em: "💧", name: "Wasser" }, muell: { em: "🗑️", name: "Müll" },
+  polizei: { em: "🚓", name: "Polizei" }, feuer: { em: "🚒", name: "Feuerwehr" }, gesund: { em: "🏥", name: "Gesundheit" }, bildung: { em: "🎓", name: "Bildung" }, park: { em: "🌳", name: "Parks" }
+};
+const DIENSTE = {
+  windrad: { kat: "strom", name: "Windrad", em: "🌬️", preis: 3000, unterhalt: 60, w: 1, d: 1, strom: 90, text: "Sauberer Strom, aber nicht viel." },
+  solar: { kat: "strom", name: "Solarpark", em: "☀️", preis: 9000, unterhalt: 140, w: 3, d: 3, strom: 380, ab: 1, text: "Viel sauberer Strom, braucht aber Platz." },
+  kohle: { kat: "strom", name: "Kohlekraftwerk", em: "🏭", preis: 16000, unterhalt: 320, w: 4, d: 4, strom: 1500, dreck: 9, ab: 2, text: "Sehr viel Strom – aber Rauch und Dreck." },
+  pumpe: { kat: "wasser", name: "Wasserpumpe", em: "🚰", preis: 2500, unterhalt: 50, w: 1, d: 2, wasser: 450, amWasser: true, text: "Pumpt Wasser aus See oder Meer. Muss am Ufer stehen." },
+  wasserturm: { kat: "wasser", name: "Wasserturm", em: "🗼", preis: 4500, unterhalt: 90, w: 2, d: 2, wasser: 220, text: "Wasser auch weit weg vom Ufer." },
+  klaer: { kat: "wasser", name: "Kläranlage", em: "🚽", preis: 4000, unterhalt: 80, w: 2, d: 3, abwasser: 520, text: "Reinigt das Abwasser der Stadt." },
+  deponie: { kat: "muell", name: "Mülldeponie", em: "🗑️", preis: 4000, unterhalt: 100, w: 3, d: 3, muell: 550, dreck: 4, text: "Müllautos holen den Müll bei den Häusern ab." },
+  verbrennung: { kat: "muell", name: "Müllverbrennung", em: "♨️", preis: 15000, unterhalt: 260, w: 3, d: 3, muell: 2200, strom: 150, dreck: 5, ab: 3, text: "Verbrennt viel Müll und macht nebenbei Strom." },
+  polizei: { kat: "polizei", name: "Polizeiwache", em: "🚓", preis: 6000, unterhalt: 120, w: 2, d: 2, radius: 13, text: "Weniger Kriminalität im Kreis. Streifenwagen fahren Runden." },
+  praesidium: { kat: "polizei", name: "Polizeipräsidium", em: "👮", preis: 20000, unterhalt: 340, w: 3, d: 3, radius: 24, ab: 4, text: "Großer Wirkungskreis." },
+  feuerwache: { kat: "feuer", name: "Feuerwache", em: "🚒", preis: 6000, unterhalt: 120, w: 2, d: 2, radius: 13, text: "Löschzüge fahren zu Bränden im Kreis." },
+  hauptwache: { kat: "feuer", name: "Hauptfeuerwache", em: "🧯", preis: 20000, unterhalt: 340, w: 3, d: 3, radius: 24, ab: 4, text: "Großer Wirkungskreis." },
+  arzt: { kat: "gesund", name: "Arztpraxis", em: "🩺", preis: 3000, unterhalt: 70, w: 1, d: 2, radius: 8, text: "Kleine Praxis für die Nachbarschaft." },
+  krankenhaus: { kat: "gesund", name: "Krankenhaus", em: "🏥", preis: 15000, unterhalt: 300, w: 3, d: 3, radius: 22, ab: 2, text: "Krankenwagen für die ganze Gegend." },
+  grundschule: { kat: "bildung", name: "Grundschule", em: "🏫", preis: 5000, unterhalt: 110, w: 2, d: 3, radius: 11, bildung: 1, text: "Bildung Stufe 1 – Wohnhäuser können auf Stufe 3+ wachsen." },
+  gymnasium: { kat: "bildung", name: "Gymnasium", em: "🎒", preis: 12000, unterhalt: 220, w: 3, d: 3, radius: 17, bildung: 2, ab: 2, text: "Bildung Stufe 2 – Stufe 5 und mehr Büros statt Fabriken." },
+  uni: { kat: "bildung", name: "Universität", em: "🎓", preis: 30000, unterhalt: 480, w: 4, d: 4, radius: 32, bildung: 3, ab: 4, text: "Bildung Stufe 3 – die klügste Stadt." },
+  spielplatz: { kat: "park", name: "Spielplatz", em: "🛝", preis: 600, unterhalt: 10, w: 1, d: 1, radius: 5, wert: 8, text: "Macht die Nachbarschaft schöner." },
+  park: { kat: "park", name: "Park", em: "🌳", preis: 1500, unterhalt: 25, w: 2, d: 2, radius: 7, wert: 12, text: "Bäume und Wege – höherer Bodenwert." },
+  brunnen: { kat: "park", name: "Brunnenplatz", em: "⛲", preis: 2500, unterhalt: 35, w: 2, d: 2, radius: 7, wert: 14, ab: 1, text: "Ein schöner Platz mit Brunnen." },
+  sportplatz: { kat: "park", name: "Sportplatz", em: "⚽", preis: 4000, unterhalt: 60, w: 3, d: 2, radius: 9, wert: 10, ab: 1, text: "Fußball für alle." },
+  grosspark: { kat: "park", name: "Großer Park", em: "🏞️", preis: 6000, unterhalt: 80, w: 3, d: 3, radius: 12, wert: 18, ab: 2, text: "Großer Park mit Teich." }
+};
+const RESSOURCEN = { strom: { em: "⚡", name: "Strom" }, wasser: { em: "💧", name: "Wasser" }, abwasser: { em: "🚽", name: "Abwasser" }, muell: { em: "🗑️", name: "Müllabfuhr" } };
+const dienste = new Map(); let dId = 1;
+const dienstFrei = (t) => meilenstein >= (DIENSTE[t].ab || 0);
+function dienstTeile(d) {
+  const D0 = DIENSTE[d.typ], W = D0.w * ZELLE, D = D0.d * ZELLE, vorn = D / 2 - 0.08, T = [], r = zufall(d.id * 977 + 13);
+  const box = (b, lx, lz, w, hh, dd, c, ex) => T.push(Object.assign({ b, lx, ly: 0, lz, sx: w, sy: hh, sz: dd, c }, ex || {}));
+  const zyl = (lx, lz, dm, hh, c, ex) => box("zyl", lx, lz, dm, hh, dm, c, ex);
+  const baum = (lx, lz, g) => box("garten", lx, lz, g, g, g, null, { rund: true });
+  const boden = (c) => box("flach", 0, 0, W * 0.98, 0.008, D * 0.98, c, { fest: true });
+  const flach = (lx, lz, w, dd, c, y) => box("flach", lx, lz, w, 0.012, dd, c, { ly: y || 0.003 });
+  const dach = (lx, lz, w, dd, y, c) => box("flach", lx, lz, w + 0.04, 0.04, dd + 0.04, c || 0xd9d6cf, { ly: y });
+  const zaun = (c) => { for (const s of [-1, 1]) { box("flach", s * W * 0.47, 0, 0.02, 0.14, D * 0.94, c); box("flach", 0, s * D * 0.47, W * 0.94, 0.14, 0.02, c); } };
+  const autos = (lx, lz, n, c) => { for (let k = 0; k < n; k++) box("flach", lx + (k - (n - 1) / 2) * 0.2, lz, 0.13, 0.11, 0.24, c || PAL.auto[(d.id + k) % PAL.auto.length], { ly: 0.01 }); };
+  const kreuz = (lx, lz, y, s, c) => { box("flach", lx, lz, s, s * 0.32, 0.02, c, { ly: y }); box("flach", lx, lz, s * 0.32, s, 0.02, c, { ly: y - s * 0.34 }); };
+  switch (d.typ) {
+    case "windrad": boden(0x8fcf68); zyl(0, 0, 0.12, 2.4, 0xf2f4f6); box("haus", 0, 0.06, 0.13, 0.13, 0.28, 0xf2f4f6, { ly: 2.34 }); for (let i = 0; i < 3; i++) box("flach", 0, 0.21, 0.07, 1.0, 0.02, 0xf7f8fa, { ly: 2.41, rz: i * 2.094, dreh: 1.4 }); break;
+    case "solar": boden(0xa9a693); for (let zz = -D / 2 + 0.35; zz < D / 2 - 0.35; zz += 0.4) box("flach", -0.1, zz, W * 0.78, 0.02, 0.3, 0x1f3a6b, { ly: 0.13, rx: -0.55 }); box("haus", W * 0.4, vorn - 0.18, 0.28, 0.26, 0.26, 0xe6e6e6); break;
+    case "kohle": boden(0x8c8a84); box("haus", -W * 0.18, vorn - 0.75, W * 0.55, 0.95, 1.3, 0x9a8f86); dach(-W * 0.18, vorn - 0.75, W * 0.55, 1.3, 0.95, 0x6d737a); zyl(W * 0.28, -D * 0.22, 1.25, 1.5, 0xd6d8da); zyl(W * 0.28, -D * 0.22, 1.0, 0.04, 0x9aa0a8, { ly: 1.5 }); zyl(-W * 0.38, -D * 0.32, 0.22, 2.8, 0xb5523a, { schlot: true }); zyl(-W * 0.12, -D * 0.32, 0.22, 2.8, 0xb5523a, { schlot: true }); for (let k = 0; k < 3; k++) box("dach", -W * 0.3 + k * 0.5, D * 0.08, 0.45, 0.22, 0.4, 0x2a2a2a); break;
+    case "pumpe": boden(0xb5b3ad); box("haus", 0, vorn - 0.28, 0.62, 0.42, 0.46, 0xdfe7ee); dach(0, vorn - 0.28, 0.62, 0.46, 0.42, 0x3f7fe8); box("flach", 0, -0.35, 0.12, 0.1, 1.0, 0x5a7fa8, { ly: 0.02 }); zyl(0, -D / 2 + 0.12, 0.22, 0.25, 0x5a7fa8); break;
+    case "wasserturm": boden(0xb5b3ad); zyl(0, 0, 0.24, 1.7, 0xcfd4d8); zyl(0, 0, 0.85, 0.55, 0x6fa8dc, { ly: 1.7 }); zyl(0, 0, 0.9, 0.06, 0xdfe7ee, { ly: 2.25 }); break;
+    case "klaer": boden(0xb5b3ad); zyl(-0.42, -0.45, 0.8, 0.14, 0xa8b0a8); zyl(-0.42, -0.45, 0.68, 0.01, 0x6f9a7f, { ly: 0.14 }); zyl(0.42, -0.45, 0.8, 0.14, 0xa8b0a8); zyl(0.42, -0.45, 0.68, 0.01, 0x7faa8f, { ly: 0.14 }); box("haus", 0, vorn - 0.25, W * 0.6, 0.4, 0.4, 0xe9e4da); dach(0, vorn - 0.25, W * 0.6, 0.4, 0.4); break;
+    case "deponie": boden(0x8a7a5a); zaun(0x6d737a); for (let k = 0; k < 7; k++) box("dach", (r() - 0.5) * W * 0.65, -D * 0.12 + (r() - 0.5) * D * 0.5, 0.5 + r() * 0.5, 0.18 + r() * 0.25, 0.5 + r() * 0.4, wahl(r, [0x6d5a3a, 0x7a6a4a, 0x5d6470, 0x8a7a5a])); box("haus", W * 0.3, vorn - 0.25, 0.5, 0.32, 0.35, 0xd9d4c7); break;
+    case "verbrennung": boden(0x9a9a92); box("haus", -W * 0.12, vorn - 0.7, W * 0.65, 0.8, 1.2, 0xc4c9cc); dach(-W * 0.12, vorn - 0.7, W * 0.65, 1.2, 0.8, 0x6d737a); zyl(W * 0.32, -D * 0.25, 0.28, 3.0, 0xd9d9d9, { schlot: true }); box("flach", W * 0.32, -D * 0.25, 0.3, 0.06, 0.3, 0xe8493f, { ly: 2.6 }); break;
+    case "polizei": case "praesidium": { const gr = d.typ === "praesidium", hh = gr ? 1.5 : 0.8, w = W * 0.82, dd = gr ? 1.4 : 0.9, lz = vorn - dd / 2 - 0.05; boden(0xb5b3ad); box("haus", 0, lz, w, hh, dd, 0xf2f4f7); dach(0, lz, w, dd, hh); box("flach", 0, lz + dd / 2 + 0.006, w, 0.09, 0.01, 0x1f4fbf, { ly: hh * 0.62 }); box("flach", 0, lz + dd / 2 + 0.01, 0.3, 0.1, 0.02, 0x1f4fbf, { ly: hh - 0.18 }); autos(0, -D / 2 + 0.3, gr ? 4 : 2, 0xf2f4f7); break; }
+    case "feuerwache": case "hauptwache": { const gr = d.typ === "hauptwache", w = W * 0.84, dd = gr ? 1.4 : 1.0, lz = vorn - dd / 2 - 0.08, n = gr ? 4 : 3; boden(0xb5b3ad); box("haus", 0, lz, w, 0.7, dd, 0xc23b2f); dach(0, lz, w, dd, 0.7, 0x5d6470); for (let k = 0; k < n; k++) box("flach", -w / 2 + w / n * (k + 0.5), lz + dd / 2 + 0.006, w / n * 0.7, 0.45, 0.01, 0x2a2d33); box("haus", w / 2 - 0.15, lz - dd / 2 + 0.15, 0.24, 1.5, 0.24, 0xc23b2f); break; }
+    case "arzt": boden(0xb5b3ad); box("haus", 0, vorn - 0.42, 0.75, 0.62, 0.7, 0xf6f6f6); dach(0, vorn - 0.42, 0.75, 0.7, 0.62); kreuz(0, vorn - 0.06, 0.5, 0.2, 0xd9302f); baum(0, -0.6, 0.5); break;
+    case "krankenhaus": boden(0xc8c8c0); box("haus", 0, vorn - 0.8, W * 0.86, 1.4, 1.3, 0xf6f6f6); box("haus", -W * 0.25, -D * 0.22, W * 0.36, 0.9, 1.0, 0xeef1f4); dach(0, vorn - 0.8, W * 0.86, 1.3, 1.4); flach(0, vorn - 0.8, 0.7, 0.7, 0x3f7f4a, 1.45); box("flach", 0, vorn - 0.8, 0.08, 0.02, 0.4, 0xffffff, { ly: 1.47 }); box("flach", 0, vorn - 0.8, 0.3, 0.02, 0.08, 0xffffff, { ly: 1.47 }); kreuz(0, vorn - 0.14, 1.15, 0.3, 0xd9302f); break;
+    case "grundschule": case "gymnasium": { const gr = d.typ === "gymnasium", c = gr ? 0xe3c9a8 : 0xf3d58a; boden(0xb9b49f); box("haus", 0, vorn - 0.35, W * 0.84, gr ? 1.0 : 0.65, 0.6, c); dach(0, vorn - 0.35, W * 0.84, 0.6, gr ? 1.0 : 0.65, 0xb2513a); box("haus", -W * 0.3, -0.1, W * 0.26, gr ? 1.0 : 0.65, D * 0.45, c); dach(-W * 0.3, -0.1, W * 0.26, D * 0.45, gr ? 1.0 : 0.65, 0xb2513a);
+      if (gr) { flach(W * 0.15, -D * 0.28, W * 0.5, D * 0.36, 0x4f9a3a); box("flach", W * 0.15, -D * 0.28, W * 0.46, 0.002, 0.02, 0xffffff, { ly: 0.017 }); } else { flach(W * 0.15, -D * 0.25, W * 0.45, D * 0.3, 0xd8c7a0); baum(W * 0.3, -D * 0.38, 0.45); } break; }
+    case "uni": boden(0x8fcf68); box("haus", 0, vorn - 0.45, W * 0.8, 1.1, 0.8, 0xe8dcc8); dach(0, vorn - 0.45, W * 0.8, 0.8, 1.1); zyl(0, vorn - 0.45, 0.6, 0.5, 0xe8dcc8, { ly: 1.1 }); zyl(0, vorn - 0.45, 0.66, 0.06, 0x7fa3b8, { ly: 1.6 }); box("haus", -W * 0.3, -D * 0.25, 0.9, 1.3, 0.9, 0xd8c3a5); box("haus", W * 0.3, -D * 0.25, 0.9, 0.9, 0.9, 0xd8c3a5); flach(0, -0.1, 0.2, D * 0.6, 0xd8c7a0); for (let k = 0; k < 4; k++) baum((r() - 0.5) * W * 0.8, (r() - 0.3) * D * 0.4, 0.5); break;
+    case "spielplatz": boden(0x7fc463); flach(-0.15, 0.1, 0.35, 0.35, 0xe8d39a); box("flach", 0.2, -0.15, 0.04, 0.3, 0.04, 0xe8493f); box("flach", 0.2, 0.05, 0.08, 0.02, 0.4, 0xf2c14e, { ly: 0.15, rx: 0.5 }); box("flach", -0.25, -0.25, 0.4, 0.03, 0.03, 0x3f7fe8, { ly: 0.28 }); box("flach", -0.43, -0.25, 0.03, 0.28, 0.03, 0x3f7fe8); box("flach", -0.07, -0.25, 0.03, 0.28, 0.03, 0x3f7fe8); baum(0.3, 0.32, 0.4); break;
+    case "park": boden(0x6fbf55); flach(0, 0, 0.18, D * 0.95, 0xd8c7a0); flach(0, 0, W * 0.95, 0.18, 0xd8c7a0); for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) baum(a * W * 0.27, b * D * 0.27, 0.55 + r() * 0.25); box("flach", 0.2, 0.12, 0.2, 0.05, 0.06, 0x8b5a2b, { ly: 0.05 }); break;
+    case "brunnen": boden(0xd8d0c0); zyl(0, 0, 0.75, 0.1, 0xb9b4a8); zyl(0, 0, 0.65, 0.01, 0x5fc8e8, { ly: 0.1 }); zyl(0, 0, 0.08, 0.3, 0xb9b4a8); zyl(0, 0, 0.22, 0.04, 0x5fc8e8, { ly: 0.3 }); for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) baum(a * W * 0.38, b * D * 0.38, 0.45); break;
+    case "sportplatz": boden(0x4f9a3a); flach(0, 0, W * 0.86, D * 0.8, 0x5aa845); box("flach", 0, 0, W * 0.86, 0.002, 0.02, 0xffffff, { ly: 0.017 }); box("flach", 0, 0, 0.02, 0.002, D * 0.8, 0xffffff, { ly: 0.017 }); for (const s of [-1, 1]) { box("flach", s * W * 0.42, 0, 0.02, 0.14, 0.36, 0xffffff); } break;
+    case "grosspark": boden(0x6fbf55); flach(W * 0.12, -D * 0.12, 1.1, 0.9, 0x5fb8d8); flach(-W * 0.2, 0.2, 0.16, D * 0.9, 0xd8c7a0); for (let k = 0; k < 9; k++) { const a = (r() - 0.5) * W * 0.85, b = (r() - 0.5) * D * 0.85; if (Math.hypot(a - W * 0.12, b + D * 0.12) > 0.7) baum(a, b, 0.5 + r() * 0.35); } break;
+  }
+  return T;
+}
+function inDienst(x, z, rand) {
+  rand = rand || 0;
+  for (const d of dienste.values()) { const dx = x - d.x, dz = z - d.z, c = Math.cos(d.rot), s = Math.sin(d.rot), lx = dx * c - dz * s, lz = dx * s + dz * c; if (Math.abs(lx) < d.w * ZELLE / 2 + rand && Math.abs(lz) < d.d * ZELLE / 2 + rand) return d; }
+  return null;
+}
+function hoeheVon(h) { let y = 0; for (const t of h.teile) if (!t.fest) y = Math.max(y, (t.ly || 0) + t.sy); return y; }
+function neuerDienst(o, alt) {
+  const D = DIENSTE[o.typ], d = { id: o.id || dId++, typ: o.typ, x: o.x, z: o.z, rot: o.rot, w: D.w, d: D.d, variante: (o.id || dId) * 7919, geboren: alt ? -100 : jetztS, ab: 0, zug: null, dienst: true, timer: 2 + Math.random() * 4 };
+  dId = Math.max(dId, d.id + 1); d.teile = dienstTeile(d); d.hoehe = hoeheVon(d); dienste.set(d.id, d); haeuserNeu = true; versorgungZeit = -99;
+  const rr = Math.max(D.w, D.d) * 0.72; baeumeFaellen({ x0: d.x - rr, x1: d.x + rr, z0: d.z - rr, z1: d.z + rr }, (bx, bz) => !!inDienst(bx, bz, 0.15));
+  return d;
+}
+function dienstWeg(d) {
+  dienste.delete(d.id); haeuserNeu = true; versorgungZeit = -99;
+  const e = naechsteKante(d, 5, (k) => TYP[k.typ].zellen); if (e) { zellenFuer(e.k); }
+  dreckZeichnen(); speichernBald();
+}
+function dienstPlan(p, typ) {
+  const D = DIENSTE[typ], W = D.w * ZELLE, Dd = D.d * ZELLE;
+  const e = naechsteKante(p, 3 + Dd, (k) => TYP[k.typ].autos);
+  if (!e) return { ok: false, grund: "Muss an einer Straße stehen", x: p.x, z: p.z, rot: 0, W, D: Dd, typ };
+  const q = punktBei(e.k, e.s), nx = -q.tz, nz = q.tx, seite = ((p.x - q.x) * nx + (p.z - q.z) * nz) >= 0 ? 1 : -1, ab = TYP[e.k.typ].halb + Dd / 2 + 0.06;
+  const x = q.x + nx * seite * ab, z = q.z + nz * seite * ab, rot = Math.atan2(-nx * seite, -nz * seite), cs = Math.cos(rot), sn = Math.sin(rot);
+  const plan = { ok: true, typ, x, z, rot, W, D: Dd, preis: D.preis, haeuser: 0 };
+  let zuNah = false, land = true, bes = true, ufer = 99;
+  for (let a = -0.5; a <= 0.501; a += 0.25) for (let b = -0.5; b <= 0.501; b += 0.25) {
+    const lx = a * W * 0.94, lz = b * Dd * 0.94, wx = x + lx * cs + lz * sn, wz = z - lx * sn + lz * cs, ab2 = abstand(wx, wz);
+    ufer = Math.min(ufer, ab2); if (ab2 < 0.3) land = false; if (!imBesitz(wx, wz)) bes = false;
+    if (strassenFrei({ x: wx, z: wz }) < 0.02 || inDienst(wx, wz, 0.02)) zuNah = true;
+  }
+  const hs = new Set(); for (const c of zellenNahe(x, z, Math.max(W, Dd))) { const dx = c.x - x, dz = c.z - z, lx = dx * cs - dz * sn, lz = dx * sn + dz * cs; if (Math.abs(lx) < W / 2 + 0.3 && Math.abs(lz) < Dd / 2 + 0.3 && c.haus) hs.add(c.haus); }
+  plan.haeuser = hs.size;
+  const fail = (g) => { plan.ok = false; plan.grund = g; return plan; };
+  if (!dienstFrei(typ)) return fail("🔒 Gibt es ab " + MEILEN[D.ab].name);
+  if (!bes) return fail("Außerhalb deiner Gebiete");
+  if (!land) return fail("Hier ist Wasser");
+  if (zuNah) return fail("Zu nah an einer Straße oder einem Gebäude");
+  if (D.amWasser && ufer > 2.2) return fail("Muss direkt am Ufer stehen");
+  if (geld < D.preis) return fail("Zu wenig Geld (" + euro(D.preis) + ")");
+  return plan;
+}
+function dienstBauen(plan) {
+  if (!plan || !plan.ok) return null;
+  const D = DIENSTE[plan.typ], cs = Math.cos(plan.rot), sn = Math.sin(plan.rot);
+  for (const c of zellenNahe(plan.x, plan.z, Math.max(plan.W, plan.D))) { const dx = c.x - plan.x, dz = c.z - plan.z, lx = dx * cs - dz * sn, lz = dx * sn + dz * cs; if (Math.abs(lx) < plan.W / 2 + 0.35 && Math.abs(lz) < plan.D / 2 + 0.35) { if (c.haus) hausWeg(haeuser.get(c.haus)); zelleWeg(c); } }
+  geld -= D.preis; const d = neuerDienst({ typ: plan.typ, x: plan.x, z: plan.z, rot: plan.rot });
+  zellenNeu = true; dreckZeichnen(); zeigeWerte(); speichernBald(); return d;
+}
+/* Netz: welche Straßen hängen zusammen? (Strom und Rohre laufen unter den Straßen) */
+let netzKomp = new Map(), kompVersion = -1;
+function komponenten() {
+  if (kompVersion === netzVersion) return; kompVersion = netzVersion;
+  const el = new Map(), f = (a) => { while (el.get(a) !== a) { el.set(a, el.get(el.get(a))); a = el.get(a); } return a; };
+  for (const n of knoten.values()) el.set(n.id, n.id);
+  for (const k of kanten.values()) { const a = f(k.a), b = f(k.b); if (a !== b) el.set(a, b); }
+  netzKomp = new Map(); for (const k of kanten.values()) netzKomp.set(k.id, f(k.a));
+}
+const kompVon = (o) => { const z = zufahrt(o); return z ? netzKomp.get(z.k) : null; };
+function bedarfVon(h, r) { const b = leute(h) + jobs(h) * (gruppe(h) === "i" ? 1.0 : 0.6); return r === "abwasser" ? b * 0.9 : r === "muell" ? b * 0.8 : b; }
+let versorgung = { strom: [0, 0], wasser: [0, 0], abwasser: [0, 0], muell: [0, 0] }, versorgungZeit = -99, warteListe = [];
+function abdeckung(x, z, kat) { let best = 0; for (const d of dienste.values()) { const D = DIENSTE[d.typ]; if (D.kat !== kat || !D.radius) continue; const e = Math.hypot(d.x - x, d.z - z); if (e < D.radius) best = Math.max(best, kat === "bildung" ? D.bildung : 1 - e / D.radius * 0.5); } return best; }
+function versorgungRechnen() {
+  komponenten();
+  const prod = new Map(), RS = ["strom", "wasser", "abwasser", "muell"];
+  const gesamt = { strom: [0, 0], wasser: [0, 0], abwasser: [0, 0], muell: [0, 0] };
+  for (const d of dienste.values()) { const D = DIENSTE[d.typ]; d.komp = kompVon(d); if (d.komp == null) continue; if (!prod.has(d.komp)) prod.set(d.komp, { strom: 0, wasser: 0, abwasser: 0, muell: 0, q: [] }); const p = prod.get(d.komp); for (const r of RS) if (D[r]) { p[r] += D[r]; gesamt[r][0] += D[r]; } p.q.push(d); }
+  const proKomp = new Map();
+  for (const h of haeuser.values()) {
+    h.hat = h.hat || {}; h.komp = kompVon(h);
+    h.abd = { polizei: abdeckung(h.x, h.z, "polizei"), feuer: abdeckung(h.x, h.z, "feuer"), gesund: abdeckung(h.x, h.z, "gesund") }; h.bildung = abdeckung(h.x, h.z, "bildung");
+    if (h.verlassen) continue;
+    if (h.komp == null) { for (const r of RS) { h.hat[r] = false; gesamt[r][1] += bedarfVon(h, r); } continue; }
+    if (!proKomp.has(h.komp)) proKomp.set(h.komp, []); proKomp.get(h.komp).push(h);
+  }
+  for (const [c, L] of proKomp) {
+    const p = prod.get(c) || { strom: 0, wasser: 0, abwasser: 0, muell: 0, q: [] };
+    for (const r of RS) {
+      const quellen = p.q.filter((d) => DIENSTE[d.typ][r]), dist = new Map();
+      for (const h of L) { let m = 1e9; for (const d of quellen) m = Math.min(m, Math.hypot(d.x - h.x, d.z - h.z)); dist.set(h, m); }
+      L.sort((a, b) => dist.get(a) - dist.get(b));
+      let rest = p[r];
+      for (const h of L) { const bed = bedarfVon(h, r); gesamt[r][1] += bed; const ok = rest >= bed - 0.01; if (ok) rest -= bed; h.hat[r] = ok; }
+    }
+  }
+  versorgung = gesamt;
+}
+const PROBLEM_TEXT = { strom: "⚡ Kein Strom", wasser: "💧 Kein Wasser", abwasser: "🚽 Abwasser wird nicht abgeholt", muell: "🗑️ Müll wird nicht abgeholt", feuer: "🔥 Es brennt!", krimi: "🦹 Viel Kriminalität", krank: "🤒 Kranke Bewohner", verlassen: "🏚️ Verlassen" };
+let verlassenGemeldet = 0, problemTippZeit = -99;
+function dienstTakt(dt) {
+  if (simZeit - versorgungZeit > 2) { versorgungZeit = simZeit; versorgungRechnen(); }
+  warteListe = warteListe.filter((w) => { if (simZeit >= w.t) { w.fn(); return false; } return true; });
+  let probleme = { strom: 0, wasser: 0, abwasser: 0, muell: 0 };
+  for (const h of [...haeuser.values()]) {
+    if (h.verlassen) { if (simZeit - h.verlassen > 50) hausWeg(h); continue; }
+    const hat = h.hat || {}, a = h.abd || {};
+    const lebt = leute(h) + jobs(h) > 0, jung = simZeit - (h.simGeboren || 0) < 12;
+    h.krimi = a.polizei ? Math.max(0, (h.krimi || 0) - dt * 3) : (h.krimi || 0) + dt * (lebt ? 0.6 + Math.min(1, leute(h) / 40) : 0);
+    h.krank = a.gesund ? Math.max(0, (h.krank || 0) - dt * 3) : (h.krank || 0) + dt * (gruppe(h) === "w" ? 0.5 : 0.15);
+    let p = null;
+    if (h.brand) p = "feuer";
+    else if (!jung) for (const r of ["strom", "wasser", "abwasser", "muell"]) if (hat[r] === false) { probleme[r]++; if (!p) p = r; }
+    if (!p && h.krimi > 60) p = "krimi"; if (!p && h.krank > 70) p = "krank";
+    h.problem = p;
+    const not = p && ["strom", "wasser", "abwasser", "muell"].includes(p);
+    if (not) { if (h.notSeit == null) h.notSeit = simZeit; } else h.notSeit = null;
+    if (h.notSeit != null && simZeit - h.notSeit > 150) { h.verlassen = simZeit; h.notSeit = null; haeuserNeu = true; verlassenGemeldet++; }
+    // Brand
+    if (h.brand) {
+      const b = h.brand;
+      if (!b.gerufen && a.feuer) { const w = naechsteWache(h, "feuer"); if (w) { const f = einsatz(w, h, "feuerwehr", () => { if (h.brand) { h.brand = null; tipp("🚒 Feuer gelöscht: " + hausName(h), 2500); } }); if (f) b.gerufen = true; } }
+      if (simZeit - b.t > (a.feuer ? 45 : 28)) { tipp("🔥 " + hausName(h) + " ist abgebrannt" + (a.feuer ? "." : " – bau eine Feuerwache in der Nähe!"), 4000); h.brand = null; hausWeg(h); }
+    }
+  }
+  if (verlassenGemeldet && simZeit - problemTippZeit > 25) { problemTippZeit = simZeit; tipp("🏚️ Leute ziehen weg! Häuser ohne Strom, Wasser oder Müllabfuhr werden verlassen.", 5000); verlassenGemeldet = 0; }
+  else if (simZeit - problemTippZeit > 40) {
+    const top = Object.entries(probleme).sort((a, b) => b[1] - a[1])[0];
+    if (top && top[1] >= 3) { problemTippZeit = simZeit; const hilfe = { strom: "Bau ein Windrad oder Kraftwerk (🏛️ Dienste → ⚡ Strom).", wasser: "Bau eine Wasserpumpe am Ufer (🏛️ Dienste → 💧 Wasser).", abwasser: "Bau eine Kläranlage am Ufer (🏛️ Dienste → 💧 Wasser).", muell: "Bau eine Mülldeponie (🏛️ Dienste → 🗑️ Müll)." }; tipp(PROBLEM_TEXT[top[0]] + " bei " + top[1] + " Häusern. " + hilfe[top[0]], 6000); }
+  }
+  // Brände entstehen
+  if (haeuser.size > 15 && Math.random() < 0.004 * dt * 2) {
+    const L = [...haeuser.values()].filter((h) => !h.brand && !h.verlassen), h = L[Math.floor(Math.random() * L.length)];
+    if (h && (!(h.abd && h.abd.feuer) || Math.random() < 0.3)) { h.brand = { t: simZeit, gerufen: false }; if (!(h.abd && h.abd.feuer)) tipp("🔥 Feuer bei " + hausName(h) + "! Ohne Feuerwache brennt es ab.", 4000); }
+  }
+  // Fahrzeuge der Dienste
+  for (const d of dienste.values()) {
+    d.timer -= dt; if (d.timer > 0) continue;
+    const D = DIENSTE[d.typ];
+    if (D.muell) { d.timer = 7; if (eigeneFahrzeuge(d) < 2) { const L = [...haeuser.values()].filter((h) => h.komp === d.komp && !h.verlassen); if (L.length) einsatz(d, wahl(Math.random, L), "muell", null, true); } }
+    else if (D.kat === "polizei") { d.timer = 9; if (eigeneFahrzeuge(d) < (D.radius > 15 ? 3 : 2)) { const L = [...haeuser.values()].filter((h) => Math.hypot(h.x - d.x, h.z - d.z) < D.radius); if (L.length) { const h = L.reduce((m, x) => (x.krimi || 0) > (m.krimi || 0) ? x : m, wahl(Math.random, L)); einsatz(d, h, "polizei", () => { h.krimi = 0; }, true); } } }
+    else if (D.kat === "gesund" && D.radius > 10) { d.timer = 10; if (eigeneFahrzeuge(d) < 2) { const L = [...haeuser.values()].filter((h) => Math.hypot(h.x - d.x, h.z - d.z) < D.radius && (h.krank || 0) > 20); if (L.length) { const h = wahl(Math.random, L); einsatz(d, h, "kranken", () => { h.krank = 0; }, true); } } }
+    else d.timer = 5;
+  }
+}
+const naechsteWache = (h, kat) => { let best = null, bd = 1e9; for (const d of dienste.values()) { const D = DIENSTE[d.typ]; if (D.kat !== kat) continue; const e = Math.hypot(d.x - h.x, d.z - h.z); if (e < D.radius && e < bd) { bd = e; best = d; } } return best; };
+const eigeneFahrzeuge = (d) => fahrzeuge.filter((f) => f.dienstId === d.id).length;
+function einsatz(d, h, typ, beiAnkunft, zurueck) {
+  const za = zufahrt(d), zb = zufahrt(h); if (!za || !zb) return null;
+  const f = fahrzeugAusWeg(wegSuchen(za, zb), typ, null, DIENSTE[d.typ].name, hausName(h), "aussen"); if (!f) return null;
+  f.dienstId = d.id;
+  f.beiAnkunft = () => { if (beiAnkunft) beiAnkunft(); if (zurueck && dienste.has(d.id)) warteListe.push({ t: simZeit + 3, fn: () => { const z1 = zufahrt(h), z2 = zufahrt(d); if (z1 && z2 && dienste.has(d.id)) { const g = fahrzeugAusWeg(wegSuchen(z1, z2), typ, null, hausName(h), DIENSTE[d.typ].name, "haus"); if (g) g.dienstId = d.id; } } }); };
+  return f;
+}
+function dienstKosten() { let s = 0; for (const d of dienste.values()) s += DIENSTE[d.typ].unterhalt; return s; }
+/* Warnsymbole über Häusern */
+const WARN = { strom: "⚡", wasser: "💧", abwasser: "🚽", muell: "🗑️", feuer: "🔥", krimi: "🦹", krank: "🤒", verlassen: "🏚️" };
+const warnMat = {};
+for (const k in WARN) { const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d"); g.fillStyle = k === "feuer" ? "#ff6a2a" : k === "verlassen" ? "#6b6b6b" : "#ffffff"; g.beginPath(); g.arc(32, 32, 29, 0, 7); g.fill(); g.lineWidth = 4; g.strokeStyle = k === "feuer" ? "#ffd23d" : "#ff4a3d"; g.stroke(); g.font = "34px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(WARN[k], 32, 35); warnMat[k] = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false, transparent: true }); }
+const warnSprites = []; for (let i = 0; i < 180; i++) { const s = new THREE.Sprite(warnMat.strom); s.visible = false; s.renderOrder = 8; s.scale.setScalar(0.62); szene.add(s); warnSprites.push(s); }
+function warnZeichnen() {
+  let i = 0;
+  for (const h of haeuser.values()) {
+    const w = h.verlassen ? "verlassen" : h.problem; if (!w || i >= warnSprites.length) continue;
+    const s = warnSprites[i++]; s.material = warnMat[w]; s.visible = true; s.position.set(h.x, BODEN + (h.hoehe || 0.6) + 0.45 + Math.sin(jetztS * 3 + h.id) * 0.06, h.z);
+  }
+  for (; i < warnSprites.length; i++) warnSprites[i].visible = false;
+}
+/* Vorschau beim Bauen */
+const geist = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshBasicMaterial({ color: 0x7dffb0, transparent: true, opacity: 0.4, depthWrite: false })); geist.visible = false; geist.renderOrder = 5; szene.add(geist);
+const geistRing = new THREE.Mesh(new THREE.RingGeometry(0.985, 1, 72).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7, depthWrite: false, toneMapped: false })); geistRing.visible = false; geistRing.renderOrder = 5; szene.add(geistRing);
+const geistFlaeche = new THREE.Mesh(new THREE.CircleGeometry(1, 64).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.1, depthWrite: false })); geistFlaeche.visible = false; szene.add(geistFlaeche);
+let dienstWahl = "windrad", dienstKat = "strom", dienstPlanAktuell = null;
+function dienstVorschau(p) {
+  const plan = dienstPlan(p, dienstWahl), D = DIENSTE[dienstWahl]; dienstPlanAktuell = plan;
+  geist.visible = true; geist.position.set(plan.x, G + 0.01, plan.z); geist.rotation.set(0, plan.rot, 0); geist.scale.set(plan.W, 0.5, plan.D); geist.material.color.setHex(plan.ok ? 0x7dffb0 : 0xff5a5a);
+  const rad = D.radius || 0; geistRing.visible = geistFlaeche.visible = rad > 0;
+  if (rad) { geistRing.position.set(plan.x, G + 0.06, plan.z); geistRing.scale.setScalar(rad); geistFlaeche.position.set(plan.x, G + 0.055, plan.z); geistFlaeche.scale.setScalar(rad); }
+  frage(D.em + " " + D.name + " · " + euro(D.preis) + " · " + euro(D.unterhalt) + "/Wo" + (plan.ok ? (plan.haeuser ? " · reißt " + plan.haeuser + " Haus ab" : "") : " – " + plan.grund), plan.ok, () => {
+    merkeRueck(); const d = dienstBauen(dienstPlanAktuell); if (!d) return; geist.visible = geistRing.visible = geistFlaeche.visible = false; frageZu();
+    tipp("✅ " + D.name + " gebaut! " + (D.radius ? "Der Kreis zeigt, wie weit es wirkt." : "Strom und Rohre laufen automatisch durch die Straßen."), 3500); versorgungRechnen();
+  });
+}
+function vorschauWeg() { geist.visible = geistRing.visible = geistFlaeche.visible = false; dienstPlanAktuell = null; }
+/* Wirkungskreise in den Info-Ansichten */
+const kreise = new THREE.InstancedMesh(new THREE.RingGeometry(0.975, 1, 72).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.85, depthWrite: false, toneMapped: false }), 200);
+kreise.count = 0; kreise.frustumCulled = false; kreise.renderOrder = 4; kreise.setColorAt(0, new THREE.Color()); szene.add(kreise);
+function kreiseZeichnen(kat) {
+  let i = 0;
+  if (kat) for (const d of dienste.values()) { const D = DIENSTE[d.typ]; if (D.kat !== kat || !D.radius || i >= 200) continue; _o.position.set(d.x, G + 0.07, d.z); _o.rotation.set(0, 0, 0); _o.scale.setScalar(D.radius); _o.updateMatrix(); kreise.setMatrixAt(i, _o.matrix); kreise.setColorAt(i, _farbe.setHex(0xffffff)); i++; }
+  kreise.count = i; kreise.instanceMatrix.needsUpdate = true; if (kreise.instanceColor) kreise.instanceColor.needsUpdate = true;
+}
+function dienstInfo(d) {
+  const D = DIENSTE[d.typ];
+  let leistung = "";
+  for (const r of ["strom", "wasser", "abwasser", "muell"]) if (D[r]) { const v = versorgung[r]; leistung += `<br>${RESSOURCEN[r].em} ${RESSOURCEN[r].name}: ${zahl(D[r])} · Stadt: ${zahl(v[1])} von ${zahl(v[0])} gebraucht`; }
+  if (D.radius) leistung += `<br>⭕ Wirkungskreis: ${D.radius} Felder`;
+  if (D.wert) leistung += `<br>💎 Bodenwert +${D.wert} in der Nähe`;
+  infoZeigen(`<b>${D.em} ${D.name}</b><small>${DIENST_KAT[D.kat].name} · ${euro(D.unterhalt)} Unterhalt pro Woche</small>${leistung}${d.komp == null ? "<br>⚠️ Nicht an eine Straße angeschlossen" : ""}<br><small>${D.text}</small><br><button class="chip gefahr" type="button" id="dienstAbriss" style="margin-top:6px">🧹 Abreißen (+${euro(D.preis * 0.3)})</button>`, 9000);
+  $("dienstAbriss").onclick = () => { merkeRueck(); dienstWeg(d); geld += D.preis * 0.3; $("info").hidden = true; zeigeWerte(); tipp("🧹 " + D.name + " abgerissen.", 2000); };
 }
 
 /* ================================================================
@@ -874,15 +1160,16 @@ function kennzahlen() {
   let e = 0, jl = 0, jb = 0, ji = 0; for (const h of haeuser.values()) { const g = gruppe(h); if (g === "w") e += leute(h); else if (g === "g") jl += jobs(h); else if (g === "b") jb += jobs(h); else ji += jobs(h); }
   const ein = { w: e * 2.0 * steuern.w / 9, g: jl * 2.6 * steuern.g / 9, b: jb * 3.2 * steuern.b / 9, i: ji * 2.4 * steuern.i / 9 };
   let strassen = 0; for (const k of kanten.values()) strassen += k.len * TYP[k.typ].preis * 0.012;
-  const einnahmen = ein.w + ein.g + ein.b + ein.i;
-  return { e, jl, jb, ji, j: jl + jb + ji, ein, einnahmen, strassen, ausgaben: strassen, saldo: einnahmen - strassen };
+  const einnahmen = ein.w + ein.g + ein.b + ein.i, dk = dienstKosten();
+  return { e, jl, jb, ji, j: jl + jb + ji, ein, einnahmen, strassen, dienste: dk, ausgaben: strassen + dk, saldo: einnahmen - strassen - dk };
 }
 function bedarfBerechnen() {
   const k = kennzahlen(), arbeiter = k.e * 0.55;
   let w = 22 + (k.j - arbeiter) * 0.9 + (k.e < 40 ? 45 : 0);
   let l = (k.e * 0.22 - k.jl) * 1.5 + 8;
-  let b = zoneFrei(5) ? (k.e * 0.14 - k.jb) * 1.3 + 10 : -100;
-  let i = (arbeiter * (zoneFrei(5) ? 0.34 : 0.42) - k.ji) * 1.2 + (k.e < 60 ? 25 : 0) + k.jl * 0.15;
+  let bil = 0, bn = 0; for (const h of wohnListe) { bil += (h.bildung || 0) * leute(h); bn += leute(h); } bil = bn ? bil / bn : 0;
+  let b = zoneFrei(5) ? (k.e * (0.12 + bil * 0.06) - k.jb) * 1.3 + 10 : -100;
+  let i = (arbeiter * (zoneFrei(5) ? 0.36 - bil * 0.06 : 0.42) - k.ji) * 1.2 + (k.e < 60 ? 25 : 0) + k.jl * 0.15;
   const s = (z, v) => (v - (steuern[z] - 9) * 4.5) * (1 - (steuern[z] - 9) * 0.05);
   bedarf = { w: klemme(s("w", w), -100, 100), g: klemme(s("g", l), -100, 100), b: klemme(s("b", b), -100, 100), i: klemme(s("i", i), -100, 100) };
   const balken = document.querySelectorAll("#bedarf i"); ["w", "g", "b", "i"].forEach((z, n) => { if (balken[n]) balken[n].style.height = Math.max(2, bedarf[z] / 100 * 26) + "px"; });
@@ -902,7 +1189,8 @@ function wocheTakt() {
   if (werkzeug === "gebiet") gebieteZeichnen(); if (!$("budget").hidden) budgetZeigen(); speichernBald();
 }
 function zufriedenheit() {
-  let n = 0, sum = 0; for (const h of wohnListe) { const v = 70 + ((h.wert || 30) - 30) * 0.3 - (h.dreck || 0) * 0.5; sum += v * leute(h); n += leute(h); }
+  let n = 0, sum = 0;
+  for (const h of wohnListe) { const a = h.abd || {}; let v = 52 + ((h.wert || 30) - 30) * 0.3 - (h.dreck || 0) * 0.5 + (a.polizei ? 5 : 0) + (a.feuer ? 5 : 0) + (a.gesund ? 5 : 0) + (h.bildung || 0) * 3; if (h.problem) v -= ["krimi", "krank"].includes(h.problem) ? 10 : 25; sum += v * leute(h); n += leute(h); }
   const st = (steuern.w + steuern.g + steuern.b + steuern.i) / 4;
   return Math.round(klemme((n ? sum / n : 70) - (st - 9) * 3, 0, 100));
 }
@@ -921,8 +1209,9 @@ function budgetZeigen() {
   const GR = ["w", "g", "b", "i"];
   const fort = n ? Math.min(100, (k.e - m.ab) / (n.ab - m.ab) * 100) : 100;
   el.innerHTML = `<h2>💶 Budget &amp; Steuern<button type="button" id="budgetZu" aria-label="Schließen">✕</button></h2>
-    <div><h3>Pro Woche</h3>${GR.map((z) => zeile(GRUPPEN[z].em + " Steuern " + GRUPPEN[z].name, "<span class='plus'>+" + euro(k.ein[z]) + "</span>")).join("")}${zeile("🛣️ Unterhalt Straßen", "<span class='minus'>−" + euro(k.strassen) + "</span>")}${zeile("Ergebnis", "<span class='" + (k.saldo >= 0 ? "plus" : "minus") + "'>" + (k.saldo >= 0 ? "+" : "−") + euro(Math.abs(k.saldo)) + "</span>", "summe")}</div>
+    <div><h3>Pro Woche</h3>${GR.map((z) => zeile(GRUPPEN[z].em + " Steuern " + GRUPPEN[z].name, "<span class='plus'>+" + euro(k.ein[z]) + "</span>")).join("")}${zeile("🛣️ Unterhalt Straßen", "<span class='minus'>−" + euro(k.strassen) + "</span>")}${k.dienste ? zeile("🏛️ Unterhalt Dienste", "<span class='minus'>−" + euro(k.dienste) + "</span>") : ""}${zeile("Ergebnis", "<span class='" + (k.saldo >= 0 ? "plus" : "minus") + "'>" + (k.saldo >= 0 ? "+" : "−") + euro(Math.abs(k.saldo)) + "</span>", "summe")}</div>
     <div><h3>Steuern</h3><div style="display:grid;gap:10px">${GR.map(regler).join("")}</div><small style="color:var(--leise);display:block;margin-top:8px">Hohe Steuern bringen mehr Geld, aber weniger Zuzug. 9 % ist ausgeglichen.</small></div>
+    <div><h3>Versorgung</h3>${Object.keys(RESSOURCEN).map((r) => { const [pr, vb] = versorgung[r], ok = pr >= vb; return zeile(RESSOURCEN[r].em + " " + RESSOURCEN[r].name, `<span class="${ok ? "plus" : "minus"}">${zahl(vb)} / ${zahl(pr)}</span>`); }).join("")}<small style="color:var(--leise)">Gebraucht / vorhanden. Zu wenig? Bau mehr unter 🏛️ Dienste.</small></div>
     <div><h3>Bedarf</h3>${GR.map((z) => zeile(GRUPPEN[z].em + " " + GRUPPEN[z].name, z === "b" && !zoneFrei(5) ? "🔒 ab " + MEILEN[ZONEN[5].ab].name : bedarf[z] > 40 ? "hoch" : bedarf[z] > 10 ? "mittel" : bedarf[z] > 0 ? "wenig" : "keiner")).join("")}</div>
     <div><h3>Meilenstein: ${m.name}</h3>${n ? `<div class="leiste"><i style="width:${fort}%"></i></div><small style="color:var(--leise)">Nächster: <b>${n.name}</b> bei ${zahl(n.ab)} Einwohnern (jetzt ${zahl(k.e)})${(() => { const f = n.frei.map((t) => TYP[t].name).concat(Object.values(ZONEN).filter((z) => z.ab === meilenstein + 1).map((z) => z.name)); return f.length ? " – schaltet " + f.join(", ") + " frei" : ""; })()}</small>` : "<small>Höchster Meilenstein erreicht!</small>"}</div>`;
   el.hidden = false;
@@ -935,8 +1224,9 @@ $("budget").addEventListener("change", () => budgetZeigen());
 const zk = (g, s, i, r) => zellIndex.get(g + "|" + s + "|" + i + "|" + r);
 function freiGleich(id, zone) { const z = id && zellen.get(id); return z && !z.haus && z.zone === zone ? z : null; }
 let werteZeit = -99;
+const stufeBildungOk = (h) => gruppe(h) !== "w" || ((h.stufe + 1 < 3 || (h.bildung || 0) >= 1) && (h.stufe + 1 < 5 || (h.bildung || 0) >= 2));
 function wachsTakt() {
-  bedarfBerechnen();
+  bedarfBerechnen(); dienstTakt(0.5);
   if (simZeit - werteZeit > 4) { werteZeit = simZeit; werteAuffrischen(); }
   const kand = {};
   for (const z of zellen.values()) if (z.zone && !z.haus && z.r === 0 && zoneFrei(z.zone)) (kand[z.zone] = kand[z.zone] || []).push(z);
@@ -957,10 +1247,10 @@ function wachsTakt() {
       break;
     }
   }
-  const liste = [...haeuser.values()].filter((h) => { const Z = ZONEN[h.zone]; return h.stufe < Z.max && simZeit - (h.simGeboren || 0) > 25 && bedarf[Z.gruppe] > 5 && (h.wert || 0) >= (BODENWERT_FUER[Z.gruppe][h.stufe + 1] || 0); });
+  const liste = [...haeuser.values()].filter((h) => { const Z = ZONEN[h.zone]; return !h.verlassen && !(h.problem && h.problem !== "krimi" && h.problem !== "krank") && stufeBildungOk(h) && h.stufe < Z.max && simZeit - (h.simGeboren || 0) > 25 && bedarf[Z.gruppe] > 5 && (h.wert || 0) >= (BODENWERT_FUER[Z.gruppe][h.stufe + 1] || 0); });
   if (liste.length && Math.random() < 0.45) {
     const h = liste[Math.floor(Math.random() * liste.length)]; h.stufe++; h.geboren = jetztS; h.simGeboren = simZeit; h.ab = 0.35; h.teile = hausTeile(h); haeuserNeu = true;
-    let y = 0; for (const t of h.teile) y = Math.max(y, (t.ly || 0) + t.sy); hochZeigen(h, y);
+    h.hoehe = hoeheVon(h); hochZeigen(h, h.hoehe);
     if (gruppe(h) === "i") dreckZeichnen();
   }
   zeigeWerte(); meilensteinPruefen(); speichernBald();
@@ -1015,6 +1305,7 @@ const FZ = {
   liefer: { name: "Transporter", L: 0.58, B: 0.26, rad: 0.048, achsen: [0.19, -0.18], beschl: 2.0, brems: 6, vf: 0.92, form: { art: "kasten", sill: 0.055, belt: 0.17, roof: 0.37, nase: 0.15, hf: 0.2, wf: 0.13, glasBis: 0.07 } },
   kranken: { name: "Krankenwagen", L: 0.62, B: 0.27, rad: 0.05, achsen: [0.2, -0.19], beschl: 2.2, brems: 6.5, vf: 1.0, lack: 0xf6f6f6, blau: 0.42, form: { art: "kasten", sill: 0.055, belt: 0.17, roof: 0.4, nase: 0.15, hf: 0.22, wf: 0.15, glasBis: 0.09, extra: (t) => { t.push(kiste(-0.02, 0.2, 0, 0.56, 0.035, 0.276, 0xd9302f), kiste(-0.02, 0.15, 0, 0.56, 0.012, 0.276, 0xf2c14e)); blaulichtBalken(0.1, 0.4)(t); } } },
   muell: { name: "Müllwagen", L: 0.84, B: 0.28, rad: 0.056, achsen: [0.28, -0.14, -0.26], beschl: 1.4, brems: 5, vf: 0.78, lack: 0xf28c28, form: { art: "kasten", L: 0.24, x0: 0.3, sill: 0.06, belt: 0.2, roof: 0.38, nase: 0.17, hf: 0.1, wf: 0.07, glasBis: -0.04, extra: (t) => { t.push(profil([[-0.42, 0.07], [0.17, 0.07], [0.17, 0.43], [-0.36, 0.43], [-0.42, 0.37]], 0.28, LACK, 0.02), kiste(-0.12, 0.25, 0, 0.5, 0.02, 0.284, ZIER), kiste(-0.43, 0.2, 0, 0.02, 0.24, 0.26, ZIER), kiste(0.0, 0.07, 0, 0.6, 0.04, 0.22, ZIER)); } } },
+  feuerwehr: { name: "Löschzug", L: 0.74, B: 0.29, rad: 0.056, achsen: [0.24, -0.2], beschl: 1.9, brems: 6, vf: 1.05, lack: 0xd9302f, blau: 0.43, form: { art: "kasten", sill: 0.06, belt: 0.2, roof: 0.42, nase: 0.18, hf: 0.3, wf: 0.27, glasBis: 0.17, extra: (t) => { t.push(kiste(-0.06, 0.18, 0, 0.62, 0.025, 0.296, 0xf2f2f2), kiste(-0.08, 0.44, 0, 0.5, 0.025, 0.12, 0xb9bfc7)); blaulichtBalken(0.25, 0.42)(t); } } },
   bus: { name: "Bus", L: 1.3, B: 0.29, rad: 0.056, achsen: [0.43, -0.36], beschl: 1.5, brems: 5, vf: 0.82, lack: 0xf2c14e, form: { art: "kasten", sill: 0.06, belt: 0.18, roof: 0.4, nase: 0.18, hf: 0.645, wf: 0.635, glasBis: 0.645, band: true, extra: (t) => { t.push(kiste(0, 0.408, 0, 1.0, 0.02, 0.24, 0xd8d8d8), kiste(0.66, 0.36, 0, 0.01, 0.03, 0.14, SCHWARZ)); } } },
   lkw: { name: "Lkw", L: 0.95, B: 0.28, rad: 0.055, achsen: [0.07], beschl: 1.3, brems: 4.5, vf: 0.8, vorneL: 0.15, hintenL: 0.8, form: { art: "kasten", L: 0.27, sill: 0.06, belt: 0.2, roof: 0.36, nase: 0.18, hf: 0.13, wf: 0.115, glasBis: 0.06, extra: (t) => { t.push(kiste(-0.2, 0.065, 0, 0.16, 0.05, 0.2, ZIER), kiste(-0.09, 0.27, 0, 0.04, 0.14, 0.22, ZIER)); } } }
 };
@@ -1038,7 +1329,7 @@ const fzTeile = becken(G_BOX, M.auto, FZ_MAX * 5 + 10, true), fzLicht = becken(G
 const G_RAD = mergeGeometries([bunt(new THREE.CylinderGeometry(1, 1, 0.04, 12).rotateX(Math.PI / 2), 0x1b1d22), bunt(new THREE.CylinderGeometry(0.58, 0.58, 0.044, 10).rotateX(Math.PI / 2), 0xb9bfc7)]);
 const fzRaeder = becken(G_RAD, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7 }), FZ_MAX * 8 + 12, false);
 const AUTO_MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.36, metalness: 0.18 });
-const fzMesh = {}; for (const k in FZ) fzMesh[k] = becken(FZ[k].geo, AUTO_MAT, k === "bus" || k === "muell" || k === "polizei" || k === "kranken" ? 40 : FZ_MAX, true);
+const fzMesh = {}; for (const k in FZ) fzMesh[k] = becken(FZ[k].geo, AUTO_MAT, k === "bus" || k === "muell" || k === "polizei" || k === "kranken" || k === "feuerwehr" ? 40 : FZ_MAX, true);
 let fahrzeuge = [], fzId = 1;
 const rv = zufall(4711);
 function knotenR(n) {
@@ -1089,7 +1380,7 @@ function wegSuchen(start, ziel) {
 let wohnListe = [], arbeitListe = [], ladenListe = [], industrieListe = [], listenZeit = -1;
 function listenAuffrischen() {
   wohnListe = []; arbeitListe = []; ladenListe = []; industrieListe = [];
-  for (const h of haeuser.values()) { const g = gruppe(h); if (g === "w") wohnListe.push(h); else { arbeitListe.push(h); if (g === "g") ladenListe.push(h); else if (g === "i") industrieListe.push(h); } }
+  for (const h of haeuser.values()) { if (h.verlassen) continue; const g = gruppe(h); if (g === "w") wohnListe.push(h); else { arbeitListe.push(h); if (g === "g") ladenListe.push(h); else if (g === "i") industrieListe.push(h); } }
   listenZeit = simZeit;
 }
 const gewichtet = (liste, f) => { let s = 0; for (const x of liste) s += f(x); let r = rv() * s; for (const x of liste) { r -= f(x); if (r <= 0) return x; } return liste[liste.length - 1]; };
@@ -1114,7 +1405,7 @@ function aussenBauen() {
   }
   return false;
 }
-const pkwTyp = () => { const r = rv(); return r < 0.04 ? "bus" : r < 0.06 ? "polizei" : r < 0.07 ? "kranken" : r < 0.085 ? "muell" : wahl(rv, PKW_TYPEN); };
+const pkwTyp = () => rv() < 0.04 ? "bus" : wahl(rv, PKW_TYPEN);
 function hausName(h) { return h.name || ZONEN[h.zone].name; }
 function auflieger(von, nach) { const q = von || nach; if (q && q.zone === 7) return "getreide"; if (q && q.zone === 8) return "holz"; if (karte === "wald" && rv() < 0.15) return "holz"; return nach && gruppe(nach) === "g" ? (rv() < 0.5 ? "kuehl" : "container") : wahl(rv, ["container", "container", "tank"]); }
 function fahrtStarten() {
@@ -1148,7 +1439,7 @@ function fahrzeugAusWeg(weg, typ, anh, vonText, nachText, start) {
     off: amRand ? TYP[k.typ].fahr + 0.02 : spurAbstand(k.typ, spur), offV: 0, v: 0, modus: "kante", warte: 0, alter: 0, faktor: (0.88 + rv() * 0.24) * D.vf, roll: 0, nick: 0, blink: 0, bremst: false, frei: false,
     skala: amRand ? 0.01 : 1, parkt: 0, lenk: 0, anhWinkel: null, vonText, nachText, ausparken: amRand,
     zeitluecke: 0.65 + rv() * 0.55, beschl: D.beschl * (0.82 + rv() * 0.36), rueckT: amRand && weg.s0 > 1 && rv() < 0.6 ? 0.55 : 0, block: null };
-  spurWaehlen(f); fahrzeuge.push(f); return true;
+  spurWaehlen(f); fahrzeuge.push(f); return f;
 }
 function spurIst(typ, off) { const sp = TYP[typ].spuren; let b = 0; for (let i = 1; i < sp.length; i++) if (Math.abs(sp[i] - off) < Math.abs(sp[b] - off)) b = i; return b; }
 function spurFrei(spuren, st, sp, f) {
@@ -1317,7 +1608,7 @@ function verkehrTakt(dt, ziel) {
       if (f.ausparken && Math.abs(f.off - zielOff) < 0.04) f.ausparken = false;
       f.blink = f.ausparken ? -1 : f.ist !== f.spur ? (f.spur < f.ist ? -1 : 1) : nx && (ab === "links" || ab === "rechts") && rest < 4.5 ? (ab === "links" ? -1 : 1) : letzte && rest < 3 ? 1 : 0;
       if (f.s >= e) {
-        if (letzte) { f.s = e; f.parkt = 0.001; f.blink = 0; continue; }
+        if (letzte) { f.s = e; f.parkt = 0.001; f.blink = 0; if (f.beiAnkunft) { const cb = f.beiAnkunft; f.beiAnkunft = null; cb(f); } continue; }
         if (f.frei) { uebergangStarten(f, kk, st, nx); f.frei = false; } else f.s = e;
       }
       if (f.warte > 40) fahrzeugWeg(f);
@@ -1382,7 +1673,7 @@ function fahrzeugeZeichnen() {
     licht(L, D.ly, Bq, f.blink === -1 && blinkAn ? orange : scheinwerfer, _m); licht(L, D.ly, -Bq, f.blink === 1 && blinkAn ? orange : scheinwerfer, _m);
     const hinten = f.anh ? _m2 : _m, hx2 = f.anh ? -0.325 : Lh, hy = f.anh ? 0.1 : D.lyh, rueckFarbe = f.rueckT > 0 ? weiss : f.bremst ? rueck : rueckSchwach;
     licht(hx2, hy, Bq, f.blink === -1 && blinkAn ? orange : rueckFarbe, hinten); licht(hx2, hy, -Bq, f.blink === 1 && blinkAn ? orange : rueckFarbe, hinten);
-    if (D.blau) { licht(f.typ === "kranken" ? 0.1 : -0.05, D.blau + 0.006, 0.035, blauAn ? blau1 : aus, _m, 0.03); licht(f.typ === "kranken" ? 0.1 : -0.05, D.blau + 0.006, -0.035, blauAn ? aus : blau1, _m, 0.03); }
+    if (D.blau) { const bx = f.typ === "kranken" ? 0.1 : f.typ === "feuerwehr" ? 0.25 : -0.05; licht(bx, D.blau + 0.006, 0.035, blauAn ? blau1 : aus, _m, 0.03); licht(bx, D.blau + 0.006, -0.035, blauAn ? aus : blau1, _m, 0.03); }
   }
   fzTeile.count = ti; fzLicht.count = li; fzRaeder.count = ri2;
   for (const k in fzMesh) { const m = fzMesh[k]; m.count = anzahl[k]; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
@@ -1497,12 +1788,13 @@ const platzKey = (n) => "inselstadt-v3-" + n;
 function zustand() {
   const r = (v) => Math.round(v * 1000) / 1000, k = kennzahlen();
   return {
-    v: 3, zonenV: 2, karte, geld: Math.round(geld), besitz: [...besitz], gekauft, steuern, meilenstein, tage: Math.round(tage * 100) / 100, ids: { n: nId, k: kId, z: zId, g: gId, h: hId },
+    v: 3, zonenV: 2, karte, geld: Math.round(geld), besitz: [...besitz], gekauft, steuern, meilenstein, tage: Math.round(tage * 100) / 100, ids: { n: nId, k: kId, z: zId, g: gId, h: hId, d: dId },
     meta: { einwohner: k.e, gespeichert: Date.now() },
     knoten: [...knoten.values()].map((n) => [n.id, r(n.x), r(n.z), n.manuell ? (n.ampel ? 1 : 0) : -1, n.aussen ? 1 : 0]),
     kanten: [...kanten.values()].map((k) => [k.id, k.a, k.b, r(k.c.x), r(k.c.z), k.typ, k.aussen ? 1 : 0]),
     zellen: [...zellen.values()].map((z) => [z.id, r(z.x), r(z.z), r(z.rot), z.zone, z.g, z.seite, z.i, z.r]),
     haeuser: [...haeuser.values()].map((h) => [h.id, h.zone, h.stufe, h.w, h.d, h.variante, h.zellen]),
+    dienste: [...dienste.values()].map((d) => [d.id, d.typ, r(d.x), r(d.z), r(d.rot)]), dienstV: 1,
     baeume: baeume.filter((b) => b.weg).map((b) => b.idx)
   };
 }
@@ -1511,7 +1803,7 @@ function speichernBald() { if (!spielLaeuft) return; clearTimeout(speicherTimer)
 function allesLeeren() {
   for (const k of kanten.values()) { szene.remove(k.mesh); k.mesh.geometry.dispose(); }
   for (const n of knoten.values()) if (n.mesh) { szene.remove(n.mesh); n.mesh.geometry.dispose(); }
-  aussenKnoten = null; hochListe.length = 0; dreckMesh.count = 0; kanten.clear(); knoten.clear(); zellen.clear(); zellIndex.clear(); raster.clear(); haeuser.clear(); fahrzeuge = []; leuteListe = [];
+  aussenKnoten = null; hochListe.length = 0; dienste.clear(); warteListe = []; dreckMesh.count = 0; kanten.clear(); knoten.clear(); zellen.clear(); zellIndex.clear(); raster.clear(); haeuser.clear(); fahrzeuge = []; leuteListe = [];
   for (const b of baeume) if (b.weg) { b.weg = false; baumSetzen(b); }
 }
 function zustandRein(d) {
@@ -1529,6 +1821,9 @@ function zustandRein(d) {
   d.zellen.forEach(([id, x, z, rot, zone, g, seite, i, r]) => neueZelle({ id, x, z, rot, zone, g, seite, i, r }));
   d.haeuser.forEach(([id, zone, stufe, w, dd, variante, ids]) => { if (ids.every((z) => zellen.has(z) && !zellen.get(z).haus)) neuesHaus({ id, zone, stufe, w, d: dd, variante, zellen: ids }, true); });
   d.baeume.forEach((i) => { const b = baeume[i]; if (b) { b.weg = true; baumSetzen(b); } });
+  (d.dienste || []).forEach(([id, typ, x, z, rot]) => { if (DIENSTE[typ]) neuerDienst({ id, typ, x, z, rot }, true); });
+  if (d.ids.d) dId = Math.max(dId, d.ids.d);
+  if (!d.dienstV && d.haeuser.length > 8) { geld += 20000; warteListe.push({ t: simZeit + 0.5, fn: () => infoZeigen("<b>🏛️ Neu: Dienste!</b>Deine Häuser brauchen jetzt Strom, Wasser, Abwasser und Müllabfuhr – sonst ziehen die Leute weg.<br>Du bekommst <b>20.000 €</b> Zuschuss, um sie zu bauen.<br><small>Unten: 🏛️ Dienste und 🌳 Parks</small>", 12000) }); }
   nId = Math.max(nId, d.ids.n); kId = Math.max(kId, d.ids.k); zId = Math.max(zId, d.ids.z); gId = Math.max(gId, d.ids.g); hId = Math.max(hId, d.ids.h);
   haeuserNeu = zellenNeu = true; netzGeaendert(); gebieteZeichnen(); werteAuffrischen(); dreckZeichnen(); bedarfBerechnen(); zeigeWerte(); datumZeigen();
 }
@@ -1597,6 +1892,8 @@ const ZONEN_TEXT = {
 const TIPPS = {
   ansehen: "👆 Ein Finger: verschieben · ✌️ Zwei Finger: drehen & zoomen · Haus antippen: Infos",
   strasse: () => strModus === "ampel" ? "🚦 Tipp auf eine Kreuzung, um die Ampel ein- oder auszuschalten." : strModus === "gerade" ? "🛣️ Tipp auf den Anfang, dann aufs Ende. Dann ✓ zum Bauen." : "〰️ Tipp auf den Anfang, dann den Kurvenpunkt, dann das Ende. Dann ✓.",
+  dienst: "🏛️ Wähl ein Gebäude und tipp neben eine Straße. Dann ✓ zum Bauen.",
+  park: "🌳 Wähl einen Park und tipp neben eine Straße. Dann ✓ zum Bauen.",
   zone: () => pinsel === "fuellen" ? "🪣 Tipp neben eine Straße – die ganze Straßenseite wird angemalt." : "🖌️ Wisch über die grauen Felder neben den Straßen, um sie anzumalen.",
   gebiet: "🗺️ Tipp auf ein Preisschild, um das Gebiet zu kaufen.",
   abriss: "🧹 Tipp auf eine Straße, um sie abzureißen. Über Häuser und Zonen wischen löscht sie."
@@ -1616,6 +1913,10 @@ function unterleiste() {
   } else if (werkzeug === "zone") {
     kopf = '<span class="ftitel">🏘️ Zonen</span>' + chip("data-pinsel", "klein", "🖌️ Klein", pinsel === "klein") + chip("data-pinsel", "gross", "🖌️ Groß", pinsel === "gross") + chip("data-pinsel", "fuellen", "🪣 Füllen", pinsel === "fuellen") + '<span class="trenn"></span>' + rueckChip;
     karten = Object.keys(ZONEN).map(Number).map((z) => { const f = zoneFrei(z), Z = ZONEN[z]; return kk("data-zone", z, Z.em, Z.name, f ? GRUPPEN[Z.gruppe].name : "ab " + MEILEN[Z.ab].name, z === zoneWahl, !f); }).join("") + kk("data-zone", 0, "🧽", "Zone entfernen", "", zoneWahl === 0);
+  } else if (werkzeug === "dienst" || werkzeug === "park") {
+    if (werkzeug === "dienst") kopf = '<span class="ftitel">🏛️ Dienste</span>' + Object.keys(DIENST_KAT).filter((k) => k !== "park").map((k) => chip("data-dkat", k, DIENST_KAT[k].em + " " + DIENST_KAT[k].name, dienstKat === k)).join("");
+    else kopf = '<span class="ftitel">🌳 Parks</span><small style="color:var(--leise)">Parks machen den Boden wertvoller und die Leute froher</small>';
+    karten = Object.keys(DIENSTE).filter((k) => DIENSTE[k].kat === dienstKat).map((k) => { const D = DIENSTE[k], f = dienstFrei(k); return kk("data-dienst", k, D.em, D.name, f ? euro(D.preis) : "ab " + MEILEN[D.ab].name, k === dienstWahl, !f); }).join("");
   } else if (werkzeug === "gebiet") {
     const m = MEILEN[meilenstein], frei = m.gebiete - gekauft;
     kopf = '<span class="ftitel">🗺️ Gebiete</span><small style="color:var(--leise)">' + (frei > 0 ? `Du kannst noch ${frei} Gebiet${frei > 1 ? "e" : ""} kaufen · nächstes kostet ${euro(GEBIET_PREIS(gekauft))}` : "Mehr Gebiete beim nächsten Meilenstein") + "</small>";
@@ -1635,6 +1936,8 @@ $("fach").addEventListener("click", (e) => {
   if (b.dataset.modus) { strModus = b.dataset.modus; merke("inselstadt-strmodus", strModus); bauAbbrechen(); tipp(TIPPS.strasse(), 3500); }
   if (b.dataset.zone != null) { const z = +b.dataset.zone; if (z && !zoneFrei(z)) { tipp("🔒 " + ZONEN[z].name + " gibt es ab dem Meilenstein " + MEILEN[ZONEN[z].ab].name + " (" + zahl(MEILEN[ZONEN[z].ab].ab) + " Einwohner).", 3500); return; } zoneWahl = z; if (z) tipp(ZONEN[z].em + " " + ZONEN[z].name + ": " + ZONEN_TEXT[z], 4000); }
   if (b.dataset.pinsel) { pinsel = b.dataset.pinsel; tipp(TIPPS.zone(), 3500); }
+  if (b.dataset.dkat) { dienstKat = b.dataset.dkat; dienstWahl = Object.keys(DIENSTE).find((k) => DIENSTE[k].kat === dienstKat); vorschauWeg(); frageZu(); }
+  if (b.dataset.dienst) { const k = b.dataset.dienst, D = DIENSTE[k]; if (!dienstFrei(k)) { tipp("🔒 " + D.name + " gibt es ab " + MEILEN[D.ab].name + " (" + zahl(MEILEN[D.ab].ab) + " Einwohner).", 3500); return; } dienstWahl = k; vorschauWeg(); frageZu(); tipp(D.em + " " + D.name + ": " + D.text + " Tipp neben eine Straße.", 4500); }
   unterleiste();
 });
 /* Info-Ansichten (oben rechts) */
@@ -1642,6 +1945,24 @@ const ANSICHTEN = {
   verkehr: { em: "🚦", name: "Verkehr", legende: ["#3ddc6b", "#ffd23d", "#ff3b30", "frei", "Stau"], an: () => { verkehrsAnsicht = true; stauMessen(); }, aus: () => { verkehrsAnsicht = false; stauMessen(); } },
   wert: { em: "💎", name: "Bodenwert", legende: ["#ff4a3d", "#ffd23d", "#2fd66b", "wenig wert", "wertvoll"], an: () => { wertAnsicht = true; werteAuffrischen(); wertZeichnen(); }, aus: () => { wertAnsicht = false; wertZeichnen(); } }
 };
+const ROT_GRUEN = ["#ff4a3d", "#ffd23d", "#2fd66b"];
+const versorgt = (r) => (z, h) => h ? (h.verlassen ? null : (h.hat && h.hat[r]) ? 100 : 0) : null;
+const deckung = (kat) => (z, h) => Math.round(Math.min(1, abdeckung(z.x, z.z, kat) * 1.4) * 100);
+Object.assign(ANSICHTEN, {
+  strom: { em: "⚡", name: "Strom", legende: [...ROT_GRUEN, "kein Strom", "versorgt"], wert: versorgt("strom") },
+  wasser: { em: "💧", name: "Wasser", legende: [...ROT_GRUEN, "kein Wasser", "versorgt"], wert: versorgt("wasser") },
+  abwasser: { em: "🚽", name: "Abwasser", legende: [...ROT_GRUEN, "fehlt", "versorgt"], wert: versorgt("abwasser") },
+  muell: { em: "🗑️", name: "Müllabfuhr", legende: [...ROT_GRUEN, "fehlt", "versorgt"], wert: versorgt("muell") },
+  polizei: { em: "🚓", name: "Polizei", legende: [...ROT_GRUEN, "keine", "sicher"], wert: deckung("polizei"), kat: "polizei" },
+  feuer: { em: "🚒", name: "Feuerwehr", legende: [...ROT_GRUEN, "keine", "geschützt"], wert: deckung("feuer"), kat: "feuer" },
+  gesund: { em: "🏥", name: "Gesundheit", legende: [...ROT_GRUEN, "keine", "gut"], wert: deckung("gesund"), kat: "gesund" },
+  bildung: { em: "🎓", name: "Bildung", legende: [...ROT_GRUEN, "keine", "Uni"], wert: (z) => Math.round(abdeckung(z.x, z.z, "bildung") / 3 * 100), kat: "bildung" },
+  froh: { em: "😊", name: "Zufriedenheit", legende: [...ROT_GRUEN, "unzufrieden", "glücklich"], wert: (z, h) => h && gruppe(h) === "w" ? hausFroh(h) : null },
+  dreck: { em: "🟤", name: "Dreck", legende: ["#2fd66b", "#ffd23d", "#8a5a2b", "sauber", "dreckig"], wert: (z, h) => 100 - Math.min(100, dreckBei(z.x, z.z, h) * 1.5), umgekehrt: true },
+  park: { em: "🌳", name: "Parks", legende: [...ROT_GRUEN, "keine", "viel Grün"], wert: deckung("park"), kat: "park" }
+});
+for (const k of Object.keys(ANSICHTEN)) { const A = ANSICHTEN[k]; if (A.wert) { A.an = () => { wertAnsicht = true; versorgungRechnen(); listenAuffrischen(); wertZeichnen(); kreiseZeichnen(A.kat); }; A.aus = () => { wertAnsicht = false; wertZeichnen(); kreiseZeichnen(null); }; } }
+function hausFroh(h) { const a = h.abd || {}; let v = 52 + ((h.wert || 30) - 30) * 0.3 - (h.dreck || 0) * 0.5 + (a.polizei ? 5 : 0) + (a.feuer ? 5 : 0) + (a.gesund ? 5 : 0) + (h.bildung || 0) * 3; if (h.problem) v -= ["krimi", "krank"].includes(h.problem) ? 10 : 25; const st = (steuern.w + steuern.g + steuern.b + steuern.i) / 4; return Math.round(klemme(v - (st - 9) * 3, 0, 100)); }
 let ansicht = null;
 function ansichtSetzen(n) {
   if (ansicht && ANSICHTEN[ansicht]) ANSICHTEN[ansicht].aus();
@@ -1659,7 +1980,7 @@ function werkzeugWaehlen(w) {
   werkzeug = w; document.querySelectorAll("#werkzeug button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.w === w)));
   const bauend = w !== "ansehen";
   steuerung.touches.ONE = bauend ? -1 : THREE.TOUCH.PAN; steuerung.mouseButtons.LEFT = bauend ? -1 : THREE.MOUSE.PAN;
-  bauAbbrechen(); frageZu(); $("info").hidden = true; zellenNeu = true; unterleiste(); gebieteZeichnen();
+  bauAbbrechen(); frageZu(); vorschauWeg(); $("info").hidden = true; zellenNeu = true; if (w === "park") dienstKat = "park"; else if (w === "dienst" && dienstKat === "park") dienstKat = "strom"; if (DIENSTE[dienstWahl].kat !== dienstKat) dienstWahl = Object.keys(DIENSTE).find((k) => DIENSTE[k].kat === dienstKat); unterleiste(); gebieteZeichnen();
   const t = TIPPS[w]; tipp(typeof t === "function" ? t() : t, 4500);
 }
 $("werkzeug").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) werkzeugWaehlen(b.dataset.w); });
@@ -1667,7 +1988,7 @@ let frageJa = null;
 function frage(text, ok, beiJa) { $("frage").hidden = false; $("frageText").textContent = text; $("frageText").classList.toggle("falsch", !ok); $("ja").disabled = !ok || !beiJa; frageJa = ok ? beiJa : null; }
 function frageZu() { $("frage").hidden = true; frageJa = null; }
 $("ja").onclick = () => { if (frageJa) frageJa(); };
-$("nein").onclick = () => { frageZu(); bauAbbrechen(); };
+$("nein").onclick = () => { frageZu(); bauAbbrechen(); vorschauWeg(); };
 
 /* Straßenbau per Antippen */
 const bau = { punkte: [], kandidat: null, plan: null };
@@ -1765,7 +2086,8 @@ function loslassen(e) {
   const a = aktion; aktion = null;
   if (werkzeug === "strasse") { if (strModus === "ampel") { if (!a.bewegt) ampelUmschalten(a.letzte); } else { if (bau.kandidat) { bau.punkte.push(bau.kandidat); bau.kandidat = null; } planNeu(); } }
   else if (werkzeug === "abriss" && !a.bewegt) abreissenStrasse(a.letzte);
-  else if (werkzeug === "ansehen" && !a.bewegt) { const f = fahrzeugBei(a.letzte); if (f) fahrzeugInfo(f); else hausInfo(a.letzte); }
+  else if (werkzeug === "ansehen" && !a.bewegt) { const f = fahrzeugBei(a.letzte), d = inDienst(a.letzte.x, a.letzte.z, 0.1); if (f) fahrzeugInfo(f); else if (d) dienstInfo(d); else hausInfo(a.letzte); }
+  else if ((werkzeug === "dienst" || werkzeug === "park") && !a.bewegt) dienstVorschau(a.letzte);
   else if (werkzeug === "gebiet" && !a.bewegt) gebietAntippen(e);
 }
 renderer.domElement.addEventListener("pointerup", loslassen);
@@ -1790,7 +2112,7 @@ function fuellen(p) {
 }
 function abreissenStrich(a, b) {
   const n = Math.max(1, Math.ceil(abst(a, b) / 0.4)); let geaendert = false;
-  for (let i = 0; i <= n; i++) { const p = lerp(a, b, i / n); for (const z of zellenNahe(p.x, p.z, 0.7)) { if (z.haus) { hausWeg(haeuser.get(z.haus)); geaendert = true; } if (z.zone) { z.zone = 0; geaendert = true; } } }
+  for (let i = 0; i <= n; i++) { const p = lerp(a, b, i / n); const dd = inDienst(p.x, p.z); if (dd) { geld += DIENSTE[dd.typ].preis * 0.3; dienstWeg(dd); geaendert = true; } for (const z of zellenNahe(p.x, p.z, 0.7)) { if (z.haus) { hausWeg(haeuser.get(z.haus)); geaendert = true; } if (z.zone) { z.zone = 0; geaendert = true; } } }
   if (geaendert) { zellenNeu = true; zeigeWerte(); speichernBald(); }
 }
 function abreissenStrasse(p) {
@@ -1807,9 +2129,12 @@ function hausInfo(p) {
   const Z = ZONEN[h.zone], g = Z.gruppe; listenAuffrischen(); const bw = bodenwert(h.x, h.z, h); h.wert = bw.wert; h.dreck = bw.dreck;
   const wert = g === "w" ? "👥 " + leute(h) + " Bewohner" : "💼 " + jobs(h) + " Arbeitsplätze";
   const noetig = BODENWERT_FUER[g][h.stufe + 1] || 0;
-  const naechst = h.stufe >= Z.max ? (Z.max === 1 ? "Spezial-Industrie hat nur eine Stufe" : "⭐ Höchste Stufe erreicht") : h.wert < noetig ? "⬆️ Für Stufe " + (h.stufe + 1) + " braucht es Bodenwert " + noetig + " (Bäume, Alleen, Wasser, weniger Dreck)" : "⬆️ Steigt auf Stufe " + (h.stufe + 1) + ", wenn Bedarf da ist";
+  const naechst = !stufeBildungOk(h) ? "🎓 Für Stufe " + (h.stufe + 1) + " braucht es " + (h.stufe + 1 >= 5 ? "ein Gymnasium" : "eine Grundschule") + " in der Nähe" : h.stufe >= Z.max ? (Z.max === 1 ? "Spezial-Industrie hat nur eine Stufe" : "⭐ Höchste Stufe erreicht") : h.wert < noetig ? "⬆️ Für Stufe " + (h.stufe + 1) + " braucht es Bodenwert " + noetig + " (Bäume, Alleen, Wasser, weniger Dreck)" : "⬆️ Steigt auf Stufe " + (h.stufe + 1) + ", wenn Bedarf da ist";
   const sterne = "★".repeat(h.stufe) + "☆".repeat(Z.max - h.stufe);
-  const warn = !zufahrt(h) ? "<br>⚠️ Keine Straße mit Autoverkehr in der Nähe" : h.keinWeg ? "<br>⚠️ Kein Weg zu den anderen Zonen – verbinde die Straßen" : "";
+  const hat = h.hat || {}, ab = h.abd || {}, ja = (x) => x ? "✅" : "❌";
+  const dienstZeile = `<br><small>⚡${ja(hat.strom)} 💧${ja(hat.wasser)} 🚽${ja(hat.abwasser)} 🗑️${ja(hat.muell)} · 🚓${ja(ab.polizei)} 🚒${ja(ab.feuer)} 🏥${ja(ab.gesund)} 🎓${h.bildung || 0}</small>`;
+  const prob = h.verlassen ? "<br>🏚️ <b style='display:inline'>Verlassen</b> – wird bald abgerissen" : h.problem ? "<br>⚠️ " + PROBLEM_TEXT[h.problem] + (h.notSeit != null ? " – die Leute ziehen bald weg!" : "") : "";
+  const warn = dienstZeile + prob + (!zufahrt(h) ? "<br>⚠️ Keine Straße mit Autoverkehr in der Nähe" : h.keinWeg ? "<br>⚠️ Kein Weg zu den anderen Zonen – verbinde die Straßen" : "");
   infoZeigen(`<b>${Z.em} ${hausName(h)}</b><small>${Z.name} · ${sterne} Stufe ${h.stufe}/${Z.max} · ${h.w}×${h.d} Felder</small><br>${wert}<br>💎 Bodenwert ${h.wert}${h.dreck > 4 ? " · 🟤 Dreck " + h.dreck : ""}<br><small>${naechst}</small>${warn}`, 7000);
 }
 function gebietAntippen(e) {
@@ -2045,7 +2370,7 @@ function starten(n, daten, neueKarte) {
     setTimeout(() => $("laden").classList.add("weg"), 200);
   }, 60);
 }
-window.inselstadt = { sim: (sek, ziel) => { const ev = new Map(); for (let t = 0; t < sek; t += 0.05) { simZeit += 0.05; jetztS += 0.05; verkehrTakt(0.05, ziel || 60); fahrzeugeZeichnen(); const F = fahrzeuge.filter((f) => f.pos && f.skala > 0.9 && !f.parkt); for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) { const A = F[i], Bf = F[j]; let hit = false; for (let q = 0; q <= 6 && !hit; q++) { const o = Bf.vorneL - (Bf.vorneL + Bf.hintenL) * q / 6, dx = Bf.pos.x + Bf.pos.tx * o - A.pos.x, dz = Bf.pos.z + Bf.pos.tz * o - A.pos.z, lx = dx * A.pos.tx + dz * A.pos.tz, lz = Math.abs(-dx * A.pos.tz + dz * A.pos.tx); if (lx < A.vorneL * 0.8 && lx > -A.hintenL * 0.8 && lz < (A.B + Bf.B) / 2 * 0.7) hit = true; } if (hit) { const key = A.id + "-" + Bf.id; if (!ev.has(key)) { const d = (f) => f.modus === "kante" ? f.route[f.ri].k + "/" + f.route[f.ri].dir + "/sp" + f.spur + "/off" + f.off.toFixed(2) + "/s" + f.s.toFixed(2) + (f.ausparken ? "/AUS" : "") + (f.frei ? "/FREI" : "") : "KN" + f.tr.knoten + "/t" + f.tr.t.toFixed(2) + "/von" + f.von + "->" + f.route[f.ri + 1].k; ev.set(key, [A.typ, d(A), "blk" + (A.block == null ? "-" : A.block.toFixed(2)) + "w" + A.warte.toFixed(1), Bf.typ, d(Bf), "blk" + (Bf.block == null ? "-" : Bf.block.toFixed(2)) + "w" + Bf.warte.toFixed(1), "t" + t.toFixed(1)]); } } } } return [fahrzeuge.length, ev.size, [...ev.values()].slice(0, 12)]; }, fahrtStarten: () => { try { return fahrtStarten(); } catch (e) { return "FEHLER " + e.message + e.stack; } }, folgen: (f) => folgenStart(f), baeume: () => baeume.length, stufenTest: (st) => { let i = 0; for (const h of haeuser.values()) { h.stufe = Math.min(ZONEN[h.zone].max, st || 1 + (i++ % 5)); h.teile = hausTeile(h); } haeuserNeu = true; }, meilenstein: (m) => { meilenstein = m; unterleiste(); }, zoneWahl: (z) => { zoneWahl = z; }, malen: (a, b) => malen(a, b), werteAuffrischen, hausTeile, bedarf: () => bedarf, wertAnsicht: (v) => { wertAnsicht = v; wertZeichnen(); }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
+window.inselstadt = { abstand: (x, z) => abstand(x, z), dienstPlan, dienstBauen, dienste, versorgung: () => versorgung, versorgungRechnen, dienstTakt, ansichtSetzen, sim: (sek, ziel) => { const ev = new Map(); let tk = 0; for (let t = 0; t < sek; t += 0.05) { simZeit += 0.05; jetztS += 0.05; if (++tk % 10 === 0) dienstTakt(0.5); verkehrTakt(0.05, ziel || 60); fahrzeugeZeichnen(); const F = fahrzeuge.filter((f) => f.pos && f.skala > 0.9 && !f.parkt); for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) { const A = F[i], Bf = F[j]; let hit = false; for (let q = 0; q <= 6 && !hit; q++) { const o = Bf.vorneL - (Bf.vorneL + Bf.hintenL) * q / 6, dx = Bf.pos.x + Bf.pos.tx * o - A.pos.x, dz = Bf.pos.z + Bf.pos.tz * o - A.pos.z, lx = dx * A.pos.tx + dz * A.pos.tz, lz = Math.abs(-dx * A.pos.tz + dz * A.pos.tx); if (lx < A.vorneL * 0.8 && lx > -A.hintenL * 0.8 && lz < (A.B + Bf.B) / 2 * 0.7) hit = true; } if (hit) { const key = A.id + "-" + Bf.id; if (!ev.has(key)) { const d = (f) => f.modus === "kante" ? f.route[f.ri].k + "/" + f.route[f.ri].dir + "/sp" + f.spur + "/off" + f.off.toFixed(2) + "/s" + f.s.toFixed(2) + (f.ausparken ? "/AUS" : "") + (f.frei ? "/FREI" : "") : "KN" + f.tr.knoten + "/t" + f.tr.t.toFixed(2) + "/von" + f.von + "->" + f.route[f.ri + 1].k; ev.set(key, [A.typ, d(A), "blk" + (A.block == null ? "-" : A.block.toFixed(2)) + "w" + A.warte.toFixed(1), Bf.typ, d(Bf), "blk" + (Bf.block == null ? "-" : Bf.block.toFixed(2)) + "w" + Bf.warte.toFixed(1), "t" + t.toFixed(1)]); } } } } return [fahrzeuge.length, ev.size, [...ev.values()].slice(0, 12)]; }, fahrtStarten: () => { try { return fahrtStarten(); } catch (e) { return "FEHLER " + e.message + e.stack; } }, folgen: (f) => folgenStart(f), baeume: () => baeume.length, stufenTest: (st) => { let i = 0; for (const h of haeuser.values()) { h.stufe = Math.min(ZONEN[h.zone].max, st || 1 + (i++ % 5)); h.teile = hausTeile(h); } haeuserNeu = true; }, meilenstein: (m) => { meilenstein = m; unterleiste(); }, zoneWahl: (z) => { zoneWahl = z; }, malen: (a, b) => malen(a, b), werteAuffrischen, hausTeile, bedarf: () => bedarf, wertAnsicht: (v) => { wertAnsicht = v; wertZeichnen(); }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
 
 /* ================================================================
    Hauptschleife
@@ -2069,7 +2394,7 @@ function schleife() {
   stauTakt += dt; if (stauTakt > 1) { stauTakt = 0; stauMessen(); }
   if (zellenNeu) zellenZeichnen();
   if (haeuserNeu) haeuserZeichnen();
-  rauchZeichnen(); fahrzeugeZeichnen(); ampelnZeichnen(); fussgaengerTakt(dt, kz.e); hochZeichnen(); if (wertAnsicht && jetztS - wertZeit > 2) wertZeichnen();
+  rauchZeichnen(); fahrzeugeZeichnen(); ampelnZeichnen(); fussgaengerTakt(dt, kz.e); hochZeichnen(); warnZeichnen(); drehZeichnen(); if (ansicht && ansicht !== "verkehr" && jetztS - wertZeit > 2) wertZeichnen();
   boote.forEach((b) => { b.w += b.v * dt; b.g.position.set(b.mx + Math.cos(b.w) * b.rad, WASSER + 0.02 + Math.sin(t * 1.6 + b.ph) * 0.05, b.mz + Math.sin(b.w) * b.rad); b.g.rotation.set(Math.sin(t * 1.3 + b.ph) * 0.05, -b.w + (b.v > 0 ? -Math.PI / 2 : Math.PI / 2), 0); });
   if (leuchtturm) leuchtturm.userData.strahl.rotation.y = t * 0.8;
   if (spieler.an) fahrenTakt(dt);
