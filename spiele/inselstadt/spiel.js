@@ -61,7 +61,7 @@ const MEILEN = [
 const GEBIET_PREIS = (n) => 15000 + 10000 * n;
 const TAG_SEK = 4;   // ein Spieltag dauert bei ▶️ 4 Sekunden
 const WOCHENTAGE = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-const STUFEN = { niedrig: { name: "Niedrig", pr: 1, schatten: 0, autos: 45, leute: 30 }, mittel: { name: "Mittel", pr: 1.5, schatten: 1024, autos: 90, leute: 60 }, hoch: { name: "Hoch", pr: 2, schatten: 2048, autos: 150, leute: 100 } };
+const STUFEN = { niedrig: { name: "Niedrig", pr: 1, schatten: 0, autos: 45, leute: 30, details: 0 }, mittel: { name: "Mittel", pr: 1.5, schatten: 1024, autos: 90, leute: 60, details: 1 }, hoch: { name: "Hoch", pr: 2, schatten: 2048, autos: 150, leute: 100, details: 1 } };
 let stufe = lade("inselstadt-qualitaet", null) || (Math.min(screen.width, screen.height) < 500 ? "mittel" : "hoch");
 if (!STUFEN[stufe]) stufe = "mittel";
 
@@ -90,7 +90,7 @@ const sonne = new THREE.DirectionalLight(0xfff4e0, 2.6);
 sonne.shadow.camera.left = -42; sonne.shadow.camera.right = 42; sonne.shadow.camera.top = 42; sonne.shadow.camera.bottom = -42;
 sonne.shadow.camera.near = 10; sonne.shadow.camera.far = 240; sonne.shadow.bias = -0.0006; sonne.shadow.normalBias = 0.03;
 szene.add(himmelLicht, sonne, sonne.target);
-const U = { uTime: { value: 0 }, uNacht: { value: 0 } };
+const U = { uTime: { value: 0 }, uNacht: { value: 0 }, uDetail: { value: 1 } };
 
 /* Himmel */
 const himmel = new THREE.Mesh(new THREE.SphereGeometry(1000, 32, 16), new THREE.ShaderMaterial({
@@ -115,28 +115,72 @@ himmel.frustumCulled = false; himmel.renderOrder = -1; szene.add(himmel);
 /* ---------- Materialien ---------- */
 function mitFenstern(mat) {
   mat.onBeforeCompile = (s) => {
-    s.uniforms.uNacht = U.uNacht;
+    s.uniforms.uNacht = U.uNacht; s.uniforms.uDetail = U.uDetail;
     s.vertexShader = "varying vec3 vWP; varying vec3 vWN;\n" + s.vertexShader.replace("#include <begin_vertex>", `#include <begin_vertex>
       #ifdef USE_INSTANCING
         vWP = (instanceMatrix * vec4(transformed, 1.0)).xyz; vWN = normalize(mat3(instanceMatrix) * objectNormal);
       #else
         vWP = transformed; vWN = objectNormal;
       #endif`);
-    s.fragmentShader = "uniform float uNacht; varying vec3 vWP; varying vec3 vWN;\n" + s.fragmentShader.replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
+    s.fragmentShader = "uniform float uNacht; uniform float uDetail; varying vec3 vWP; varying vec3 vWN;\n" + s.fragmentShader.replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
       {
         float seite = 1.0 - step(0.5, abs(vWN.y));
         vec2 nx = normalize(vWN.xz + vec2(1e-5));
         float hk = dot(vWP.xz, vec2(-nx.y, nx.x));
-        vec2 zelle = vec2(hk / 0.3, (vWP.y - ${BODEN.toFixed(3)} - 0.08) / 0.32);
+        vec2 zelle = vec2(hk / 0.3, (vWP.y - ${BODEN.toFixed(3)} - 0.08) / 0.36);
         vec2 f = fract(zelle);
-        float fenster = step(0.2, f.x) * step(f.x, 0.8) * step(0.22, f.y) * step(f.y, 0.78) * step(0.0, zelle.y) * seite;
+        float stock = step(0.0, zelle.y);
+        float fenster = step(0.22, f.x) * step(f.x, 0.78) * step(0.24, f.y) * step(f.y, 0.76) * stock * seite;
+        float rahmen = step(0.18, f.x) * step(f.x, 0.82) * step(0.19, f.y) * step(f.y, 0.8) * stock * seite * (1.0 - fenster);
+        float kreuz = fenster * max(step(abs(f.x - 0.5), 0.02), step(abs(f.y - 0.55), 0.02)) * uDetail;
+        vec3 c0 = diffuseColor.rgb;
+        float n = fract(sin(dot(floor(vWP * 70.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+        float ziegel = step(c0.g * 1.15, c0.r) * step(c0.b * 1.25, c0.r) * seite;
+        vec2 zq = vec2((hk + step(1.0, mod(floor(vWP.y / 0.034), 2.0)) * 0.04) / 0.08, vWP.y / 0.034);
+        float fuge = max(step(fract(zq.x), 0.08), step(fract(zq.y), 0.14));
+        float zb = fract(sin(dot(floor(zq), vec2(7.13, 3.71))) * 43758.5);
+        diffuseColor.rgb *= mix(1.0, 0.95 + 0.08 * n, uDetail);
+        diffuseColor.rgb = mix(diffuseColor.rgb, mix(c0 * (0.82 + 0.26 * zb), vec3(0.8, 0.78, 0.74), fuge), ziegel * uDetail * (1.0 - fenster - rahmen) * 0.9);
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.94, 0.93, 0.9), (rahmen * 0.8 + kreuz) * uDetail);
+        float sockel = (1.0 - step(0.07, vWP.y - ${BODEN.toFixed(3)})) * seite * uDetail;
+        diffuseColor.rgb *= 1.0 - sockel * 0.25;
         float h = fract(sin(dot(floor(zelle) + floor(vWP.xz * 0.37) * 3.1, vec2(12.9898, 78.233))) * 43758.5453);
         float an = step(0.6, h) * uNacht;
-        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.16, 0.22, 0.3), fenster * 0.7 * (1.0 - an));
-        totalEmissiveRadiance += fenster * an * mix(vec3(1.0, 0.66, 0.32), vec3(0.75, 0.85, 1.0), step(0.93, h)) * (0.75 + 0.35 * fract(h * 7.0));
+        vec3 glas = mix(vec3(0.16, 0.22, 0.3), mix(vec3(0.18, 0.25, 0.34), vec3(0.5, 0.63, 0.76), smoothstep(0.24, 0.76, f.y)), uDetail * 0.55);
+        diffuseColor.rgb = mix(diffuseColor.rgb, glas, fenster * (1.0 - kreuz) * 0.78 * (1.0 - an));
+        totalEmissiveRadiance += fenster * (1.0 - kreuz) * an * mix(vec3(1.0, 0.66, 0.32), vec3(0.75, 0.85, 1.0), step(0.93, h)) * (0.75 + 0.35 * fract(h * 7.0));
       }`);
   };
-  mat.customProgramCacheKey = () => "fenster2";
+  mat.customProgramCacheKey = () => "fenster3";
+  return mat;
+}
+function mitMuster(mat, art) {
+  mat.onBeforeCompile = (s) => {
+    s.uniforms.uDetail = U.uDetail;
+    s.vertexShader = "varying vec3 vWP; varying vec3 vWN;\n" + s.vertexShader.replace("#include <begin_vertex>", `#include <begin_vertex>
+      #ifdef USE_INSTANCING
+        vWP = (instanceMatrix * vec4(transformed, 1.0)).xyz; vWN = normalize(mat3(instanceMatrix) * objectNormal);
+      #else
+        vWP = (modelMatrix * vec4(transformed, 1.0)).xyz; vWN = objectNormal;
+      #endif`);
+    const code = {
+      dach: `float r = vWP.y / 0.038; float fr = fract(r); vec2 nx = normalize(vWN.xz + vec2(1e-5)); float hk = dot(vWP.xz, vec2(-nx.y, nx.x));
+        float sp = fract((hk + step(1.0, mod(floor(r), 2.0)) * 0.03) / 0.06); float schraeg = step(0.12, abs(vWN.y)) * (1.0 - step(0.98, abs(vWN.y)));
+        float z = fract(sin(dot(floor(vec2(hk / 0.06, r)), vec2(12.9898, 78.233))) * 43758.5453);
+        diffuseColor.rgb *= mix(1.0, (0.82 + 0.18 * smoothstep(0.0, 0.35, fr)) * (1.0 - 0.08 * step(sp, 0.08)) * (0.94 + 0.1 * z), schraeg * uDetail);`,
+      strasse: `vec3 c = diffuseColor.rgb; float L = dot(c, vec3(0.33)); float sat = max(c.r, max(c.g, c.b)) - min(c.r, min(c.g, c.b));
+        float n = fract(sin(dot(floor(vWP.xz * 60.0), vec2(12.9898, 78.233))) * 43758.5453), m = sin(vWP.x * 0.9) * sin(vWP.z * 0.7);
+        float asph = 1.0 - step(0.3, L); float geh = step(0.55, L) * (1.0 - step(0.9, L)) * (1.0 - step(0.12, sat));
+        vec2 pl = fract(vWP.xz / 0.2); float platte = max(step(pl.x, 0.05), step(pl.y, 0.05));
+        diffuseColor.rgb *= mix(1.0, 1.0 + (n - 0.5) * 0.12 * asph + m * 0.04 * asph - platte * 0.1 * geh + (n - 0.5) * 0.05 * geh, uDetail);`,
+      wiese: `float n = fract(sin(dot(floor(vWP.xz * 18.0), vec2(12.9898, 78.233))) * 43758.5453);
+        float m = sin(vWP.x * 0.21 + sin(vWP.z * 0.13) * 2.0) * sin(vWP.z * 0.17 + 1.3) * 0.5 + sin(vWP.x * 0.9) * sin(vWP.z * 1.1) * 0.2;
+        float gras = step(0.15, vWP.y + 0.4) * step(diffuseColor.b * 1.2, diffuseColor.g);
+        diffuseColor.rgb *= mix(1.0, 1.0 + (m * 0.09 + (n - 0.5) * 0.06) * gras, uDetail);`
+    }[art];
+    s.fragmentShader = "uniform float uDetail; varying vec3 vWP; varying vec3 vWN;\n" + s.fragmentShader.replace("#include <color_fragment>", "#include <color_fragment>\n{" + code + "}");
+  };
+  mat.customProgramCacheKey = () => "muster-" + art;
   return mat;
 }
 function mitWind(mat) {
@@ -152,12 +196,12 @@ function mitWind(mat) {
   return mat;
 }
 const M = {
-  gelaende: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 }),
+  gelaende: mitMuster(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 }), "wiese"),
   wiese: new THREE.MeshStandardMaterial({ color: 0x86c45c, roughness: 1 }),
-  strasse: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 }),
+  strasse: mitMuster(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 }), "strasse"),
   flach: new THREE.MeshStandardMaterial({ roughness: 0.92 }),
   haus: mitFenstern(new THREE.MeshStandardMaterial({ roughness: 0.78, metalness: 0.02 })),
-  dach: new THREE.MeshStandardMaterial({ roughness: 0.85, flatShading: true }),
+  dach: mitMuster(new THREE.MeshStandardMaterial({ roughness: 0.85, flatShading: true }), "dach"),
   baum: mitWind(new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9 })),
   auto: new THREE.MeshStandardMaterial({ roughness: 0.42, metalness: 0.3 }),
   leuchte: new THREE.MeshBasicMaterial({ toneMapped: false }),
@@ -732,16 +776,45 @@ function hausTeile(h) {
   };
   const stufen = L[h.zone], liste = stufen[Math.min(h.stufe, stufen.length) - 1];
   h.name = liste[h.variante % liste.length]();
+  details(T, h, W, D, vorn, r);
   massstab(T, W, D, vorn);
   return T;
+}
+/* Kleine Dinge, die Häuser echt wirken lassen: Tür, Einfahrt mit Auto, Hecke oder Zaun, Blumen, Schornstein */
+function details(T, h, W, D, vorn, r) {
+  const haupt = T.filter((t) => t.b === "haus" && !t.fest && (t.ly || 0) < 0.05).sort((a, b) => (b.lz + b.sz / 2) - (a.lz + a.sz / 2) || b.sx * b.sy - a.sx * a.sy)[0];
+  const neu = (o) => T.push(Object.assign({ ly: 0 }, o));
+  if (haupt && [1, 2, 3, 4, 5].includes(h.zone)) {
+    const vz = haupt.lz + haupt.sz / 2 + 0.006, grosse = h.zone !== 1;
+    neu({ b: "flach", lx: haupt.lx + (grosse ? 0 : haupt.sx * 0.22), lz: vz, sx: grosse ? 0.16 : 0.09, sy: grosse ? 0.2 : 0.17, sz: 0.012, c: grosse ? 0x34495a : wahl(r, [0x6b4a2f, 0x3d5a80, 0x2f6b4a, 0x8a2f2f, 0xf2efe8]) });
+    neu({ b: "flach", lx: haupt.lx + (grosse ? 0 : haupt.sx * 0.22), lz: vz + 0.04, sx: grosse ? 0.22 : 0.14, sy: 0.012, sz: 0.08, c: 0xb9b4a8 });
+  }
+  if (h.zone === 1 && haupt) {
+    const dach = T.find((t) => t.b === "dach");
+    if (dach && r() < 0.7) neu({ b: "flach", lx: dach.lx + (r() - 0.5) * 0.25, lz: dach.lz - 0.06, ly: (dach.ly || 0) + 0.06, sx: 0.06, sy: 0.2, sz: 0.06, c: 0x8a4a3a });
+    const seite = haupt.lx + haupt.sx / 2 + 0.2 < W / 2 - 0.05 ? 1 : haupt.lx - haupt.sx / 2 - 0.2 > -W / 2 + 0.05 ? -1 : 0;
+    if (seite && r() < 0.8) {
+      const ex = haupt.lx + seite * (haupt.sx / 2 + 0.11), lang = vorn + 0.1 - (haupt.lz - haupt.sz * 0.2);
+      neu({ b: "flach", lx: ex, lz: vorn + 0.1 - lang / 2, sx: 0.17, sy: 0.006, sz: lang, c: 0xa7a49c, ly: 0.002 });
+      if (r() < 0.75) neu({ b: "flach", lx: ex, lz: vorn - 0.2, sx: 0.12, sy: 0.1, sz: 0.22, c: PAL.auto[(h.variante >> 3) % PAL.auto.length], ly: 0.008 });
+    }
+    for (let k = 0; k < 2; k++) neu({ b: "flach", lx: (r() - 0.5) * W * 0.6, lz: vorn - 0.06, sx: 0.12, sy: 0.03, sz: 0.06, c: wahl(r, [0xe85b9a, 0xf2c14e, 0xe8493f, 0x9a5be8, 0xffffff]), ly: 0.002 });
+    const art = h.variante % 3;
+    if (art < 2) {
+      const c = art === 0 ? 0x4a8a3a : 0xf4f2ee, hh = art === 0 ? 0.11 : 0.07, d = art === 0 ? 0.06 : 0.015;
+      for (const sx of [-1, 1]) neu({ b: "flach", lx: sx * (W / 2 - 0.04), lz: 0, sx: d, sy: hh, sz: D * 0.92, c, rand: true, hecke: art === 0 });
+      neu({ b: "flach", lx: 0, lz: -D / 2 + 0.04, sx: W * 0.92, sy: hh, sz: d, c, rand: true, hecke: art === 0 });
+    }
+  }
+  if (h.zone === 2) neu({ b: "flach", lx: 0, lz: vorn - 0.02, sx: W * 0.7, sy: 0.08, sz: 0.06, c: 0x4a8a3a, rand: true, hecke: true });
 }
 /* Gebäude auf echte Größe bringen: Grundstück besser ausfüllen und höher (1 Feld ≈ 8 m, ein Auto ≈ 4,5 m) */
 function massstab(T, W, D, vorn) {
   let x0 = 0, x1 = 0, zmin = vorn;
-  for (const t of T) { if (t.fest) continue; const quer = Math.abs(Math.sin(t.ry || 0)) > 0.7, ex = (quer ? t.sz : t.sx) / 2, ez = (quer ? t.sx : t.sz) / 2; x0 = Math.min(x0, t.lx - ex); x1 = Math.max(x1, t.lx + ex); zmin = Math.min(zmin, t.lz - ez); }
+  for (const t of T) { if (t.fest || t.rand) continue; const quer = Math.abs(Math.sin(t.ry || 0)) > 0.7, ex = (quer ? t.sz : t.sx) / 2, ez = (quer ? t.sx : t.sz) / 2; x0 = Math.min(x0, t.lx - ex); x1 = Math.max(x1, t.lx + ex); zmin = Math.min(zmin, t.lz - ez); }
   const fx = klemme(W * 0.47 / Math.max(-x0, x1, 0.01), 1, 1.3), fz = klemme((vorn + D / 2 - 0.06) / Math.max(0.01, vorn - zmin), 1, 1.3), fy = 1.3;
   for (const t of T) {
-    if (t.fest) continue;
+    if (t.fest || t.rand) continue;
     const quer = Math.abs(Math.sin(t.ry || 0)) > 0.7;
     t.lx *= fx; t.lz = vorn - (vorn - t.lz) * fz; t.ly = (t.ly || 0) * fy;
     if (t.rund) { const f = Math.min(fx, fz) * 1.1; t.sx *= f; t.sy *= f; t.sz *= f; continue; }
@@ -754,7 +827,7 @@ function neuesHaus(d, alt) {
   const h = Object.assign({ id: d.id || hId++, geboren: alt ? -100 : jetztS, simGeboren: alt ? -100 : simZeit, ab: 0, zug: null }, d); hId = Math.max(hId, h.id + 1);
   let x = 0, z = 0, sx = 0, sz = 0; h.zellen.forEach((id) => { const c = zellen.get(id); c.haus = h.id; x += c.x; z += c.z; sx += Math.sin(c.rot); sz += Math.cos(c.rot); });
   h.x = x / h.zellen.length; h.z = z / h.zellen.length; h.rot = Math.atan2(sx, sz);
-  h.teile = hausTeile(h); h.hoehe = hoeheVon(h); haeuser.set(h.id, h); haeuserNeu = zellenNeu = true;
+  h.teile = hausTeile(h); h.box = null; h.hoehe = hoeheVon(h); haeuser.set(h.id, h); haeuserNeu = zellenNeu = true;
   const rr = Math.max(h.w, h.d) * 0.62 + 0.2; baeumeFaellen({ x0: h.x - rr, x1: h.x + rr, z0: h.z - rr, z1: h.z + rr }, (bx, bz) => Math.hypot(bx - h.x, bz - h.z) < rr);
   return h;
 }
@@ -864,8 +937,19 @@ function haeuserZeichnen() {
   }
   for (const k in n) { const m = B[k]; m.count = n[k]; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
   _o.rotation.order = "XYZ"; haeuserNeu = anim;
+  let ai = 0;
+  if (aoMesh.visible) for (const h of [...haeuser.values(), ...dienste.values()]) {
+    if (ai >= 6000) break; const b = h.box || (h.box = boxVon(h)); if (!b) continue;
+    const cs = Math.cos(h.rot), sn = Math.sin(h.rot), mx = (b.x0 + b.x1) / 2, mz = (b.z0 + b.z1) / 2;
+    _o.position.set(h.x + mx * cs + mz * sn, G + 0.021, h.z - mx * sn + mz * cs); _o.rotation.set(0, h.rot, 0); _o.scale.set((b.x1 - b.x0) * 1.35 + 0.15, 1, (b.z1 - b.z0) * 1.35 + 0.15); _o.updateMatrix(); aoMesh.setMatrixAt(ai++, _o.matrix);
+  }
+  aoMesh.count = ai; aoMesh.instanceMatrix.needsUpdate = true;
 }
 const GRAU = new THREE.Color(0x77736c); let drehListe = [];
+const aoTex = (() => { const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d"), v = g.createRadialGradient(32, 32, 6, 32, 32, 32); v.addColorStop(0, "rgba(0,0,0,0.9)"); v.addColorStop(0.55, "rgba(0,0,0,0.55)"); v.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = v; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+const aoMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: aoTex, transparent: true, opacity: 0.42, depthWrite: false }), 6000);
+aoMesh.count = 0; aoMesh.frustumCulled = false; aoMesh.renderOrder = 1; szene.add(aoMesh);
+function boxVon(h) { let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const t of h.teile) { if (t.fest || t.rand || t.b === "flach" && t.sy < 0.05 || t.rund) continue; const q = Math.abs(Math.sin(t.ry || 0)) > 0.7, ex = (q ? t.sz : t.sx) / 2, ez = (q ? t.sx : t.sz) / 2; x0 = Math.min(x0, t.lx - ex); x1 = Math.max(x1, t.lx + ex); z0 = Math.min(z0, t.lz - ez); z1 = Math.max(z1, t.lz + ez); } return x0 < x1 ? { x0, x1, z0, z1 } : null; }
 function drehZeichnen() {
   for (const e of drehListe) { _o.position.set(e.x, e.y, e.z); _o.rotation.set(e.t.rx || 0, e.h.rot + (e.t.ry || 0), (e.t.rz || 0) + jetztS * e.t.dreh, "YXZ"); _o.scale.set(e.t.sx, e.t.sy, e.t.sz); _o.updateMatrix(); e.m.setMatrixAt(e.i, _o.matrix); e.m.instanceMatrix.needsUpdate = true; }
   _o.rotation.order = "XYZ";
@@ -1374,7 +1458,7 @@ function wachsTakt() {
   }
   const liste = [...haeuser.values()].filter((h) => { const Z = ZONEN[h.zone]; return !h.verlassen && !(h.problem && h.problem !== "krimi" && h.problem !== "krank") && stufeBildungOk(h) && h.stufe < Z.max && simZeit - (h.simGeboren || 0) > 25 && bedarf[Z.gruppe] > 5 && (h.wert || 0) >= (BODENWERT_FUER[Z.gruppe][h.stufe + 1] || 0); });
   if (liste.length && Math.random() < 0.45) {
-    const h = liste[Math.floor(Math.random() * liste.length)]; h.stufe++; h.geboren = jetztS; h.simGeboren = simZeit; h.ab = 0.35; h.teile = hausTeile(h); haeuserNeu = true;
+    const h = liste[Math.floor(Math.random() * liste.length)]; h.stufe++; h.geboren = jetztS; h.simGeboren = simZeit; h.ab = 0.35; h.teile = hausTeile(h); h.box = null; haeuserNeu = true;
     h.hoehe = hoeheVon(h); hochZeigen(h, h.hoehe);
     if (gruppe(h) === "i") dreckZeichnen();
   }
@@ -2320,7 +2404,7 @@ $("neuAnfangen").onclick = () => {
   speichernAus = true; clearTimeout(speicherTimer); try { localStorage.removeItem(platzKey(platz)); } catch (x) { /* egal */ } location.href = location.pathname;
 };
 function qualitaet(neu) {
-  stufe = neu; merke("inselstadt-qualitaet", stufe); const q = STUFEN[stufe];
+  stufe = neu; merke("inselstadt-qualitaet", stufe); const q = STUFEN[stufe]; U.uDetail.value = q.details; aoMesh.visible = !!q.details; haeuserNeu = true;
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, q.pr));
   const vorher = renderer.shadowMap.enabled;
   renderer.shadowMap.enabled = q.schatten > 0; sonne.castShadow = q.schatten > 0;
