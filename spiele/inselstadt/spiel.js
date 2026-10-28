@@ -489,11 +489,21 @@ function abstandZuLinie(p, pts, mitT) {
 }
 function huelle(pts, r) { let a = 1e9, b = -1e9, c = 1e9, d = -1e9; for (const p of pts) { a = Math.min(a, p.x); b = Math.max(b, p.x); c = Math.min(c, p.z); d = Math.max(d, p.z); } r = r || 0; return { x0: a - r, x1: b + r, z0: c - r, z1: d + r }; }
 const nahHuelle = (h, p, r) => p.x > h.x0 - r && p.x < h.x1 + r && p.z > h.z0 - r && p.z < h.z1 + r;
-function strassenFrei(p, ausser) { let m = 1e9; for (const k of kanten.values()) { if (k === ausser || !nahHuelle(k.h, p, Math.min(m, 5) + 1.5)) continue; m = Math.min(m, abstandZuLinie(p, k.pts) - TYP[k.typ].halb); } return m; }
+function strassenFrei(p, ausser, ohneEbene) { let m = 1e9; for (const k of kanten.values()) { if (k === ausser || k.ebene < 0 || (ohneEbene && k.ebene) || !nahHuelle(k.h, p, Math.min(m, 5) + 1.5)) continue; m = Math.min(m, abstandZuLinie(p, k.pts) - TYP[k.typ].halb); } return m; }
 
 const SF = { gehweg: farbe(0xcbc6ba), fahrbahn: farbe(0x3b4049), strich: farbe(0xf1eee4), gelb: farbe(0xf2c14e), gruen: farbe(0x7dbb55), weg: farbe(0xd8c7a0) };
+/* Brücken (ebene +1) und Tunnel (ebene −1): Höhe entlang der Straße mit sanften Rampen */
+const tunnelR = (k) => Math.min(1.6, k.len / 2 - 0.6);
+function ebeneY(k, S) {
+  if (!k || !k.ebene) return 0;
+  if (k.ebene < 0) { const t = klemme((Math.min(S, k.len - S) - tunnelR(k)) / 0.35, 0, 1); return -0.75 * t; }
+  const r = Math.min(3.2, k.len / 2), t = klemme(Math.min(S, k.len - S) / r, 0, 1), g = t * t * (3 - 2 * t); return 0.78 * g;
+}
 function band(pos, col, pts, halb, y, c, versatz) {
   versatz = versatz || 0;
+  if (typeof y === "function") { for (let i = 0; i < pts.length - 1; i++) { const a = pts[i], b = pts[i + 1], ya = y(a), yb = y(b), anx = -a.tz, anz = a.tx, bnx = -b.tz, bnz = b.tx;
+    pos.push(a.x + anx * (versatz + halb), ya, a.z + anz * (versatz + halb), b.x + bnx * (versatz + halb), yb, b.z + bnz * (versatz + halb), a.x + anx * (versatz - halb), ya, a.z + anz * (versatz - halb), a.x + anx * (versatz - halb), ya, a.z + anz * (versatz - halb), b.x + bnx * (versatz + halb), yb, b.z + bnz * (versatz + halb), b.x + bnx * (versatz - halb), yb, b.z + bnz * (versatz - halb));
+    for (let v = 0; v < 6; v++) col.push(c.r, c.g, c.b); } return; }
   for (let i = 0; i < pts.length - 1; i++) {
     const a = pts[i], b = pts[i + 1], anx = -a.tz, anz = a.tx, bnx = -b.tz, bnz = b.tx;
     const alx = a.x + anx * (versatz + halb), alz = a.z + anz * (versatz + halb), arx = a.x + anx * (versatz - halb), arz = a.z + anz * (versatz - halb);
@@ -502,20 +512,23 @@ function band(pos, col, pts, halb, y, c, versatz) {
     for (let v = 0; v < 6; v++) col.push(c.r, c.g, c.b);
   }
 }
-function striche(pos, col, k, versatz, c, lang, luecke) { for (let s = 1.0; s < k.len - 1.0; s += lang + luecke) { const a = punktBei(k, s), b = punktBei(k, Math.min(s + lang, k.len - 0.9)); band(pos, col, [a, b], 0.03, G + 0.024, c, versatz); } }
-function linie(pos, col, k, versatz, c) { const a = k.pts.filter((p) => p.s > 0.9 && p.s < k.len - 0.9); if (a.length > 1) band(pos, col, a, 0.03, G + 0.024, c, versatz); }
+function striche(pos, col, k, versatz, c, lang, luecke) { const y = k.ebene ? (p) => G + 0.024 + ebeneY(k, p.s) : G + 0.024; for (let s = 1.0; s < k.len - 1.0; s += lang + luecke) { const a = Object.assign({ s }, punktBei(k, s)), s2 = Math.min(s + lang, k.len - 0.9), b = Object.assign({ s: s2 }, punktBei(k, s2)); band(pos, col, [a, b], 0.03, y, c, versatz); } }
+function linie(pos, col, k, versatz, c) { const a = k.pts.filter((p) => p.s > 0.9 && p.s < k.len - 0.9); if (a.length > 1) band(pos, col, a, 0.03, k.ebene ? (p) => G + 0.024 + ebeneY(k, p.s) : G + 0.024, c, versatz); }
+function wand(pos, col, pts, off, y0, y1, c) { for (let i = 0; i < pts.length - 1; i++) { const a = pts[i], b = pts[i + 1], ax = a.x - a.tz * off, az = a.z + a.tx * off, bx = b.x - b.tz * off, bz = b.z + b.tx * off, a0 = y0(a), a1 = y1(a), b0 = y0(b), b1 = y1(b); pos.push(ax, a0, az, bx, b0, bz, ax, a1, az, ax, a1, az, bx, b0, bz, bx, b1, bz); for (let v = 0; v < 6; v++) col.push(c.r, c.g, c.b); } }
 function scheibe(pos, col, x, z, r, y, c) { const n = 24; for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2, b = (i + 1) / n * Math.PI * 2; pos.push(x, y, z, x + Math.cos(b) * r, y, z + Math.sin(b) * r, x + Math.cos(a) * r, y, z + Math.sin(a) * r); for (let v = 0; v < 3; v++) col.push(c.r, c.g, c.b); } }
 function geoAus(pos, col) { const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3)); g.computeVertexNormals(); return g; }
 function kantenMesh(k) {
-  const T = TYP[k.typ], pos = [], col = [];
-  if (k.typ === "fuss") band(pos, col, k.pts, T.halb, G + 0.014, SF.weg);
+  const T = TYP[k.typ], pos = [], col = [], Y = (d) => k.ebene ? (p) => G + d + ebeneY(k, p.s) : G + d;
+  if (k.typ === "fuss") band(pos, col, k.pts, T.halb, Y(0.014), SF.weg);
   else {
-    band(pos, col, k.pts, T.halb, G + 0.012, SF.gehweg);
-    if (k.typ === "allee") band(pos, col, k.pts, 0.78, G + 0.016, SF.gruen);
-    band(pos, col, k.pts, T.fahr, G + 0.02, SF.fahrbahn);
+    band(pos, col, k.pts, T.halb, Y(0.012), SF.gehweg);
+    if (k.typ === "allee") band(pos, col, k.pts, 0.78, Y(0.016), SF.gruen);
+    band(pos, col, k.pts, T.fahr, Y(0.02), SF.fahrbahn);
     if (k.typ === "haupt") { linie(pos, col, k, 0.05, SF.gelb); linie(pos, col, k, -0.05, SF.gelb); striche(pos, col, k, 0.43, SF.strich, 0.45, 0.65); striche(pos, col, k, -0.43, SF.strich, 0.45, 0.65); }
-    else striche(pos, col, k, 0, SF.strich, 0.5, 0.6);
+    else if (!k.einbahn) striche(pos, col, k, 0, SF.strich, 0.5, 0.6);
   }
+  if (k.ebene > 0) { const c = farbe(0xb9b4a8), unten = (p) => G - 0.1 + ebeneY(k, p.s), oben = (p) => G + 0.09 + ebeneY(k, p.s); for (const sei of [1, -1]) wand(pos, col, k.pts, sei * T.halb, unten, oben, c); band(pos, col, k.pts, T.halb, unten, farbe(0x8c877c)); }
+  if (k.einbahn) { const w = farbe(0xffffff); for (let s2 = 1.6; s2 < k.len - 1.4; s2 += 2.4) { const S = k.einbahn > 0 ? s2 : k.len - s2, p = punktBei(k, S), tx = p.tx * k.einbahn, tz = p.tz * k.einbahn, y = G + 0.025 + ebeneY(k, S); for (const off of TYP[k.typ].spuren.length > 1 ? [0.22, 0.64, -0.22, -0.64] : [0.21, -0.21]) { const cx = p.x - tz * off, cz = p.z + tx * off; pos.push(cx + tx * 0.22, y, cz + tz * 0.22, cx - tx * 0.05 - tz * 0.1, y, cz - tz * 0.05 + tx * 0.1, cx - tx * 0.05 + tz * 0.1, y, cz - tz * 0.05 - tx * 0.1); for (let v = 0; v < 3; v++) col.push(w.r, w.g, w.b); pos.push(cx - tx * 0.05 - tz * 0.035, y, cz - tz * 0.05 + tx * 0.035, cx - tx * 0.25 - tz * 0.035, y, cz - tz * 0.25 + tx * 0.035, cx - tx * 0.05 + tz * 0.035, y, cz - tz * 0.05 - tx * 0.035, cx - tx * 0.05 + tz * 0.035, y, cz - tz * 0.05 - tx * 0.035, cx - tx * 0.25 - tz * 0.035, y, cz - tz * 0.25 + tx * 0.035, cx - tx * 0.25 + tz * 0.035, y, cz - tz * 0.25 - tx * 0.035); for (let v = 0; v < 6; v++) col.push(w.r, w.g, w.b); } } }
   const m = new THREE.Mesh(geoAus(pos, col), M.strasse); m.receiveShadow = true; return m;
 }
 function knotenMesh(n) {
@@ -529,12 +542,13 @@ function knotenMesh(n) {
 function knotenNeuZeichnen(n) { if (n.mesh) { szene.remove(n.mesh); n.mesh.geometry.dispose(); } n.mesh = knotenMesh(n); szene.add(n.mesh); }
 function neuerKnoten(p, id) { const n = { id: id || nId++, x: p.x, z: p.z, kanten: new Set(), mesh: null, drin: new Set(), naht: [], ampel: false, manuell: false, gruppe: new Map() }; nId = Math.max(nId, n.id + 1); knoten.set(n.id, n); return n; }
 function knotenWeg(n) { if (n.mesh) { szene.remove(n.mesh); n.mesh.geometry.dispose(); } knoten.delete(n.id); }
-function neueKante(aId, bId, c, typ, id) {
+function neueKante(aId, bId, c, typ, id, opt) {
   const a = knoten.get(aId), b = knoten.get(bId), { pts, len } = abtasten(a, c, b);
-  const k = { id: id || kId++, a: aId, b: bId, c: { x: c.x, z: c.z }, typ, pts, len, h: huelle(pts, TYP[typ].halb), stau: 0 }; kId = Math.max(kId, k.id + 1);
+  const k = Object.assign({ id: id || kId++, a: aId, b: bId, c: { x: c.x, z: c.z }, typ, pts, len, h: huelle(pts, TYP[typ].halb), stau: 0 }, opt || {}); kId = Math.max(kId, k.id + 1);
   k.mesh = kantenMesh(k); szene.add(k.mesh); kanten.set(k.id, k); a.kanten.add(k.id); b.kanten.add(k.id);
   knotenNeuZeichnen(a); knotenNeuZeichnen(b); return k;
 }
+function kanteNeuZeichnen(k) { szene.remove(k.mesh); k.mesh.geometry.dispose(); k.mesh = kantenMesh(k); szene.add(k.mesh); }
 function kanteWeg(k) {
   szene.remove(k.mesh); k.mesh.geometry.dispose(); kanten.delete(k.id);
   for (const nid of [k.a, k.b]) { const n = knoten.get(nid); if (!n) continue; n.kanten.delete(k.id); if (!n.kanten.size) knotenWeg(n); else knotenNeuZeichnen(n); }
@@ -543,7 +557,7 @@ function kanteTeilen(k, t) {
   const a = knoten.get(k.a), b = knoten.get(k.b), m = bez(a, k.c, b, t), n = neuerKnoten(m);
   const c1 = lerp(a, k.c, t), c2 = lerp(k.c, b, t), aId = k.a, bId = k.b, typ = k.typ, ax = { x: a.x, z: a.z }, bx = { x: b.x, z: b.z };
   kanteWeg(k); if (!knoten.has(aId)) neuerKnoten(ax, aId); if (!knoten.has(bId)) neuerKnoten(bx, bId);
-  const aus = k.aussen; const e1 = neueKante(aId, n.id, c1, typ), e2 = neueKante(n.id, bId, c2, typ); if (aus) e1.aussen = e2.aussen = true; return n;
+  const opt = { aussen: k.aussen, einbahn: k.einbahn, ring: k.ring, kreisel: k.kreisel }, e1 = neueKante(aId, n.id, c1, typ, null, opt), e2 = neueKante(n.id, bId, c2, typ, null, opt); return n;
 }
 const fangRadius = () => Math.min(3, Math.max(1.1, kameraAbstand() / 32));
 function naechsterKnoten(p, r) { let best = null, bd = r; for (const n of knoten.values()) { const d = abst(n, p); if (d < bd) { bd = d; best = n; } } return best; }
@@ -551,12 +565,12 @@ function naechsteKante(p, r, filter) { let best = null; for (const k of kanten.v
 function fangen(p) {
   const r = fangRadius();
   const n = naechsterKnoten(p, r); if (n) return { art: "knoten", id: n.id, x: n.x, z: n.z };
-  const e = naechsteKante(p, r * 0.8); if (e) return { art: "kante", id: e.k.id, x: e.x, z: e.z };
+  const e = naechsteKante(p, r * 0.8, (k) => !k.ebene); if (e) return { art: "kante", id: e.k.id, x: e.x, z: e.z };
   return { art: "frei", x: p.x, z: p.z };
 }
 function knotenFuer(p) {
   const n = naechsterKnoten(p, 0.6); if (n) return n;
-  const e = naechsteKante(p, 0.6);
+  const e = naechsteKante(p, 0.6, (k) => !k.ebene);
   if (e) { const a = knoten.get(e.k.a), b = knoten.get(e.k.b); if (abst(a, e) < 1.0) return a; if (abst(b, e) < 1.0) return b; return kanteTeilen(e.k, e.t); }
   return neuerKnoten(p);
 }
@@ -568,7 +582,7 @@ function schnitt(p1, p2, p3, p4) {
 function kreuzungen(pts, ausserNah) {
   const h = huelle(pts), liste = [];
   for (const k of kanten.values()) {
-    if (k.h.x1 < h.x0 || k.h.x0 > h.x1 || k.h.z1 < h.z0 || k.h.z0 > h.z1) continue;
+    if (k.ebene || k.h.x1 < h.x0 || k.h.x0 > h.x1 || k.h.z1 < h.z0 || k.h.z0 > h.z1) continue;
     for (let i = 0; i < pts.length - 1; i++) for (let j = 0; j < k.pts.length - 1; j++) {
       const s = schnitt(pts[i], pts[i + 1], k.pts[j], k.pts[j + 1]);
       if (s && !ausserNah.some((q) => abst(q, s) < 1.0)) liste.push({ t: pts[i].t + (pts[i + 1].t - pts[i].t) * s.ua, x: s.x, z: s.z });
@@ -578,21 +592,25 @@ function kreuzungen(pts, ausserNah) {
   return liste.filter((q, i) => !liste.slice(0, i).some((o) => abst(o, q) < 1.5));
 }
 function typFrei(t) { return MEILEN.slice(0, meilenstein + 1).some((m) => m.frei.includes(t)) || t === "fuss" || t === "klein"; }
-function planen(A, C, Bp, typ) {
-  const T = TYP[typ], { pts, len } = abtasten(A, C, Bp), plan = { A, C, B: Bp, typ, pts, laenge: len, kosten: Math.round(len * T.preis), kreuz: [], ok: true, grund: "" };
+function planen(A, C, Bp, typ, ebene) {
+  ebene = ebene || 0;
+  const T = TYP[typ], { pts, len } = abtasten(A, C, Bp), plan = { A, C, B: Bp, typ, pts, laenge: len, kosten: Math.round(len * T.preis * (ebene > 0 ? 3 : ebene < 0 ? 4 : 1)), kreuz: [], ok: true, grund: "", ebene };
+  const kk = { ebene, len }, ey = (q) => ebeneY(kk, q.s);
   const nein = (g) => { plan.ok = false; plan.grund = plan.grund || g; };
   if (!typFrei(typ)) { const m = MEILEN.find((x) => x.frei.includes(typ)); nein("🔒 Erst ab " + m.name + " (" + zahl(m.ab) + " Einwohner)"); }
   if (len < 1.5) nein("Zu kurz");
   if (len > 90) nein("Zu lang – setz einen Zwischenpunkt");
-  for (const q of pts) { if (!aufLand(q.x, q.z, 3.5)) { nein("Zu nah am Wasser"); break; } if (!imBesitz(q.x, q.z)) { nein("Außerhalb deiner Gebiete – kauf erst Land"); break; } }
+  if (ebene && len < 7) nein(ebene > 0 ? "Brücken müssen mindestens 7 Felder lang sein" : "Tunnel müssen mindestens 7 Felder lang sein");
+  for (const q of pts) { if (!aufLand(q.x, q.z, ebene && Math.abs(ey(q)) > 0.3 ? -99 : ebene ? 1.5 : 3.5)) { nein(ebene ? "Die Enden müssen auf festem Land liegen" : "Zu nah am Wasser – bau eine 🌉 Brücke"); break; } if (!imBesitz(q.x, q.z)) { nein("Außerhalb deiner Gebiete – kauf erst Land"); break; } }
   for (let i = 1; i < pts.length - 1 && plan.ok; i++) { const a = pts[i - 1], b = pts[i + 1]; if (a.tx * b.tx + a.tz * b.tz < 0.55 && abst(a, b) < 1.2) nein("Kurve zu eng"); }
   if (plan.ok) {
-    plan.kreuz = kreuzungen(pts, [A, Bp]);
+    plan.kreuz = ebene ? [] : kreuzungen(pts, [A, Bp]);
     const rx = 1.2 + (T.halb + 1.05) * 1.6, frei = (q) => ![A, Bp].concat(plan.kreuz).some((e) => abst(e, q) < rx);
-    for (const q of pts) if (frei(q) && strassenFrei(q) < T.halb - 0.15) { nein("Zu nah an einer anderen Straße"); break; }
+    for (const q of pts) if ((!ebene || Math.abs(ey(q)) < 0.3) && frei(q) && strassenFrei(q, null, true) < T.halb - 0.15) { nein("Zu nah an einer anderen Straße"); break; }
   }
   if (plan.ok && A.art === "knoten" && Bp.art === "knoten" && A.id === Bp.id) nein("Start und Ende sind gleich");
-  if (plan.ok) { let baum = 0; baeumeIn(plan.pts.reduce((m, q) => Math.min(m, q.x), 1e9) - 2, plan.pts.reduce((m, q) => Math.min(m, q.z), 1e9) - 2, plan.pts.reduce((m, q) => Math.max(m, q.x), -1e9) + 2, plan.pts.reduce((m, q) => Math.max(m, q.z), -1e9) + 2, (b) => { if (!b.weg && abstandZuLinie(b, plan.pts) < T.halb + 0.3) baum++; }); plan.baeume = baum; plan.kosten += baum * 5; }
+  if (plan.ok && ebene < 0) plan.baeume = 0;
+  else if (plan.ok) { let baum = 0; baeumeIn(plan.pts.reduce((m, q) => Math.min(m, q.x), 1e9) - 2, plan.pts.reduce((m, q) => Math.min(m, q.z), 1e9) - 2, plan.pts.reduce((m, q) => Math.max(m, q.x), -1e9) + 2, plan.pts.reduce((m, q) => Math.max(m, q.z), -1e9) + 2, (b) => { if (!b.weg && abstandZuLinie(b, plan.pts) < T.halb + 0.3) baum++; }); plan.baeume = baum; plan.kosten += baum * 5; }
   if (plan.ok && plan.kosten > geld) nein("Nicht genug Geld");
   return plan;
 }
@@ -600,20 +618,20 @@ function bauen(plan) {
   const typ = plan.typ, n0 = knotenFuer(plan.A), n2 = knotenFuer(plan.B), neu = [];
   if (n0 === n2) return [];
   const { pts } = abtasten(n0, plan.C, n2), C = plan.C;
-  const kr = kreuzungen(pts, [n0, n2]).map((q) => ({ t: q.t, n: knotenFuer(q) })).filter((q) => q.n !== n0 && q.n !== n2);
+  const kr = plan.ebene ? [] : kreuzungen(pts, [n0, n2]).map((q) => ({ t: q.t, n: knotenFuer(q) })).filter((q) => q.n !== n0 && q.n !== n2);
   const ts = [0].concat(kr.map((q) => q.t), [1]), ns = [n0].concat(kr.map((q) => q.n), [n2]);
   for (let j = 0; j < ns.length - 1; j++) {
     const ta = ts[j], tb = ts[j + 1];
     const c = { x: (1 - ta) * (1 - tb) * n0.x + ((1 - ta) * tb + ta * (1 - tb)) * C.x + ta * tb * n2.x, z: (1 - ta) * (1 - tb) * n0.z + ((1 - ta) * tb + ta * (1 - tb)) * C.z + ta * tb * n2.z };
     if (ns[j] === ns[j + 1] || abst(ns[j], ns[j + 1]) < 0.6) continue;
     if ([...ns[j].kanten].some((id) => { const k = kanten.get(id); return (k.a === ns[j].id && k.b === ns[j + 1].id) || (k.b === ns[j].id && k.a === ns[j + 1].id); })) continue;
-    neu.push(neueKante(ns[j].id, ns[j + 1].id, c, typ));
+    neu.push(neueKante(ns[j].id, ns[j + 1].id, c, typ, null, plan.ebene ? { ebene: plan.ebene } : null));
   }
   for (const n of [n0, n2]) if (knoten.has(n.id) && !n.kanten.size) knotenWeg(n);
   for (const k of neu) {
-    const T = TYP[k.typ];
-    for (const z of zellenIn(k.h)) if (abstandZuLinie(z, k.pts) < T.halb + 0.45) zelleWeg(z);
-    baeumeFaellen(k.h, (x, z) => abstandZuLinie({ x, z }, k.pts) < T.halb + 0.3);
+    const T = TYP[k.typ], unterirdisch = (x, z) => { if (k.ebene >= 0) return false; const e = abstandZuLinie({ x, z }, k.pts, true); return ebeneY(k, e.s) < -0.3; };
+    for (const z of zellenIn(k.h)) if (abstandZuLinie(z, k.pts) < T.halb + 0.45 && !unterirdisch(z.x, z.z)) zelleWeg(z);
+    baeumeFaellen(k.h, (x, z) => abstandZuLinie({ x, z }, k.pts) < T.halb + 0.3 && !unterirdisch(x, z));
   }
   for (const k of neu) zellenFuer(k);
   if (neu.length) { geld -= plan.kosten; zeigeWerte(); }
@@ -636,6 +654,7 @@ function zellenIn(h) { const out = []; for (let i = Math.floor(h.x0 - 1); i <= M
 function neueZelle(d) { const z = Object.assign({ id: d.id || zId++, zone: 0, haus: null }, d); zId = Math.max(zId, z.id + 1); z.key = z.g + "|" + z.seite + "|" + z.i + "|" + z.r; zellen.set(z.id, z); zellIndex.set(z.key, z.id); rasterRein(z); return z; }
 function zelleWeg(z) { if (!zellen.has(z.id)) return; if (z.haus) hausWeg(haeuser.get(z.haus)); zellen.delete(z.id); zellIndex.delete(z.key); rasterRaus(z); zellenNeu = true; }
 function zellenFuer(k) {
+  if (k.ebene || k.ring) return;
   const T = TYP[k.typ]; if (!T.zellen) return;
   const n = Math.floor((k.len - 1.9) / ZELLE); if (n < 1) return;
   const rand = (k.len - n * ZELLE) / 2, g = gId++;
@@ -910,7 +929,7 @@ function wertZeichnen() {
 function zufahrt(h) {
   if (h.zug && h.zugV === netzVersion) return h.zug;
   const f = { x: h.x + Math.sin(h.rot) * (h.d * ZELLE / 2 + 0.3), z: h.z + Math.cos(h.rot) * (h.d * ZELLE / 2 + 0.3) };
-  const e = naechsteKante(f, 3.5, (k) => TYP[k.typ].autos);
+  const e = naechsteKante(f, 3.5, (k) => TYP[k.typ].autos && !k.ring && !k.ebene);
   h.zug = e ? { k: e.k.id, S: e.s } : null; h.zugV = netzVersion; return h.zug;
 }
 const federn = (t) => { const c = 1.4; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
@@ -1331,7 +1350,7 @@ function linienZeichnen() {
 let busModus = "halt", linieBau = [], linieWahl = null;
 function busTippen(p) {
   if (busModus === "halt") {
-    const e = naechsteKante(p, 2.2, (k) => TYP[k.typ].autos); if (!e) { tipp("Tipp direkt auf eine Straße mit Autoverkehr.", 2200); return; }
+    const e = naechsteKante(p, 2.2, (k) => TYP[k.typ].autos && !k.ring && !k.ebene); if (!e) { tipp("Tipp direkt auf eine Straße mit Autoverkehr.", 2200); return; }
     if (halteBei(punktBei(e.k, e.s), 2.0)) { tipp("Hier ist schon eine Haltestelle.", 2000); return; }
     if (e.s < 0.8 || e.s > e.k.len - 0.8) { tipp("Nicht direkt auf die Kreuzung – etwas weiter in die Straße.", 2200); return; }
     if (geld < HALT_PREIS) { tipp("Zu wenig Geld.", 2000); return; }
@@ -1559,7 +1578,7 @@ function abbiegen(k, dir, naechster) {
 /* Wegsuche (A*) im Straßennetz */
 function wegSuchen(start, ziel) {
   const ks = kanten.get(start.k), kz = kanten.get(ziel.k); if (!ks || !kz) return null;
-  if (ks === kz) { const dir = ziel.S >= start.S ? 1 : -1; return { route: [{ k: ks.id, dir }], s0: dir > 0 ? start.S : ks.len - start.S, s1: dir > 0 ? ziel.S : ks.len - ziel.S }; }
+  if (ks === kz) { const dir = ziel.S >= start.S ? 1 : -1; if (!ks.einbahn || ks.einbahn === dir) return { route: [{ k: ks.id, dir }], s0: dir > 0 ? start.S : ks.len - start.S, s1: dir > 0 ? ziel.S : ks.len - ziel.S }; }
   const kosten = (k) => k.len / TYP[k.typ].tempo * (1 + k.stau * 2.5);
   const g = new Map(), von = new Map(), offen = [];
   const push = (id, wert, f) => { offen.push({ id, wert, f }); let i = offen.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (offen[p].f <= offen[i].f) break; [offen[p], offen[i]] = [offen[i], offen[p]]; i = p; } };
@@ -1567,15 +1586,16 @@ function wegSuchen(start, ziel) {
   const zx = (knoten.get(kz.a).x + knoten.get(kz.b).x) / 2, zz = (knoten.get(kz.a).z + knoten.get(kz.b).z) / 2, h = (n) => Math.hypot(n.x - zx, n.z - zz) / 3.1;
   const t0 = TYP[ks.typ].tempo;
   const startWert = (nid, w, dir) => { if (w < (g.get(nid) ?? 1e9)) { g.set(nid, w); von.set(nid, { k: ks.id, dir, vor: null }); push(nid, w, w + h(knoten.get(nid))); } };
-  startWert(ks.b, (ks.len - start.S) / t0, 1); startWert(ks.a, start.S / t0, -1);
+  if (ks.einbahn !== -1) startWert(ks.b, (ks.len - start.S) / t0, 1); if (ks.einbahn !== 1) startWert(ks.a, start.S / t0, -1);
   let bestZiel = null, bestWert = 1e9, schritte = 0;
   while (offen.length && schritte++ < 6000) {
     const { id, wert } = pop(); if (wert > (g.get(id) ?? 1e9)) continue; if (wert >= bestWert) break;
     const n = knoten.get(id);
-    if (id === kz.a || id === kz.b) { const dir = id === kz.a ? 1 : -1, w = wert + (dir > 0 ? ziel.S : kz.len - ziel.S) / TYP[kz.typ].tempo; if (w < bestWert) { bestWert = w; bestZiel = { nid: id, dir }; } }
+    if ((id === kz.a && kz.einbahn !== -1) || (id === kz.b && kz.einbahn !== 1)) { const dir = id === kz.a ? 1 : -1, w = wert + (dir > 0 ? ziel.S : kz.len - ziel.S) / TYP[kz.typ].tempo; if (w < bestWert) { bestWert = w; bestZiel = { nid: id, dir }; } }
     for (const kid of n.kanten) {
       const k = kanten.get(kid); if (!TYP[k.typ].autos || k === kz) continue;
       const nach = k.a === id ? k.b : k.a, dir = k.a === id ? 1 : -1, w = wert + kosten(k);
+      if (k.einbahn && k.einbahn !== dir) continue;
       if (w < (g.get(nach) ?? 1e9)) { g.set(nach, w); von.set(nach, { k: k.id, dir, vor: id }); push(nach, w, w + h(knoten.get(nach))); }
     }
   }
@@ -1671,7 +1691,7 @@ function netzVerkehrVorbereiten() {
   for (const n of knoten.values()) {
     let autoKanten = 0, haupt = false; for (const id of n.kanten) { const k = kanten.get(id); if (TYP[k.typ].autos) { autoKanten++; if (k.typ === "haupt") haupt = true; } }
     if (!n.manuell) n.ampel = autoKanten >= 4 || (autoKanten >= 3 && haupt);
-    if (autoKanten < 3) n.ampel = false;
+    if (autoKanten < 3 || [...n.kanten].some((id) => kanten.get(id).ring)) n.ampel = false;
     n.gruppe = new Map(); let ref = null;
     for (const id of n.kanten) { const k = kanten.get(id); if (!TYP[k.typ].autos) continue; const d = richtungAm(k, k.a === n.id ? 1 : -1, true); if (!ref) ref = d; n.gruppe.set(id, Math.abs(ref.x * d.x + ref.z * d.z) > 0.7 ? 0 : 1); }
   }
@@ -1685,6 +1705,16 @@ function darfEinfahren(f, k, st, nx) {
   if (n.ampel) { const z = ampelZustand(n, k.id); if (z === "rot") return false; if (z === "gelb" && !(ende(k, st.dir) - f.s < 0.7 && f.v > 1.2)) return false; if ([...n.drin].some((g) => g.von !== k.id && ampelZustand(n, g.von) !== ampelZustand(n, k.id) && g.trT < 0.6)) return false; return !wegeKreuzen(f, k, st, nx, n); }
   if (n.kanten.size <= 2) return true;
   for (const g of n.drin) if (g.von !== k.id) return false;
+  if (!k.ring && k2.ring) {
+    // Einfahren in den Kreisverkehr: Wer drin ist, hat Vorfahrt – und der Kreis darf nicht volllaufen
+    for (const g of n.naht) if (g !== f && kanten.get(g.route[g.ri].k).ring) return false;
+    let ringZahl = 0; for (const e of kanten.values()) if (e.ring && e.kreisel === k2.kreisel) ringZahl++;
+    const cap = Math.max(2, ringZahl - 3);
+    let drin = 0; for (const g of fahrzeuge) { const e = kanten.get(g.modus === "kante" ? g.route[g.ri].k : g.von); if (e && e.ring && e.kreisel === k2.kreisel) drin++; }
+    return drin < cap;
+  }
+  if (k.ring) return true;
+  if ([...n.kanten].some((id) => kanten.get(id).ring)) return true;
   if (n.vorrang && n.vorrang !== f && n.vorrang.route[n.vorrang.ri].k !== k.id) return false;
   if (k.typ !== "haupt") for (const g of n.naht) if (g !== f && kanten.get(g.route[g.ri].k).typ === "haupt" && g.v > 0.3 && g.warte < 3) return false;
   return true;
@@ -1841,7 +1871,8 @@ function fahrzeugPose(f) {
   if (f.modus === "kante") { const kk = kanten.get(f.route[f.ri].k); if (!kk) return null; const p = spurPunkt(kk, f.route[f.ri].dir, f.s, f.off); x = p.x; z = p.z; tx = p.tx; tz = p.tz;
     if (f.v > 0.05) { const q = f.offV / Math.max(f.v, 0.4); const hx = tx - tz * q, hz = tz + tx * q, l = Math.hypot(hx, hz); tx = hx / l; tz = hz / l; } }
   else { const tr = f.tr, t = tr.t, p = bez(tr.p0, tr.c, tr.p2, t), q = bez(tr.p0, tr.c, tr.p2, Math.min(1, t + 0.04)), r = bez(tr.p0, tr.c, tr.p2, Math.max(0, t - 0.04)); x = p.x; z = p.z; tx = q.x - r.x; tz = q.z - r.z; const l = Math.hypot(tx, tz) || 1; tx /= l; tz /= l; }
-  return { x, z, tx, tz };
+  let y = 0; if (f.modus === "kante") { const kk = kanten.get(f.route[f.ri].k); if (kk && kk.ebene) y = ebeneY(kk, f.route[f.ri].dir > 0 ? f.s : kk.len - f.s); }
+  return { x, z, tx, tz, y };
 }
 let letzterZeichenTakt = 0;
 function fahrzeugeZeichnen() {
@@ -1864,7 +1895,7 @@ function fahrzeugeZeichnen() {
     f.kursAlt = kurs; f.nick += (klemme(-(f.a || 0) * 0.008, -0.045, 0.035) - f.nick) * Math.min(1, dtz * 6 + 0.02);
     f.pos = pose;
     const sk = f.skala; _e.set(f.roll, kurs, f.nick, "YZX"); _q.setFromEuler(_e);
-    _m.compose(_v.set(pose.x, G + 0.02, pose.z), _q, _s.set(sk, sk, sk));
+    _m.compose(_v.set(pose.x, G + 0.02 + pose.y, pose.z), _q, _s.set(sk, sk, sk));
     { const m = fzMesh[f.typ]; if (anzahl[f.typ] < m.instanceMatrix.count) { m.setMatrixAt(anzahl[f.typ], _m); m.setColorAt(anzahl[f.typ], _farbe.setHex(f.farbe)); anzahl[f.typ]++; } }
     const r = f.rad; f.achsen.forEach((ax, i) => { for (const rz of [f.B / 2 - 0.012, -f.B / 2 + 0.012]) rad(ax, rz, r, i === 0 ? f.lenk : 0, _m); });
     // Lkw-Auflieger: knickt in Kurven ab
@@ -1874,10 +1905,10 @@ function fahrzeugeZeichnen() {
       let d = Math.atan2(Math.sin(kurs - f.anhWinkel), Math.cos(kurs - f.anhWinkel)); f.anhWinkel += Math.sin(d) * (f.v * dtz) / 0.42; d = Math.atan2(Math.sin(kurs - f.anhWinkel), Math.cos(kurs - f.anhWinkel)); if (Math.abs(d) > 1.2) f.anhWinkel = kurs - Math.sign(d) * 1.2;
       const ax = Math.cos(f.anhWinkel), az = -Math.sin(f.anhWinkel);
       _e.set(f.roll * 0.6, f.anhWinkel, f.nick * 0.5, "YZX"); _q.setFromEuler(_e);
-      _m2.compose(_v.set(hx - ax * 0.35, G + 0.02, hz - az * 0.35), _q, _s.set(sk, sk, sk));
+      _m2.compose(_v.set(hx - ax * 0.35, G + 0.02 + pose.y, hz - az * 0.35), _q, _s.set(sk, sk, sk));
       for (const t of AUFLIEGER[f.anh].teile) teil(t, f, _m2);
       for (const axx of [-0.18, -0.28]) for (const rz of [0.128, -0.128]) rad(axx, rz, 0.05, 0, _m2);
-      _e.set(f.roll, kurs, f.nick, "YZX"); _q.setFromEuler(_e); _m.compose(_v.set(pose.x, G + 0.02, pose.z), _q, _s.set(sk, sk, sk));
+      _e.set(f.roll, kurs, f.nick, "YZX"); _q.setFromEuler(_e); _m.compose(_v.set(pose.x, G + 0.02 + pose.y, pose.z), _q, _s.set(sk, sk, sk));
     }
     const L = f.lx + 0.003, Lh = -f.hintenL - 0.004, Bq = f.B * 0.33, D = FZ[f.typ];
     const licht = (lx, ly, lz, c, mat, sx) => { if (li >= fzLicht.instanceMatrix.count) return; _l.compose(_v.set(lx, ly, lz), _q0, _s.set(sx || 0.014, 0.024, 0.05)); fzLicht.setMatrixAt(li, _l.premultiply(mat)); fzLicht.setColorAt(li, c); li++; };
@@ -1954,7 +1985,7 @@ function fussgaengerTakt(dt, einwohner) {
     if (p.s > k.len) { p.s -= k.len; const nid = p.dir > 0 ? k.b : k.a, n = knoten.get(nid), w = [...n.kanten].filter((id) => id !== k.id && !kanten.get(id).aussen), nk = kanten.get(w.length ? wahl(rv, w) : k.id); p.k = nk.id; p.dir = nk.a === nid ? 1 : -1; k = nk; }
     const off = k.typ === "fuss" ? 0.17 * p.seite : (TYP[k.typ].halb - 0.14) * p.seite, q = spurPunkt(k, p.dir, Math.min(p.s, k.len), off);
     const geht = p.pause <= 0 && tempo > 0, hub = geht ? Math.abs(Math.sin(p.ph)) * 0.014 : 0, wipp = geht ? Math.sin(p.ph) * 0.09 : 0;
-    _o.position.set(q.x, G + 0.012 + hub, q.z); _o.rotation.set(wipp, Math.atan2(-q.tz, q.tx) - Math.PI / 2, 0); _o.rotation.order = "YXZ"; _o.scale.setScalar(p.g); _o.updateMatrix();
+    _o.position.set(q.x, G + 0.012 + hub + ebeneY(k, p.dir > 0 ? Math.min(p.s, k.len) : k.len - Math.min(p.s, k.len)), q.z); _o.rotation.set(wipp, Math.atan2(-q.tz, q.tx) - Math.PI / 2, 0); _o.rotation.order = "YXZ"; _o.scale.setScalar(p.g); _o.updateMatrix();
     menschen.setMatrixAt(i, _o.matrix); menschen.setColorAt(i, _farbe.setHex(p.c));
     koepfe.setMatrixAt(i, _o.matrix); koepfe.setColorAt(i, _farbe.setHex(p.haut)); _o.rotation.order = "XYZ";
   });
@@ -1972,25 +2003,33 @@ function laternenBauen() {
   for (const k of kanten.values()) {
     const T = TYP[k.typ];
     for (let s = 1.6; s < k.len - 1.0 && i < 5000; s += k.typ === "fuss" ? 4 : 5) {
-      const p = punktBei(k, s), o = T.halb - 0.1, x = p.x - p.tz * o, z = p.z + p.tx * o, h = k.typ === "fuss" ? 0.55 : 0.82;
-      _o.position.set(x, G + 0.012, z); _o.rotation.set(0, 0, 0); _o.scale.set(0.05, h, 0.05); _o.updateMatrix(); masten.setMatrixAt(i, _o.matrix); masten.setColorAt(i, _farbe.setHex(0x50555e)); i++;
-      pos.push(x, G + h + 0.06, z);
+      const p = punktBei(k, s), o = T.halb - 0.1, x = p.x - p.tz * o, z = p.z + p.tx * o, h = k.typ === "fuss" ? 0.55 : 0.82, ey = ebeneY(k, s);
+      if (ey < -0.05) continue;
+      _o.position.set(x, G + 0.012 + ey, z); _o.rotation.set(0, 0, 0); _o.scale.set(0.05, h, 0.05); _o.updateMatrix(); masten.setMatrixAt(i, _o.matrix); masten.setColorAt(i, _farbe.setHex(0x50555e)); i++;
+      pos.push(x, G + h + 0.06 + ey, z);
     }
   }
   masten.count = i; masten.instanceMatrix.needsUpdate = true; if (masten.instanceColor) masten.instanceColor.needsUpdate = true;
   laternen.geometry.dispose(); laternen.geometry = new THREE.BufferGeometry(); laternen.geometry.setAttribute("position", new THREE.Float32BufferAttribute(pos.length ? pos : [0, -50, 0], 3));
 }
-const pfeiler = becken(G_BOX_UNTEN, new THREE.MeshStandardMaterial({ color: 0xb9b4a8, roughness: 0.9 }), 400, true);
+const pfeiler = becken(G_BOX_UNTEN, new THREE.MeshStandardMaterial({ color: 0xb9b4a8, roughness: 0.9 }), 1500, true);
+const tunnelMesh = becken(G_BOX_UNTEN, new THREE.MeshBasicMaterial({ color: 0x0b0d10 }), 200, false); let tunnelMund = [];
 function brueckenZeichnen() {
-  let i = 0;
-  for (const k of kanten.values()) for (let s = 1; s < k.len && i < 400; s += 3) { const p = punktBei(k, s); if (abstand(p.x, p.z) > 0.3) continue; _o.position.set(p.x, -2.5, p.z); _o.rotation.set(0, Math.atan2(-p.tz, p.tx), 0); _o.scale.set(0.35, 2.6, TYP[k.typ].halb * 1.6); _o.updateMatrix(); pfeiler.setMatrixAt(i++, _o.matrix); }
-  pfeiler.count = i; pfeiler.instanceMatrix.needsUpdate = true;
+  let i = 0; tunnelMund = [];
+  const box = (x, y, z, rot, sx, sy, sz) => { if (i >= 1500) return; _o.position.set(x, y, z); _o.rotation.set(0, rot, 0); _o.scale.set(sx, sy, sz); _o.updateMatrix(); pfeiler.setColorAt(i, _farbe.setHex(0xffffff)); pfeiler.setMatrixAt(i++, _o.matrix); };
+  for (const k of kanten.values()) {
+    if (k.ebene > 0) for (let s = 2.5; s < k.len - 1; s += 2.6) { const p = punktBei(k, s), ey = ebeneY(k, s); if (ey < 0.3) continue; const wasser = abstand(p.x, p.z) < 0.3, y0 = wasser ? -2.5 : G; box(p.x, y0, p.z, Math.atan2(-p.tz, p.tx), 0.28, G - 0.1 + ey - y0, TYP[k.typ].halb * 1.4); }
+    if (k.ebene < 0) for (const S of [0, 1]) { const s2 = S ? k.len - tunnelR(k) - 0.2 : tunnelR(k) + 0.2, p = punktBei(k, s2), rot = Math.atan2(-p.tz, p.tx), H = TYP[k.typ].halb + 0.1; for (const sei of [1, -1]) box(p.x - p.tz * H * sei, G, p.z + p.tx * H * sei, rot, 0.62, 0.42, 0.2); box(p.x, G + 0.32, p.z, rot, 0.62, 0.14, H * 2 + 0.2); tunnelMund.push({ x: p.x, z: p.z, rot, b: TYP[k.typ].fahr * 2 + 0.2 }); }
+  }
+  for (const k of kanten.values()) for (let s = 1; s < k.len && i < 1500; s += 3) { if (k.ebene) break; const p = punktBei(k, s); if (abstand(p.x, p.z) > 0.3) continue; _o.position.set(p.x, -2.5, p.z); _o.rotation.set(0, Math.atan2(-p.tz, p.tx), 0); _o.scale.set(0.35, 2.6, TYP[k.typ].halb * 1.6); _o.updateMatrix(); pfeiler.setColorAt(i, _farbe.setHex(0xffffff)); pfeiler.setMatrixAt(i++, _o.matrix); }
+  let ti = 0; for (const m of tunnelMund) { if (ti >= 200) break; _o.position.set(m.x, G + 0.005, m.z); _o.rotation.set(0, m.rot, 0); _o.scale.set(0.66, 0.32, m.b); _o.updateMatrix(); tunnelMesh.setMatrixAt(ti++, _o.matrix); } tunnelMesh.count = ti; tunnelMesh.instanceMatrix.needsUpdate = true;
+  pfeiler.count = i; pfeiler.instanceMatrix.needsUpdate = true; if (pfeiler.instanceColor) pfeiler.instanceColor.needsUpdate = true;
 }
 function netzGeaendert() {
   netzVersion++; brueckenZeichnen();
   fahrzeuge.forEach((f) => { if (f.route.some((st) => !kanten.has(st.k))) fahrzeugWeg(f); }); fahrzeuge = fahrzeuge.filter((f) => !f.weg);
   for (const n of knoten.values()) n.drin = new Set([...n.drin].filter((f) => !f.weg));
-  netzVerkehrVorbereiten(); laternenBauen(); alleeZeichnen(); halteNeuAnkern(); zellenNeu = true; speichernBald();
+  netzVerkehrVorbereiten(); laternenBauen(); alleeZeichnen(); kreiselZeichnen(); halteNeuAnkern(); zellenNeu = true; speichernBald();
 }
 
 /* ================================================================
@@ -2004,7 +2043,7 @@ function zustand() {
     v: 3, zonenV: 2, karte, geld: Math.round(geld), besitz: [...besitz], gekauft, steuern, meilenstein, tage: Math.round(tage * 100) / 100, ids: { n: nId, k: kId, z: zId, g: gId, h: hId, d: dId, hs: haltId, l: linieId },
     meta: { einwohner: k.e, gespeichert: Date.now() },
     knoten: [...knoten.values()].map((n) => [n.id, r(n.x), r(n.z), n.manuell ? (n.ampel ? 1 : 0) : -1, n.aussen ? 1 : 0]),
-    kanten: [...kanten.values()].map((k) => [k.id, k.a, k.b, r(k.c.x), r(k.c.z), k.typ, k.aussen ? 1 : 0]),
+    kanten: [...kanten.values()].map((k) => [k.id, k.a, k.b, r(k.c.x), r(k.c.z), k.typ, k.aussen ? 1 : 0, k.einbahn || 0, k.ebene || 0, k.ring ? 1 : 0]), kreisel,
     zellen: [...zellen.values()].map((z) => [z.id, r(z.x), r(z.z), r(z.rot), z.zone, z.g, z.seite, z.i, z.r]),
     haeuser: [...haeuser.values()].map((h) => [h.id, h.zone, h.stufe, h.w, h.d, h.variante, h.zellen]),
     dienste: [...dienste.values()].map((d) => [d.id, d.typ, r(d.x), r(d.z), r(d.rot)]), dienstV: 1,
@@ -2017,7 +2056,7 @@ function speichernBald() { if (!spielLaeuft) return; clearTimeout(speicherTimer)
 function allesLeeren() {
   for (const k of kanten.values()) { szene.remove(k.mesh); k.mesh.geometry.dispose(); }
   for (const n of knoten.values()) if (n.mesh) { szene.remove(n.mesh); n.mesh.geometry.dispose(); }
-  aussenKnoten = null; hochListe.length = 0; dienste.clear(); warteListe = []; halte.clear(); linien.clear(); linieBau = []; linieWahl = null; dreckMesh.count = 0; kanten.clear(); knoten.clear(); zellen.clear(); zellIndex.clear(); raster.clear(); haeuser.clear(); fahrzeuge = []; leuteListe = [];
+  aussenKnoten = null; kreisel.length = 0; hochListe.length = 0; dienste.clear(); warteListe = []; halte.clear(); linien.clear(); linieBau = []; linieWahl = null; dreckMesh.count = 0; kanten.clear(); knoten.clear(); zellen.clear(); zellIndex.clear(); raster.clear(); haeuser.clear(); fahrzeuge = []; leuteListe = [];
   for (const b of baeume) if (b.weg) { b.weg = false; baumSetzen(b); }
 }
 function zustandRein(d) {
@@ -2030,7 +2069,9 @@ function zustandRein(d) {
     d.zellen = d.zellen.map((c) => { const n = c.slice(); n[4] = zz.get(c[0]) || um[c[4]] || 0; return n; });
   }
   d.knoten.forEach(([id, x, z, am, au]) => { const n = neuerKnoten({ x, z }, id); if (am != null && am >= 0) { n.manuell = true; n.ampel = am === 1; } if (au) { n.aussen = true; aussenKnoten = id; } });
-  d.kanten.forEach(([id, a, b, cx, cz, typ, au]) => { if (knoten.has(a) && knoten.has(b)) { const k = neueKante(a, b, { x: cx, z: cz }, TYP[typ] ? typ : "klein", id); if (au) k.aussen = true; } });
+  d.kanten.forEach(([id, a, b, cx, cz, typ, au, eb, ebe, ri]) => { if (knoten.has(a) && knoten.has(b)) neueKante(a, b, { x: cx, z: cz }, TYP[typ] ? typ : "klein", id, { aussen: !!au, einbahn: eb || 0, ebene: ebe || 0, ring: !!ri }); });
+  kreisel.length = 0; (d.kreisel || []).forEach((q) => kreisel.push(q));
+  for (const k of kanten.values()) if (k.ring) { let bi = 0, bd = 1e9; kreisel.forEach((q, i) => { const e = Math.hypot(k.c.x - q.x, k.c.z - q.z); if (e < bd) { bd = e; bi = i; } }); k.kreisel = bi; }
   for (const n of [...knoten.values()]) if (!n.kanten.size) knotenWeg(n);
   d.zellen.forEach(([id, x, z, rot, zone, g, seite, i, r]) => neueZelle({ id, x, z, rot, zone, g, seite, i, r }));
   d.haeuser.forEach(([id, zone, stufe, w, dd, variante, ids]) => { if (ids.every((z) => zellen.has(z) && !zellen.get(z).haus)) neuesHaus({ id, zone, stufe, w, d: dd, variante, zellen: ids }, true); });
@@ -2095,7 +2136,9 @@ let infoTimer = 0;
 function infoZeigen(html, ms) { const el = $("info"); el.innerHTML = html; el.hidden = false; clearTimeout(infoTimer); infoTimer = setTimeout(() => { el.hidden = true; }, ms || 5000); }
 
 let strTyp = lade("inselstadt-strtyp", "klein"), strModus = lade("inselstadt-strmodus", "gerade"), zoneWahl = 1, pinsel = "klein";
-if (!TYP[strTyp]) strTyp = "klein"; if (!["gerade", "kurve", "ampel"].includes(strModus)) strModus = "gerade";
+if (!TYP[strTyp]) strTyp = "klein"; if (!["gerade", "kurve", "ampel", "bruecke", "tunnel", "einbahn", "kreisel"].includes(strModus)) strModus = "gerade";
+const zweiPunkte = () => ["gerade", "bruecke", "tunnel"].includes(strModus), tippModus = () => ["ampel", "einbahn", "kreisel"].includes(strModus);
+const ebeneModus = () => strModus === "bruecke" ? 1 : strModus === "tunnel" ? -1 : 0;
 const ZONEN_TEXT = {
   1: "Einfamilienhäuser und Villen – wird bei hohem Bodenwert immer schöner (5 Stufen).",
   2: "Mehrfamilienhäuser bis Wolkenkratzer – viele Einwohner auf wenig Platz.",
@@ -2108,7 +2151,7 @@ const ZONEN_TEXT = {
 };
 const TIPPS = {
   ansehen: "👆 Ein Finger: verschieben · ✌️ Zwei Finger: drehen & zoomen · Haus antippen: Infos",
-  strasse: () => strModus === "ampel" ? "🚦 Tipp auf eine Kreuzung, um die Ampel ein- oder auszuschalten." : strModus === "gerade" ? "🛣️ Tipp auf den Anfang, dann aufs Ende. Dann ✓ zum Bauen." : "〰️ Tipp auf den Anfang, dann den Kurvenpunkt, dann das Ende. Dann ✓.",
+  strasse: () => strModus === "ampel" ? "🚦 Tipp auf eine Kreuzung, um die Ampel ein- oder auszuschalten." : strModus === "einbahn" ? "➡️ Tipp auf eine Straße: Einbahnstraße in eine Richtung, nochmal tippen dreht sie um, beim dritten Mal wieder normal." : strModus === "kreisel" ? "⭕ Tipp auf eine Kreuzung mit 3 oder mehr Straßen, um einen Kreisverkehr zu bauen." : strModus === "bruecke" ? "🌉 Brücke: Anfang und Ende antippen. Sie führt über Wasser und über andere Straßen." : strModus === "tunnel" ? "🚇 Tunnel: Anfang und Ende antippen. Er führt unter allem hindurch." : strModus === "gerade" ? "🛣️ Tipp auf den Anfang, dann aufs Ende. Dann ✓ zum Bauen." : "〰️ Tipp auf den Anfang, dann den Kurvenpunkt, dann das Ende. Dann ✓.",
   dienst: "🏛️ Wähl ein Gebäude und tipp neben eine Straße. Dann ✓ zum Bauen.",
   park: "🌳 Wähl einen Park und tipp neben eine Straße. Dann ✓ zum Bauen.",
   verkehr: () => busModus === "halt" ? "🚏 Tipp auf eine Straße, um eine Haltestelle zu bauen (" + HALT_PREIS + " €)." : busModus === "linie" ? "🚌 Tipp die Haltestellen der Reihe nach an. Dann ✓." : "🧹 Tipp auf eine Haltestelle, um sie zu entfernen.",
@@ -2126,7 +2169,7 @@ function unterleiste() {
     kopf = '<span class="ftitel">👆 Ansehen</span><small style="color:var(--leise)">Haus oder Auto antippen für Infos</small>';
     karten = kk("id", "fahrenKnopf", "🚗", "Selbst fahren", "", false) + kk("id", "budgetKarte", "💶", "Budget &amp; Steuern", "", false) + kk("id", "ansichtKarte", "🔍", "Info-Ansichten", "", false);
   } else if (werkzeug === "strasse") {
-    kopf = '<span class="ftitel">🛣️ Straßen</span>' + chip("data-modus", "gerade", "📏 Gerade", strModus === "gerade") + chip("data-modus", "kurve", "〰️ Kurve", strModus === "kurve") + chip("data-modus", "ampel", "🚦 Ampeln", strModus === "ampel") + '<span class="trenn"></span>' + rueckChip;
+    kopf = '<span class="ftitel">🛣️ Straßen</span>' + chip("data-modus", "gerade", "📏 Gerade", strModus === "gerade") + chip("data-modus", "kurve", "〰️ Kurve", strModus === "kurve") + chip("data-modus", "bruecke", "🌉 Brücke", strModus === "bruecke") + chip("data-modus", "tunnel", "🚇 Tunnel", strModus === "tunnel") + chip("data-modus", "einbahn", "➡️ Einbahn", strModus === "einbahn") + chip("data-modus", "kreisel", "⭕ Kreisverkehr", strModus === "kreisel") + chip("data-modus", "ampel", "🚦 Ampeln", strModus === "ampel") + '<span class="trenn"></span>' + rueckChip;
     karten = Object.keys(TYP).map((k) => { const frei = typFrei(k), m = MEILEN.find((x) => x.frei.includes(k)); return kk("data-typ", k, TYP[k].em, TYP[k].name, frei ? TYP[k].preis + " €/Feld" : "ab " + (m ? m.name : ""), k === strTyp, !frei); }).join("");
   } else if (werkzeug === "zone") {
     kopf = '<span class="ftitel">🏘️ Zonen</span>' + chip("data-pinsel", "klein", "🖌️ Klein", pinsel === "klein") + chip("data-pinsel", "gross", "🖌️ Groß", pinsel === "gross") + chip("data-pinsel", "fuellen", "🪣 Füllen", pinsel === "fuellen") + '<span class="trenn"></span>' + rueckChip;
@@ -2240,26 +2283,26 @@ function kandidatAus(p) {
   const n = bau.punkte.length, f = fangen(p);
   if (strModus === "kurve" && n === 1) return winkelFang(bau.punkte[0], p);
   if (f.art !== "frei" || n === 0) return f;
-  if (strModus === "gerade") return winkelFang(bau.punkte[0], p);
+  if (zweiPunkte()) return winkelFang(bau.punkte[0], p);
   return f;
 }
 function planNeu() {
-  if (werkzeug !== "strasse" || strModus === "ampel") return;
+  if (werkzeug !== "strasse" || tippModus()) return;
   const P = bau.punkte.slice(); if (bau.kandidat) P.push(bau.kandidat);
-  const noetig = strModus === "gerade" ? 2 : 3;
+  const noetig = zweiPunkte() ? 2 : 3;
   marker.forEach((m, i) => { const q = P[i]; m.visible = !!q && i < noetig; if (q) { m.position.set(q.x, G + 0.06, q.z); m.material.color.setHex(strModus === "kurve" && i === 1 ? 0xffd34d : (q.art && q.art !== "frei" ? 0x7dffb0 : 0xffffff)); } });
   hilfslinie.visible = strModus === "kurve" && P.length >= 2;
   if (hilfslinie.visible) { hilfslinie.geometry.dispose(); hilfslinie.geometry = new THREE.BufferGeometry().setFromPoints(P.map((q) => new THREE.Vector3(q.x, G + 0.07, q.z))); hilfslinie.computeLineDistances(); }
   if (P.length < 2) { vorschau.visible = false; bau.plan = null; if (!P.length) frageZu(); else frage("Jetzt " + (strModus === "kurve" ? "den Kurvenpunkt" : "das Ende") + " antippen", false, null); return; }
   const A = P[0]; let C, Bp;
-  if (strModus === "gerade" || P.length === 2) { Bp = P[1]; C = lerp(A, Bp, 0.5); } else { C = { x: P[1].x, z: P[1].z }; Bp = P[2]; }
-  const plan = planen(A, C, Bp, strTyp); bau.plan = P.length >= noetig ? plan : null;
+  if (zweiPunkte() || P.length === 2) { Bp = P[1]; C = lerp(A, Bp, 0.5); } else { C = { x: P[1].x, z: P[1].z }; Bp = P[2]; }
+  const plan = planen(A, C, Bp, strTyp, ebeneModus()); bau.plan = P.length >= noetig ? plan : null;
   const pos = [], col = [], f = plan.ok ? farbe(0x7fb8ff) : farbe(0xff5a5a);
   band(pos, col, plan.pts, TYP[strTyp].halb, G + 0.04, f);
   for (const k of plan.kreuz) scheibe(pos, col, k.x, k.z, TYP[strTyp].halb * 0.7, G + 0.045, farbe(0xffffff));
   vorschau.geometry.dispose(); vorschau.geometry = geoAus(pos, col); vorschau.visible = true;
   if (!bau.plan) { frage("Jetzt das Ende antippen", false, null); return; }
-  frage(TYP[strTyp].em + " " + meter(plan.laenge) + " · " + euro(plan.kosten) + (plan.baeume ? " (" + plan.baeume + " 🌳)" : "") + (plan.ok ? "" : " – " + plan.grund), plan.ok, strasseBestaetigen);
+  frage((plan.ebene > 0 ? "🌉 " : plan.ebene < 0 ? "🚇 " : "") + TYP[strTyp].em + " " + meter(plan.laenge) + " · " + euro(plan.kosten) + (plan.baeume ? " (" + plan.baeume + " 🌳)" : "") + (plan.ok ? "" : " – " + plan.grund), plan.ok, strasseBestaetigen);
 }
 function strasseBestaetigen() {
   const plan = bau.plan; if (!plan || !plan.ok) return;
@@ -2269,11 +2312,51 @@ function strasseBestaetigen() {
   bau.punkte = endK ? [{ art: "knoten", id: endK.id, x: endK.x, z: endK.z }] : []; bau.kandidat = null; bau.plan = null;
   planNeu(); tipp("✅ Gebaut! Tipp weiter, um anzuschließen – oder ✕ zum Beenden.", 2600);
 }
+function einbahnUmschalten(p) {
+  const e = naechsteKante(p, Math.max(0.9, fangRadius() * 0.6), (k) => TYP[k.typ].autos); if (!e) { tipp("Tipp genau auf eine Straße.", 1800); return; }
+  const k = e.k; if (k.ring) { tipp("Im Kreisverkehr fährt man immer in eine Richtung.", 2200); return; } if (k.aussen) { tipp("Die Verbindung nach außen bleibt in beide Richtungen offen.", 2200); return; }
+  merkeRueck(); k.einbahn = !k.einbahn ? 1 : k.einbahn === 1 ? -1 : 0; kanteNeuZeichnen(k);
+  for (const f of fahrzeuge) if (f.route.some((st) => st.k === k.id && k.einbahn && st.dir !== k.einbahn)) fahrzeugWeg(f);
+  fahrzeuge = fahrzeuge.filter((f) => !f.weg); netzGeaendert();
+  tipp(k.einbahn ? "➡️ Einbahnstraße – die Pfeile zeigen die Richtung. Nochmal tippen dreht sie um." : "↔️ Wieder in beide Richtungen befahrbar.", 2600);
+}
+const kreisel = [];
+const kreiselMesh = new THREE.Mesh(new THREE.BufferGeometry(), M.strasse); kreiselMesh.receiveShadow = true; szene.add(kreiselMesh);
+function kreiselZeichnen() {
+  const pos = [], col = [];
+  for (const q of kreisel) { scheibe(pos, col, q.x, q.z, q.R - 0.45, G + 0.026, farbe(0xd8d4c8)); scheibe(pos, col, q.x, q.z, q.R - 0.56, G + 0.03, SF.gruen); }
+  kreiselMesh.geometry.dispose(); kreiselMesh.geometry = pos.length ? geoAus(pos, col) : new THREE.BufferGeometry();
+  let i = alleeBaeume.count; for (const q of kreisel) { if (i >= 5990) break; _o.position.set(q.x, G + 0.03, q.z); _o.rotation.set(0, q.x, 0); _o.scale.setScalar(0.9); _o.updateMatrix(); alleeBaeume.setMatrixAt(i, _o.matrix); alleeBaeume.setColorAt(i++, _farbe.setRGB(0.9, 1, 0.9)); }
+  alleeBaeume.count = i; alleeBaeume.instanceMatrix.needsUpdate = true; if (alleeBaeume.instanceColor) alleeBaeume.instanceColor.needsUpdate = true;
+}
+function kreiselBauen(p) {
+  const n = naechsterKnoten(p, Math.max(1.5, fangRadius())); if (!n) { tipp("Tipp genau auf eine Kreuzung.", 2000); return; }
+  const ein = [...n.kanten].map((id) => kanten.get(id)).filter((k) => k && TYP[k.typ].autos);
+  if (ein.length < 3) { tipp("Kreisverkehre gehen nur an Kreuzungen mit mindestens 3 Straßen.", 2600); return; }
+  if (ein.some((k) => k.ring || k.ebene)) { tipp("Hier geht kein Kreisverkehr.", 2000); return; }
+  const R = 2.3; if (ein.some((k) => k.len < R + 1.8)) { tipp("Die Straßen an dieser Kreuzung sind zu kurz für einen Kreisverkehr.", 2600); return; }
+  for (let a = 0; a < 16; a++) { const x = n.x + (R + 1.0) * Math.cos(a / 16 * 6.283), z = n.z + (R + 1.0) * Math.sin(a / 16 * 6.283); if (!imBesitz(x, z) || !aufLand(x, z, 1.5)) { tipp("Dafür ist hier nicht genug Platz.", 2200); return; } }
+  const preis = Math.round(2 * Math.PI * R * 80 + 600); if (geld < preis) { tipp("Ein Kreisverkehr kostet " + euro(preis) + ".", 2200); return; }
+  merkeRueck(); geld -= preis;
+  const winkel = ein.map((k) => { const q = k.a === n.id ? k.pts[2] : k.pts[k.pts.length - 3]; return Math.atan2(q.z - n.z, q.x - n.x); });
+  let phi = winkel[0] + Math.PI / 4; for (let v = 0; v < 8; v++) { const nah = winkel.some((w) => [0, 1, 2, 3].some((q) => Math.abs(Math.atan2(Math.sin(phi + q * Math.PI / 2 - w), Math.cos(phi + q * Math.PI / 2 - w))) < 0.47)); if (!nah) break; phi += Math.PI / 16; }
+  const cx = n.x, cz = n.z, ring = [];
+  for (let q = 0; q < 4; q++) {
+    const a0 = phi + q * Math.PI / 2, a1 = a0 + Math.PI / 2, am = a0 + Math.PI / 4, c = R * (2 - Math.SQRT1_2);
+    ring.push(...bauen({ A: { art: "frei", x: cx + R * Math.cos(a0), z: cz + R * Math.sin(a0) }, B: { art: "frei", x: cx + R * Math.cos(a1), z: cz + R * Math.sin(a1) }, C: { x: cx + c * Math.cos(am), z: cz + c * Math.sin(am) }, typ: "klein", kosten: 0 }));
+  }
+  const mitte = knoten.get(n.id); if (mitte) for (const id of [...mitte.kanten]) { const k = kanten.get(id); if (k) kanteWeg(k); }
+  for (const k of kanten.values()) { const a = knoten.get(k.a), b = knoten.get(k.b); if (Math.hypot(a.x - cx, a.z - cz) < R * 1.15 && Math.hypot(b.x - cx, b.z - cz) < R * 1.15 && Math.hypot(k.c.x - cx, k.c.z - cz) > R * 0.6) { const cr = (a.x - cx) * (b.z - a.z) - (a.z - cz) * (b.x - a.x); k.ring = true; k.kreisel = kreisel.length; k.einbahn = cr < 0 ? 1 : -1; kanteNeuZeichnen(k); } }
+  for (const z of zellenNahe(cx, cz, R + 1.3)) zelleWeg(z);
+  kreisel.push({ x: cx, z: cz, R }); kreiselZeichnen(); netzGeaendert(); zeigeWerte();
+  tipp("⭕ Kreisverkehr gebaut! Wer im Kreis fährt, hat Vorfahrt.", 2800);
+}
 function ampelUmschalten(p) {
   const n = naechsterKnoten(p, Math.max(1.5, fangRadius()));
   if (!n) { tipp("Tipp genau auf eine Kreuzung.", 2000); return; }
   let deg = 0; for (const id of n.kanten) if (TYP[kanten.get(id).typ].autos) deg++;
   if (deg < 3) { tipp("Ampeln gibt es nur an Kreuzungen mit mindestens drei Straßen.", 2400); return; }
+  if ([...n.kanten].some((id) => kanten.get(id).ring)) { tipp("Im Kreisverkehr gibt es keine Ampeln.", 2000); return; }
   merkeRueck(); n.manuell = true; n.ampel = !n.ampel; netzVerkehrVorbereiten(); speichernBald();
   tipp(n.ampel ? "🚦 Ampel eingeschaltet." : "Ampel aus – jetzt gilt: Hauptstraße hat Vorfahrt, sonst wer zuerst kommt.", 2600);
 }
@@ -2288,8 +2371,8 @@ renderer.domElement.addEventListener("pointerdown", (e) => {
   $("menue").hidden = true; $("ansichten").hidden = true;
   const p = bodenPunkt(e); if (!p) return;
   aktion = { id: e.pointerId, sx: e.clientX, sy: e.clientY, bewegt: false, letzte: p };
-  if (werkzeug === "strasse" && strModus !== "ampel") {
-    const noetig = strModus === "gerade" ? 2 : 3;
+  if (werkzeug === "strasse" && !tippModus()) {
+    const noetig = zweiPunkte() ? 2 : 3;
     if (bau.punkte.length >= noetig) bau.punkte.pop();
     bau.kandidat = kandidatAus(p); planNeu();
   } else if (werkzeug === "zone") { merkeRueck(); if (pinsel === "fuellen") fuellen(p); else malen(p, p); }
@@ -2298,13 +2381,13 @@ renderer.domElement.addEventListener("pointerdown", (e) => {
 renderer.domElement.addEventListener("pointermove", (e) => {
   if (!spielLaeuft || spieler.an) return;
   if (!aktion) {
-    if (werkzeug === "strasse" && strModus !== "ampel" && e.pointerType === "mouse" && finger.size === 0 && bau.punkte.length && !bau.plan) { const p = bodenPunkt(e); if (p) { bau.kandidat = kandidatAus(p); planNeu(); } }
+    if (werkzeug === "strasse" && !tippModus() && e.pointerType === "mouse" && finger.size === 0 && bau.punkte.length && !bau.plan) { const p = bodenPunkt(e); if (p) { bau.kandidat = kandidatAus(p); planNeu(); } }
     return;
   }
   if (aktion.id !== e.pointerId) return;
   if (Math.hypot(e.clientX - aktion.sx, e.clientY - aktion.sy) > 8) aktion.bewegt = true;
   const p = bodenPunkt(e); if (!p) return;
-  if (werkzeug === "strasse" && strModus !== "ampel") { bau.kandidat = kandidatAus(p); planNeu(); }
+  if (werkzeug === "strasse" && !tippModus()) { bau.kandidat = kandidatAus(p); planNeu(); }
   else if (werkzeug === "zone" && pinsel !== "fuellen") malen(aktion.letzte, p);
   else if (werkzeug === "abriss") abreissenStrich(aktion.letzte, p);
   aktion.letzte = p;
@@ -2313,7 +2396,7 @@ function loslassen(e) {
   finger.delete(e.pointerId);
   if (!aktion || aktion.id !== e.pointerId) return;
   const a = aktion; aktion = null;
-  if (werkzeug === "strasse") { if (strModus === "ampel") { if (!a.bewegt) ampelUmschalten(a.letzte); } else { if (bau.kandidat) { bau.punkte.push(bau.kandidat); bau.kandidat = null; } planNeu(); } }
+  if (werkzeug === "strasse") { if (tippModus()) { if (!a.bewegt) (strModus === "ampel" ? ampelUmschalten : strModus === "einbahn" ? einbahnUmschalten : kreiselBauen)(a.letzte); } else { if (bau.kandidat) { bau.punkte.push(bau.kandidat); bau.kandidat = null; } planNeu(); } }
   else if (werkzeug === "abriss" && !a.bewegt) abreissenStrasse(a.letzte);
   else if (werkzeug === "ansehen" && !a.bewegt) { const f = fahrzeugBei(a.letzte), d = inDienst(a.letzte.x, a.letzte.z, 0.1); if (f) fahrzeugInfo(f); else if (d) dienstInfo(d); else hausInfo(a.letzte); }
   else if ((werkzeug === "dienst" || werkzeug === "park") && !a.bewegt) dienstVorschau(a.letzte);
@@ -2600,7 +2683,7 @@ function starten(n, daten, neueKarte) {
     setTimeout(() => $("laden").classList.add("weg"), 200);
   }, 60);
 }
-window.inselstadt = { halte, linien, neueHalte, busTippen, linieFertig, busRechnen, busModus: (m) => { busModus = m; }, linieBau: (ids) => { linieBau = ids; }, abstand: (x, z) => abstand(x, z), dienstPlan, dienstBauen, dienste, versorgung: () => versorgung, versorgungRechnen, dienstTakt, ansichtSetzen, sim: (sek, ziel) => { const ev = new Map(); let tk = 0; for (let t = 0; t < sek; t += 0.05) { simZeit += 0.05; jetztS += 0.05; if (++tk % 10 === 0) dienstTakt(0.5); verkehrTakt(0.05, ziel || 60); fahrzeugeZeichnen(); const F = fahrzeuge.filter((f) => f.pos && f.skala > 0.9 && !f.parkt); for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) { const A = F[i], Bf = F[j]; let hit = false; for (let q = 0; q <= 6 && !hit; q++) { const o = Bf.vorneL - (Bf.vorneL + Bf.hintenL) * q / 6, dx = Bf.pos.x + Bf.pos.tx * o - A.pos.x, dz = Bf.pos.z + Bf.pos.tz * o - A.pos.z, lx = dx * A.pos.tx + dz * A.pos.tz, lz = Math.abs(-dx * A.pos.tz + dz * A.pos.tx); if (lx < A.vorneL * 0.8 && lx > -A.hintenL * 0.8 && lz < (A.B + Bf.B) / 2 * 0.7) hit = true; } if (hit) { const key = A.id + "-" + Bf.id; if (!ev.has(key)) { const d = (f) => f.modus === "kante" ? f.route[f.ri].k + "/" + f.route[f.ri].dir + "/sp" + f.spur + "/off" + f.off.toFixed(2) + "/s" + f.s.toFixed(2) + (f.ausparken ? "/AUS" : "") + (f.frei ? "/FREI" : "") : "KN" + f.tr.knoten + "/t" + f.tr.t.toFixed(2) + "/von" + f.von + "->" + f.route[f.ri + 1].k; ev.set(key, [A.typ, d(A), "blk" + (A.block == null ? "-" : A.block.toFixed(2)) + "w" + A.warte.toFixed(1), Bf.typ, d(Bf), "blk" + (Bf.block == null ? "-" : Bf.block.toFixed(2)) + "w" + Bf.warte.toFixed(1), "t" + t.toFixed(1)]); } } } } return [fahrzeuge.length, ev.size, [...ev.values()].slice(0, 12)]; }, fahrtStarten: () => { try { return fahrtStarten(); } catch (e) { return "FEHLER " + e.message + e.stack; } }, folgen: (f) => folgenStart(f), baeume: () => baeume.length, stufenTest: (st) => { let i = 0; for (const h of haeuser.values()) { h.stufe = Math.min(ZONEN[h.zone].max, st || 1 + (i++ % 5)); h.teile = hausTeile(h); } haeuserNeu = true; }, meilenstein: (m) => { meilenstein = m; unterleiste(); }, zoneWahl: (z) => { zoneWahl = z; }, malen: (a, b) => malen(a, b), werteAuffrischen, hausTeile, bedarf: () => bedarf, wertAnsicht: (v) => { wertAnsicht = v; wertZeichnen(); }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
+window.inselstadt = { kameraAuf: (x, z, d) => { steuerung.target.set(x, 0, z); kamera.position.set(x + d * 0.55, d * 0.75, z + d * 0.65); steuerung.update(); }, dbgF: (id) => { const f = fahrzeuge.find((x) => x.id === id); if (!f || f.modus !== "kante") return null; const st = f.route[f.ri], k = kanten.get(st.k), nx = f.route[f.ri + 1]; if (!nx) return "letzte"; const n = endKnoten(k, st.dir), k2 = kanten.get(nx.k), s2 = anfang(k2, nx.dir); return { rest: +(ende(k, st.dir) - f.s).toFixed(2), frei: f.frei, darf: darfEinfahren(f, k, st, nx), k2: k2.id + (k2.ring ? "R" : ""), platz: fahrzeuge.filter((g) => g !== f && g.modus === "kante" && g.route[g.ri].k === k2.id && g.route[g.ri].dir === nx.dir && g.s < s2 + g.hintenL + f.vorneL + 0.35).map((g) => g.id + ":" + g.s.toFixed(2) + ":w" + g.warte.toFixed(0)), drin: [...n.drin].map((g) => g.id + (g.tr ? "t" + g.tr.t.toFixed(2) : "res") + " von" + g.von), naht: n.naht.map((g) => g.id), luecke: f.block }; }, kreiselBauen, einbahnUmschalten, strModus: (m) => { strModus = m; }, halte, linien, neueHalte, busTippen, linieFertig, busRechnen, busModus: (m) => { busModus = m; }, linieBau: (ids) => { linieBau = ids; }, abstand: (x, z) => abstand(x, z), dienstPlan, dienstBauen, dienste, versorgung: () => versorgung, versorgungRechnen, dienstTakt, ansichtSetzen, sim: (sek, ziel) => { const ev = new Map(); let tk = 0; for (let t = 0; t < sek; t += 0.05) { simZeit += 0.05; jetztS += 0.05; if (++tk % 10 === 0) dienstTakt(0.5); verkehrTakt(0.05, ziel || 60); fahrzeugeZeichnen(); const F = fahrzeuge.filter((f) => f.pos && f.skala > 0.9 && !f.parkt); for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) { const A = F[i], Bf = F[j]; let hit = false; for (let q = 0; q <= 6 && !hit; q++) { const o = Bf.vorneL - (Bf.vorneL + Bf.hintenL) * q / 6, dx = Bf.pos.x + Bf.pos.tx * o - A.pos.x, dz = Bf.pos.z + Bf.pos.tz * o - A.pos.z, lx = dx * A.pos.tx + dz * A.pos.tz, lz = Math.abs(-dx * A.pos.tz + dz * A.pos.tx); if (lx < A.vorneL * 0.8 && lx > -A.hintenL * 0.8 && lz < (A.B + Bf.B) / 2 * 0.7) hit = true; } if (hit) { const key = A.id + "-" + Bf.id; if (!ev.has(key)) { const d = (f) => f.modus === "kante" ? f.route[f.ri].k + "/" + f.route[f.ri].dir + "/sp" + f.spur + "/off" + f.off.toFixed(2) + "/s" + f.s.toFixed(2) + (f.ausparken ? "/AUS" : "") + (f.frei ? "/FREI" : "") : "KN" + f.tr.knoten + "/t" + f.tr.t.toFixed(2) + "/von" + f.von + "->" + f.route[f.ri + 1].k; ev.set(key, [A.typ, d(A), "blk" + (A.block == null ? "-" : A.block.toFixed(2)) + "w" + A.warte.toFixed(1), Bf.typ, d(Bf), "blk" + (Bf.block == null ? "-" : Bf.block.toFixed(2)) + "w" + Bf.warte.toFixed(1), "t" + t.toFixed(1)]); } } } } return [fahrzeuge.length, ev.size, [...ev.values()].slice(0, 12)]; }, fahrtStarten: () => { try { return fahrtStarten(); } catch (e) { return "FEHLER " + e.message + e.stack; } }, folgen: (f) => folgenStart(f), baeume: () => baeume.length, stufenTest: (st) => { let i = 0; for (const h of haeuser.values()) { h.stufe = Math.min(ZONEN[h.zone].max, st || 1 + (i++ % 5)); h.teile = hausTeile(h); } haeuserNeu = true; }, meilenstein: (m) => { meilenstein = m; unterleiste(); }, zoneWahl: (z) => { zoneWahl = z; }, malen: (a, b) => malen(a, b), werteAuffrischen, hausTeile, bedarf: () => bedarf, wertAnsicht: (v) => { wertAnsicht = v; wertZeichnen(); }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
 
 /* ================================================================
    Hauptschleife
