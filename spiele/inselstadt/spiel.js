@@ -1,40 +1,60 @@
-/* Inselstadt (FLARESSA Gaming) – Teil A
-   Straßen per Antippen (gerade oder Kurve) mit ✓, vier Straßentypen, große Insel mit 5×5 Gebieten,
-   die man mit Geld freischaltet. Zonen anmalen, Häuser wachsen. Vorbild: Cities: Skylines. */
+/* Inselstadt (FLARESSA Gaming)
+   Aufbauspiel nach dem Vorbild von Cities: Skylines – läuft im Browser und auf dem Handy.
+   Karten und Spielstände · Straßen per Antippen · Zonen · Häuser wachsen nach Bedarf ·
+   Steuern, Budget, Meilensteine · echter Verkehr mit Wegsuche, Kreuzungen, Ampeln und Stau · selbst fahren. */
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/OrbitControls.js";
 import { mergeGeometries } from "three/addons/BufferGeometryUtils.js";
 
 const $ = (id) => document.getElementById(id);
 const lade = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
-const merke = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* egal */ } };
+const merke = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
 function zufall(seed) { let a = seed >>> 0; return function () { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const farbe = (h) => new THREE.Color(h);
 const glatt = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+const klemme = (x, a, b) => Math.max(a, Math.min(b, x));
 const wahl = (r, a) => a[Math.floor(r() * a.length)];
 const euro = (n) => Math.round(n).toLocaleString("de-DE") + " €";
+const zahl = (n) => Math.round(n).toLocaleString("de-DE");
 const meter = (u) => Math.round(u * 8) + " m";
 
 /* ---------- Grundwerte ---------- */
 const G = 0.12, BODEN = G + 0.02, WASSER = -0.3, ZELLE = 1.0, REIHEN = 3;
-const KACHEL = 40, KN = 5, HALB = KACHEL * KN / 2;   // 5 × 5 Gebiete à 40 Einheiten
-const INSEL_SEED = 20261028, SPEICHER = "inselstadt-v2";
+const KACHEL = 40, KN = 5, HALB = KACHEL * KN / 2;
+const FELD = 400;   // Größe des Geländes (±200)
 const ZONEN = { 1: { name: "Wohnen", em: "🏠", farbe: 0x4fd27a }, 2: { name: "Läden", em: "🛍️", farbe: 0x4aa8ff }, 3: { name: "Industrie", em: "🏭", farbe: 0xffc23d } };
 const TYP = {
-  fuss: { name: "Fußweg", em: "🚶", halb: 0.42, fahr: 0, preis: 15, zellen: false, autos: false },
-  klein: { name: "Straße", em: "🛣️", halb: 0.8, fahr: 0.55, preis: 60, zellen: true, autos: true, spuren: 1 },
-  allee: { name: "Allee", em: "🌳", halb: 1.05, fahr: 0.55, preis: 100, zellen: true, autos: true, spuren: 1 },
-  haupt: { name: "Hauptstraße", em: "🚗", halb: 1.35, fahr: 1.05, preis: 160, zellen: true, autos: true, spuren: 2 }
+  fuss: { name: "Fußweg", em: "🚶", halb: 0.42, fahr: 0, preis: 15, zellen: false, autos: false, tempo: 0, spuren: [] },
+  klein: { name: "Straße", em: "🛣️", halb: 0.8, fahr: 0.55, preis: 60, zellen: true, autos: true, tempo: 2.1, spuren: [0.27] },
+  allee: { name: "Allee", em: "🌳", halb: 1.05, fahr: 0.55, preis: 100, zellen: true, autos: true, tempo: 2.1, spuren: [0.27] },
+  haupt: { name: "Hauptstraße", em: "🚗", halb: 1.35, fahr: 1.05, preis: 160, zellen: true, autos: true, tempo: 3.1, spuren: [0.3, 0.78] }
 };
-const START_GELD = 70000, GEBIET_PREIS = (n) => 15000 + 10000 * n;
-const STUFEN = { niedrig: { name: "Niedrig", pr: 1, schatten: 0, autos: 40 }, mittel: { name: "Mittel", pr: 1.5, schatten: 1024, autos: 80 }, hoch: { name: "Hoch", pr: 2, schatten: 2048, autos: 140 } };
+const KARTEN = {
+  insel: { name: "Große Insel", em: "🏝️", text: "Eine große Insel mitten im Meer, mit Leuchtturm und Stränden.", geld: 70000 },
+  kueste: { name: "Küste", em: "🏖️", text: "Festland mit langer Küste und einer Bucht. Viel Platz nach hinten.", geld: 70000 },
+  seen: { name: "Seenland", em: "🏞️", text: "Wiesen mit vielen Seen. Schön, aber man muss um das Wasser herum planen.", geld: 70000 },
+  wald: { name: "Waldtal", em: "🌲", text: "Dichter Wald und zwei Seen. Mehr Startgeld, aber viel zu roden.", geld: 85000 }
+};
+const MEILEN = [
+  { name: "Siedlung", ab: 0, gebiete: 1, geld: 0, frei: [] },
+  { name: "Dorf", ab: 200, gebiete: 2, geld: 5000, frei: ["allee"] },
+  { name: "Kleinstadt", ab: 600, gebiete: 3, geld: 10000, frei: ["haupt"] },
+  { name: "Stadt", ab: 1500, gebiete: 5, geld: 15000, frei: [] },
+  { name: "Großstadt", ab: 4000, gebiete: 8, geld: 25000, frei: [] },
+  { name: "Metropole", ab: 9000, gebiete: 13, geld: 40000, frei: [] },
+  { name: "Weltstadt", ab: 20000, gebiete: 24, geld: 60000, frei: [] }
+];
+const GEBIET_PREIS = (n) => 15000 + 10000 * n;
+const TAG_SEK = 4;   // ein Spieltag dauert bei ▶️ 4 Sekunden
+const WOCHENTAGE = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+const STUFEN = { niedrig: { name: "Niedrig", pr: 1, schatten: 0, autos: 45, leute: 30 }, mittel: { name: "Mittel", pr: 1.5, schatten: 1024, autos: 90, leute: 60 }, hoch: { name: "Hoch", pr: 2, schatten: 2048, autos: 150, leute: 100 } };
 let stufe = lade("inselstadt-qualitaet", null) || (Math.min(screen.width, screen.height) < 500 ? "mittel" : "hoch");
 if (!STUFEN[stufe]) stufe = "mittel";
 
 /* ---------- Renderer, Szene, Kamera ---------- */
 let renderer;
 try { renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" }); }
-catch (e) { $("fehler").style.display = "grid"; $("laden").classList.add("weg"); throw e; }
+catch (e) { $("fehler").style.display = "grid"; $("hauptmenue").hidden = true; throw e; }
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -43,11 +63,11 @@ document.body.prepend(renderer.domElement);
 
 const szene = new THREE.Scene();
 szene.fog = new THREE.Fog(0xbfe6ff, 90, 420);
-const kamera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.3, 3000);
-kamera.position.set(0.7, 1.05, 1).normalize().multiplyScalar(50 * Math.max(1, 0.8 / (innerWidth / innerHeight)));
+const kamera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.25, 3000);
+kamera.position.set(0.7, 1.05, 1).normalize().multiplyScalar(48 * Math.max(1, 0.8 / (innerWidth / innerHeight)));
 const steuerung = new OrbitControls(kamera, renderer.domElement);
 steuerung.enableDamping = true; steuerung.dampingFactor = 0.1; steuerung.screenSpacePanning = false;
-steuerung.minDistance = 7; steuerung.maxDistance = 240; steuerung.minPolarAngle = 0.2; steuerung.maxPolarAngle = 1.25;
+steuerung.minDistance = 6; steuerung.maxDistance = 240; steuerung.minPolarAngle = 0.2; steuerung.maxPolarAngle = 1.25;
 steuerung.zoomToCursor = true;
 const kameraAbstand = () => kamera.position.distanceTo(steuerung.target);
 
@@ -58,7 +78,7 @@ sonne.shadow.camera.near = 10; sonne.shadow.camera.far = 240; sonne.shadow.bias 
 szene.add(himmelLicht, sonne, sonne.target);
 const U = { uTime: { value: 0 }, uNacht: { value: 0 } };
 
-/* ---------- Himmel ---------- */
+/* Himmel */
 const himmel = new THREE.Mesh(new THREE.SphereGeometry(1000, 32, 16), new THREE.ShaderMaterial({
   side: THREE.BackSide, depthWrite: false, fog: false,
   uniforms: { uOben: { value: farbe(0x4aa3f0) }, uUnten: { value: farbe(0xbfe6ff) }, uSonne: { value: new THREE.Vector3(0, 1, 0) }, uSonnenFarbe: { value: farbe(0xfff0d0) }, uSicht: { value: 1 }, uNacht: U.uNacht },
@@ -118,22 +138,22 @@ function mitWind(mat) {
   return mat;
 }
 const M = {
-  sand: new THREE.MeshStandardMaterial({ color: 0xe8d39a, roughness: 1, flatShading: true }),
+  gelaende: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 }),
   wiese: new THREE.MeshStandardMaterial({ color: 0x86c45c, roughness: 1 }),
   strasse: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 }),
   flach: new THREE.MeshStandardMaterial({ roughness: 0.92 }),
   haus: mitFenstern(new THREE.MeshStandardMaterial({ roughness: 0.78, metalness: 0.02 })),
   dach: new THREE.MeshStandardMaterial({ roughness: 0.85, flatShading: true }),
   baum: mitWind(new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9 })),
-  auto: new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.25 }),
-  licht: new THREE.MeshBasicMaterial({ toneMapped: false }),
+  auto: new THREE.MeshStandardMaterial({ roughness: 0.42, metalness: 0.3 }),
+  leuchte: new THREE.MeshBasicMaterial({ toneMapped: false }),
   zelle: new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.42, depthWrite: false, toneMapped: false }),
   vorschau: new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.72, depthWrite: false, toneMapped: false }),
+  stau: new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false, toneMapped: false }),
   rauch: new THREE.MeshStandardMaterial({ color: 0xdfe3e8, roughness: 1, transparent: true, opacity: 0.55, depthWrite: false }),
-  sperre: new THREE.MeshBasicMaterial({ color: 0x0a0d1a, transparent: true, opacity: 0.32, depthWrite: false, toneMapped: false })
+  sperre: new THREE.MeshBasicMaterial({ color: 0x0a0d1a, transparent: true, opacity: 0.32, depthWrite: false, toneMapped: false }),
+  mensch: new THREE.MeshStandardMaterial({ roughness: 0.8 })
 };
-
-/* ---------- Geometrien ---------- */
 const G_BOX = new THREE.BoxGeometry(1, 1, 1);
 const G_BOX_UNTEN = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0);
 const G_ZYL = new THREE.CylinderGeometry(0.5, 0.5, 1, 12).translate(0, 0.5, 0);
@@ -149,48 +169,92 @@ const glanzTextur = (function () {
   const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, "rgba(255,230,180,1)"); g.addColorStop(0.25, "rgba(255,200,120,.55)"); g.addColorStop(1, "rgba(255,180,90,0)");
   x.fillStyle = g; x.fillRect(0, 0, 64, 64); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 })();
-
-/* ---------- Die große Insel ---------- */
-const ri = zufall(INSEL_SEED);
-const insel = { a0: 86, h: [[2, 6 + ri() * 3, ri() * 6.283], [3, 4 + ri() * 3, ri() * 6.283], [5, 2.5 + ri() * 2, ri() * 6.283], [7, 1.5 + ri() * 1.5, ri() * 6.283], [11, 0.8 + ri(), ri() * 6.283]] };
-const radius = (th) => { let r = insel.a0; for (const [k, a, p] of insel.h) r += a * Math.sin(k * th + p); return r; };
-const aufLand = (x, z, rand) => Math.hypot(x, z) < radius(Math.atan2(z, x)) - rand;
-function form(versatz) {
-  const s = new THREE.Shape(), n = 420;
-  for (let i = 0; i < n; i++) { const th = i / n * Math.PI * 2, r = radius(th) + versatz; const x = Math.cos(th) * r, y = -Math.sin(th) * r; if (i) s.lineTo(x, y); else s.moveTo(x, y); }
-  s.closePath(); return s;
+function becken(geo, mat, max, schatten) {
+  const m = new THREE.InstancedMesh(geo, mat, max); m.count = 0; m.frustumCulled = false; m.castShadow = !!schatten; m.receiveShadow = true;
+  m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.setColorAt(0, new THREE.Color(1, 1, 1)); szene.add(m); return m;
 }
-function platte(versatz, tiefe, schraege, oben, mat) {
-  const g = new THREE.ExtrudeGeometry(form(versatz), { depth: tiefe, bevelEnabled: true, bevelThickness: schraege[0], bevelSize: schraege[1], bevelSegments: schraege[2], curveSegments: 1 });
-  g.translate(0, 0, -(tiefe + schraege[0])); g.rotateX(-Math.PI / 2); g.translate(0, oben, 0);
-  const m = new THREE.Mesh(g, mat); m.receiveShadow = true; return m;
-}
-szene.add(platte(0, 2, [0.7, 2.4, 3], 0, M.sand), platte(-3.0, 0.05, [0.07, 0.5, 2], G, M.wiese));
+const _o = new THREE.Object3D(), _farbe = new THREE.Color();
 
-/* Wasser */
+/* ================================================================
+   Karten: Gelände, Wasser, Bäume
+   ================================================================ */
+let karte = "insel", abstand = () => 100;   // Abstand zum Wasser (positiv = Land)
+const aufLand = (x, z, rand) => abstand(x, z) > rand;
+let insel = null, leuchtturm = null;
+const boote = [], baeume = [], baumRaster = new Map(), baumMesh = {};
+
+function kartenFunktion(typ) {
+  if (typ === "insel") {
+    const ri = zufall(20261028);
+    insel = { a0: 86, h: [[2, 6 + ri() * 3, ri() * 6.283], [3, 4 + ri() * 3, ri() * 6.283], [5, 2.5 + ri() * 2, ri() * 6.283], [7, 1.5 + ri() * 1.5, ri() * 6.283], [11, 0.8 + ri(), ri() * 6.283]] };
+    const radius = (th) => { let r = insel.a0; for (const [k, a, p] of insel.h) r += a * Math.sin(k * th + p); return r; };
+    insel.radius = radius;
+    return (x, z) => radius(Math.atan2(z, x)) - Math.hypot(x, z);
+  }
+  if (typ === "kueste") {
+    const r = zufall(7331), p = [r() * 6.3, r() * 6.3, r() * 6.3], bx = 46;
+    const linie = (x) => 46 + 10 * Math.sin(0.031 * x + p[0]) + 5 * Math.sin(0.083 * x + p[1]) + 2.5 * Math.sin(0.17 * x + p[2]) - 36 * Math.exp(-Math.pow((x - bx) / 17, 2));
+    const halbinsel = (x, z) => 9 - Math.hypot((x + 55) * 0.8, z - 70);   // kleine Landzunge
+    return (x, z) => Math.max(linie(x) - z, halbinsel(x, z));
+  }
+  const r = zufall(typ === "seen" ? 4242 : 9191), seen = [];
+  const anzahl = typ === "seen" ? 9 : 3;
+  for (let i = 0; seen.length < anzahl && i < 400; i++) {
+    const a = r() * 6.283, d = 34 + r() * 72, x = Math.cos(a) * d, z = Math.sin(a) * d, rad = typ === "seen" ? 7 + r() * 11 : 10 + r() * 9;
+    if (Math.max(Math.abs(x), Math.abs(z)) - rad < 26) continue;
+    if (seen.some((s) => Math.hypot(s.x - x, s.z - z) < s.r + rad + 8)) continue;
+    seen.push({ x, z, r: rad, w: [r() * 6.3, r() * 6.3, 0.12 + r() * 0.12] });
+  }
+  return (x, z) => {
+    let m = 60;
+    for (const s of seen) { const th = Math.atan2(z - s.z, x - s.x), rr = s.r * (1 + s.w[2] * Math.sin(3 * th + s.w[0]) + 0.08 * Math.sin(5 * th + s.w[1])); m = Math.min(m, Math.hypot(x - s.x, z - s.z) - rr); }
+    return m;
+  };
+}
+function gelaendeBauen() {
+  const n = 300, g = new THREE.PlaneGeometry(FELD, FELD, n, n).rotateX(-Math.PI / 2), pos = g.attributes.position, col = new Float32Array(pos.count * 3);
+  const gras = farbe(0x86c45c), gras2 = farbe(0x79b852), sand = farbe(0xe8d39a), nass = farbe(0xb8a77a), c = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), z = pos.getZ(i), d = abstand(x, z);
+    let y; if (d >= 2.8) y = G; else if (d >= -2.5) y = -0.9 + (G + 0.9) * glatt(0, 1, (d + 2.5) / 5.3); else y = -0.9 - Math.min(3, (-2.5 - d) * 0.35);
+    pos.setY(i, y);
+    if (d >= 3.1) c.copy(gras).lerp(gras2, 0.5 + 0.5 * Math.sin(x * 0.11 + Math.cos(z * 0.09) * 2));
+    else if (d >= 0.2) c.copy(sand); else c.copy(nass);
+    col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+  }
+  g.setAttribute("color", new THREE.BufferAttribute(col, 3)); g.computeVertexNormals();
+  const m = new THREE.Mesh(g, M.gelaende); m.receiveShadow = true; szene.add(m);
+  // Land außerhalb des Geländes (bei Festland-Karten)
+  const rand = (x0, x1, z0, z1) => { const p = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0).rotateX(-Math.PI / 2), M.wiese); p.position.set((x0 + x1) / 2, G - 0.002, (z0 + z1) / 2); szene.add(p); };
+  const H = FELD / 2;
+  if (karte === "kueste") { const zl = Math.min(abstandZ(-H), abstandZ(H)); rand(-3000, -H, -3000, zl); rand(H, 3000, -3000, zl); rand(-H, H, -3000, -H); }
+  else if (karte !== "insel") { rand(-3000, -H, -3000, 3000); rand(H, 3000, -3000, 3000); rand(-H, H, -3000, -H); rand(-H, H, H, 3000); }
+}
+function abstandZ(x) { let z = -200; while (z < 200 && abstand(x, z) > 0) z += 2; return z - 4; }   // Küstenlinie am Rand (für den Randstreifen)
+
+/* Wasser mit Abstands-Textur (Ufer, Schaum, flaches Wasser) */
 const wasserMat = new THREE.ShaderMaterial({
   uniforms: {
     uTime: U.uTime, uNacht: U.uNacht, uTief: { value: farbe(0x1667a3) }, uFlach: { value: farbe(0x3cc9c4) }, uHimmel: { value: farbe(0xbfe6ff) },
     uSonne: { value: new THREE.Vector3(0, 1, 0) }, uSonnenFarbe: { value: farbe(0xffffff) }, uNebel: { value: farbe(0xbfe6ff) }, uNah: { value: 90 }, uFern: { value: 420 },
-    uA0: { value: insel.a0 }, uK: { value: insel.h.map((h) => h[0]) }, uA: { value: insel.h.map((h) => h[1]) }, uP: { value: insel.h.map((h) => h[2]) }
+    uAbst: { value: null }, uFeld: { value: FELD }
   },
   vertexShader: `uniform float uTime; varying vec3 vW;
     void main(){ vec4 w = modelMatrix * vec4(position, 1.0);
       w.y += sin(w.x * 0.33 + uTime * 1.1) * 0.06 + sin(w.z * 0.27 - uTime * 0.9) * 0.05 + sin((w.x + w.z) * 0.6 + uTime * 1.7) * 0.025;
       vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
-  fragmentShader: `uniform float uTime, uNacht, uNah, uFern, uA0; uniform float uK[5]; uniform float uA[5]; uniform float uP[5]; uniform vec3 uTief, uFlach, uHimmel, uSonne, uSonnenFarbe, uNebel; varying vec3 vW;
+  fragmentShader: `uniform float uTime, uNacht, uNah, uFern, uFeld; uniform sampler2D uAbst; uniform vec3 uTief, uFlach, uHimmel, uSonne, uSonnenFarbe, uNebel; varying vec3 vW;
     void main(){
       vec3 n = normalize(cross(dFdx(vW), dFdy(vW))); if (n.y < 0.0) n = -n;
       n = normalize(n + vec3(sin(vW.x * 2.1 + uTime * 2.0) * 0.035 + sin(vW.z * 4.7 + uTime * 3.0) * 0.02, 0.0, cos(vW.z * 2.3 - uTime * 1.7) * 0.035 + cos(vW.x * 5.1 - uTime * 2.6) * 0.02));
       vec3 V = normalize(cameraPosition - vW);
-      float th = atan(vW.z, vW.x), R = uA0;
-      for (int i = 0; i < 5; i++) R += uA[i] * sin(uK[i] * th + uP[i]);
-      float d = length(vW.xz) - R;
-      vec3 c = mix(uTief, uFlach, 1.0 - smoothstep(0.8, 14.0, d));
+      vec2 uv = vW.xz / uFeld + 0.5;
+      float d = (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) ? -24.0 : texture2D(uAbst, uv).r * 48.0 - 24.0;
+      vec3 c = mix(uTief, uFlach, 1.0 - smoothstep(0.0, 13.0, -d));
       c = mix(c, uHimmel, pow(1.0 - max(dot(n, V), 0.0), 4.0) * 0.65);
       vec3 H = normalize(normalize(uSonne) + V);
       c += uSonnenFarbe * pow(max(dot(n, H), 0.0), 240.0) * 1.6;
-      float schaum = smoothstep(0.55, 0.0, abs(d - 1.5 - 0.25 * sin(uTime * 1.4 + th * 60.0)));
+      float schaum = smoothstep(0.55, 0.0, abs(d + 0.1 - 0.22 * sin(uTime * 1.4 + (vW.x + vW.z) * 0.9)));
       c = mix(c, vec3(0.92), schaum * 0.7 * (1.0 - uNacht * 0.65));
       c = mix(c, uNebel, smoothstep(uNah, uFern, length(cameraPosition - vW)));
       gl_FragColor = vec4(c, 1.0);
@@ -200,63 +264,47 @@ const wasserMat = new THREE.ShaderMaterial({
 });
 const wasser = new THREE.Mesh(new THREE.PlaneGeometry(2400, 2400, 300, 300).rotateX(-Math.PI / 2), wasserMat);
 wasser.position.y = WASSER; szene.add(wasser);
-
-/* Leuchtturm und Boote */
-let leuchtturm;
-{
-  let bestTh = 0, best = 0; for (let t = 0; t < 180; t++) { const th = t / 180 * Math.PI * 2, R = radius(th); if (R > best) { best = R; bestTh = th; } }
-  leuchtturm = new THREE.Group(); const lr = best - 0.8; leuchtturm.position.set(Math.cos(bestTh) * lr, 0, Math.sin(bestTh) * lr); leuchtturm.scale.setScalar(1.6);
-  const weiss = new THREE.MeshStandardMaterial({ color: 0xf4f1ea, roughness: 0.7 }), rot = new THREE.MeshStandardMaterial({ color: 0xd2433a, roughness: 0.7 });
-  const t1 = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.55, 3.2, 12), weiss); t1.position.y = 1.6;
-  const b1 = new THREE.Mesh(new THREE.CylinderGeometry(0.47, 0.5, 0.45, 12), rot); b1.position.y = 1.0;
-  const b2 = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.43, 0.45, 12), rot); b2.position.y = 2.4;
-  const kopf = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.45, 10), new THREE.MeshBasicMaterial({ color: 0xfff1c2, toneMapped: false })); kopf.position.y = 3.45;
-  const hut = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.5, 10), rot); hut.position.y = 3.92;
-  [t1, b1, b2, hut].forEach((m) => { m.castShadow = true; });
-  const strahl = new THREE.Group(); strahl.position.y = 3.45;
-  const sg = new THREE.ConeGeometry(1.6, 22, 20, 1, true).translate(0, -11, 0).rotateZ(Math.PI / 2);
-  const sm = new THREE.MeshBasicMaterial({ color: 0xfff0c0, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
-  strahl.add(new THREE.Mesh(sg, sm)); const s2 = new THREE.Mesh(sg, sm); s2.rotation.y = Math.PI; strahl.add(s2);
-  leuchtturm.add(t1, b1, b2, kopf, hut, strahl); leuchtturm.userData = { strahl, sm, kopf };
-  szene.add(leuchtturm);
+function wasserTextur() {
+  const N = 256, daten = new Uint8Array(N * N);
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const x = -FELD / 2 + (i + 0.5) * FELD / N, z = -FELD / 2 + (j + 0.5) * FELD / N; daten[j * N + i] = Math.round(klemme((abstand(x, z) + 24) / 48, 0, 1) * 255); }
+  const t = new THREE.DataTexture(daten, N, N, THREE.RedFormat, THREE.UnsignedByteType); t.magFilter = t.minFilter = THREE.LinearFilter; t.needsUpdate = true;
+  wasserMat.uniforms.uAbst.value = t;
 }
-const boote = [];
-for (let b = 0; b < 7; b++) {
-  const g = new THREE.Group(), fr = wahl(ri, [0xffffff, 0xf2c14e, 0xe8493f, 0x3f7fe8]);
-  const rumpf = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.3, 0.5), new THREE.MeshStandardMaterial({ color: fr, roughness: 0.5 })); rumpf.position.y = 0.1;
-  const kab = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.28, 0.38), new THREE.MeshStandardMaterial({ color: 0xf4f4f4, roughness: 0.5 })); kab.position.set(-0.1, 0.38, 0);
-  rumpf.castShadow = kab.castShadow = true; g.add(rumpf, kab); g.scale.setScalar(1.4); szene.add(g);
-  boote.push({ g, rad: insel.a0 + 16 + ri() * 20, w: ri() * 6.28, v: (0.012 + ri() * 0.015) * (ri() < 0.5 ? 1 : -1), ph: ri() * 6 });
-}
-
-/* ---------- Instanz-Becken ---------- */
-function becken(geo, mat, max, schatten) {
-  const m = new THREE.InstancedMesh(geo, mat, max); m.count = 0; m.frustumCulled = false; m.castShadow = !!schatten; m.receiveShadow = true;
-  m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.setColorAt(0, new THREE.Color(1, 1, 1)); szene.add(m); return m;
-}
-const B = {
-  haus: becken(G_BOX_UNTEN, M.haus, 9000, true), flach: becken(G_BOX_UNTEN, M.flach, 14000, true), dach: becken(G_DACH, M.dach, 6000, true),
-  zyl: becken(G_ZYL, M.flach, 3000, true), garten: becken(G_LAUBBAUM, M.baum, 4000, true), rauch: becken(new THREE.IcosahedronGeometry(0.5, 0), M.rauch, 800, false)
-};
-const alleeBaeume = becken(G_LAUBBAUM, M.baum, 6000, true);
-const _o = new THREE.Object3D(), _farbe = new THREE.Color();
-
-/* ---------- Bäume ---------- */
-const baeume = [], baumRaster = new Map(), baumMesh = {};
-{
-  const r = zufall(INSEL_SEED + 1), listen = { laub: [], nadel: [] };
-  for (let gx = -HALB; gx < HALB; gx += 1.5) for (let gz = -HALB; gz < HALB; gz += 1.5) {
-    const x = gx + r() * 1.4, z = gz + r() * 1.4; if (!aufLand(x, z, 3.6)) continue;
-    const d = 0.5 + 0.5 * Math.sin(x * 0.07 + 1.3) * Math.cos(z * 0.06 - 0.4) + 0.3 * Math.sin((x - z) * 0.13) + 0.15 * Math.sin(x * 0.4 + z * 0.31);
-    if (r() > d * 0.85 - 0.12) continue;
-    if (Math.abs(x) < 9 && Math.abs(z) < 9 && r() < 0.85) continue;
-    const art = r() < 0.34 ? "nadel" : "laub", b = { x, z, s: 0.7 + r() * 0.75, ry: r() * 6.28, art, weg: false, c: new THREE.Color(0.82 + r() * 0.18, 0.85 + r() * 0.15, 0.8 + r() * 0.2) };
+function baeumeBauen() {
+  const listen = { laub: [], nadel: [] };
+  const neu = (x, z, r) => {
+    const art = r() < (karte === "wald" ? 0.5 : 0.34) ? "nadel" : "laub", b = { x, z, s: 0.7 + r() * 0.75, ry: r() * 6.28, art, weg: false, c: new THREE.Color(0.82 + r() * 0.18, 0.85 + r() * 0.15, 0.8 + r() * 0.2) };
     b.idx = baeume.length; b.i = listen[art].length; listen[art].push(b); baeume.push(b);
     const k = Math.floor(x / 4) + "," + Math.floor(z / 4); if (!baumRaster.has(k)) baumRaster.set(k, []); baumRaster.get(k).push(b);
+  };
+  if (karte === "insel") {
+    // genau wie in Teil A, damit alte Spielstände passen
+    const r = zufall(20261028 + 1);
+    for (let gx = -HALB; gx < HALB; gx += 1.5) for (let gz = -HALB; gz < HALB; gz += 1.5) {
+      const x = gx + r() * 1.4, z = gz + r() * 1.4; if (!aufLand(x, z, 3.6)) continue;
+      const d = 0.5 + 0.5 * Math.sin(x * 0.07 + 1.3) * Math.cos(z * 0.06 - 0.4) + 0.3 * Math.sin((x - z) * 0.13) + 0.15 * Math.sin(x * 0.4 + z * 0.31);
+      if (r() > d * 0.85 - 0.12) continue;
+      if (Math.abs(x) < 9 && Math.abs(z) < 9 && r() < 0.85) continue;
+      neu(x, z, r);
+    }
+  } else {
+    const r = zufall(karte === "kueste" ? 501 : karte === "seen" ? 502 : 503), dicht = karte === "wald" ? 1.1 : karte === "seen" ? 0.68 : 0.8, schritt = karte === "wald" ? 1.7 : 1.7;
+    for (let gx = -HALB - 20; gx < HALB + 20; gx += schritt) for (let gz = -HALB - 20; gz < HALB + 20; gz += schritt) {
+      const x = gx + r() * schritt * 0.9, z = gz + r() * schritt * 0.9; if (!aufLand(x, z, 3.4)) continue;
+      const d = 0.5 + 0.5 * Math.sin(x * 0.06 + 0.7) * Math.cos(z * 0.07 + 1.1) + 0.3 * Math.sin((x + z) * 0.11) + 0.15 * Math.sin(x * 0.37 - z * 0.29);
+      if (r() > d * dicht - 0.15) continue;
+      if (Math.abs(x) < 9 && Math.abs(z) < 9 && r() < (karte === "wald" ? 0.5 : 0.85)) continue;
+      neu(x, z, r);
+    }
+    // lichter Wald am Horizont
+    for (let gx = -190; gx < 190; gx += 4.5) for (let gz = -190; gz < 190; gz += 4.5) {
+      if (Math.abs(gx) < HALB + 20 && Math.abs(gz) < HALB + 20) continue;
+      const x = gx + r() * 4, z = gz + r() * 4; if (!aufLand(x, z, 3) || r() > 0.38) continue; neu(x, z, r);
+    }
   }
   for (const art of ["laub", "nadel"]) {
     const m = new THREE.InstancedMesh(art === "laub" ? G_LAUBBAUM : G_NADELBAUM, M.baum, Math.max(1, listen[art].length));
-    m.castShadow = true; m.receiveShadow = true; m.frustumCulled = false; baumMesh[art] = m; szene.add(m);
+    m.castShadow = stufe === "hoch"; m.receiveShadow = true; m.frustumCulled = false; baumMesh[art] = m; szene.add(m);
     listen[art].forEach((b) => { baumSetzen(b); m.setColorAt(b.i, b.c); });
   }
 }
@@ -265,28 +313,63 @@ function baumSetzen(b) {
   baumMesh[b.art].setMatrixAt(b.i, _o.matrix); baumMesh[b.art].instanceMatrix.needsUpdate = true;
 }
 function baeumeIn(x0, z0, x1, z1, f) { for (let i = Math.floor(x0 / 4); i <= Math.floor(x1 / 4); i++) for (let j = Math.floor(z0 / 4); j <= Math.floor(z1 / 4); j++) { const l = baumRaster.get(i + "," + j); if (l) l.forEach(f); } }
-function baeumeFaellen(h, test) { baeumeIn(h.x0, h.z0, h.x1, h.z1, (b) => { if (!b.weg && test(b.x, b.z)) { b.weg = true; baumSetzen(b); } }); }
+function baeumeFaellen(h, test) { let n = 0; baeumeIn(h.x0, h.z0, h.x1, h.z1, (b) => { if (!b.weg && test(b.x, b.z)) { b.weg = true; baumSetzen(b); n++; } }); return n; }
+function leuchtturmUndBoote() {
+  let best = null;
+  if (karte === "insel") { let bt = 0, br = 0; for (let t = 0; t < 180; t++) { const th = t / 180 * Math.PI * 2, R = insel.radius(th); if (R > br) { br = R; bt = th; } } best = { x: Math.cos(bt) * (br - 0.8), z: Math.sin(bt) * (br - 0.8) }; }
+  if (karte === "kueste") best = { x: -55, z: 77 };
+  if (best) {
+    leuchtturm = new THREE.Group(); leuchtturm.position.set(best.x, 0, best.z); leuchtturm.scale.setScalar(1.6);
+    const weiss = new THREE.MeshStandardMaterial({ color: 0xf4f1ea, roughness: 0.7 }), rot = new THREE.MeshStandardMaterial({ color: 0xd2433a, roughness: 0.7 });
+    const t1 = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.55, 3.2, 12), weiss); t1.position.y = 1.6;
+    const b1 = new THREE.Mesh(new THREE.CylinderGeometry(0.47, 0.5, 0.45, 12), rot); b1.position.y = 1.0;
+    const b2 = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.43, 0.45, 12), rot); b2.position.y = 2.4;
+    const kopf = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.45, 10), new THREE.MeshBasicMaterial({ color: 0xfff1c2, toneMapped: false })); kopf.position.y = 3.45;
+    const hut = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.5, 10), rot); hut.position.y = 3.92;
+    [t1, b1, b2, hut].forEach((m) => { m.castShadow = true; });
+    const strahl = new THREE.Group(); strahl.position.y = 3.45;
+    const sg = new THREE.ConeGeometry(1.6, 22, 20, 1, true).translate(0, -11, 0).rotateZ(Math.PI / 2);
+    const sm = new THREE.MeshBasicMaterial({ color: 0xfff0c0, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+    strahl.add(new THREE.Mesh(sg, sm)); const s2 = new THREE.Mesh(sg, sm); s2.rotation.y = Math.PI; strahl.add(s2);
+    leuchtturm.add(t1, b1, b2, kopf, hut, strahl); leuchtturm.userData = { strahl, sm, kopf }; szene.add(leuchtturm);
+  }
+  const r = zufall(77), anzahl = karte === "seen" ? 5 : karte === "wald" ? 2 : 7;
+  for (let v = 0; v < 600 && boote.length < anzahl; v++) {
+    const x = (r() - 0.5) * 340, z = (r() - 0.5) * 340, rad = karte === "seen" || karte === "wald" ? 2.5 + r() * 3 : 10 + r() * 18;
+    let ok = abstand(x, z) < -(rad + 3); for (let k = 0; k < 12 && ok; k++) { const a = k / 12 * 6.283; if (abstand(x + Math.cos(a) * rad, z + Math.sin(a) * rad) > -3) ok = false; }
+    if (!ok) continue;
+    const g = new THREE.Group(), fr = wahl(r, [0xffffff, 0xf2c14e, 0xe8493f, 0x3f7fe8]);
+    const rumpf = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.3, 0.5), new THREE.MeshStandardMaterial({ color: fr, roughness: 0.5 })); rumpf.position.y = 0.1;
+    const kab = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.28, 0.38), new THREE.MeshStandardMaterial({ color: 0xf4f4f4, roughness: 0.5 })); kab.position.set(-0.1, 0.38, 0);
+    rumpf.castShadow = kab.castShadow = true; g.add(rumpf, kab); g.scale.setScalar(rad < 6 ? 0.9 : 1.4); szene.add(g);
+    boote.push({ g, mx: x, mz: z, rad, w: r() * 6.28, v: (0.25 / rad + 0.01) * (r() < 0.5 ? 1 : -1), ph: r() * 6 });
+  }
+}
+function weltBauen(typ) {
+  karte = typ; abstand = kartenFunktion(typ);
+  gelaendeBauen(); wasserTextur(); baeumeBauen(); leuchtturmUndBoote();
+}
 
 /* ================================================================
-   Gebiete (5 × 5) – wie die Kacheln bei Cities: Skylines
+   Gebiete (5 × 5)
    ================================================================ */
-let besitz = new Set(["2,2"]), gekauft = 0, geld = START_GELD;
+let besitz = new Set(["2,2"]), gekauft = 0, geld = 70000;
 const kachelVon = (x, z) => [Math.floor((x + HALB) / KACHEL), Math.floor((z + HALB) / KACHEL)];
 const imBesitz = (x, z) => { const [i, j] = kachelVon(x, z); return besitz.has(i + "," + j); };
 const kachelMitte = (i, j) => ({ x: -HALB + (i + 0.5) * KACHEL, z: -HALB + (j + 0.5) * KACHEL });
 function kachelHatLand(i, j) { const m = kachelMitte(i, j); for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) if (aufLand(m.x + a * 8, m.z + b * 8, 4)) return true; return false; }
-function kaufbar(i, j) { if (i < 0 || j < 0 || i >= KN || j >= KN || besitz.has(i + "," + j) || !kachelHatLand(i, j)) return false; return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => besitz.has((i + a) + "," + (j + b))); }
+function nachbar(i, j) { return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => besitz.has((i + a) + "," + (j + b))); }
+function kaufbar(i, j) { return i >= 0 && j >= 0 && i < KN && j < KN && !besitz.has(i + "," + j) && kachelHatLand(i, j) && nachbar(i, j); }
 const grenze = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 1.2, gapSize: 0.8, transparent: true, opacity: 0.75, depthWrite: false }));
 grenze.renderOrder = 5; szene.add(grenze);
 const sperrGeo = new THREE.PlaneGeometry(KACHEL - 0.3, KACHEL - 0.3).rotateX(-Math.PI / 2);
-const sperrFlaechen = new THREE.Group(); szene.add(sperrFlaechen);
-const preisSchilder = new THREE.Group(); szene.add(preisSchilder);
+const sperrFlaechen = new THREE.Group(), preisSchilder = new THREE.Group(); szene.add(sperrFlaechen, preisSchilder);
 function schild(text, unter, gut) {
   const c = document.createElement("canvas"); c.width = 512; c.height = 200; const x = c.getContext("2d");
   x.fillStyle = gut ? "rgba(20,24,40,.9)" : "rgba(20,24,40,.72)"; x.beginPath(); if (x.roundRect) x.roundRect(8, 8, 496, 184, 40); else x.rect(8, 8, 496, 184); x.fill();
   x.strokeStyle = gut ? "#4fd27a" : "rgba(255,255,255,.25)"; x.lineWidth = 6; x.stroke();
-  x.fillStyle = "#fff"; x.font = "600 70px 'Space Grotesk', Arial"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(text, 256, 82);
-  x.fillStyle = gut ? "#b9f5cd" : "#b9b4d6"; x.font = "500 40px 'Space Grotesk', Arial"; x.fillText(unter, 256, 150);
+  x.fillStyle = "#fff"; x.font = "600 66px 'Space Grotesk', Arial"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(text, 256, 82);
+  x.fillStyle = gut ? "#b9f5cd" : "#b9b4d6"; x.font = "500 38px 'Space Grotesk', Arial"; x.fillText(unter, 256, 150);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true })); s.renderOrder = 6; return s;
 }
@@ -303,10 +386,15 @@ function gebieteZeichnen() {
   grenze.geometry.dispose(); grenze.geometry = new THREE.BufferGeometry(); grenze.geometry.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); grenze.computeLineDistances();
   sperrFlaechen.clear(); preisSchilder.children.forEach((s) => { s.material.map.dispose(); s.material.dispose(); }); preisSchilder.clear();
   if (werkzeug !== "gebiet") return;
+  const erlaubt = MEILEN[meilenstein].gebiete, preis = GEBIET_PREIS(gekauft);
   for (let i = 0; i < KN; i++) for (let j = 0; j < KN; j++) {
     if (besitz.has(i + "," + j) || !kachelHatLand(i, j)) continue;
     const m = kachelMitte(i, j), p = new THREE.Mesh(sperrGeo, M.sperre); p.position.set(m.x, G + 0.09, m.z); p.renderOrder = 4; sperrFlaechen.add(p);
-    if (kaufbar(i, j)) { const ok = geld >= GEBIET_PREIS(gekauft); const s = schild(euro(GEBIET_PREIS(gekauft)), ok ? "Antippen zum Kaufen" : "Noch zu teuer", ok); s.position.set(m.x, 4, m.z); s.userData = { i, j }; preisSchilder.add(s); }
+    if (!kaufbar(i, j)) continue;
+    let s;
+    if (gekauft >= erlaubt) { const n = MEILEN.find((x) => x.gebiete > gekauft); s = schild("🔒 " + (n ? n.name : "–"), n ? "ab " + zahl(n.ab) + " Einwohnern" : "", false); }
+    else { const ok = geld >= preis; s = schild(euro(preis), ok ? "Antippen zum Kaufen" : "Noch zu teuer", ok); }
+    s.position.set(m.x, 4, m.z); s.userData = { i, j }; preisSchilder.add(s);
   }
 }
 
@@ -314,7 +402,7 @@ function gebieteZeichnen() {
    Straßennetz
    ================================================================ */
 const knoten = new Map(), kanten = new Map();
-let nId = 1, kId = 1, zId = 1, gId = 1, hId = 1;
+let nId = 1, kId = 1, zId = 1, gId = 1, hId = 1, netzVersion = 0;
 const bez = (p0, c, p2, t) => { const u = 1 - t; return { x: u * u * p0.x + 2 * u * t * c.x + t * t * p2.x, z: u * u * p0.z + 2 * u * t * c.z + t * t * p2.z }; };
 const lerp = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t });
 const abst = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
@@ -333,19 +421,18 @@ function punktBei(k, s) {
   return { x: a.x + (b.x - a.x) * f, z: a.z + (b.z - a.z) * f, tx: a.tx + (b.tx - a.tx) * f, tz: a.tz + (b.tz - a.tz) * f, t: a.t + (b.t - a.t) * f };
 }
 function abstandZuLinie(p, pts, mitT) {
-  let best = 1e9, bt = 0, bx = 0, bz = 0;
+  let best = 1e9, bt = 0, bs = 0, bx = 0, bz = 0;
   for (let i = 0; i < pts.length - 1; i++) {
     const a = pts[i], b = pts[i + 1], dx = b.x - a.x, dz = b.z - a.z, l2 = dx * dx + dz * dz || 1e-9;
     const f = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.z - a.z) * dz) / l2)), x = a.x + dx * f, z = a.z + dz * f, d = Math.hypot(p.x - x, p.z - z);
-    if (d < best) { best = d; bt = a.t + (b.t - a.t) * f; bx = x; bz = z; }
+    if (d < best) { best = d; bt = a.t + (b.t - a.t) * f; bs = a.s + (b.s - a.s) * f; bx = x; bz = z; }
   }
-  return mitT ? { d: best, t: bt, x: bx, z: bz } : best;
+  return mitT ? { d: best, t: bt, s: bs, x: bx, z: bz } : best;
 }
 function huelle(pts, r) { let a = 1e9, b = -1e9, c = 1e9, d = -1e9; for (const p of pts) { a = Math.min(a, p.x); b = Math.max(b, p.x); c = Math.min(c, p.z); d = Math.max(d, p.z); } r = r || 0; return { x0: a - r, x1: b + r, z0: c - r, z1: d + r }; }
 const nahHuelle = (h, p, r) => p.x > h.x0 - r && p.x < h.x1 + r && p.z > h.z0 - r && p.z < h.z1 + r;
 function strassenFrei(p, ausser) { let m = 1e9; for (const k of kanten.values()) { if (k === ausser || !nahHuelle(k.h, p, Math.min(m, 5) + 1.5)) continue; m = Math.min(m, abstandZuLinie(p, k.pts) - TYP[k.typ].halb); } return m; }
 
-/* Straßen-Geometrie */
 const SF = { gehweg: farbe(0xcbc6ba), fahrbahn: farbe(0x3b4049), strich: farbe(0xf1eee4), gelb: farbe(0xf2c14e), gruen: farbe(0x7dbb55), weg: farbe(0xd8c7a0) };
 function band(pos, col, pts, halb, y, c, versatz) {
   versatz = versatz || 0;
@@ -382,11 +469,11 @@ function knotenMesh(n) {
   const m = new THREE.Mesh(geoAus(pos, col), M.strasse); m.receiveShadow = true; return m;
 }
 function knotenNeuZeichnen(n) { if (n.mesh) { szene.remove(n.mesh); n.mesh.geometry.dispose(); } n.mesh = knotenMesh(n); szene.add(n.mesh); }
-function neuerKnoten(p, id) { const n = { id: id || nId++, x: p.x, z: p.z, kanten: new Set(), mesh: null }; nId = Math.max(nId, n.id + 1); knoten.set(n.id, n); return n; }
+function neuerKnoten(p, id) { const n = { id: id || nId++, x: p.x, z: p.z, kanten: new Set(), mesh: null, drin: new Set(), naht: [], ampel: false, manuell: false, gruppe: new Map() }; nId = Math.max(nId, n.id + 1); knoten.set(n.id, n); return n; }
 function knotenWeg(n) { if (n.mesh) { szene.remove(n.mesh); n.mesh.geometry.dispose(); } knoten.delete(n.id); }
 function neueKante(aId, bId, c, typ, id) {
   const a = knoten.get(aId), b = knoten.get(bId), { pts, len } = abtasten(a, c, b);
-  const k = { id: id || kId++, a: aId, b: bId, c: { x: c.x, z: c.z }, typ, pts, len, h: huelle(pts, TYP[typ].halb) }; kId = Math.max(kId, k.id + 1);
+  const k = { id: id || kId++, a: aId, b: bId, c: { x: c.x, z: c.z }, typ, pts, len, h: huelle(pts, TYP[typ].halb), stau: 0 }; kId = Math.max(kId, k.id + 1);
   k.mesh = kantenMesh(k); szene.add(k.mesh); kanten.set(k.id, k); a.kanten.add(k.id); b.kanten.add(k.id);
   knotenNeuZeichnen(a); knotenNeuZeichnen(b); return k;
 }
@@ -398,11 +485,11 @@ function kanteTeilen(k, t) {
   const a = knoten.get(k.a), b = knoten.get(k.b), m = bez(a, k.c, b, t), n = neuerKnoten(m);
   const c1 = lerp(a, k.c, t), c2 = lerp(k.c, b, t), aId = k.a, bId = k.b, typ = k.typ, ax = { x: a.x, z: a.z }, bx = { x: b.x, z: b.z };
   kanteWeg(k); if (!knoten.has(aId)) neuerKnoten(ax, aId); if (!knoten.has(bId)) neuerKnoten(bx, bId);
-  neueKante(aId, n.id, c1, typ); neueKante(n.id, bId, c2, typ); return n;
+  const aus = k.aussen; const e1 = neueKante(aId, n.id, c1, typ), e2 = neueKante(n.id, bId, c2, typ); if (aus) e1.aussen = e2.aussen = true; return n;
 }
 const fangRadius = () => Math.min(3, Math.max(1.1, kameraAbstand() / 32));
 function naechsterKnoten(p, r) { let best = null, bd = r; for (const n of knoten.values()) { const d = abst(n, p); if (d < bd) { bd = d; best = n; } } return best; }
-function naechsteKante(p, r) { let best = null; for (const k of kanten.values()) { if (!nahHuelle(k.h, p, r)) continue; const e = abstandZuLinie(p, k.pts, true); if (e.d < r && (!best || e.d < best.d)) best = { k, ...e }; } return best; }
+function naechsteKante(p, r, filter) { let best = null; for (const k of kanten.values()) { if ((filter && !filter(k)) || !nahHuelle(k.h, p, r)) continue; const e = abstandZuLinie(p, k.pts, true); if (e.d < r && (!best || e.d < best.d)) best = { k, ...e }; } return best; }
 function fangen(p) {
   const r = fangRadius();
   const n = naechsterKnoten(p, r); if (n) return { art: "knoten", id: n.id, x: n.x, z: n.z };
@@ -432,11 +519,11 @@ function kreuzungen(pts, ausserNah) {
   liste.sort((a, b) => a.t - b.t);
   return liste.filter((q, i) => !liste.slice(0, i).some((o) => abst(o, q) < 1.5));
 }
-
-/* Plan aus den angetippten Punkten */
+function typFrei(t) { return MEILEN.slice(0, meilenstein + 1).some((m) => m.frei.includes(t)) || t === "fuss" || t === "klein"; }
 function planen(A, C, Bp, typ) {
   const T = TYP[typ], { pts, len } = abtasten(A, C, Bp), plan = { A, C, B: Bp, typ, pts, laenge: len, kosten: Math.round(len * T.preis), kreuz: [], ok: true, grund: "" };
   const nein = (g) => { plan.ok = false; plan.grund = plan.grund || g; };
+  if (!typFrei(typ)) { const m = MEILEN.find((x) => x.frei.includes(typ)); nein("🔒 Erst ab " + m.name + " (" + zahl(m.ab) + " Einwohner)"); }
   if (len < 1.5) nein("Zu kurz");
   if (len > 90) nein("Zu lang – setz einen Zwischenpunkt");
   for (const q of pts) { if (!aufLand(q.x, q.z, 3.5)) { nein("Zu nah am Wasser"); break; } if (!imBesitz(q.x, q.z)) { nein("Außerhalb deiner Gebiete – kauf erst Land"); break; } }
@@ -447,6 +534,7 @@ function planen(A, C, Bp, typ) {
     for (const q of pts) if (frei(q) && strassenFrei(q) < T.halb - 0.15) { nein("Zu nah an einer anderen Straße"); break; }
   }
   if (plan.ok && A.art === "knoten" && Bp.art === "knoten" && A.id === Bp.id) nein("Start und Ende sind gleich");
+  if (plan.ok) { let baum = 0; baeumeIn(plan.pts.reduce((m, q) => Math.min(m, q.x), 1e9) - 2, plan.pts.reduce((m, q) => Math.min(m, q.z), 1e9) - 2, plan.pts.reduce((m, q) => Math.max(m, q.x), -1e9) + 2, plan.pts.reduce((m, q) => Math.max(m, q.z), -1e9) + 2, (b) => { if (!b.weg && abstandZuLinie(b, plan.pts) < T.halb + 0.3) baum++; }); plan.baeume = baum; plan.kosten += baum * 5; }
   if (plan.ok && plan.kosten > geld) nein("Nicht genug Geld");
   return plan;
 }
@@ -504,7 +592,7 @@ function zellenFuer(k) {
   zellenNeu = true;
 }
 function verwaisteZellen() { for (const z of [...zellen.values()]) if (strassenFrei(z) > REIHEN * ZELLE + 0.3) zelleWeg(z); }
-const zellMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.9, 0.9).rotateX(-Math.PI / 2), M.zelle, 30000);
+const zellMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.9, 0.9).rotateX(-Math.PI / 2), M.zelle, 40000);
 zellMesh.count = 0; zellMesh.frustumCulled = false; zellMesh.renderOrder = 2; zellMesh.setColorAt(0, new THREE.Color()); szene.add(zellMesh);
 let zellenNeu = true, werkzeug = "ansehen";
 function zellenZeichnen() {
@@ -521,59 +609,168 @@ function zellenZeichnen() {
 /* ================================================================
    Häuser
    ================================================================ */
+const B = {
+  haus: becken(G_BOX_UNTEN, M.haus, 9000, true), flach: becken(G_BOX_UNTEN, M.flach, 14000, true), dach: becken(G_DACH, M.dach, 6000, true),
+  zyl: becken(G_ZYL, M.flach, 3000, true), garten: becken(G_LAUBBAUM, M.baum, 4000, true), rauch: becken(new THREE.IcosahedronGeometry(0.5, 0), M.rauch, 800, false)
+};
+const alleeBaeume = becken(G_LAUBBAUM, M.baum, 6000, true);
 const haeuser = new Map(); let haeuserNeu = true;
 const PAL = {
   haus: [0xf3e9d8, 0xf6d7b0, 0xe9b8a0, 0xd9e4ec, 0xf2f0e9, 0xf5e1a4, 0xcfe3c8, 0xe7cfe6], dach: [0xb2513a, 0x8f3f30, 0x5d6470, 0x7a4b3a, 0x3f5566, 0xa8673f],
   block: [0xe8dcc8, 0xd8c3a5, 0xc9a083, 0xf0ebe1, 0xb9c7cf, 0xe3c9a8, 0xd0d6c4], laden: [0xf2efe8, 0xe6dccb, 0xdfe7ee, 0xf3e3d0, 0xe0e0d8],
   markise: [0xe8493f, 0x2f8f6f, 0x3f7fe8, 0xf2a93b, 0x8e5be8, 0xe85b9a], turm: [0x9fb7c9, 0x7fa3b8, 0xc9d6df, 0x6d8aa1, 0xb8c4cc, 0x8fb0a8],
-  halle: [0xd9d4c7, 0xc4c9cc, 0xbfb3a0, 0xd0c8b8, 0xaab3b8], auto: [0xe8493f, 0x3f7fe8, 0xf2f2f2, 0x2c2f36, 0xf2c14e, 0x4fbf7a, 0x9a5be8, 0xff8a3c]
+  halle: [0xd9d4c7, 0xc4c9cc, 0xbfb3a0, 0xd0c8b8, 0xaab3b8], auto: [0xe8493f, 0x3f7fe8, 0xf2f2f2, 0x2c2f36, 0xf2c14e, 0x4fbf7a, 0x9a5be8, 0xff8a3c, 0x8a96a3, 0x1f4e8c]
 };
+const BEWOHNER = [0, 3, 8, 22], JOBS_L = [0, 2, 5, 14], JOBS_I = [0, 4, 8, 15];
 function hausTeile(h) {
-  const r = zufall(h.variante * 31 + h.stufe * 7919), W = h.w * ZELLE, D = h.d * ZELLE, T = [], vorn = D / 2 - 0.12;
+  const r = zufall(h.variante * 31 + h.stufe * 7919), W = h.w * ZELLE, D = h.d * ZELLE, T = [], vorn = D / 2 - 0.12, v = h.variante % 997;
   const box = (b, lx, lz, w, hh, d, c, extra) => T.push(Object.assign({ b, lx, ly: 0, lz, sx: w, sy: hh, sz: d, c }, extra || {}));
+  const baum = (lx, lz, g) => box("garten", lx, lz, g, g, g, null, { rund: true });
   box("flach", 0, 0, W * 0.97, 0.008, D * 0.97, h.zone === 1 ? 0x8fcf68 : h.zone === 2 ? 0xd6cfc2 : 0xb5b3ad, { fest: true });
+  const satteldach = (lx, lz, w, d, hh, c, quer) => box("dach", lx, lz, (quer ? d : w) + 0.1, 0.28 + r() * 0.14, (quer ? w : d) + 0.1, c, { ly: hh, ry: quer ? Math.PI / 2 : 0 });
   if (h.zone === 1) {
     if (h.stufe === 1) {
-      const n = W >= 2 ? 2 : 1;
-      for (let k = 0; k < n; k++) {
-        const w = 0.66 + r() * 0.16, d = 0.62 + r() * 0.14, hh = 0.48 + r() * 0.16, lx = n === 2 ? (k ? 0.5 : -0.5) : 0, lz = vorn - d / 2 - 0.08;
-        box("haus", lx, lz, w, hh, d, wahl(r, PAL.haus)); box("dach", lx, lz, w + 0.1, 0.28 + r() * 0.14, d + 0.1, wahl(r, PAL.dach), { ly: hh });
-        if (D >= 2 && r() < 0.8) box("garten", lx + (r() - 0.5) * 0.4, lz - d / 2 - 0.55, 0.5 + r() * 0.35, 0.5 + r() * 0.35, 0.5 + r() * 0.35, null, { rund: true });
+      const art = v % 4;
+      if (art === 0) {
+        h.name = "Einfamilienhaus"; const n = W >= 2 ? 2 : 1;
+        for (let k = 0; k < n; k++) { const w = 0.66 + r() * 0.16, d = 0.62 + r() * 0.14, hh = 0.48 + r() * 0.16, lx = n === 2 ? (k ? 0.5 : -0.5) : 0, lz = vorn - d / 2 - 0.08; box("haus", lx, lz, w, hh, d, wahl(r, PAL.haus)); satteldach(lx, lz, w, d, hh, wahl(r, PAL.dach), r() < 0.3); if (D >= 2 && r() < 0.8) baum(lx + (r() - 0.5) * 0.4, lz - d / 2 - 0.55, 0.5 + r() * 0.35); }
+      } else if (art === 1) {
+        h.name = "Bungalow"; const w = Math.min(W * 0.8, 0.95), d = 0.6, hh = 0.36, lz = vorn - d / 2 - 0.1;
+        box("haus", 0, lz, w, hh, d, wahl(r, PAL.haus)); box("flach", 0, lz, w + 0.08, 0.04, d + 0.08, 0xe9e6df, { ly: hh });
+        if (D >= 2) { box("flach", 0.15, lz - d / 2 - 0.45, 0.42, 0.012, 0.3, 0x5fc8e8); baum(-0.3, lz - d / 2 - 0.5, 0.55); }
+      } else if (art === 2) {
+        h.name = "Doppelhaus"; const w = Math.min(W * 0.86, 1.7), d = 0.66, hh = 0.55, lz = vorn - d / 2 - 0.08;
+        box("haus", -w / 4, lz, w / 2, hh, d, wahl(r, PAL.haus)); box("haus", w / 4, lz, w / 2, hh, d, wahl(r, PAL.haus)); satteldach(0, lz, w, d, hh, wahl(r, PAL.dach));
+        if (D >= 2) { baum(-w / 4, lz - d / 2 - 0.5, 0.5); baum(w / 4, lz - d / 2 - 0.55, 0.45); }
+      } else {
+        h.name = "Haus mit Garage"; const w = 0.58, d = 0.6, hh = 0.5, lz = vorn - d / 2 - 0.08, lx = -0.13;
+        box("haus", lx, lz, w, hh, d, wahl(r, PAL.haus)); satteldach(lx, lz, w, d, hh, wahl(r, PAL.dach));
+        box("flach", lx + w / 2 + 0.16, vorn - 0.25, 0.3, 0.26, 0.42, 0xd9d4ca); box("flach", lx + w / 2 + 0.16, vorn - 0.04, 0.24, 0.18, 0.02, 0x8a8f96);
+        if (D >= 2) baum(0, lz - d / 2 - 0.5, 0.6);
       }
     } else if (h.stufe === 2) {
-      const w = Math.min(W * 0.82, 1.7), d = Math.min(D * 0.62, 1.15), hh = 0.78 + r() * 0.25, lz = vorn - d / 2 - 0.06;
-      box("haus", 0, lz, w, hh, d, wahl(r, PAL.haus));
-      if (r() < 0.6) box("dach", 0, lz, w + 0.1, 0.32 + r() * 0.12, d + 0.1, wahl(r, PAL.dach), { ly: hh }); else box("flach", 0, lz, w * 0.4, 0.12, d * 0.4, 0x9aa0a8, { ly: hh });
-      if (D >= 2) box("garten", (r() - 0.5) * W * 0.5, lz - d / 2 - 0.45, 0.6, 0.6, 0.6, null, { rund: true });
+      const art = v % 3;
+      if (art === 1 && W >= 1) {
+        h.name = "Reihenhäuser"; const n = W >= 2 ? 5 : 3, bw = W * 0.9 / n, d = Math.min(D * 0.55, 0.85), hh = 0.62 + r() * 0.12, lz = vorn - d / 2 - 0.06, dc = wahl(r, PAL.dach);
+        for (let k = 0; k < n; k++) { const lx = -W * 0.45 + bw * (k + 0.5); box("haus", lx, lz, bw - 0.01, hh, d, PAL.haus[(v + k) % PAL.haus.length]); box("dach", lx, lz, bw + 0.005, 0.28, d + 0.08, dc, { ly: hh }); }
+        if (D >= 2) for (let k = 0; k < n; k += 2) baum(-W * 0.45 + bw * (k + 0.5), lz - d / 2 - 0.45, 0.4);
+      } else if (art === 2) {
+        h.name = "Stadtvilla"; const w = Math.min(W * 0.8, 0.95), d = Math.min(D * 0.7, 0.95), hh = 0.82, lz = vorn - d / 2 - 0.1, c = wahl(r, PAL.dach);
+        box("haus", 0, lz, w, hh, d, wahl(r, PAL.haus)); box("dach", 0, lz, w + 0.08, 0.3, d + 0.08, c, { ly: hh }); box("dach", 0, lz, d + 0.08, 0.3, w + 0.08, c, { ly: hh, ry: Math.PI / 2 });
+        if (D >= 2) baum((r() - 0.5) * 0.6, lz - d / 2 - 0.45, 0.6);
+      } else {
+        h.name = "Mehrfamilienhaus"; const w = Math.min(W * 0.82, 1.7), d = Math.min(D * 0.62, 1.15), hh = 0.78 + r() * 0.25, lz = vorn - d / 2 - 0.06;
+        box("haus", 0, lz, w, hh, d, wahl(r, PAL.haus));
+        if (r() < 0.6) satteldach(0, lz, w, d, hh, wahl(r, PAL.dach)); else box("flach", 0, lz, w * 0.4, 0.12, d * 0.4, 0x9aa0a8, { ly: hh });
+        if (D >= 2) baum((r() - 0.5) * W * 0.5, lz - d / 2 - 0.45, 0.6);
+      }
     } else {
-      const w = W * 0.86, d = D * 0.78, hh = 1.3 + r() * 1.1 + (W >= 2 && D >= 3 ? r() * 0.9 : 0), lz = vorn - d / 2 - 0.04;
-      box("haus", 0, lz, w, hh, d, wahl(r, PAL.block)); box("flach", (r() - 0.5) * w * 0.4, lz + (r() - 0.5) * d * 0.4, 0.3, 0.16, 0.3, 0x9aa0a8, { ly: hh });
+      const art = v % 3, gross = W >= 2 || D >= 3;
+      if (art === 1 && gross) {
+        h.name = "Hochhaus"; const s0 = Math.min(W, D) * 0.66, hh = 3.0 + r() * 2.2 + (W >= 2 && D >= 3 ? 1.2 : 0), lz = vorn - D * 0.45, c = wahl(r, PAL.block);
+        box("haus", 0, lz, s0, hh, s0, c); box("haus", 0, lz, s0 * 0.7, 0.35, s0 * 0.7, c, { ly: hh }); box("flach", s0 * 0.15, lz, 0.03, 0.6, 0.03, 0xc9ced6, { ly: hh + 0.35 });
+        box("flach", 0, lz + s0 / 2 + 0.06, 0.3, 0.2, 0.1, 0xe9e6df); baum(-W * 0.35, vorn - 0.25, 0.45);
+      } else if (art === 2 && W >= 2 && D >= 2) {
+        h.name = "Wohnanlage"; const c = wahl(r, PAL.block), hh = 1.1 + r() * 0.5, d1 = 0.7, lz1 = vorn - d1 / 2 - 0.04;
+        box("haus", 0, lz1, W * 0.86, hh, d1, c); const wd = D - d1 - 0.3; box("haus", -W * 0.43 + 0.35, lz1 - d1 / 2 - wd / 2, 0.7, hh * 0.85, wd, c);
+        baum(W * 0.2, lz1 - d1 / 2 - 0.6, 0.6);
+      } else {
+        h.name = "Wohnblock"; const w = W * 0.86, d = D * 0.78, hh = 1.3 + r() * 1.1 + (W >= 2 && D >= 3 ? r() * 0.9 : 0), lz = vorn - d / 2 - 0.04;
+        box("haus", 0, lz, w, hh, d, wahl(r, PAL.block)); box("flach", (r() - 0.5) * w * 0.4, lz + (r() - 0.5) * d * 0.4, 0.3, 0.16, 0.3, 0x9aa0a8, { ly: hh });
+        for (let y = 0.3; y < hh - 0.15; y += 0.32) box("flach", 0, lz + d / 2 + 0.04, w * 0.84, 0.025, 0.08, 0xf2efe8, { ly: y });
+      }
     }
   } else if (h.zone === 2) {
-    if (h.stufe === 3 && (W >= 2 || D >= 2)) {
-      const w = W * 0.82, d = D * 0.78, hh = 2.2 + r() * 1.8 + (W >= 2 && D >= 2 ? r() * 1.4 : 0), lz = vorn - d / 2 - 0.04, c = wahl(r, PAL.turm);
-      box("haus", 0, lz, w, hh, d, c); box("haus", 0, lz, w * 0.7, 0.4 + r() * 0.6, d * 0.7, c, { ly: hh });
+    if (h.stufe === 1) {
+      const art = v % 3;
+      if (art === 1) {
+        h.name = "Tankstelle"; const lz = vorn - 0.38;
+        box("flach", 0, lz, Math.min(W * 0.9, 0.95), 0.05, 0.6, 0xf4f4f4, { ly: 0.42 }); box("flach", 0, lz + 0.31, Math.min(W * 0.9, 0.95), 0.06, 0.02, 0xe8493f, { ly: 0.4 });
+        for (const px of [-0.35, 0.35]) for (const pz of [-0.22, 0.22]) box("flach", px * Math.min(W, 1), lz + pz, 0.04, 0.42, 0.04, 0xd9d9d9);
+        for (const px of [-0.15, 0.15]) box("flach", px, lz, 0.07, 0.15, 0.1, 0xe8493f);
+        box("haus", 0, lz - 0.48, 0.55, 0.36, 0.32, 0xf2efe8);
+      } else if (art === 2) {
+        h.name = "Café"; const w = Math.min(W * 0.7, 0.75), d = 0.5, hh = 0.48, lz = vorn - d / 2 - 0.32;
+        box("haus", 0, lz, w, hh, d, wahl(r, PAL.laden)); box("flach", 0, lz + d / 2 + 0.06, w * 0.95, 0.04, 0.14, wahl(r, PAL.markise), { ly: 0.3 });
+        const sc = wahl(r, PAL.markise); for (const px of [-0.28, 0, 0.28]) { box("flach", px, vorn - 0.12, 0.015, 0.22, 0.015, 0xdddddd); box("dach", px, vorn - 0.12, 0.2, 0.06, 0.2, sc, { ly: 0.22 }); }
+      } else {
+        h.name = "Laden"; const w = W * (0.82 + r() * 0.1), d = Math.min(D, 1) * 0.78, hh = 0.55 + r() * 0.15, lz = vorn - d / 2 - 0.04;
+        box("haus", 0, lz, w, hh, d, wahl(r, PAL.laden)); box("flach", 0, vorn - 0.02, w * 0.92, 0.05, 0.2, wahl(r, PAL.markise), { ly: 0.34 });
+        if (r() < 0.5) box("flach", (r() - 0.5) * w * 0.5, lz, 0.28, 0.14, 0.3, 0xa7abb1, { ly: hh });
+      }
+    } else if (h.stufe === 2) {
+      const art = v % 3;
+      if (art === 1 && W >= 2) {
+        h.name = "Supermarkt"; const d = Math.min(D * 0.5, 0.9), lz = -D / 2 + d / 2 + 0.12;
+        box("haus", 0, lz, W * 0.9, 0.48, d, 0xeeeae2); box("flach", 0, lz + d / 2 + 0.01, W * 0.7, 0.1, 0.02, wahl(r, PAL.markise), { ly: 0.34 });
+        box("flach", 0, vorn - (D - d - 0.3) / 2, W * 0.9, 0.006, D - d - 0.3, 0x55595f, { ly: 0.004 });
+        for (let k = 0; k < 4; k++) box("flach", -W * 0.32 + k * W * 0.21, vorn - 0.35, 0.2, 0.11, 0.12, PAL.auto[(v + k) % PAL.auto.length], { ly: 0.01 });
+      } else if (art === 2) {
+        h.name = "Hotel"; const w = W * 0.8, d = Math.min(D * 0.7, 1.6), hh = 1.3 + r() * 0.6, lz = vorn - d / 2 - 0.08;
+        box("haus", 0, lz, w, hh, d, wahl(r, PAL.block)); box("flach", 0, lz + d / 2 + 0.1, 0.42, 0.04, 0.22, 0x2f3540, { ly: 0.3 }); box("flach", 0, lz + d / 2 + 0.01, 0.5, 0.12, 0.02, 0xf2c14e, { ly: hh - 0.2 });
+      } else {
+        h.name = "Geschäftshaus"; const w = W * (0.82 + r() * 0.1), d = Math.min(D, 3) * 0.78, hh = 0.95 + r() * 0.6, lz = vorn - d / 2 - 0.04;
+        box("haus", 0, lz, w, hh, d, wahl(r, PAL.laden)); box("flach", 0, vorn - 0.02, w * 0.92, 0.05, 0.2, wahl(r, PAL.markise), { ly: 0.34 });
+      }
     } else {
-      const w = W * (0.82 + r() * 0.1), d = Math.min(D, h.stufe === 1 ? 1 : 3) * 0.78, hh = h.stufe === 1 ? 0.55 + r() * 0.15 : 0.95 + r() * 0.6, lz = vorn - d / 2 - 0.04;
-      box("haus", 0, lz, w, hh, d, wahl(r, PAL.laden)); box("flach", 0, vorn - 0.02, w * 0.92, 0.05, 0.2, wahl(r, PAL.markise), { ly: 0.34 });
-      if (r() < 0.5) box("flach", (r() - 0.5) * w * 0.5, lz, 0.28, 0.14, 0.3, 0xa7abb1, { ly: hh });
+      const art = v % 3, gross = W >= 2 || D >= 2;
+      if (art === 1 && gross) {
+        h.name = "Glasturm"; const c = wahl(r, PAL.turm), s0 = Math.min(W, D) * 0.8, lz = vorn - D * 0.45; let y = 0, sz = s0;
+        for (let k = 0; k < 3; k++) { const hh = 1.2 + r() * 1.2; box("haus", 0, lz, sz, hh, sz, c, { ly: y }); y += hh; sz *= 0.75; }
+        box("flach", 0, lz, 0.03, 0.5, 0.03, 0xc9ced6, { ly: y });
+      } else if (art === 2 && gross) {
+        h.name = "Kaufhaus"; const w = W * 0.88, d = D * 0.78, hh = 1.1 + r() * 0.4, lz = vorn - d / 2 - 0.04;
+        box("haus", 0, lz, w, hh, d, 0xe6dccb); box("flach", 0, lz + d / 2 + 0.01, w * 0.96, 0.16, 0.02, 0x7fb8e0, { ly: 0.25 }); box("flach", 0, lz + d / 2 + 0.01, w * 0.5, 0.1, 0.02, wahl(r, PAL.markise), { ly: hh - 0.16 });
+      } else if (gross) {
+        h.name = "Büroturm"; const w = W * 0.82, d = D * 0.78, hh = 2.2 + r() * 1.8 + (W >= 2 && D >= 2 ? r() * 1.4 : 0), lz = vorn - d / 2 - 0.04, c = wahl(r, PAL.turm);
+        box("haus", 0, lz, w, hh, d, c); box("haus", 0, lz, w * 0.7, 0.4 + r() * 0.6, d * 0.7, c, { ly: hh });
+      } else { h.name = "Geschäftshaus"; const w = W * 0.86, d = Math.min(D, 3) * 0.78, hh = 1.4 + r() * 0.5, lz = vorn - d / 2 - 0.04; box("haus", 0, lz, w, hh, d, wahl(r, PAL.laden)); box("flach", 0, vorn - 0.02, w * 0.92, 0.05, 0.2, wahl(r, PAL.markise), { ly: 0.34 }); }
     }
   } else {
-    const w = W * 0.86, d = D * (h.stufe === 1 ? 0.6 : 0.8), hh = h.stufe === 1 ? 0.42 : 0.6 + r() * 0.25, lz = vorn - d / 2 - 0.1;
-    box("haus", 0, lz, w, hh, d, wahl(r, PAL.halle)); box("dach", 0, lz, w + 0.04, 0.16, d + 0.04, 0x8b9096, { ly: hh });
-    if (h.stufe >= 2) box("zyl", -w / 2 + 0.2, lz - d / 2 + 0.2, 0.16, 1.2 + r() * 0.5, 0.16, 0xb5523a, { schlot: true });
-    if (h.stufe >= 3) { box("zyl", w / 2 - 0.35, lz - d / 2 - 0.35, 0.5, 0.55, 0.5, 0xc8ccd0); if (W >= 2) box("zyl", -w / 2 + 0.55, lz - d / 2 + 0.2, 0.16, 1.5, 0.16, 0xb5523a, { schlot: true }); }
+    const art = v % 2;
+    if (h.stufe === 1) {
+      if (art === 1) {
+        h.name = "Lagerhalle"; const w = W * 0.86, d = D * 0.62, hh = 0.4, lz = vorn - d / 2 - 0.12, c = wahl(r, PAL.halle), n = Math.max(2, Math.round(d / 0.3));
+        box("haus", 0, lz, w, hh, d, c); for (let k = 0; k < n; k++) box("dach", 0, lz - d / 2 + d / n * (k + 0.5), w, 0.16, d / n, 0x9aa1a8, { ly: hh });
+      } else { h.name = "Werkstatt"; const w = W * 0.86, d = D * 0.6, lz = vorn - d / 2 - 0.1; box("haus", 0, lz, w, 0.42, d, wahl(r, PAL.halle)); box("dach", 0, lz, w + 0.04, 0.16, d + 0.04, 0x8b9096, { ly: 0.42 }); }
+    } else if (h.stufe === 2) {
+      if (art === 1) {
+        h.name = "Silos"; const lz = vorn - 0.45; box("haus", -W * 0.25, lz, 0.5, 0.45, 0.5, wahl(r, PAL.halle));
+        for (let k = 0; k < (W >= 2 ? 3 : 2); k++) box("zyl", W * 0.1 + k * 0.38 - (W >= 2 ? 0.2 : 0), lz - 0.2, 0.34, 0.9 + r() * 0.3, 0.34, 0xd8dade);
+      } else {
+        h.name = "Fabrikhalle"; const w = W * 0.86, d = D * 0.8, hh = 0.6 + r() * 0.25, lz = vorn - d / 2 - 0.1;
+        box("haus", 0, lz, w, hh, d, wahl(r, PAL.halle)); box("dach", 0, lz, w + 0.04, 0.16, d + 0.04, 0x8b9096, { ly: hh }); box("zyl", -w / 2 + 0.2, lz - d / 2 + 0.2, 0.16, 1.2 + r() * 0.5, 0.16, 0xb5523a, { schlot: true });
+      }
+    } else {
+      const w = W * 0.86, d = D * 0.8, hh = 0.7 + r() * 0.25, lz = vorn - d / 2 - 0.1;
+      if (art === 1 && W >= 2) {
+        h.name = "Großfabrik"; box("haus", -w / 4, lz, w / 2 - 0.05, hh, d, wahl(r, PAL.halle)); box("haus", w / 4, lz, w / 2 - 0.05, hh * 0.8, d, wahl(r, PAL.halle));
+        box("flach", 0, lz, w * 0.9, 0.06, 0.12, 0x6d737a, { ly: hh * 0.7 }); box("zyl", -w / 2 + 0.25, lz - d / 2 + 0.25, 0.18, 1.7, 0.18, 0xb5523a, { schlot: true }); box("zyl", w / 2 - 0.25, lz - d / 2 + 0.25, 0.18, 1.5, 0.18, 0xb5523a, { schlot: true });
+      } else {
+        h.name = "Fabrik"; box("haus", 0, lz, w, hh, d, wahl(r, PAL.halle)); box("dach", 0, lz, w + 0.04, 0.16, d + 0.04, 0x8b9096, { ly: hh });
+        box("zyl", -w / 2 + 0.2, lz - d / 2 + 0.2, 0.16, 1.4, 0.16, 0xb5523a, { schlot: true }); box("zyl", w / 2 - 0.35, lz - d / 2 - 0.35, 0.5, 0.55, 0.5, 0xc8ccd0);
+      }
+    }
   }
   return T;
 }
 function hausWeg(h) { if (!h) return; for (const id of h.zellen) { const z = zellen.get(id); if (z) z.haus = null; } haeuser.delete(h.id); haeuserNeu = zellenNeu = true; }
 function neuesHaus(d, alt) {
-  const h = Object.assign({ id: d.id || hId++, geboren: alt ? -100 : jetztS, ab: 0 }, d); hId = Math.max(hId, h.id + 1);
+  const h = Object.assign({ id: d.id || hId++, geboren: alt ? -100 : jetztS, simGeboren: alt ? -100 : simZeit, ab: 0, zug: null }, d); hId = Math.max(hId, h.id + 1);
   let x = 0, z = 0, sx = 0, sz = 0; h.zellen.forEach((id) => { const c = zellen.get(id); c.haus = h.id; x += c.x; z += c.z; sx += Math.sin(c.rot); sz += Math.cos(c.rot); });
   h.x = x / h.zellen.length; h.z = z / h.zellen.length; h.rot = Math.atan2(sx, sz);
   h.teile = hausTeile(h); haeuser.set(h.id, h); haeuserNeu = zellenNeu = true;
   const rr = Math.max(h.w, h.d) * 0.62 + 0.2; baeumeFaellen({ x0: h.x - rr, x1: h.x + rr, z0: h.z - rr, z1: h.z + rr }, (bx, bz) => Math.hypot(bx - h.x, bz - h.z) < rr);
   return h;
+}
+const leute = (h) => h.zone === 1 ? BEWOHNER[h.stufe] * h.zellen.length : 0;
+const jobs = (h) => h.zone === 2 ? JOBS_L[h.stufe] * h.zellen.length : h.zone === 3 ? JOBS_I[h.stufe] * h.zellen.length : 0;
+/* Zufahrt eines Hauses (Punkt auf der nächsten befahrbaren Straße) */
+function zufahrt(h) {
+  if (h.zug && h.zugV === netzVersion) return h.zug;
+  const f = { x: h.x + Math.sin(h.rot) * (h.d * ZELLE / 2 + 0.3), z: h.z + Math.cos(h.rot) * (h.d * ZELLE / 2 + 0.3) };
+  const e = naechsteKante(f, 3.5, (k) => TYP[k.typ].autos);
+  h.zug = e ? { k: e.k.id, S: e.s } : null; h.zugV = netzVersion; return h.zug;
 }
 const federn = (t) => { const c = 1.4; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
 let rauchTeile = [];
@@ -588,7 +785,7 @@ function haeuserZeichnen() {
       if (t.rund) { const f = p >= 1 ? 1 : (p > 0 ? federn(p) : 0); _o.position.set(wx, BODEN, wz); _o.scale.set(t.sx * f + 1e-4, t.sy * f + 1e-4, t.sz * f + 1e-4); }
       else if (t.fest) { _o.position.set(wx, G + 0.012, wz); _o.scale.set(t.sx, t.sy, t.sz); }
       else { _o.position.set(wx, BODEN + t.ly * e, wz); _o.scale.set(t.sx, Math.max(t.sy * e, 1e-4), t.sz); }
-      _o.rotation.set(0, h.rot, 0); _o.updateMatrix(); m.setMatrixAt(n[t.b], _o.matrix);
+      _o.rotation.set(0, h.rot + (t.ry || 0), 0); _o.updateMatrix(); m.setMatrixAt(n[t.b], _o.matrix);
       if (t.c != null) m.setColorAt(n[t.b], _farbe.setHex(t.c)); else m.setColorAt(n[t.b], _farbe.setRGB(0.85 + (h.variante % 7) * 0.02, 0.9, 0.85));
       n[t.b]++;
       if (t.schlot && p >= 1) rauchTeile.push({ x: wx, y: BODEN + t.sy, z: wz, ph: (h.variante % 100) / 13 });
@@ -612,77 +809,389 @@ function alleeZeichnen() {
   alleeBaeume.count = i; alleeBaeume.instanceMatrix.needsUpdate = true; if (alleeBaeume.instanceColor) alleeBaeume.instanceColor.needsUpdate = true;
 }
 
-/* Wachstum */
+/* ================================================================
+   Wirtschaft: Bedarf, Steuern, Budget, Meilensteine
+   ================================================================ */
+let steuern = { 1: 9, 2: 9, 3: 9 }, meilenstein = 0, tempo = 1, simZeit = 0, tage = 0, letzteWoche = null;
+let bedarf = { 1: 60, 2: 20, 3: 40 };
+function kennzahlen() {
+  let e = 0, jl = 0, ji = 0; for (const h of haeuser.values()) { if (h.zone === 1) e += leute(h); else if (h.zone === 2) jl += jobs(h); else ji += jobs(h); }
+  const ein = { 1: e * 2.0 * steuern[1] / 9, 2: jl * 2.6 * steuern[2] / 9, 3: ji * 2.4 * steuern[3] / 9 };
+  let strassen = 0; for (const k of kanten.values()) strassen += k.len * TYP[k.typ].preis * 0.012;
+  const einnahmen = ein[1] + ein[2] + ein[3];
+  return { e, jl, ji, j: jl + ji, ein, einnahmen, strassen, ausgaben: strassen, saldo: einnahmen - strassen };
+}
+function bedarfBerechnen() {
+  const k = kennzahlen(), arbeiter = k.e * 0.55;
+  let w = 22 + (k.j - arbeiter) * 0.9 + (k.e < 40 ? 45 : 0);
+  let l = (k.e * 0.24 - k.jl) * 1.5 + 8;
+  let i = (arbeiter * 0.42 - k.ji) * 1.2 + (k.e < 60 ? 25 : 0) + k.jl * 0.15;
+  const s = (z, v) => (v - (steuern[z] - 9) * 4.5) * (1 - (steuern[z] - 9) * 0.05);
+  bedarf = { 1: klemme(s(1, w), -100, 100), 2: klemme(s(2, l), -100, 100), 3: klemme(s(3, i), -100, 100) };
+  const balken = document.querySelectorAll("#bedarf i"); [1, 2, 3].forEach((z, n) => { balken[n].style.height = Math.max(2, bedarf[z] / 100 * 26) + "px"; });
+}
+function meilensteinPruefen() {
+  const e = kennzahlen().e;
+  while (meilenstein < MEILEN.length - 1 && e >= MEILEN[meilenstein + 1].ab) {
+    meilenstein++; const m = MEILEN[meilenstein]; geld += m.geld;
+    const frei = m.frei.map((t) => TYP[t].em + " " + TYP[t].name);
+    infoZeigen(`<b>🎉 Meilenstein: ${m.name}!</b>Deine Stadt hat ${zahl(m.ab)} Einwohner.<br>+${euro(m.geld)} Belohnung${frei.length ? "<br>Neu: " + frei.join(", ") : ""}<br><small>Jetzt kannst du bis zu ${m.gebiete} Gebiete dazukaufen.</small>`, 7000);
+    if (werkzeug === "strasse") unterleiste();
+  }
+}
+function wocheTakt() {
+  const k = kennzahlen(); geld += k.saldo; letzteWoche = k; zeigeWerte();
+  if (geld < 0 && geld - k.saldo >= 0) tipp("⚠️ Dein Geld ist im Minus! Senk die Ausgaben oder erhöh die Steuern.", 5000);
+  if (werkzeug === "gebiet") gebieteZeichnen(); if (!$("budget").hidden) budgetZeigen(); speichernBald();
+}
+function zeigeWerte() {
+  const k = kennzahlen(), d = Math.round(k.saldo);
+  $("wGeld").textContent = euro(geld); $("wGeld").style.color = geld < 0 ? "#ff8a8a" : "";
+  $("wEinw").textContent = zahl(k.e); $("wJobs").textContent = zahl(k.j);
+  const t = $("trend"); t.textContent = (d >= 0 ? "+" : "") + zahl(d) + "/Wo"; t.className = d >= 0 ? "plus" : "minus";
+}
+function datumZeigen() { const w = Math.floor(tage / 7) + 1, d = Math.floor(tage) % 7; $("datum").textContent = "Woche " + w + " · " + WOCHENTAGE[d]; }
+function budgetZeigen() {
+  const k = kennzahlen(), el = $("budget"), m = MEILEN[meilenstein], n = MEILEN[meilenstein + 1];
+  const zeile = (a, b, cls) => `<div class="zeile ${cls || ""}"><span>${a}</span><span>${b}</span></div>`;
+  const regler = (z) => `<div class="steuer" style="--c:#${ZONEN[z].farbe.toString(16).padStart(6, "0")}"><span>${ZONEN[z].em} ${ZONEN[z].name}</span><input type="range" min="1" max="29" value="${steuern[z]}" data-steuer="${z}" aria-label="Steuer ${ZONEN[z].name}"><b>${steuern[z]} %</b></div>`;
+  const fort = n ? Math.min(100, (k.e - m.ab) / (n.ab - m.ab) * 100) : 100;
+  el.innerHTML = `<h2>💶 Budget &amp; Steuern<button type="button" id="budgetZu" aria-label="Schließen">✕</button></h2>
+    <div><h3>Pro Woche</h3>${zeile("🏠 Steuern Wohnen", "<span class='plus'>+" + euro(k.ein[1]) + "</span>")}${zeile("🛍️ Steuern Läden", "<span class='plus'>+" + euro(k.ein[2]) + "</span>")}${zeile("🏭 Steuern Industrie", "<span class='plus'>+" + euro(k.ein[3]) + "</span>")}${zeile("🛣️ Unterhalt Straßen", "<span class='minus'>−" + euro(k.strassen) + "</span>")}${zeile("Ergebnis", "<span class='" + (k.saldo >= 0 ? "plus" : "minus") + "'>" + (k.saldo >= 0 ? "+" : "−") + euro(Math.abs(k.saldo)) + "</span>", "summe")}</div>
+    <div><h3>Steuern</h3><div style="display:grid;gap:10px">${regler(1)}${regler(2)}${regler(3)}</div><small style="color:var(--leise);display:block;margin-top:8px">Hohe Steuern bringen mehr Geld, aber weniger Zuzug. 9 % ist ausgeglichen.</small></div>
+    <div><h3>Bedarf</h3>${[1, 2, 3].map((z) => zeile(ZONEN[z].em + " " + ZONEN[z].name, bedarf[z] > 40 ? "hoch" : bedarf[z] > 10 ? "mittel" : bedarf[z] > 0 ? "wenig" : "keiner")).join("")}</div>
+    <div><h3>Meilenstein: ${m.name}</h3>${n ? `<div class="leiste"><i style="width:${fort}%"></i></div><small style="color:var(--leise)">Nächster: <b>${n.name}</b> bei ${zahl(n.ab)} Einwohnern (jetzt ${zahl(k.e)})${n.frei.length ? " – schaltet " + n.frei.map((t) => TYP[t].name).join(", ") + " frei" : ""}</small>` : "<small>Höchster Meilenstein erreicht!</small>"}</div>`;
+  el.hidden = false;
+  $("budgetZu").onclick = () => { el.hidden = true; };
+}
+$("budget").addEventListener("input", (e) => { const z = e.target.dataset.steuer; if (!z) return; steuern[z] = +e.target.value; e.target.nextElementSibling.textContent = steuern[z] + " %"; bedarfBerechnen(); zeigeWerte(); speichernBald(); });
+$("budget").addEventListener("change", () => budgetZeigen());
+
+/* Wachstum nach Bedarf */
 const zk = (g, s, i, r) => zellIndex.get(g + "|" + s + "|" + i + "|" + r);
 function freiGleich(id, zone) { const z = id && zellen.get(id); return z && !z.haus && z.zone === zone ? z : null; }
 function wachsTakt() {
+  bedarfBerechnen();
   const kand = { 1: [], 2: [], 3: [] };
   for (const z of zellen.values()) if (z.zone && !z.haus && z.r === 0) kand[z.zone].push(z);
   for (const zone of [1, 2, 3]) {
-    const L = kand[zone]; if (!L.length || Math.random() > 0.6) continue;
+    const L = kand[zone], p = bedarf[zone] > 0 ? 0.08 + bedarf[zone] / 100 * 0.75 : 0.03;
+    if (!L.length || Math.random() > p) continue;
     const a = L[Math.floor(Math.random() * L.length)], spalten = [a], nb = freiGleich(zk(a.g, a.seite, a.i + 1, 0), zone);
     if (nb && Math.random() < (zone === 1 ? 0.3 : zone === 2 ? 0.5 : 0.75)) spalten.push(nb);
     let tiefe = REIHEN; for (const s of spalten) { let t = 1; while (t < REIHEN && freiGleich(zk(s.g, s.seite, s.i, t), zone)) t++; tiefe = Math.min(tiefe, t); }
     const ids = []; for (const s of spalten) for (let t = 0; t < tiefe; t++) ids.push(zk(s.g, s.seite, s.i, t));
     neuesHaus({ zone, stufe: 1, w: spalten.length, d: tiefe, variante: (Math.random() * 1e6) | 0, zellen: ids });
   }
-  const liste = [...haeuser.values()].filter((h) => h.stufe < 3 && jetztS - h.geboren > 20 && (h.stufe < 2 || h.d >= 2 || h.zone === 3));
-  if (liste.length && Math.random() < 0.5) { const h = liste[Math.floor(Math.random() * liste.length)]; h.stufe++; h.geboren = jetztS; h.ab = 0.35; h.teile = hausTeile(h); haeuserNeu = true; }
-  zeigeWerte(); speichernBald();
+  const liste = [...haeuser.values()].filter((h) => h.stufe < 3 && simZeit - (h.simGeboren || 0) > 25 && bedarf[h.zone] > 8 && (h.stufe < 2 || h.d >= 2 || h.zone === 3));
+  if (liste.length && Math.random() < 0.45) { const h = liste[Math.floor(Math.random() * liste.length)]; h.stufe++; h.geboren = jetztS; h.simGeboren = simZeit; h.ab = 0.35; h.teile = hausTeile(h); haeuserNeu = true; }
+  zeigeWerte(); meilensteinPruefen(); speichernBald();
 }
-function kennzahlen() {
-  let e = 0, j = 0; for (const h of haeuser.values()) { const f = h.zellen.length; if (h.zone === 1) e += [0, 3, 8, 22][h.stufe] * f; else j += (h.zone === 2 ? [0, 2, 5, 14] : [0, 4, 8, 15])[h.stufe] * f; }
-  let unterhalt = 0; for (const k of kanten.values()) unterhalt += k.len * TYP[k.typ].preis * 0.004;
-  return { e, j, einnahmen: e * 0.9 + j * 0.7, unterhalt };
-}
-function zeigeWerte() {
-  const k = kennzahlen(), d = Math.round(k.einnahmen - k.unterhalt);
-  $("wGeld").textContent = euro(geld); $("wEinw").textContent = k.e.toLocaleString("de-DE"); $("wJobs").textContent = k.j.toLocaleString("de-DE");
-  const t = $("trend"); t.textContent = (d >= 0 ? "+" : "") + d.toLocaleString("de-DE") + "/Wo"; t.className = d >= 0 ? "plus" : "minus";
-}
-function wocheTakt() { const k = kennzahlen(); geld += k.einnahmen - k.unterhalt; zeigeWerte(); if (werkzeug === "gebiet") gebieteZeichnen(); speichernBald(); }
 
 /* ================================================================
-   Autos und Laternen
+   Verkehr
    ================================================================ */
-const AUTOS_MAX = 160;
-const autoKoerper = becken(G_BOX, M.auto, AUTOS_MAX, true), autoKabine = becken(G_BOX, M.auto, AUTOS_MAX, true), autoLicht = becken(G_BOX, M.licht, AUTOS_MAX * 2, false);
-let autos = []; const ra = zufall(99);
-const autoKanten = () => [...kanten.values()].filter((k) => TYP[k.typ].autos);
-function autoNeu(ks) {
-  let sum = 0; ks.forEach((k) => { sum += k.len; }); let x = ra() * sum, k = ks[0]; for (const e of ks) { x -= e.len; if (x <= 0) { k = e; break; } }
-  return { k: k.id, dir: ra() < 0.5 ? 1 : -1, s: ra() * k.len, v: 1.4 + ra() * 1.2, c: wahl(ra, PAL.auto), spur: ra() < 0.5 ? 0 : 1 };
+const FZ = {
+  pkw: { L: 0.46, B: 0.24, teile: [[0, 0.1, 0.46, 0.13, 0.24, "f"], [-0.04, 0.2, 0.26, 0.1, 0.2, 0x2b3a4d]] },
+  kombi: { L: 0.52, B: 0.24, teile: [[0, 0.1, 0.52, 0.13, 0.24, "f"], [-0.06, 0.2, 0.34, 0.1, 0.21, 0x2b3a4d]] },
+  liefer: { L: 0.56, B: 0.26, teile: [[-0.05, 0.17, 0.44, 0.27, 0.26, 0xf2f2f2], [0.2, 0.12, 0.16, 0.17, 0.25, "f"], [0.25, 0.2, 0.06, 0.08, 0.22, 0x2b3a4d]] },
+  lkw: { L: 0.95, B: 0.28, teile: [[0.33, 0.15, 0.27, 0.24, 0.28, "f"], [0.4, 0.22, 0.1, 0.08, 0.25, 0x2b3a4d], [-0.14, 0.2, 0.66, 0.32, 0.28, 0xdfe3e8]] },
+  bus: { L: 1.0, B: 0.28, teile: [[0, 0.17, 1.0, 0.27, 0.28, 0xf2c14e], [0.02, 0.24, 0.94, 0.07, 0.29, 0x2b3a4d]] }
+};
+const FZ_MAX = 170;
+const fzTeile = becken(G_BOX, M.auto, FZ_MAX * 3 + 10, true), fzLicht = becken(G_BOX, M.leuchte, FZ_MAX * 4 + 8, false);
+const fzRaeder = becken(new THREE.CylinderGeometry(0.046, 0.046, 0.04, 10).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x1b1d22, roughness: 0.8 }), FZ_MAX * 6 + 12, false);
+let fahrzeuge = [], fzId = 1;
+const rv = zufall(4711);
+function knotenR(n) {
+  let r = 0, deg = 0; for (const id of n.kanten) { const k = kanten.get(id); if (k && TYP[k.typ].autos) { r = Math.max(r, TYP[k.typ].halb); deg++; } }
+  return deg >= 3 ? r + 0.2 : deg === 2 ? 0.3 : 0.6;
 }
-function autosAbgleichen() {
-  const ks = autoKanten(); let gesamt = 0; ks.forEach((k) => { gesamt += k.len; });
-  const ziel = ks.length ? Math.min(STUFEN[stufe].autos, AUTOS_MAX, Math.floor(gesamt / 5)) : 0;
-  autos = autos.filter((a) => kanten.has(a.k) && TYP[kanten.get(a.k).typ].autos).slice(0, ziel);
-  while (autos.length < ziel) autos.push(autoNeu(ks));
-  autos.forEach((a, i) => { autoKoerper.setColorAt(i, _farbe.setHex(a.c)); autoKabine.setColorAt(i, _farbe.setHex(0x26303d)); autoLicht.setColorAt(i * 2, _farbe.setHex(0xfff3c8)); autoLicht.setColorAt(i * 2 + 1, _farbe.setHex(0xff3b30)); });
-  [autoKoerper, autoKabine, autoLicht].forEach((m) => { if (m.instanceColor) m.instanceColor.needsUpdate = true; });
-  autoKoerper.count = autoKabine.count = autos.length; autoLicht.count = autos.length * 2;
+function endKnoten(k, dir) { return knoten.get(dir > 0 ? k.b : k.a); }
+function anfang(k, dir) { return Math.min(k.len * 0.45, knotenR(knoten.get(dir > 0 ? k.a : k.b))); }
+function ende(k, dir) { return k.len - Math.min(k.len * 0.45, knotenR(endKnoten(k, dir))); }
+function spurPunkt(k, dir, s, off) { const S = dir > 0 ? s : k.len - s, p = punktBei(k, S), tx = p.tx * dir, tz = p.tz * dir; return { x: p.x - tz * off, z: p.z + tx * off, tx, tz }; }
+function spurAbstand(typ, spur) { const sp = TYP[typ].spuren; return sp[Math.min(spur, sp.length - 1)] || 0.27; }
+function richtungAm(k, dir, amAnfang) { const p = amAnfang ? (dir > 0 ? k.pts[0] : k.pts[k.pts.length - 1]) : (dir > 0 ? k.pts[k.pts.length - 1] : k.pts[0]); return { x: p.tx * dir, z: p.tz * dir }; }
+function abbiegen(k, dir, naechster) {
+  const k2 = kanten.get(naechster.k); if (!k2) return "gerade";
+  const a = richtungAm(k, dir, false), b = richtungAm(k2, naechster.dir, true), d = a.x * b.x + a.z * b.z, c = a.x * b.z - a.z * b.x;
+  if (d < -0.6) return "wenden"; if (d > 0.82) return "gerade"; return c > 0 ? "rechts" : "links";
 }
-const _m = new THREE.Matrix4(), _l = new THREE.Matrix4(), _q = new THREE.Quaternion(), _q0 = new THREE.Quaternion(), _v = new THREE.Vector3(), _s = new THREE.Vector3(), _y = new THREE.Vector3(0, 1, 0);
-function autosFahren(dt) {
-  autos.forEach((a, i) => {
-    let k = kanten.get(a.k); if (!k) return;
-    a.s += a.v * dt; let schutz = 0;
-    while (a.s >= k.len && schutz++ < 5) {
-      a.s -= k.len; const nid = a.dir > 0 ? k.b : k.a, n = knoten.get(nid);
-      const weiter = [...n.kanten].filter((id) => id !== k.id && TYP[kanten.get(id).typ].autos);
-      const nk = kanten.get(weiter.length ? weiter[Math.floor(ra() * weiter.length)] : k.id);
-      a.k = nk.id; a.dir = nk.a === nid ? 1 : -1; k = nk;
+/* Wegsuche (A*) im Straßennetz */
+function wegSuchen(start, ziel) {
+  const ks = kanten.get(start.k), kz = kanten.get(ziel.k); if (!ks || !kz) return null;
+  if (ks === kz) { const dir = ziel.S >= start.S ? 1 : -1; return { route: [{ k: ks.id, dir }], s0: dir > 0 ? start.S : ks.len - start.S, s1: dir > 0 ? ziel.S : ks.len - ziel.S }; }
+  const kosten = (k) => k.len / TYP[k.typ].tempo * (1 + k.stau * 2.5);
+  const g = new Map(), von = new Map(), offen = [];
+  const push = (id, wert, f) => { offen.push({ id, wert, f }); let i = offen.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (offen[p].f <= offen[i].f) break; [offen[p], offen[i]] = [offen[i], offen[p]]; i = p; } };
+  const pop = () => { const top = offen[0], last = offen.pop(); if (offen.length) { offen[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < offen.length && offen[l].f < offen[m].f) m = l; if (r < offen.length && offen[r].f < offen[m].f) m = r; if (m === i) break; [offen[m], offen[i]] = [offen[i], offen[m]]; i = m; } } return top; };
+  const zx = (knoten.get(kz.a).x + knoten.get(kz.b).x) / 2, zz = (knoten.get(kz.a).z + knoten.get(kz.b).z) / 2, h = (n) => Math.hypot(n.x - zx, n.z - zz) / 3.1;
+  const t0 = TYP[ks.typ].tempo;
+  const startWert = (nid, w, dir) => { if (w < (g.get(nid) ?? 1e9)) { g.set(nid, w); von.set(nid, { k: ks.id, dir, vor: null }); push(nid, w, w + h(knoten.get(nid))); } };
+  startWert(ks.b, (ks.len - start.S) / t0, 1); startWert(ks.a, start.S / t0, -1);
+  let bestZiel = null, bestWert = 1e9, schritte = 0;
+  while (offen.length && schritte++ < 6000) {
+    const { id, wert } = pop(); if (wert > (g.get(id) ?? 1e9)) continue; if (wert >= bestWert) break;
+    const n = knoten.get(id);
+    if (id === kz.a || id === kz.b) { const dir = id === kz.a ? 1 : -1, w = wert + (dir > 0 ? ziel.S : kz.len - ziel.S) / TYP[kz.typ].tempo; if (w < bestWert) { bestWert = w; bestZiel = { nid: id, dir }; } }
+    for (const kid of n.kanten) {
+      const k = kanten.get(kid); if (!TYP[k.typ].autos || k === kz) continue;
+      const nach = k.a === id ? k.b : k.a, dir = k.a === id ? 1 : -1, w = wert + kosten(k);
+      if (w < (g.get(nach) ?? 1e9)) { g.set(nach, w); von.set(nach, { k: k.id, dir, vor: id }); push(nach, w, w + h(knoten.get(nach))); }
     }
-    const T = TYP[k.typ], spur = T.spuren === 2 ? (a.spur ? 0.78 : 0.3) : 0.26;
-    const p = punktBei(k, a.dir > 0 ? a.s : k.len - a.s), dx = p.tx * a.dir, dz = p.tz * a.dir;
-    _q.setFromAxisAngle(_y, Math.atan2(-dz, dx)); _m.compose(_v.set(p.x - dz * spur, G + 0.02, p.z + dx * spur), _q, _s.set(1, 1, 1));
-    _l.compose(_v.set(0, 0.1, 0), _q0, _s.set(0.48, 0.13, 0.24)); autoKoerper.setMatrixAt(i, _l.premultiply(_m));
-    _l.compose(_v.set(-0.04, 0.2, 0), _q0, _s.set(0.26, 0.1, 0.2)); autoKabine.setMatrixAt(i, _l.premultiply(_m));
-    _l.compose(_v.set(0.242, 0.11, 0), _q0, _s.set(0.02, 0.04, 0.2)); autoLicht.setMatrixAt(i * 2, _l.premultiply(_m));
-    _l.compose(_v.set(-0.242, 0.11, 0), _q0, _s.set(0.02, 0.04, 0.2)); autoLicht.setMatrixAt(i * 2 + 1, _l.premultiply(_m));
-  });
-  autoKoerper.instanceMatrix.needsUpdate = autoKabine.instanceMatrix.needsUpdate = autoLicht.instanceMatrix.needsUpdate = true;
+  }
+  if (!bestZiel) return null;
+  const route = [{ k: kz.id, dir: bestZiel.dir }]; let nid = bestZiel.nid, schutz = 0;
+  while (schutz++ < 2000) { const v = von.get(nid); route.unshift({ k: v.k, dir: v.dir }); if (v.vor == null) break; nid = v.vor; }
+  const erste = route[0];
+  return { route, s0: erste.dir > 0 ? start.S : ks.len - start.S, s1: bestZiel.dir > 0 ? ziel.S : kz.len - ziel.S };
 }
+/* Fahrten erzeugen */
+let wohnListe = [], arbeitListe = [], ladenListe = [], industrieListe = [], listenZeit = -1;
+function listenAuffrischen() {
+  wohnListe = []; arbeitListe = []; ladenListe = []; industrieListe = [];
+  for (const h of haeuser.values()) { if (h.zone === 1) wohnListe.push(h); else { arbeitListe.push(h); if (h.zone === 2) ladenListe.push(h); else industrieListe.push(h); } }
+  listenZeit = simZeit;
+}
+const gewichtet = (liste, f) => { let s = 0; for (const x of liste) s += f(x); let r = rv() * s; for (const x of liste) { r -= f(x); if (r <= 0) return x; } return liste[liste.length - 1]; };
+function berufsverkehr() { const h = ((zeit + 0.25) % 1) * 24; let f = h < 5 ? 0.25 : h < 6.5 ? 0.6 : h < 9 ? 1.7 : h < 16 ? 1.0 : h < 18.5 ? 1.7 : h < 22 ? 0.8 : 0.35; return f; }
+let aussenKnoten = null;
+const AUSSEN = { aussen: true };
+function zufahrtAussen() { const n = knoten.get(aussenKnoten); if (!n) return null; const k = kanten.get([...n.kanten][0]); if (!k) return null; return { k: k.id, S: k.a === n.id ? 0.3 : k.len - 0.3 }; }
+function aussenBauen() {
+  const richtungen = karte === "kueste" ? [[0, -1]] : [[1, 0], [0, 1], [-1, 0], [0, -1]];
+  for (const [dx, dz] of richtungen) {
+    let ok = true;
+    for (let s = 17; s <= 205 && ok; s += 2) { const d = abstand(dx * s, dz * s); if (karte !== "insel" && d < 3.5) ok = false; }
+    if (!ok) continue;
+    const punkte = [17, 52, 92, 132, 172, 212], neu = [];
+    for (let i = 0; i < punkte.length - 1; i++) {
+      const A = { art: "frei", x: dx * punkte[i], z: dz * punkte[i] }, Bp = { art: "frei", x: dx * punkte[i + 1], z: dz * punkte[i + 1] };
+      neu.push(...bauen({ A, B: Bp, C: lerp(A, Bp, 0.5), typ: "haupt", kosten: 0 }));
+    }
+    neu.forEach((k) => { k.aussen = true; });
+    const n = naechsterKnoten({ x: dx * 212, z: dz * 212 }, 1); if (n) { n.aussen = true; aussenKnoten = n.id; }
+    netzGeaendert(); return true;
+  }
+  return false;
+}
+function fahrtStarten() {
+  if (simZeit - listenZeit > 2) listenAuffrischen();
+  if (!wohnListe.length && !arbeitListe.length) return false;
+  const r = rv(); let von, nach, typ;
+  if (aussenKnoten && r < 0.24) {
+    // Verkehr von und nach außen: Pendler, Besucher, Lieferungen
+    const ziel = rv() < 0.4 && industrieListe.length ? gewichtet(industrieListe, jobs) : arbeitListe.length && rv() < 0.6 ? gewichtet(arbeitListe, jobs) : wohnListe.length ? gewichtet(wohnListe, leute) : null;
+    if (!ziel) return false;
+    typ = ziel.zone === 3 ? (rv() < 0.6 ? "lkw" : "liefer") : rv() < 0.05 ? "bus" : rv() < 0.4 ? "kombi" : "pkw";
+    const za = zufahrtAussen(), zb = zufahrt(ziel); if (!za || !zb) return false;
+    return fahrzeugAusWeg(rv() < 0.55 ? wegSuchen(za, zb) : wegSuchen(zb, za), typ);
+  }
+  if (!wohnListe.length || !arbeitListe.length) return false;
+  if (r < 0.38 && industrieListe.length && ladenListe.length) { von = gewichtet(industrieListe, jobs); nach = gewichtet(ladenListe, jobs); typ = rv() < 0.55 ? "lkw" : "liefer"; }
+  else { von = gewichtet(wohnListe, leute); nach = rv() < 0.25 && ladenListe.length ? gewichtet(ladenListe, jobs) : gewichtet(arbeitListe, jobs); typ = rv() < 0.04 ? "bus" : rv() < 0.4 ? "kombi" : "pkw"; if (rv() < 0.5) [von, nach] = [nach, von]; }
+  const za = zufahrt(von), zb = zufahrt(nach); if (!za || !zb) return false;
+  const weg = wegSuchen(za, zb); if (!weg) { von.keinWeg = true; return false; }
+  von.keinWeg = false;
+  return fahrzeugAusWeg(weg, typ);
+}
+function fahrzeugAusWeg(weg, typ) {
+  if (!weg) return false;
+  const k = kanten.get(weg.route[0].k), spur = TYP[k.typ].spuren.length - 1;
+  // Platz zum Losfahren?
+  if (fahrzeuge.some((f) => f.modus === "kante" && f.route[f.ri].k === k.id && f.route[f.ri].dir === weg.route[0].dir && Math.abs(f.s - weg.s0) < 1.2)) return false;
+  const f = { id: fzId++, typ, ...FZ[typ], farbe: wahl(rv, PAL.auto), route: weg.route, ri: 0, s: weg.s0, sZiel: weg.s1, spur, off: spurAbstand(k.typ, spur), v: 0, modus: "kante", warte: 0, alter: 0, faktor: 0.85 + rv() * 0.3, roll: 0, nick: 0, richtung: 0, blink: 0, bremst: false, frei: false };
+  spurWaehlen(f); fahrzeuge.push(f); return true;
+}
+function spurWaehlen(f) {
+  const st = f.route[f.ri], k = kanten.get(st.k); if (!k) return;
+  const n = TYP[k.typ].spuren.length; if (n < 2) { f.spur = 0; return; }
+  const nx = f.route[f.ri + 1]; const a = nx ? abbiegen(k, st.dir, nx) : "gerade";
+  f.spur = a === "links" || a === "wenden" ? 0 : a === "rechts" ? 1 : (f.spur != null ? Math.min(f.spur, 1) : 1);
+}
+function ampelZustand(n, kid) {
+  const ph = simZeit % 14, gr = n.gruppe.get(kid) || 0;
+  if (gr === 0) return ph < 6 ? "gruen" : ph < 7 ? "gelb" : "rot";
+  return ph >= 7 && ph < 13 ? "gruen" : ph >= 13 ? "gelb" : "rot";
+}
+function netzVerkehrVorbereiten() {
+  for (const n of knoten.values()) {
+    let autoKanten = 0, haupt = false; for (const id of n.kanten) { const k = kanten.get(id); if (TYP[k.typ].autos) { autoKanten++; if (k.typ === "haupt") haupt = true; } }
+    if (!n.manuell) n.ampel = autoKanten >= 4 || (autoKanten >= 3 && haupt);
+    if (autoKanten < 3) n.ampel = false;
+    n.gruppe = new Map(); let ref = null;
+    for (const id of n.kanten) { const k = kanten.get(id); if (!TYP[k.typ].autos) continue; const d = richtungAm(k, k.a === n.id ? 1 : -1, true); if (!ref) ref = d; n.gruppe.set(id, Math.abs(ref.x * d.x + ref.z * d.z) > 0.7 ? 0 : 1); }
+  }
+  ampelnBauen();
+}
+function darfEinfahren(f, k, st, nx) {
+  const n = endKnoten(k, st.dir), k2 = kanten.get(nx.k); if (!k2) return false;
+  // ist auf der nächsten Spur Platz?
+  const s2 = anfang(k2, nx.dir);
+  for (const g of fahrzeuge) if (g !== f && g.modus === "kante" && g.route[g.ri].k === k2.id && g.route[g.ri].dir === nx.dir && g.s < s2 + (g.L + f.L) / 2 + 0.35 && Math.abs(spurAbstand(k2.typ, g.spur) - spurAbstand(k2.typ, f.spurNeu ?? 0)) < 0.3) return false;
+  if (n.ampel) { const z = ampelZustand(n, k.id); if (z === "rot") return false; if (z === "gelb" && !(ende(k, st.dir) - f.s < 0.7 && f.v > 1.2)) return false; return ![...n.drin].some((g) => g.von !== k.id && ampelZustand(n, g.von) !== ampelZustand(n, k.id) && g.trT < 0.6); }
+  if (n.kanten.size <= 2) return true;
+  for (const g of n.drin) if (g.von !== k.id) return false;
+  if (n.vorrang && n.vorrang !== f && n.vorrang.route[n.vorrang.ri].k !== k.id) return false;
+  if (k.typ !== "haupt") for (const g of n.naht) if (g !== f && kanten.get(g.route[g.ri].k).typ === "haupt" && g.v > 0.3 && g.warte < 3) return false;
+  return true;
+}
+function uebergangStarten(f, k, st, nx) {
+  const n = endKnoten(k, st.dir), k2 = kanten.get(nx.k), e = ende(k, st.dir);
+  const p0 = spurPunkt(k, st.dir, e, f.off);
+  const altRi = f.ri, altSpur = f.spur; f.ri++; spurWaehlen(f); const spurNeu = f.spur; f.ri = altRi; f.spur = altSpur;
+  const s2 = anfang(k2, nx.dir), off2 = spurAbstand(k2.typ, spurNeu), p2 = spurPunkt(k2, nx.dir, s2, off2);
+  const d = p0.tx * p2.tx + p0.tz * p2.tz, r = Math.max(0.3, abst(p0, p2) * 0.55);
+  const c = d < -0.6 ? { x: n.x + p0.tx * (r + 0.6), z: n.z + p0.tz * (r + 0.6) } : { x: (p0.x + p0.tx * r + p2.x - p2.tx * r) / 2, z: (p0.z + p0.tz * r + p2.z - p2.tz * r) / 2 };
+  let len = 0, vor = p0; for (let i = 1; i <= 8; i++) { const q = bez(p0, c, p2, i / 8); len += abst(vor, q); vor = q; }
+  f.tr = { p0, c, p2, len: Math.max(0.2, len), t: 0, s2, spurNeu, off2, knoten: n.id };
+  f.modus = "knoten"; f.von = k.id; f.trT = 0; n.drin.add(f);
+}
+function fahrzeugWeg(f) { for (const id of [f.tr && f.tr.knoten, f.reserviert]) { const n = id != null && knoten.get(id); if (n) n.drin.delete(f); } f.weg = true; }
+const _e = new THREE.Euler(0, 0, 0, "YZX");
+function verkehrTakt(dt, ziel) {
+  if (dt <= 0) return;
+  for (let i = 0; i < 3 && fahrzeuge.length < ziel; i++) fahrtStarten();
+  // Spuren und Kreuzungen vorbereiten
+  const spuren = new Map();
+  for (const n of knoten.values()) { n.naht = []; n.vorrang = null; }
+  for (const f of fahrzeuge) {
+    if (f.modus !== "kante") continue;
+    const st = f.route[f.ri], kk = kanten.get(st.k); if (!kk) { f.weg = true; continue; }
+    const key = st.k + ":" + st.dir + ":" + f.spur; if (!spuren.has(key)) spuren.set(key, []); spuren.get(key).push(f);
+    if (f.ri < f.route.length - 1 && ende(kk, st.dir) - f.s < 3.5) { const n = endKnoten(kk, st.dir); n.naht.push(f); if (f.warte > 4 && (!n.vorrang || f.warte > n.vorrang.warte)) n.vorrang = f; }
+  }
+  for (const l of spuren.values()) l.sort((a, b) => a.s - b.s);
+  for (const f of fahrzeuge) {
+    if (f.weg) continue;
+    f.alter += dt;
+    if (f.modus === "kante") {
+      const st = f.route[f.ri], kk = kanten.get(st.k); if (!kk) { fahrzeugWeg(f); continue; }
+      const letzte = f.ri === f.route.length - 1, e = letzte ? f.sZiel : ende(kk, st.dir), nx = f.route[f.ri + 1];
+      let vmax = TYP[kk.typ].tempo * f.faktor * (f.typ === "lkw" || f.typ === "bus" ? 0.82 : 1);
+      const ab = nx ? abbiegen(kk, st.dir, nx) : "gerade", rest = e - f.s;
+      if (ab !== "gerade") vmax = Math.min(vmax, 1.0 + rest * 0.55);
+      if (letzte) vmax = Math.min(vmax, 0.6 + rest * 0.8);
+      // Vordermann
+      let luecke = 1e9; const l = spuren.get(st.k + ":" + st.dir + ":" + f.spur);
+      if (l) { const i = l.indexOf(f); const v = l[i + 1]; if (v) luecke = v.s - f.s - (v.L + f.L) / 2; }
+      // Kreuzung
+      if (nx && !f.frei) { if (rest < 0.9 && darfEinfahren(f, kk, st, nx)) { f.frei = true; const n = endKnoten(kk, st.dir); f.von = kk.id; f.trT = 0; f.reserviert = n.id; n.drin.add(f); } if (!f.frei) luecke = Math.min(luecke, rest - f.L / 2 - 0.05); }
+      // selbst gefahrenes Auto
+      if (spieler.an) { const p = spurPunkt(kk, st.dir, f.s, f.off), dx = spieler.x - p.x, dz = spieler.z - p.z, vorne = dx * p.tx + dz * p.tz, seit = Math.abs(-dx * p.tz + dz * p.tx); if (vorne > 0 && vorne < 2.2 && seit < 0.42) luecke = Math.min(luecke, vorne - 0.55); }
+      const vZiel = luecke < 0.2 ? 0 : Math.min(vmax, Math.sqrt(2 * 5 * Math.max(0, luecke - 0.2)));
+      const a = vZiel > f.v ? Math.min(2.4, (vZiel - f.v) / dt) : Math.max(-8, (vZiel - f.v) / dt);
+      f.v = Math.max(0, f.v + a * dt); f.bremst = a < -0.7 || (f.v < 0.05 && vZiel < 0.05); f.nick = f.nick + (klemme(-a * 0.006, -0.04, 0.03) - f.nick) * Math.min(1, dt * 6);
+      f.s += f.v * dt; f.warte = f.v < 0.1 ? f.warte + dt : 0;
+      const ziel = spurAbstand(kk.typ, f.spur); f.off += klemme(ziel - f.off, -0.6 * dt, 0.6 * dt);
+      f.blink = nx && (ab === "links" || ab === "rechts") && rest < 4.5 ? (ab === "links" ? -1 : 1) : 0;
+      f.roll += (0 - f.roll) * Math.min(1, dt * 4);
+      if (f.s >= e) {
+        if (letzte) { fahrzeugWeg(f); continue; }
+        if (f.frei) { uebergangStarten(f, kk, st, nx); f.frei = false; } else f.s = e;
+      }
+      if (f.warte > 40) fahrzeugWeg(f);   // hoffnungslos im Stau: aufgeben
+    } else {
+      const tr = f.tr; let vZiel = 1.3 * f.faktor;
+      const n = knoten.get(tr.knoten);
+      for (const g of n ? n.drin : []) if (g !== f && g.tr && g.tr.t > tr.t && g.route[g.ri + 1] && f.route[f.ri + 1] && g.route[g.ri + 1].k === f.route[f.ri + 1].k) { const pg = bez(g.tr.p0, g.tr.c, g.tr.p2, g.tr.t), pf = bez(tr.p0, tr.c, tr.p2, tr.t); if (abst(pg, pf) < (g.L + f.L) / 2 + 0.15) vZiel = 0; }
+      f.v += klemme(vZiel - f.v, -8 * dt, 2.4 * dt); f.bremst = vZiel < f.v - 0.2;
+      const altT = tr.t; tr.t = Math.min(1, tr.t + f.v * dt / tr.len); f.trT = tr.t;
+      const d1 = bez(tr.p0, tr.c, tr.p2, altT), d2 = bez(tr.p0, tr.c, tr.p2, tr.t), dreh = Math.atan2(-(d2.z - d1.z), d2.x - d1.x);
+      if (f.alterDreh != null && dt > 0) { let dd = dreh - f.alterDreh; dd = Math.atan2(Math.sin(dd), Math.cos(dd)); f.roll += (klemme(dd / dt * f.v * 0.05, -0.12, 0.12) - f.roll) * Math.min(1, dt * 8); }
+      f.alterDreh = dreh;
+      if (tr.t >= 1) { if (n) n.drin.delete(f); f.reserviert = null; f.ri++; f.s = tr.s2; f.spur = tr.spurNeu; f.off = tr.off2; f.modus = "kante"; f.tr = null; f.alterDreh = null; }
+    }
+  }
+  fahrzeuge = fahrzeuge.filter((f) => !f.weg);
+}
+function fahrzeugeZeichnen() {
+  let ti = 0, li = 0, ri2 = 0; const nacht = U.uNacht.value, blinkAn = (jetztS * 2.2) % 1 < 0.5;
+  const scheinwerfer = new THREE.Color(1, 0.95, 0.8).multiplyScalar(0.3 + 0.9 * nacht), rueck = new THREE.Color(0.9, 0.08, 0.06), orange = new THREE.Color(1, 0.55, 0.05), aus = new THREE.Color(0.12, 0.12, 0.12);
+  for (const f of fahrzeuge) {
+    let x, z, tx, tz;
+    if (f.modus === "kante") { const kk = kanten.get(f.route[f.ri].k); if (!kk) continue; const p = spurPunkt(kk, f.route[f.ri].dir, f.s, f.off); x = p.x; z = p.z; tx = p.tx; tz = p.tz; }
+    else { const tr = f.tr, t = tr.t, p = bez(tr.p0, tr.c, tr.p2, t), q = bez(tr.p0, tr.c, tr.p2, Math.min(1, t + 0.05)), r = bez(tr.p0, tr.c, tr.p2, Math.max(0, t - 0.05)); x = p.x; z = p.z; tx = q.x - r.x; tz = q.z - r.z; const l = Math.hypot(tx, tz) || 1; tx /= l; tz /= l; }
+    _e.set(f.roll, Math.atan2(-tz, tx), f.nick, "YZX"); _q.setFromEuler(_e);
+    _m.compose(_v.set(x, G + 0.02, z), _q, _s.set(1, 1, 1));
+    for (const t of f.teile) { _l.compose(_v.set(t[0], t[1], 0), _q0, _s.set(t[2], t[3], t[4])); fzTeile.setMatrixAt(ti, _l.premultiply(_m)); fzTeile.setColorAt(ti, _farbe.setHex(t[5] === "f" ? f.farbe : t[5])); ti++; }
+    const ax = f.typ === "lkw" ? [0.36, -0.05, -0.36] : [f.L * 0.31, -f.L * 0.31];
+    for (const rx of ax) for (const rz of [f.B / 2 - 0.012, -f.B / 2 + 0.012]) { _l.compose(_v.set(rx, 0.046, rz), _q0, _s.set(1, 1, 1)); fzRaeder.setMatrixAt(ri2, _l.premultiply(_m)); ri2++; }
+    const L = f.L / 2 + 0.005, Bq = f.B * 0.32;
+    const lichter = [[L, Bq, f.blink === -1 && blinkAn ? orange : scheinwerfer], [L, -Bq, f.blink === 1 && blinkAn ? orange : scheinwerfer], [-L, Bq, f.blink === -1 && blinkAn ? orange : (f.bremst ? rueck : _farbe.copy(rueck).multiplyScalar(0.3 + 0.4 * nacht).clone())], [-L, -Bq, f.blink === 1 && blinkAn ? orange : (f.bremst ? rueck : _farbe.copy(rueck).multiplyScalar(0.3 + 0.4 * nacht).clone())]];
+    for (const [lx, lz, c] of lichter) { _l.compose(_v.set(lx, 0.12, lz), _q0, _s.set(0.02, 0.035, 0.06)); fzLicht.setMatrixAt(li, _l.premultiply(_m)); fzLicht.setColorAt(li, c || aus); li++; }
+  }
+  fzTeile.count = ti; fzLicht.count = li; fzRaeder.count = ri2; fzRaeder.instanceMatrix.needsUpdate = true;
+  fzTeile.instanceMatrix.needsUpdate = fzLicht.instanceMatrix.needsUpdate = true;
+  if (fzTeile.instanceColor) fzTeile.instanceColor.needsUpdate = true; if (fzLicht.instanceColor) fzLicht.instanceColor.needsUpdate = true;
+}
+const _m = new THREE.Matrix4(), _l = new THREE.Matrix4(), _q = new THREE.Quaternion(), _q0 = new THREE.Quaternion(), _v = new THREE.Vector3(), _s = new THREE.Vector3();
+
+/* Ampeln */
+const ampelMast = becken(G_BOX_UNTEN, M.flach, 1200, true), ampelLicht = becken(G_BOX, M.leuchte, 1200, false);
+let ampelListe = [];
+function ampelnBauen() {
+  ampelListe = []; let i = 0;
+  for (const n of knoten.values()) {
+    if (!n.ampel) continue;
+    for (const id of n.kanten) {
+      const k = kanten.get(id); if (!TYP[k.typ].autos) continue;
+      const dir = k.b === n.id ? 1 : -1, e = ende(k, dir), p = spurPunkt(k, dir, Math.max(0, e - 0.1), TYP[k.typ].halb - 0.12);
+      _o.position.set(p.x, G + 0.012, p.z); _o.rotation.set(0, 0, 0); _o.scale.set(0.045, 0.62, 0.045); _o.updateMatrix(); ampelMast.setMatrixAt(i, _o.matrix); ampelMast.setColorAt(i, _farbe.setHex(0x3a3f47));
+      ampelListe.push({ n, k: k.id, x: p.x, z: p.z, rot: Math.atan2(-p.tz, p.tx) }); i++;
+    }
+  }
+  ampelMast.count = i; ampelMast.instanceMatrix.needsUpdate = true; if (ampelMast.instanceColor) ampelMast.instanceColor.needsUpdate = true;
+}
+function ampelnZeichnen() {
+  const rot = new THREE.Color(1, 0.12, 0.08), gelb = new THREE.Color(1, 0.75, 0.05), gruen = new THREE.Color(0.15, 1, 0.35);
+  ampelListe.forEach((a, i) => {
+    const z = ampelZustand(a.n, a.k);
+    _o.position.set(a.x, G + 0.66, a.z); _o.rotation.set(0, a.rot, 0); _o.scale.set(0.08, 0.1, 0.08); _o.updateMatrix(); ampelLicht.setMatrixAt(i, _o.matrix);
+    ampelLicht.setColorAt(i, z === "rot" ? rot : z === "gelb" ? gelb : gruen);
+  });
+  ampelLicht.count = ampelListe.length; ampelLicht.instanceMatrix.needsUpdate = true; if (ampelLicht.instanceColor) ampelLicht.instanceColor.needsUpdate = true;
+}
+/* Stau-Messung und Verkehrs-Ansicht */
+let verkehrsAnsicht = false, stauZeit = 0;
+const stauMesh = new THREE.Mesh(new THREE.BufferGeometry(), M.stau); stauMesh.renderOrder = 3; stauMesh.visible = false; szene.add(stauMesh);
+function stauMessen() {
+  const n = new Map(), v = new Map();
+  for (const f of fahrzeuge) { if (f.modus !== "kante") continue; const id = f.route[f.ri].k; n.set(id, (n.get(id) || 0) + 1); v.set(id, (v.get(id) || 0) + f.v / TYP[kanten.get(id).typ].tempo); }
+  for (const k of kanten.values()) {
+    if (!TYP[k.typ].autos) continue;
+    const c = n.get(k.id) || 0, dichte = c / (k.len * TYP[k.typ].spuren.length * 2) * 1.6, langsam = c ? 1 - v.get(k.id) / c : 0;
+    k.stau = k.stau * 0.6 + klemme(dichte * 0.7 + langsam * dichte * 2.2, 0, 1) * 0.4;
+  }
+  if (verkehrsAnsicht) {
+    const pos = [], col = [], c = new THREE.Color(), gruen = farbe(0x3ddc6b), gelb = farbe(0xffd23d), rot = farbe(0xff3b30);
+    for (const k of kanten.values()) { if (!TYP[k.typ].autos) continue; const s = k.stau; c.copy(gruen).lerp(gelb, klemme(s * 2.5, 0, 1)).lerp(rot, klemme(s * 2.5 - 1, 0, 1)); band(pos, col, k.pts, TYP[k.typ].fahr + 0.06, G + 0.05, c); }
+    stauMesh.geometry.dispose(); stauMesh.geometry = geoAus(pos, col); stauMesh.visible = true;
+  } else stauMesh.visible = false;
+}
+/* Fußgänger */
+const menschen = becken(new THREE.CapsuleGeometry(0.032, 0.075, 2, 8).translate(0, 0.07, 0), M.mensch, 120, true), koepfe = becken(new THREE.SphereGeometry(0.027, 10, 8).translate(0, 0.165, 0), new THREE.MeshStandardMaterial({ roughness: 0.7 }), 120, false);
+const HAUT = [0xf1c9a5, 0xe0ac85, 0xc68863, 0x8d5b3e, 0xf5d7bd];
+let leuteListe = [];
+function fussgaengerTakt(dt, einwohner) {
+  const ks = [...kanten.values()].filter((k) => !k.aussen); if (!ks.length) { menschen.count = koepfe.count = 0; return; }
+  const ziel = Math.min(STUFEN[stufe].leute, Math.round(einwohner / 9 + ks.filter((k) => k.typ === "fuss").length * 2));
+  leuteListe = leuteListe.filter((p) => kanten.has(p.k));
+  while (leuteListe.length < ziel) { const k = wahl(rv, ks); leuteListe.push({ k: k.id, dir: rv() < 0.5 ? 1 : -1, s: rv() * k.len, v: 0.3 + rv() * 0.25, seite: rv() < 0.5 ? 1 : -1, c: wahl(rv, [0xe85b4a, 0x4a7fe8, 0xf2c14e, 0x4fbf7a, 0xf2f2f2, 0x9a5be8, 0x2c2f36, 0xff8a3c, 0x3fb6a8]), haut: wahl(rv, HAUT), gr: 0.9 + rv() * 0.2 }); }
+  if (leuteListe.length > ziel) leuteListe.length = ziel;
+  leuteListe.forEach((p, i) => {
+    let k = kanten.get(p.k); p.s += p.v * dt * tempo;
+    if (p.s > k.len) { p.s -= k.len; const nid = p.dir > 0 ? k.b : k.a, n = knoten.get(nid), w = [...n.kanten].filter((id) => id !== k.id && !kanten.get(id).aussen), nk = kanten.get(w.length ? wahl(rv, w) : k.id); p.k = nk.id; p.dir = nk.a === nid ? 1 : -1; k = nk; }
+    const off = k.typ === "fuss" ? 0.17 * p.seite : (TYP[k.typ].halb - 0.14) * p.seite, q = spurPunkt(k, p.dir, Math.min(p.s, k.len), off);
+    const schritt = tempo ? Math.sin(jetztS * 11 * p.v + i) : 0;
+    _o.position.set(q.x, G + 0.014 + Math.abs(schritt) * 0.01, q.z); _o.rotation.set(schritt * 0.08, Math.atan2(-q.tz, q.tx), 0); _o.scale.setScalar(p.gr); _o.updateMatrix();
+    menschen.setMatrixAt(i, _o.matrix); menschen.setColorAt(i, _farbe.setHex(p.c)); koepfe.setMatrixAt(i, _o.matrix); koepfe.setColorAt(i, _farbe.setHex(p.haut));
+  });
+  menschen.count = koepfe.count = leuteListe.length; menschen.instanceMatrix.needsUpdate = koepfe.instanceMatrix.needsUpdate = true; if (menschen.instanceColor) menschen.instanceColor.needsUpdate = true; if (koepfe.instanceColor) koepfe.instanceColor.needsUpdate = true;
+}
+
+/* Laternen */
 const masten = becken(G_BOX_UNTEN, M.flach, 5000, true);
 const laternen = new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ map: glanzTextur, size: 2.0, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0, color: 0xffd9a0 }));
 laternen.frustumCulled = false; szene.add(laternen);
@@ -699,40 +1208,54 @@ function laternenBauen() {
   masten.count = i; masten.instanceMatrix.needsUpdate = true; if (masten.instanceColor) masten.instanceColor.needsUpdate = true;
   laternen.geometry.dispose(); laternen.geometry = new THREE.BufferGeometry(); laternen.geometry.setAttribute("position", new THREE.Float32BufferAttribute(pos.length ? pos : [0, -50, 0], 3));
 }
-function netzGeaendert() { autosAbgleichen(); laternenBauen(); alleeZeichnen(); zellenNeu = true; speichernBald(); }
+const pfeiler = becken(G_BOX_UNTEN, new THREE.MeshStandardMaterial({ color: 0xb9b4a8, roughness: 0.9 }), 400, true);
+function brueckenZeichnen() {
+  let i = 0;
+  for (const k of kanten.values()) for (let s = 1; s < k.len && i < 400; s += 3) { const p = punktBei(k, s); if (abstand(p.x, p.z) > 0.3) continue; _o.position.set(p.x, -2.5, p.z); _o.rotation.set(0, Math.atan2(-p.tz, p.tx), 0); _o.scale.set(0.35, 2.6, TYP[k.typ].halb * 1.6); _o.updateMatrix(); pfeiler.setMatrixAt(i++, _o.matrix); }
+  pfeiler.count = i; pfeiler.instanceMatrix.needsUpdate = true;
+}
+function netzGeaendert() {
+  netzVersion++; brueckenZeichnen();
+  fahrzeuge.forEach((f) => { if (f.route.some((st) => !kanten.has(st.k))) fahrzeugWeg(f); }); fahrzeuge = fahrzeuge.filter((f) => !f.weg);
+  for (const n of knoten.values()) n.drin = new Set([...n.drin].filter((f) => !f.weg));
+  netzVerkehrVorbereiten(); laternenBauen(); alleeZeichnen(); zellenNeu = true; speichernBald();
+}
 
 /* ================================================================
-   Spielstand: speichern, laden, Rückgängig
+   Spielstände
    ================================================================ */
+let platz = 1;
+const platzKey = (n) => "inselstadt-v3-" + n;
 function zustand() {
-  const r = (v) => Math.round(v * 1000) / 1000;
+  const r = (v) => Math.round(v * 1000) / 1000, k = kennzahlen();
   return {
-    v: 2, geld: Math.round(geld), besitz: [...besitz], gekauft, ids: { n: nId, k: kId, z: zId, g: gId, h: hId },
-    knoten: [...knoten.values()].map((n) => [n.id, r(n.x), r(n.z)]),
-    kanten: [...kanten.values()].map((k) => [k.id, k.a, k.b, r(k.c.x), r(k.c.z), k.typ]),
+    v: 3, karte, geld: Math.round(geld), besitz: [...besitz], gekauft, steuern, meilenstein, tage: Math.round(tage * 100) / 100, ids: { n: nId, k: kId, z: zId, g: gId, h: hId },
+    meta: { einwohner: k.e, gespeichert: Date.now() },
+    knoten: [...knoten.values()].map((n) => [n.id, r(n.x), r(n.z), n.manuell ? (n.ampel ? 1 : 0) : -1, n.aussen ? 1 : 0]),
+    kanten: [...kanten.values()].map((k) => [k.id, k.a, k.b, r(k.c.x), r(k.c.z), k.typ, k.aussen ? 1 : 0]),
     zellen: [...zellen.values()].map((z) => [z.id, r(z.x), r(z.z), r(z.rot), z.zone, z.g, z.seite, z.i, z.r]),
     haeuser: [...haeuser.values()].map((h) => [h.id, h.zone, h.stufe, h.w, h.d, h.variante, h.zellen]),
     baeume: baeume.filter((b) => b.weg).map((b) => b.idx)
   };
 }
-let speicherTimer = 0, speichernAus = false;
-function speichernBald() { clearTimeout(speicherTimer); if (!speichernAus) speicherTimer = setTimeout(() => merke(SPEICHER, zustand()), 800); }
+let speicherTimer = 0, speichernAus = false, spielLaeuft = false;
+function speichernBald() { if (!spielLaeuft) return; clearTimeout(speicherTimer); if (!speichernAus) speicherTimer = setTimeout(() => { if (!merke(platzKey(platz), zustand())) tipp("⚠️ Speichern hat nicht geklappt – der Speicher ist voll.", 4000); }, 900); }
 function allesLeeren() {
   for (const k of kanten.values()) { szene.remove(k.mesh); k.mesh.geometry.dispose(); }
   for (const n of knoten.values()) if (n.mesh) { szene.remove(n.mesh); n.mesh.geometry.dispose(); }
-  kanten.clear(); knoten.clear(); zellen.clear(); zellIndex.clear(); raster.clear(); haeuser.clear(); autos = [];
+  aussenKnoten = null; kanten.clear(); knoten.clear(); zellen.clear(); zellIndex.clear(); raster.clear(); haeuser.clear(); fahrzeuge = []; leuteListe = [];
   for (const b of baeume) if (b.weg) { b.weg = false; baumSetzen(b); }
 }
 function zustandRein(d) {
-  geld = d.geld; besitz = new Set(d.besitz); gekauft = d.gekauft;
-  d.knoten.forEach(([id, x, z]) => neuerKnoten({ x, z }, id));
-  d.kanten.forEach(([id, a, b, cx, cz, typ]) => { if (knoten.has(a) && knoten.has(b)) neueKante(a, b, { x: cx, z: cz }, TYP[typ] ? typ : "klein", id); });
+  geld = d.geld; besitz = new Set(d.besitz); gekauft = d.gekauft || 0; if (d.steuern) steuern = d.steuern; meilenstein = d.meilenstein || 0; tage = d.tage || 0;
+  d.knoten.forEach(([id, x, z, am, au]) => { const n = neuerKnoten({ x, z }, id); if (am != null && am >= 0) { n.manuell = true; n.ampel = am === 1; } if (au) { n.aussen = true; aussenKnoten = id; } });
+  d.kanten.forEach(([id, a, b, cx, cz, typ, au]) => { if (knoten.has(a) && knoten.has(b)) { const k = neueKante(a, b, { x: cx, z: cz }, TYP[typ] ? typ : "klein", id); if (au) k.aussen = true; } });
   for (const n of [...knoten.values()]) if (!n.kanten.size) knotenWeg(n);
   d.zellen.forEach(([id, x, z, rot, zone, g, seite, i, r]) => neueZelle({ id, x, z, rot, zone, g, seite, i, r }));
   d.haeuser.forEach(([id, zone, stufe, w, dd, variante, ids]) => { if (ids.every((z) => zellen.has(z) && !zellen.get(z).haus)) neuesHaus({ id, zone, stufe, w, d: dd, variante, zellen: ids }, true); });
   d.baeume.forEach((i) => { const b = baeume[i]; if (b) { b.weg = true; baumSetzen(b); } });
   nId = Math.max(nId, d.ids.n); kId = Math.max(kId, d.ids.k); zId = Math.max(zId, d.ids.z); gId = Math.max(gId, d.ids.g); hId = Math.max(hId, d.ids.h);
-  haeuserNeu = zellenNeu = true; netzGeaendert(); gebieteZeichnen(); zeigeWerte();
+  haeuserNeu = zellenNeu = true; netzGeaendert(); gebieteZeichnen(); bedarfBerechnen(); zeigeWerte(); datumZeigen();
 }
 const rueck = [];
 function merkeRueck() { rueck.push(JSON.stringify(zustand())); if (rueck.length > 8) rueck.shift(); rueckKnopf(); }
@@ -743,7 +1266,7 @@ function rueckKnopf() { const b = $("rueck"); if (b) b.disabled = !rueck.length;
    Tag und Nacht
    ================================================================ */
 const ZEITEN = { tag: 0.42, abend: 0.735, nacht: 0.9 };
-let zeitModus = lade("inselstadt-bau-zeit", "tag"), zeit = ZEITEN[zeitModus] != null ? ZEITEN[zeitModus] : ZEITEN.tag, zeitZiel = null;
+let zeitModus = lade("inselstadt-bau-zeit", "auto"), zeit = ZEITEN[zeitModus] != null ? ZEITEN[zeitModus] : 0.36, zeitZiel = null;
 const F = {
   tag: { oben: farbe(0x3d97ec), unten: farbe(0xc4e7ff), sonne: farbe(0xfff1dc), hs: farbe(0xd4ecff), hb: farbe(0x6f8f5c), tief: farbe(0x1667a3), flach: farbe(0x3cc9c4) },
   abend: { oben: farbe(0x34509a), unten: farbe(0xffa86b), sonne: farbe(0xff9c55), hs: farbe(0xffc8a0), hb: farbe(0x5a4a5a), tief: farbe(0x1d4f86), flach: farbe(0x3f8fa6) },
@@ -764,14 +1287,13 @@ function licht(z) {
   sonne.target.position.copy(steuerung.target); sonne.position.copy(steuerung.target).addScaledVector(_r.normalize(), 120);
   const hu = himmel.material.uniforms; hu.uOben.value.copy(_c.oben); hu.uUnten.value.copy(_c.unten); hu.uSonne.value.copy(sonnenRichtung); hu.uSonnenFarbe.value.copy(_c.sonne); hu.uSicht.value = glatt(-0.08, 0.05, hoehe);
   szene.fog.color.copy(_c.unten);
-  const ka = kameraAbstand(); szene.fog.near = 60 + ka * 0.8; szene.fog.far = 260 + ka * 2.2;
+  const ka = spieler.an ? 10 : kameraAbstand(); szene.fog.near = 60 + ka * 0.8; szene.fog.far = 260 + ka * 2.2;
   const wu = wasserMat.uniforms; wu.uNah.value = szene.fog.near; wu.uFern.value = szene.fog.far;
   wu.uTief.value.copy(_c.tief); wu.uFlach.value.copy(_c.flach); wu.uHimmel.value.copy(_c.unten).lerp(_c.oben, 0.4); wu.uNebel.value.copy(_c.unten);
   wu.uSonne.value.copy(mond ? _r : sonnenRichtung); wu.uSonnenFarbe.value.copy(_c.sonne).multiplyScalar(mond ? 0.35 : glatt(-0.02, 0.1, hoehe));
   renderer.toneMappingExposure = 1.0 + nacht * 0.25;
   laternen.material.opacity = glatt(0.15, 0.7, nacht);
-  M.licht.color.setScalar(0.25 + 0.75 * nacht);
-  const d = leuchtturm.userData; d.sm.opacity = 0.16 * glatt(0.2, 0.8, nacht); d.kopf.material.color.setScalar(0.6 + 0.6 * nacht);
+  if (leuchtturm) { const d = leuchtturm.userData; d.sm.opacity = 0.16 * glatt(0.2, 0.8, nacht); d.kopf.material.color.setScalar(0.6 + 0.6 * nacht); }
 }
 
 /* ================================================================
@@ -782,33 +1304,39 @@ function ndc(e) { const r = renderer.domElement.getBoundingClientRect(); _ndc.se
 function bodenPunkt(e) { strahl.setFromCamera(ndc(e), kamera); return strahl.ray.intersectPlane(boden, _treffer) ? { x: _treffer.x, z: _treffer.z } : null; }
 let tippTimer = 0;
 function tipp(t, ms) { const el = $("tipp"); el.textContent = t; el.classList.remove("weg"); clearTimeout(tippTimer); tippTimer = setTimeout(() => el.classList.add("weg"), ms || 4000); }
+let infoTimer = 0;
+function infoZeigen(html, ms) { const el = $("info"); el.innerHTML = html; el.hidden = false; clearTimeout(infoTimer); infoTimer = setTimeout(() => { el.hidden = true; }, ms || 5000); }
 
 let strTyp = lade("inselstadt-strtyp", "klein"), strModus = lade("inselstadt-strmodus", "gerade"), zoneWahl = 1, pinsel = "klein";
-if (!TYP[strTyp]) strTyp = "klein";
+if (!TYP[strTyp]) strTyp = "klein"; if (!["gerade", "kurve", "ampel"].includes(strModus)) strModus = "gerade";
 const TIPPS = {
   ansehen: "👆 Ein Finger: verschieben · ✌️ Zwei Finger: drehen & zoomen · Haus antippen: Infos",
-  strasse: () => strModus === "gerade" ? "🛣️ Tipp auf den Anfang, dann aufs Ende. Dann ✓ zum Bauen." : "〰️ Tipp auf den Anfang, dann den Kurvenpunkt, dann das Ende. Dann ✓.",
+  strasse: () => strModus === "ampel" ? "🚦 Tipp auf eine Kreuzung, um die Ampel ein- oder auszuschalten." : strModus === "gerade" ? "🛣️ Tipp auf den Anfang, dann aufs Ende. Dann ✓ zum Bauen." : "〰️ Tipp auf den Anfang, dann den Kurvenpunkt, dann das Ende. Dann ✓.",
   zone: () => pinsel === "fuellen" ? "🪣 Tipp neben eine Straße – die ganze Straßenseite wird angemalt." : "🖌️ Wisch über die grauen Felder neben den Straßen, um sie anzumalen.",
   gebiet: "🗺️ Tipp auf ein Preisschild, um das Gebiet zu kaufen.",
   abriss: "🧹 Tipp auf eine Straße, um sie abzureißen. Über Häuser und Zonen wischen löscht sie."
 };
 function unterleiste() {
   const u = $("unter"); let h = "";
-  const chip = (attr, wert, txt, an) => `<button class="chip" type="button" ${attr}="${wert}" aria-pressed="${an}">${txt}</button>`;
-  if (werkzeug === "strasse") {
-    h += Object.keys(TYP).map((k) => chip("data-typ", k, TYP[k].em + " " + TYP[k].name + ` <small style="opacity:.7">${TYP[k].preis} €</small>`, k === strTyp)).join("");
-    h += '<span class="trenn"></span>' + chip("data-modus", "gerade", "📏 Gerade", strModus === "gerade") + chip("data-modus", "kurve", "〰️ Kurve", strModus === "kurve");
+  const chip = (attr, wert, txt, an, aus) => `<button class="chip" type="button" ${attr}="${wert}" aria-pressed="${an}"${aus ? ' title="Noch gesperrt"' : ""}>${txt}</button>`;
+  if (werkzeug === "ansehen") {
+    h = chip("data-ansicht", "verkehr", "🚦 Verkehrs-Ansicht", verkehrsAnsicht) + '<button class="chip" type="button" id="fahrenKnopf">🚗 Selbst fahren</button>';
+  } else if (werkzeug === "strasse") {
+    h += Object.keys(TYP).map((k) => { const frei = typFrei(k); return chip("data-typ", k, (frei ? TYP[k].em : "🔒") + " " + TYP[k].name + ` <small style="opacity:.7">${TYP[k].preis} €</small>`, k === strTyp, !frei); }).join("");
+    h += '<span class="trenn"></span>' + chip("data-modus", "gerade", "📏 Gerade", strModus === "gerade") + chip("data-modus", "kurve", "〰️ Kurve", strModus === "kurve") + chip("data-modus", "ampel", "🚦 Ampeln", strModus === "ampel");
     h += '<span class="trenn"></span><button class="chip" type="button" id="rueck">↩️ Rückgängig</button>';
   } else if (werkzeug === "zone") {
     h += [1, 2, 3].map((z) => chip("data-zone", z, ZONEN[z].em + " " + ZONEN[z].name, z === zoneWahl)).join("");
     h += '<span class="trenn"></span>' + chip("data-pinsel", "klein", "🖌️ Klein", pinsel === "klein") + chip("data-pinsel", "gross", "🖌️ Groß", pinsel === "gross") + chip("data-pinsel", "fuellen", "🪣 Füllen", pinsel === "fuellen");
     h += '<span class="trenn"></span>' + chip("data-zone", 0, "🧽 Entfernen", zoneWahl === 0) + '<button class="chip" type="button" id="rueck">↩️</button>';
-  } else if (werkzeug === "abriss" || werkzeug === "gebiet") h = '<button class="chip" type="button" id="rueck">↩️ Rückgängig</button>';
+  } else h = '<button class="chip" type="button" id="rueck">↩️ Rückgängig</button>';
   u.innerHTML = h; u.hidden = !h; rueckKnopf();
 }
 $("unter").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
   if (b.id === "rueck") { rueckgaengig(); return; }
+  if (b.id === "fahrenKnopf") { fahrenStarten(); return; }
+  if (b.dataset.ansicht) { verkehrsAnsicht = !verkehrsAnsicht; stauMessen(); tipp(verkehrsAnsicht ? "🚦 Grün = frei, Gelb = voll, Rot = Stau. Bau Hauptstraßen oder Umwege, wo es rot wird." : "Verkehrs-Ansicht aus.", 3500); }
   if (b.dataset.typ) { strTyp = b.dataset.typ; merke("inselstadt-strtyp", strTyp); planNeu(); }
   if (b.dataset.modus) { strModus = b.dataset.modus; merke("inselstadt-strmodus", strModus); bauAbbrechen(); tipp(TIPPS.strasse(), 3500); }
   if (b.dataset.zone != null) zoneWahl = +b.dataset.zone;
@@ -823,15 +1351,13 @@ function werkzeugWaehlen(w) {
   const t = TIPPS[w]; tipp(typeof t === "function" ? t() : t, 4500);
 }
 $("werkzeug").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) werkzeugWaehlen(b.dataset.w); });
-
-/* Bestätigen-Leiste */
 let frageJa = null;
 function frage(text, ok, beiJa) { $("frage").hidden = false; $("frageText").textContent = text; $("frageText").classList.toggle("falsch", !ok); $("ja").disabled = !ok || !beiJa; frageJa = ok ? beiJa : null; }
 function frageZu() { $("frage").hidden = true; frageJa = null; }
 $("ja").onclick = () => { if (frageJa) frageJa(); };
 $("nein").onclick = () => { frageZu(); bauAbbrechen(); };
 
-/* ---------- Straßenbau per Antippen ---------- */
+/* Straßenbau per Antippen */
 const bau = { punkte: [], kandidat: null, plan: null };
 const vorschau = new THREE.Mesh(new THREE.BufferGeometry(), M.vorschau); vorschau.renderOrder = 3; vorschau.visible = false; szene.add(vorschau);
 const markerGeo = new THREE.RingGeometry(0.55, 0.85, 28).rotateX(-Math.PI / 2);
@@ -842,7 +1368,7 @@ function winkelFang(start, p) {
   const dx = p.x - start.x, dz = p.z - start.z, L = Math.hypot(dx, dz); if (L < 0.6) return { art: "frei", x: p.x, z: p.z };
   let a = Math.atan2(dz, dx); const refs = [0];
   if (start.art === "knoten") { const n = knoten.get(start.id); if (n) for (const id of n.kanten) { const k = kanten.get(id), q = k.a === n.id ? k.pts[0] : k.pts[k.pts.length - 1]; refs.push(Math.atan2(q.tz, q.tx)); } }
-  if (start.art === "kante") { const k = kanten.get(start.id); if (k) { const e = abstandZuLinie(start, k.pts, true), q = punktBei(k, e.t * k.len); refs.push(Math.atan2(q.tz, q.tx)); } }
+  if (start.art === "kante") { const k = kanten.get(start.id); if (k) { const e = abstandZuLinie(start, k.pts, true), q = punktBei(k, e.s); refs.push(Math.atan2(q.tz, q.tx)); } }
   let best = null, bd = 0.13;
   for (const r of refs) for (let i = 0; i < 8; i++) { const c = r + i * Math.PI / 4, d = Math.abs(Math.atan2(Math.sin(a - c), Math.cos(a - c))); if (d < bd) { bd = d; best = c; } }
   if (best != null) a = best;
@@ -856,7 +1382,7 @@ function kandidatAus(p) {
   return f;
 }
 function planNeu() {
-  if (werkzeug !== "strasse") return;
+  if (werkzeug !== "strasse" || strModus === "ampel") return;
   const P = bau.punkte.slice(); if (bau.kandidat) P.push(bau.kandidat);
   const noetig = strModus === "gerade" ? 2 : 3;
   marker.forEach((m, i) => { const q = P[i]; m.visible = !!q && i < noetig; if (q) { m.position.set(q.x, G + 0.06, q.z); m.material.color.setHex(strModus === "kurve" && i === 1 ? 0xffd34d : (q.art && q.art !== "frei" ? 0x7dffb0 : 0xffffff)); } });
@@ -871,7 +1397,7 @@ function planNeu() {
   for (const k of plan.kreuz) scheibe(pos, col, k.x, k.z, TYP[strTyp].halb * 0.7, G + 0.045, farbe(0xffffff));
   vorschau.geometry.dispose(); vorschau.geometry = geoAus(pos, col); vorschau.visible = true;
   if (!bau.plan) { frage("Jetzt das Ende antippen", false, null); return; }
-  frage(TYP[strTyp].em + " " + meter(plan.laenge) + " · " + euro(plan.kosten) + (plan.ok ? "" : " – " + plan.grund), plan.ok, strasseBestaetigen);
+  frage(TYP[strTyp].em + " " + meter(plan.laenge) + " · " + euro(plan.kosten) + (plan.baeume ? " (" + plan.baeume + " 🌳)" : "") + (plan.ok ? "" : " – " + plan.grund), plan.ok, strasseBestaetigen);
 }
 function strasseBestaetigen() {
   const plan = bau.plan; if (!plan || !plan.ok) return;
@@ -879,35 +1405,44 @@ function strasseBestaetigen() {
   if (!neu.length) { rueck.pop(); rueckKnopf(); tipp("Hier ist schon eine Straße.", 2000); bauAbbrechen(); return; }
   const endK = naechsterKnoten(plan.B, 0.7);
   bau.punkte = endK ? [{ art: "knoten", id: endK.id, x: endK.x, z: endK.z }] : []; bau.kandidat = null; bau.plan = null;
-  planNeu();
-  tipp("✅ Gebaut! Tipp weiter, um anzuschließen – oder ✕ zum Beenden.", 2600);
+  planNeu(); tipp("✅ Gebaut! Tipp weiter, um anzuschließen – oder ✕ zum Beenden.", 2600);
+}
+function ampelUmschalten(p) {
+  const n = naechsterKnoten(p, Math.max(1.5, fangRadius()));
+  if (!n) { tipp("Tipp genau auf eine Kreuzung.", 2000); return; }
+  let deg = 0; for (const id of n.kanten) if (TYP[kanten.get(id).typ].autos) deg++;
+  if (deg < 3) { tipp("Ampeln gibt es nur an Kreuzungen mit mindestens drei Straßen.", 2400); return; }
+  merkeRueck(); n.manuell = true; n.ampel = !n.ampel; netzVerkehrVorbereiten(); speichernBald();
+  tipp(n.ampel ? "🚦 Ampel eingeschaltet." : "Ampel aus – jetzt gilt: Hauptstraße hat Vorfahrt, sonst wer zuerst kommt.", 2600);
 }
 
-/* ---------- Zeiger ---------- */
+/* Zeiger */
 const finger = new Map(); let aktion = null;
 renderer.domElement.addEventListener("pointerdown", (e) => {
+  if (!spielLaeuft || spieler.an) return;
   finger.set(e.pointerId, true);
   if (finger.size > 1) { aktion = null; if (werkzeug === "strasse") { bau.kandidat = null; planNeu(); } return; }
   if (e.pointerType === "mouse" && e.button !== 0) return;
   $("menue").hidden = true;
   const p = bodenPunkt(e); if (!p) return;
   aktion = { id: e.pointerId, sx: e.clientX, sy: e.clientY, bewegt: false, letzte: p };
-  if (werkzeug === "strasse") {
+  if (werkzeug === "strasse" && strModus !== "ampel") {
     const noetig = strModus === "gerade" ? 2 : 3;
-    if (bau.punkte.length >= noetig) bau.punkte.pop();     // fertiger Plan: letzten Punkt neu setzen
+    if (bau.punkte.length >= noetig) bau.punkte.pop();
     bau.kandidat = kandidatAus(p); planNeu();
   } else if (werkzeug === "zone") { merkeRueck(); if (pinsel === "fuellen") fuellen(p); else malen(p, p); }
   else if (werkzeug === "abriss") { merkeRueck(); abreissenStrich(p, p); }
 });
 renderer.domElement.addEventListener("pointermove", (e) => {
+  if (!spielLaeuft || spieler.an) return;
   if (!aktion) {
-    if (werkzeug === "strasse" && e.pointerType === "mouse" && finger.size === 0 && bau.punkte.length && !bau.plan) { const p = bodenPunkt(e); if (p) { bau.kandidat = kandidatAus(p); planNeu(); } }
+    if (werkzeug === "strasse" && strModus !== "ampel" && e.pointerType === "mouse" && finger.size === 0 && bau.punkte.length && !bau.plan) { const p = bodenPunkt(e); if (p) { bau.kandidat = kandidatAus(p); planNeu(); } }
     return;
   }
   if (aktion.id !== e.pointerId) return;
   if (Math.hypot(e.clientX - aktion.sx, e.clientY - aktion.sy) > 8) aktion.bewegt = true;
   const p = bodenPunkt(e); if (!p) return;
-  if (werkzeug === "strasse") { bau.kandidat = kandidatAus(p); planNeu(); }
+  if (werkzeug === "strasse" && strModus !== "ampel") { bau.kandidat = kandidatAus(p); planNeu(); }
   else if (werkzeug === "zone" && pinsel !== "fuellen") malen(aktion.letzte, p);
   else if (werkzeug === "abriss") abreissenStrich(aktion.letzte, p);
   aktion.letzte = p;
@@ -916,7 +1451,7 @@ function loslassen(e) {
   finger.delete(e.pointerId);
   if (!aktion || aktion.id !== e.pointerId) return;
   const a = aktion; aktion = null;
-  if (werkzeug === "strasse") { if (bau.kandidat) { bau.punkte.push(bau.kandidat); bau.kandidat = null; } planNeu(); }
+  if (werkzeug === "strasse") { if (strModus === "ampel") { if (!a.bewegt) ampelUmschalten(a.letzte); } else { if (bau.kandidat) { bau.punkte.push(bau.kandidat); bau.kandidat = null; } planNeu(); } }
   else if (werkzeug === "abriss" && !a.bewegt) abreissenStrasse(a.letzte);
   else if (werkzeug === "ansehen" && !a.bewegt) hausInfo(a.letzte);
   else if (werkzeug === "gebiet" && !a.bewegt) gebietAntippen(e);
@@ -924,9 +1459,7 @@ function loslassen(e) {
 renderer.domElement.addEventListener("pointerup", loslassen);
 renderer.domElement.addEventListener("pointercancel", (e) => { finger.delete(e.pointerId); if (aktion && aktion.id === e.pointerId) { aktion = null; bau.kandidat = null; planNeu(); } });
 renderer.domElement.addEventListener("contextmenu", (e) => e.preventDefault());
-addEventListener("keydown", (e) => { if (e.key === "Escape") { bauAbbrechen(); frageZu(); } if (e.key === "Enter" && frageJa) frageJa(); if ((e.ctrlKey || e.metaKey) && e.key === "z") rueckgaengig(); });
 
-/* ---------- Zonen ---------- */
 function malen(a, b) {
   const r = pinsel === "gross" ? 1.7 : 0.75, n = Math.max(1, Math.ceil(abst(a, b) / 0.4)); let geaendert = false;
   for (let i = 0; i <= n; i++) {
@@ -949,36 +1482,44 @@ function abreissenStrich(a, b) {
 function abreissenStrasse(p) {
   const e = naechsteKante(p, Math.max(0.9, fangRadius() * 0.6));
   if (!e) return;
+  if (e.k.aussen) { tipp("🛣️ Die Verbindung nach außen kann man nicht abreißen – über sie kommen Besucher, Pendler und Lieferungen.", 3200); return; }
   const erstattung = Math.round(e.k.len * TYP[e.k.typ].preis * 0.3);
   kanteWeg(e.k); verwaisteZellen(); geld += erstattung; netzGeaendert(); zeigeWerte(); tipp("Straße abgerissen (+" + euro(erstattung) + " zurück).", 2000);
 }
-
-/* ---------- Infos und Gebiete ---------- */
 function hausInfo(p) {
-  const z = zellenNahe(p.x, p.z, 0.8).find((c) => c.haus); const el = $("info");
-  if (!z) { el.hidden = true; return; }
-  const h = haeuser.get(z.haus), f = h.zellen.length;
-  const art = h.zone === 1 ? ["Einfamilienhaus", "Mehrfamilienhaus", "Wohnblock"][h.stufe - 1] : h.zone === 2 ? ["Kleiner Laden", "Geschäftshaus", "Büroturm"][h.stufe - 1] : ["Werkstatt", "Fabrikhalle", "Fabrik"][h.stufe - 1];
-  const zahl = h.zone === 1 ? "👥 " + [0, 3, 8, 22][h.stufe] * f + " Bewohner" : "💼 " + (h.zone === 2 ? [0, 2, 5, 14] : [0, 4, 8, 15])[h.stufe] * f + " Arbeitsplätze";
-  el.innerHTML = `<b>${ZONEN[h.zone].em} ${art}</b>${zahl}<br><small>Stufe ${h.stufe} von 3 · ${h.w}×${h.d} Felder${h.stufe < 3 ? " · wird mit der Zeit größer" : ""}</small>`;
-  el.hidden = false; clearTimeout(hausInfo.t); hausInfo.t = setTimeout(() => { el.hidden = true; }, 5000);
+  const z = zellenNahe(p.x, p.z, 0.8).find((c) => c.haus);
+  if (!z) { $("info").hidden = true; return; }
+  const h = haeuser.get(z.haus);
+  const art = h.name || "Gebäude";
+  const wert = h.zone === 1 ? "👥 " + leute(h) + " Bewohner" : "💼 " + jobs(h) + " Arbeitsplätze";
+  const warn = !zufahrt(h) ? "<br>⚠️ Keine Straße mit Autoverkehr in der Nähe" : h.keinWeg ? "<br>⚠️ Kein Weg zu den anderen Zonen – verbinde die Straßen" : "";
+  infoZeigen(`<b>${ZONEN[h.zone].em} ${art}</b>${wert}<br><small>Stufe ${h.stufe} von 3 · ${h.w}×${h.d} Felder${h.stufe < 3 ? " · wird größer, wenn Bedarf da ist" : ""}</small>${warn}`);
 }
 function gebietAntippen(e) {
   strahl.setFromCamera(ndc(e), kamera);
   let ziel = null; const t = strahl.intersectObjects(preisSchilder.children); if (t.length) ziel = t[0].object.userData;
   if (!ziel) { const p = bodenPunkt(e); if (p) { const [i, j] = kachelVon(p.x, p.z); if (kaufbar(i, j)) ziel = { i, j }; } }
   if (!ziel) { tipp("Du kannst nur Gebiete kaufen, die an dein Land grenzen.", 2200); return; }
+  if (gekauft >= MEILEN[meilenstein].gebiete) { const n = MEILEN.find((x) => x.gebiete > gekauft); frage("🔒 Mehr Gebiete gibt es ab " + (n ? n.name + " (" + zahl(n.ab) + " Einwohner)" : "–"), false, null); return; }
   const preis = GEBIET_PREIS(gekauft);
   if (geld < preis) { frage("Das Gebiet kostet " + euro(preis) + " – dir fehlen noch " + euro(preis - geld), false, null); return; }
   frage("Gebiet kaufen für " + euro(preis) + "?", true, () => {
-    merkeRueck(); geld -= preis; gekauft++; besitz.add(ziel.i + "," + ziel.j); frageZu(); gebieteZeichnen(); zeigeWerte(); speichernBald();
+    merkeRueck(); geld -= preis; gekauft++; besitz.add(ziel.i + "," + ziel.j); frageZu(); gebieteZeichnen(); zeigeWerte();
+    const m = kachelMitte(ziel.i, ziel.j), h = { x0: m.x - KACHEL / 2, x1: m.x + KACHEL / 2, z0: m.z - KACHEL / 2, z1: m.z + KACHEL / 2 };
+    for (const k of [...kanten.values()]) if (!(k.h.x1 < h.x0 || k.h.x0 > h.x1 || k.h.z1 < h.z0 || k.h.z0 > h.z1)) zellenFuer(k);
+    speichernBald();
     tipp("🎉 Neues Gebiet gekauft! Jetzt kannst du dort bauen.", 2600);
   });
 }
 
-/* ---------- Menü ---------- */
+/* Zeitleiste und Menü */
+function zeitKnoepfe() { document.querySelectorAll("#zeitleiste button").forEach((b) => b.setAttribute("aria-pressed", String(+b.dataset.t === tempo))); }
+$("zeitleiste").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; tempo = +b.dataset.t; zeitKnoepfe(); if (!tempo) tipp("⏸️ Pause – du kannst trotzdem bauen.", 2000); });
+$("kopf").onclick = () => { if ($("budget").hidden) budgetZeigen(); else $("budget").hidden = true; };
 const menue = $("menue");
 $("menueKnopf").onclick = () => { menue.hidden = !menue.hidden; $("menueKnopf").setAttribute("aria-expanded", String(!menue.hidden)); };
+$("budgetKnopf").onclick = () => { menue.hidden = true; budgetZeigen(); };
+$("hauptmenueKnopf").onclick = () => { if (spielLaeuft) { clearTimeout(speicherTimer); merke(platzKey(platz), zustand()); } location.href = location.pathname; };
 function menueKnoepfe() {
   document.querySelectorAll("#zeiten button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.zeit === zeitModus)));
   document.querySelectorAll("#grafik button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.q === stufe)));
@@ -987,55 +1528,153 @@ $("zeiten").onclick = (e) => { const b = e.target.closest("button"); if (!b) ret
 $("grafik").onclick = (e) => { const b = e.target.closest("button"); if (b) { qualitaet(b.dataset.q); menueKnoepfe(); } };
 let loeschBereit = 0;
 $("neuAnfangen").onclick = () => {
-  if (Date.now() - loeschBereit > 3000) { loeschBereit = Date.now(); $("neuAnfangen").textContent = "Wirklich alles löschen?"; setTimeout(() => { $("neuAnfangen").textContent = "🗑️ Neu anfangen"; }, 3000); return; }
-  speichernAus = true; clearTimeout(speicherTimer); try { localStorage.removeItem(SPEICHER); } catch (x) { /* egal */ } location.reload();
+  if (Date.now() - loeschBereit > 3000) { loeschBereit = Date.now(); $("neuAnfangen").textContent = "Wirklich löschen?"; setTimeout(() => { $("neuAnfangen").textContent = "🗑️ Diese Stadt löschen"; }, 3000); return; }
+  speichernAus = true; clearTimeout(speicherTimer); try { localStorage.removeItem(platzKey(platz)); } catch (x) { /* egal */ } location.href = location.pathname;
 };
-$("los").onclick = () => { $("start").hidden = true; merke("inselstadt-start2", true); werkzeugWaehlen("strasse"); };
 function qualitaet(neu) {
   stufe = neu; merke("inselstadt-qualitaet", stufe); const q = STUFEN[stufe];
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, q.pr));
   const vorher = renderer.shadowMap.enabled;
   renderer.shadowMap.enabled = q.schatten > 0; sonne.castShadow = q.schatten > 0;
   if (q.schatten) { sonne.shadow.mapSize.set(q.schatten, q.schatten); if (sonne.shadow.map) { sonne.shadow.map.dispose(); sonne.shadow.map = null; } }
+  for (const m of Object.values(baumMesh)) m.castShadow = stufe === "hoch";
   if (vorher !== renderer.shadowMap.enabled) szene.traverse((o) => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { m.needsUpdate = true; }); });
-  autosAbgleichen();
 }
 addEventListener("resize", () => { kamera.aspect = innerWidth / innerHeight; kamera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
 
 /* ================================================================
-   Los
+   Selbst fahren
    ================================================================ */
-let jetztS = performance.now() / 1000;
-qualitaet(stufe); menueKnoepfe();
-const gespeichert = lade(SPEICHER, null);
-if (gespeichert && gespeichert.v === 2) { try { zustandRein(gespeichert); } catch (e) { console.warn("Spielstand kaputt", e); allesLeeren(); netzGeaendert(); gebieteZeichnen(); } }
-else { netzGeaendert(); gebieteZeichnen(); }
-zeigeWerte(); unterleiste();
-if (!lade("inselstadt-start2", false)) $("start").hidden = false;
-else tipp(gespeichert ? "Willkommen zurück in deiner Inselstadt!" : TIPPS.ansehen, 4000);
-window.inselstadt = { kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, geld: () => geld, besitz: () => besitz };   // zum Testen
+const spieler = { an: false, x: 0, z: 0, rot: 0, v: 0, lenk: 0, gas: false, bremse: false, links: false, rechts: false, gruppe: null };
+{
+  const g = new THREE.Group(), lack = new THREE.MeshStandardMaterial({ color: 0xa66bff, roughness: 0.35, metalness: 0.4 }), glas = new THREE.MeshStandardMaterial({ color: 0x1d2633, roughness: 0.2, metalness: 0.5 });
+  const k = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.13, 0.25), lack); k.position.y = 0.1; const c = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.11, 0.21), glas); c.position.set(-0.03, 0.21, 0);
+  const lv = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.04, 0.2), new THREE.MeshBasicMaterial({ color: 0xfff3c8, toneMapped: false })); lv.position.set(0.26, 0.12, 0);
+  const lh = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.04, 0.2), new THREE.MeshBasicMaterial({ color: 0xff3b30, toneMapped: false })); lh.position.set(-0.26, 0.12, 0);
+  [k, c].forEach((m) => { m.castShadow = true; }); g.add(k, c, lv, lh); g.visible = false; g.userData = { lh }; szene.add(g); spieler.gruppe = g;
+}
+function fahrenStarten() {
+  const ks = [...kanten.values()].filter((k) => TYP[k.typ].autos);
+  if (!ks.length) { tipp("Bau zuerst eine Straße, dann kannst du losfahren.", 2500); return; }
+  const e = naechsteKante(steuerung.target, 400, (k) => TYP[k.typ].autos), p = spurPunkt(e.k, 1, e.s, 0.27);
+  Object.assign(spieler, { an: true, x: p.x, z: p.z, rot: Math.atan2(-p.tz, p.tx), v: 0 });
+  spieler.gruppe.visible = true; steuerung.enabled = false;
+  ["unten", "oben", "menueKnopf"].forEach((id) => { $(id).hidden = true; }); $("fahrpult").hidden = false; $("tacho").hidden = false; $("info").hidden = true; $("budget").hidden = true;
+  kamera.position.set(p.x - p.tx * 3, 1.8, p.z - p.tz * 3);
+}
+function fahrenBeenden() {
+  spieler.an = false; spieler.gruppe.visible = false;
+  ["unten", "oben", "menueKnopf"].forEach((id) => { $(id).hidden = false; }); $("fahrpult").hidden = true; $("tacho").hidden = true;
+  steuerung.target.set(spieler.x, 0, spieler.z); kamera.position.set(spieler.x + 10, 14, spieler.z + 14); steuerung.enabled = true; steuerung.update();
+}
+$("aussteigen").onclick = fahrenBeenden;
+document.querySelectorAll("#fahrpult button").forEach((b) => {
+  const an = (v) => (e) => { e.preventDefault(); spieler[b.dataset.f] = v; b.classList.toggle("an", v); };
+  b.addEventListener("pointerdown", an(true)); ["pointerup", "pointerleave", "pointercancel"].forEach((t) => b.addEventListener(t, an(false)));
+});
+const TASTEN = { ArrowUp: "gas", KeyW: "gas", ArrowDown: "bremse", KeyS: "bremse", ArrowLeft: "links", KeyA: "links", ArrowRight: "rechts", KeyD: "rechts" };
+addEventListener("keydown", (e) => {
+  if (spieler.an && TASTEN[e.code]) { spieler[TASTEN[e.code]] = true; e.preventDefault(); return; }
+  if (spieler.an && e.key === "Escape") { fahrenBeenden(); return; }
+  if (e.key === "Escape") { bauAbbrechen(); frageZu(); $("budget").hidden = true; } if (e.key === "Enter" && frageJa) frageJa(); if ((e.ctrlKey || e.metaKey) && e.key === "z") rueckgaengig();
+  if (e.key === " " && spielLaeuft && document.activeElement === document.body) { tempo = tempo ? 0 : 1; zeitKnoepfe(); e.preventDefault(); }
+});
+addEventListener("keyup", (e) => { if (TASTEN[e.code]) spieler[TASTEN[e.code]] = false; });
+const _blick = new THREE.Vector3(), _soll = new THREE.Vector3();
+function fahrenTakt(dt) {
+  const s = spieler, aufStrasse = !!naechsteKante(s, 1.0, (k) => k.typ !== "fuss"), vmax = aufStrasse ? 4.2 : 1.8;
+  if (s.gas) s.v += (s.v < 0 ? 7 : 3.2) * dt; else if (s.bremse) s.v -= (s.v > 0 ? 8 : 2.2) * dt; else s.v -= Math.sign(s.v) * Math.min(Math.abs(s.v), 1.6 * dt);
+  s.v = klemme(s.v, -1.4, vmax);
+  const lenkZiel = (s.links ? 1 : 0) - (s.rechts ? 1 : 0); s.lenk += (lenkZiel - s.lenk) * Math.min(1, dt * 7);
+  s.rot += s.lenk * klemme(s.v, -2, 2) * 0.75 * dt;
+  const nx = s.x + Math.cos(s.rot) * s.v * dt, nz = s.z - Math.sin(s.rot) * s.v * dt;
+  const blockiert = !aufLand(nx, nz, 1.2) || Math.abs(nx) > HALB + 30 || Math.abs(nz) > HALB + 30 || zellenNahe(nx, nz, 0.42).some((c) => c.haus);
+  if (blockiert) s.v = -s.v * 0.25; else { s.x = nx; s.z = nz; }
+  const g = s.gruppe; g.position.set(s.x, G + 0.02, s.z); g.rotation.set(0, s.rot, 0); g.userData.lh.material.color.setHex(s.bremse && s.v > 0.1 ? 0xff2a20 : 0x7a1410);
+  const vx = Math.cos(s.rot), vz = -Math.sin(s.rot);
+  _soll.set(s.x - vx * 3.0, G + 1.45, s.z - vz * 3.0); kamera.position.lerp(_soll, 1 - Math.exp(-dt * 5));
+  _blick.set(s.x + vx * 1.6, G + 0.35, s.z + vz * 1.6); kamera.lookAt(_blick);
+  steuerung.target.set(s.x, 0, s.z);
+  $("kmh").textContent = Math.round(Math.abs(s.v) * 8 * 3.6 / 3);   // gefühlt: 4 Einheiten/s ≈ 40 km/h
+}
 
-let letzte = jetztS, takt = 0, woche = 0, fpsZeit = 0, fpsBilder = 0, erstes = true;
-const _ziel = new THREE.Vector3();
-renderer.setAnimationLoop(() => {
+/* ================================================================
+   Hauptmenü und Start
+   ================================================================ */
+function platzLaden(n) { const d = lade(platzKey(n), null); return d && d.v === 3 ? d : null; }
+(function altenStandUebernehmen() { if (platzLaden(1)) return; const alt = lade("inselstadt-v2", null); if (alt && alt.v === 2) { alt.v = 3; alt.karte = "insel"; alt.meta = { einwohner: 0, gespeichert: Date.now() }; merke(platzKey(1), alt); } })();
+function hauptmenue(ansicht) {
+  const box = $("hmBox"); const kopf = `<div class="titel"><img src="../../shared/marken/flaressa-zeichen.webp" alt=""><div><h1>Inselstadt</h1><p>Baue deine eigene Stadt – ein Spiel von FLARESSA Gaming</p></div></div>`;
+  if (ansicht && ansicht.neu) {
+    box.innerHTML = kopf + `<h3>Neue Stadt auf Platz ${ansicht.neu} – wähle eine Karte</h3><div class="karten">${Object.keys(KARTEN).map((k) => `<button class="karte" type="button" data-karte="${k}"><span class="em">${KARTEN[k].em}</span><b>${KARTEN[k].name}</b><small>${KARTEN[k].text}</small><small>Startgeld: ${euro(KARTEN[k].geld)}</small></button>`).join("")}</div><button class="zurueck" type="button" id="hmZurueck">‹ Zurück</button>`;
+    box.querySelectorAll("[data-karte]").forEach((b) => { b.onclick = () => starten(ansicht.neu, null, b.dataset.karte); });
+    $("hmZurueck").onclick = () => hauptmenue();
+    return;
+  }
+  let h = kopf + "<h3>Deine Städte</h3>";
+  for (let n = 1; n <= 3; n++) {
+    const d = platzLaden(n);
+    if (d) { const K = KARTEN[d.karte] || KARTEN.insel, w = Math.floor((d.tage || 0) / 7) + 1; h += `<div class="platz glas"><span class="em">${K.em}</span><div class="was"><b>${K.name}</b><small>👥 ${zahl(d.meta ? d.meta.einwohner : 0)} Einwohner · Woche ${w} · ${MEILEN[d.meilenstein || 0].name}</small></div><button class="weg" type="button" data-weg="${n}" aria-label="Löschen">🗑️</button><button class="los" type="button" data-los="${n}">Weiterspielen</button></div>`; }
+    else h += `<div class="platz glas"><span class="em">➕</span><div class="was"><b>Freier Platz ${n}</b><small>Starte eine neue Stadt</small></div><button class="los" type="button" data-neu="${n}">Neue Stadt</button></div>`;
+  }
+  h += `<p style="font-size:.85rem">Tipp: Alles wird automatisch auf diesem Gerät gespeichert. Steuerung: zwei Finger drehen und zoomen.</p>`;
+  box.innerHTML = h;
+  box.querySelectorAll("[data-los]").forEach((b) => { b.onclick = () => { const n = +b.dataset.los; starten(n, platzLaden(n)); }; });
+  box.querySelectorAll("[data-neu]").forEach((b) => { b.onclick = () => hauptmenue({ neu: +b.dataset.neu }); });
+  box.querySelectorAll("[data-weg]").forEach((b) => { let bereit = 0; b.onclick = () => { if (Date.now() - bereit > 3000) { bereit = Date.now(); b.textContent = "Sicher?"; return; } try { localStorage.removeItem(platzKey(+b.dataset.weg)); } catch (e) { /* egal */ } hauptmenue(); }; });
+}
+function starten(n, daten, neueKarte) {
+  platz = n; $("hauptmenue").hidden = true; $("laden").classList.remove("weg");
+  setTimeout(() => {
+    weltBauen(daten ? (daten.karte || "insel") : neueKarte);
+    if (daten) zustandRein(daten);
+    else { geld = KARTEN[karte].geld; netzGeaendert(); gebieteZeichnen(); bedarfBerechnen(); zeigeWerte(); datumZeigen(); }
+    if (!aussenKnoten) aussenBauen();
+    spielLaeuft = true; speichernBald(); unterleiste(); zeitKnoepfe(); menueKnoepfe();
+    if (!daten) { $("info").hidden = true; infoZeigen(`<b>${KARTEN[karte].em} Willkommen in deiner neuen Stadt!</b>1. 🛣️ Straßen: Anfang antippen, Ende antippen, ✓<br>2. 🏘️ Zonen: Felder neben der Straße anmalen<br>3. Zuschauen: Häuser wachsen, Autos fahren, Steuern bringen Geld<br><small>Tipp oben auf dein Geld für Budget &amp; Steuern.</small>`, 12000); werkzeugWaehlen("strasse"); }
+    else tipp("Willkommen zurück!", 2500);
+    renderer.setAnimationLoop(schleife);
+    setTimeout(() => $("laden").classList.add("weg"), 200);
+  }, 60);
+}
+window.inselstadt = { baeume: () => baeume.length, stufenTest: () => { let i = 0; for (const h of haeuser.values()) { h.stufe = 1 + (i++ % 3); if (h.stufe === 3 && h.zone === 1 && h.d < 2) h.stufe = 2; h.teile = hausTeile(h); } haeuserNeu = true; }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
+
+/* ================================================================
+   Hauptschleife
+   ================================================================ */
+let jetztS = performance.now() / 1000, letzte = jetztS, takt = 0, stauTakt = 0, fpsZeit = 0, fpsBilder = 0;
+function schleife() {
   const t = performance.now() / 1000, dt = Math.min(0.05, t - letzte); letzte = t; jetztS = t;
+  const sdt = dt * tempo; simZeit += sdt;
   U.uTime.value = t % 1000;
-  if (zeitModus === "auto") zeit = (zeit + dt / 150) % 1;
+  if (zeitModus === "auto") zeit = (zeit + sdt / 150) % 1;
   else if (zeitZiel != null) { let d = zeitZiel - zeit; if (d < -0.5) d += 1; if (d > 0.5) d -= 1; zeit = (zeit + Math.sign(d) * Math.min(Math.abs(d), dt * 0.35) + 1) % 1; if (Math.abs(d) < 0.0005) zeitZiel = null; }
   licht(zeit);
-  takt += dt; if (takt > 0.5) { takt = 0; wachsTakt(); }
-  woche += dt; if (woche > 6) { woche = 0; wocheTakt(); }
+  if (sdt > 0) {
+    const vorTag = Math.floor(tage); tage += sdt / TAG_SEK;
+    if (Math.floor(tage) !== vorTag) { datumZeigen(); if (Math.floor(tage) % 7 === 0) wocheTakt(); }
+    takt += sdt; if (takt > 0.5) { takt = 0; wachsTakt(); }
+  }
+  // Verkehr in kleinen Schritten (auch bei ⏭️ stabil)
+  const kz = kennzahlen(), autoZiel = Math.min(STUFEN[stufe].autos, FZ_MAX, Math.round((kz.e * 0.07 + kz.j * 0.035) * berufsverkehr()));
+  let rest = sdt; while (rest > 0) { const h = Math.min(rest, 0.05); verkehrTakt(h, autoZiel); rest -= h; }
+  stauTakt += dt; if (stauTakt > 1) { stauTakt = 0; stauMessen(); }
   if (zellenNeu) zellenZeichnen();
   if (haeuserNeu) haeuserZeichnen();
-  rauchZeichnen(); autosFahren(dt);
-  boote.forEach((b) => { b.w += b.v * dt; b.g.position.set(Math.cos(b.w) * b.rad, WASSER + 0.02 + Math.sin(t * 1.6 + b.ph) * 0.05, Math.sin(b.w) * b.rad); b.g.rotation.set(Math.sin(t * 1.3 + b.ph) * 0.05, -b.w + (b.v > 0 ? -Math.PI / 2 : Math.PI / 2), 0); });
-  leuchtturm.userData.strahl.rotation.y = t * 0.8;
-  steuerung.update();
-  _ziel.copy(steuerung.target);
-  if (Math.abs(_ziel.x) > HALB || Math.abs(_ziel.z) > HALB) { const d = new THREE.Vector3(Math.max(-HALB, Math.min(HALB, _ziel.x)) - _ziel.x, 0, Math.max(-HALB, Math.min(HALB, _ziel.z)) - _ziel.z); steuerung.target.add(d); kamera.position.add(d); }
+  rauchZeichnen(); fahrzeugeZeichnen(); ampelnZeichnen(); fussgaengerTakt(dt, kz.e);
+  boote.forEach((b) => { b.w += b.v * dt; b.g.position.set(b.mx + Math.cos(b.w) * b.rad, WASSER + 0.02 + Math.sin(t * 1.6 + b.ph) * 0.05, b.mz + Math.sin(b.w) * b.rad); b.g.rotation.set(Math.sin(t * 1.3 + b.ph) * 0.05, -b.w + (b.v > 0 ? -Math.PI / 2 : Math.PI / 2), 0); });
+  if (leuchtturm) leuchtturm.userData.strahl.rotation.y = t * 0.8;
+  if (spieler.an) fahrenTakt(dt);
+  else {
+    steuerung.update();
+    const tz = steuerung.target; if (Math.abs(tz.x) > HALB || Math.abs(tz.z) > HALB) { const d = new THREE.Vector3(klemme(tz.x, -HALB, HALB) - tz.x, 0, klemme(tz.z, -HALB, HALB) - tz.z); tz.add(d); kamera.position.add(d); }
+  }
   himmel.position.copy(kamera.position);
   if (preisSchilder.children.length) { const ka = kameraAbstand(); preisSchilder.children.forEach((s) => { s.scale.set(ka * 0.16, ka * 0.0625, 1); s.position.y = 2 + ka * 0.04; }); }
   renderer.render(szene, kamera);
-  if (erstes) { erstes = false; $("laden").classList.add("weg"); }
   fpsBilder++; fpsZeit += dt; if (fpsZeit >= 0.5) { $("fps").textContent = Math.round(fpsBilder / fpsZeit) + " FPS"; fpsBilder = 0; fpsZeit = 0; }
-});
+}
+
+/* Los geht's */
+qualitaet(stufe);
+hauptmenue();

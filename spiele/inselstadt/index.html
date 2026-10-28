@@ -10,41 +10,50 @@
 <link rel="stylesheet" href="../../shared/fonts/fonts.css">
 <script src="../../shared/intro.js"></script>
 <style>
-:root{--f:#a66bff;--glas:rgba(12,14,26,.7);--linie:rgba(255,255,255,.12);--text:#f4f2ff;--leise:#b9b4d6;--gut:#4fd27a;--schlecht:#ff6b6b;color-scheme:dark}
+:root{--f:#a66bff;--glas:rgba(12,14,26,.72);--linie:rgba(255,255,255,.12);--text:#f4f2ff;--leise:#b9b4d6;--gut:#4fd27a;--schlecht:#ff6b6b;--w:#4fd27a;--l:#4aa8ff;--i:#ffc23d;color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overflow:hidden;background:#0b1020;color:var(--text);font:15px/1.4 'Space Grotesk','Helvetica Neue',Arial,sans-serif;-webkit-tap-highlight-color:transparent;touch-action:none;user-select:none;-webkit-user-select:none}
 canvas{display:block;position:fixed;inset:0;width:100%;height:100%;outline:none;touch-action:none}
 button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}
 .glas{background:var(--glas);border:1px solid var(--linie);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:16px}
-#kopf{position:fixed;top:max(10px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));display:flex;align-items:center;gap:10px;padding:7px 14px 7px 9px;z-index:5;max-width:calc(100vw - 80px)}
-#kopf img{width:28px;height:28px;flex:none}
-#werte{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.82rem;color:var(--leise);font-variant-numeric:tabular-nums}
+[hidden]{display:none!important}
+/* Kopf */
+#oben{position:fixed;top:max(8px,env(safe-area-inset-top));left:max(8px,env(safe-area-inset-left));right:max(62px,calc(env(safe-area-inset-right) + 62px));display:flex;flex-wrap:wrap;gap:6px;z-index:5;pointer-events:none}
+#oben>*{pointer-events:auto}
+#kopf{display:flex;align-items:center;gap:10px;padding:6px 12px 6px 8px;border:1px solid var(--linie);text-align:left}
+#kopf img{width:26px;height:26px;flex:none}
+#werte{display:flex;flex-wrap:wrap;gap:2px 11px;font-size:.82rem;color:var(--leise);font-variant-numeric:tabular-nums}
 #werte b{color:var(--text)}
 #werte .geld b{color:#ffe08a}
 #trend.plus{color:var(--gut)}#trend.minus{color:var(--schlecht)}
-#menueKnopf{position:fixed;top:max(10px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));width:46px;height:46px;border-radius:14px;z-index:6;font-size:1.2rem}
-#menue{position:fixed;top:calc(max(10px,env(safe-area-inset-top)) + 54px);right:max(10px,env(safe-area-inset-right));width:min(290px,calc(100vw - 20px));padding:14px;z-index:6;display:grid;gap:12px}
-#menue[hidden]{display:none}
-#menue h3{margin:0 0 6px;font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:var(--leise);font-weight:600}
+#bedarf{display:flex;align-items:flex-end;gap:3px;height:28px;padding:0 2px}
+#bedarf i{display:block;width:7px;border-radius:2px 2px 0 0;background:var(--c);min-height:2px;transition:height .6s}
+#zeitleiste{display:flex;align-items:center;gap:2px;padding:4px}
+#zeitleiste button{border:0;background:transparent;border-radius:9px;min-width:36px;min-height:36px;font-size:.95rem}
+#zeitleiste button[aria-pressed=true]{background:var(--f);color:#14082a}
+#datum{font-size:.78rem;color:var(--leise);padding:0 8px 0 4px;font-variant-numeric:tabular-nums;white-space:nowrap}
+#menueKnopf{position:fixed;top:max(8px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right));width:46px;height:46px;border-radius:14px;z-index:6;font-size:1.2rem}
+#menue{position:fixed;top:calc(max(8px,env(safe-area-inset-top)) + 54px);right:max(8px,env(safe-area-inset-right));width:min(300px,calc(100vw - 16px));padding:14px;z-index:6;display:grid;gap:12px;max-height:calc(100vh - 80px);overflow:auto}
+h3{margin:0 0 6px;font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:var(--leise);font-weight:600}
 .reihe{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border:1px solid var(--linie);background:rgba(255,255,255,.05);padding:8px 11px;border-radius:10px;font-size:.86rem;min-height:40px;white-space:nowrap}
 .chip[aria-pressed=true]{background:var(--f);border-color:var(--f);color:#14082a;font-weight:600}
 .chip.gefahr{color:#ff9b9b;border-color:rgba(255,107,107,.4)}
-#menue a,#menue small{color:var(--leise);font-size:.82rem}
-#unten{position:fixed;left:0;right:0;bottom:max(10px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:6px;z-index:5;pointer-events:none;padding:0 8px}
+#menue small{color:var(--leise);font-size:.8rem}
+/* Unten */
+#unten{position:fixed;left:0;right:0;bottom:max(8px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:6px;z-index:5;pointer-events:none;padding:0 8px}
 #unten>*{pointer-events:auto;max-width:100%}
 #tipp{padding:8px 14px;font-size:.85rem;text-align:center;transition:opacity .4s;width:max-content;max-width:min(560px,100%)}
 #tipp.weg{opacity:0;pointer-events:none}
 #frage{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 14px;font-size:.9rem}
-#frage[hidden]{display:none}
 #frage .text{font-variant-numeric:tabular-nums}
 #frage .text.falsch{color:#ffb0b0}
 #frage button{border:0;border-radius:11px;min-width:48px;min-height:44px;font-size:1.1rem;font-weight:700}
-#ja{background:var(--gut);color:#06210f}#ja:disabled{opacity:.35;cursor:not-allowed}
+#ja{background:var(--gut);color:#06210f}
 #nein{background:rgba(255,255,255,.1)}
 #unter{display:flex;gap:6px;padding:6px;overflow-x:auto;scrollbar-width:none;align-items:center}
 #unter::-webkit-scrollbar{display:none}
-#unter[hidden]{display:none}
 #unter .trenn{width:1px;align-self:stretch;background:var(--linie);flex:none;margin:4px 2px}
 #unter .chip{flex:none}
 #werkzeug{display:flex;gap:3px;padding:5px;overflow-x:auto;scrollbar-width:none}
@@ -54,40 +63,79 @@ button{font:inherit;color:inherit;cursor:pointer}
 #werkzeug button small{font-size:.7rem;color:var(--leise)}
 #werkzeug button[aria-pressed=true]{background:var(--f)}
 #werkzeug button[aria-pressed=true] small{color:#14082a;font-weight:600}
-#info{position:fixed;left:50%;top:calc(max(10px,env(safe-area-inset-top)) + 64px);transform:translateX(-50%);padding:12px 16px;z-index:5;min-width:220px;font-size:.9rem}
-#info[hidden]{display:none}
+/* Infokarte, Budget */
+#info{position:fixed;left:50%;top:calc(max(8px,env(safe-area-inset-top)) + 96px);transform:translateX(-50%);padding:12px 16px;z-index:5;min-width:230px;max-width:calc(100vw - 24px);font-size:.9rem}
 #info b{display:block;font-size:1rem;margin-bottom:2px}
 #info small{color:var(--leise)}
-#start{position:fixed;inset:0;display:grid;place-items:center;z-index:7;background:rgba(5,8,18,.55);padding:16px}
-#start[hidden]{display:none}
-#start .karte{max-width:390px;padding:22px;display:grid;gap:12px}
-#start h2{margin:0;font-size:1.3rem}
-#start ol{margin:0;padding-left:20px;display:grid;gap:8px;color:#dcd8f0}
-#start button{justify-self:start;background:var(--f);color:#14082a;font-weight:600;border:0;border-radius:12px;padding:12px 20px;min-height:46px}
+#budget{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,calc(100vw - 20px));max-height:calc(100vh - 40px);overflow:auto;padding:18px;z-index:7;display:grid;gap:14px}
+#budget h2{margin:0;font-size:1.15rem;display:flex;justify-content:space-between;align-items:center}
+#budget h2 button{border:0;background:rgba(255,255,255,.1);border-radius:10px;width:40px;height:40px}
+.zeile{display:flex;justify-content:space-between;gap:10px;font-variant-numeric:tabular-nums;font-size:.92rem;padding:3px 0}
+.zeile.summe{border-top:1px solid var(--linie);padding-top:7px;font-weight:600}
+.plus{color:var(--gut)}.minus{color:var(--schlecht)}
+.steuer{display:grid;grid-template-columns:110px 1fr 46px;align-items:center;gap:10px;font-size:.9rem}
+.steuer input{width:100%;accent-color:var(--c)}
+.steuer b{text-align:right;font-variant-numeric:tabular-nums}
+.leiste{height:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.leiste i{display:block;height:100%;background:var(--f);border-radius:inherit}
+/* Hauptmenü */
+#hauptmenue{position:fixed;inset:0;z-index:9;display:grid;place-items:center;padding:16px;background:radial-gradient(80vmax 50vmax at 50% 0%,rgba(166,107,255,.22),transparent 70%),#0b1020;overflow:auto}
+#hauptmenue .box{width:min(560px,100%);display:grid;gap:16px}
+#hauptmenue .titel{display:flex;align-items:center;gap:12px}
+#hauptmenue .titel img{width:44px;height:44px}
+#hauptmenue h1{margin:0;font-size:1.7rem}
+#hauptmenue p{margin:0;color:var(--leise)}
+.platz{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.platz .em{font-size:1.8rem;width:40px;text-align:center}
+.platz .was{flex:1;min-width:0}
+.platz .was b{display:block}
+.platz .was small{color:var(--leise)}
+.platz button{border:0;border-radius:11px;padding:10px 14px;min-height:44px;font-weight:600}
+.platz .los{background:var(--f);color:#14082a}
+.platz .weg{background:rgba(255,107,107,.15);color:#ff9b9b}
+.karten{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.karte{display:grid;gap:4px;text-align:left;padding:14px;border-radius:16px;border:1px solid var(--linie);background:rgba(255,255,255,.04)}
+.karte:hover,.karte:focus-visible{border-color:var(--f);outline:none}
+.karte .em{font-size:1.8rem}
+.karte small{color:var(--leise)}
+.zurueck{justify-self:start;border:1px solid var(--linie);background:transparent;border-radius:10px;padding:8px 12px}
+/* Fahrpult */
+#fahrpult{position:fixed;inset:auto 0 max(12px,env(safe-area-inset-bottom)) 0;display:flex;justify-content:space-between;align-items:flex-end;padding:0 max(12px,env(safe-area-inset-left));z-index:6;pointer-events:none}
+#fahrpult>div{display:flex;gap:10px;pointer-events:auto}
+#fahrpult button{width:74px;height:74px;border-radius:20px;font-size:1.7rem;border:1px solid var(--linie);background:var(--glas);backdrop-filter:blur(8px)}
+#fahrpult button.an{background:var(--f);color:#14082a}
+#tacho{position:fixed;left:50%;top:max(12px,env(safe-area-inset-top));transform:translateX(-50%);padding:8px 16px;z-index:6;font-variant-numeric:tabular-nums;display:flex;gap:12px;align-items:center}
+#tacho b{font-size:1.4rem}
+#aussteigen{border:0;background:rgba(255,255,255,.12);border-radius:10px;padding:8px 12px}
 #laden{position:fixed;inset:0;display:grid;place-items:center;background:#0b1020;z-index:8;transition:opacity .5s}
 #laden.weg{opacity:0;pointer-events:none}
 #laden div{text-align:center;color:var(--leise)}
 #laden b{display:block;color:var(--text);font-size:1.2rem;margin-bottom:6px}
-#fehler{position:fixed;inset:0;display:none;place-items:center;padding:24px;text-align:center;z-index:9;background:#0b1020}
-@media (max-width:420px){#werkzeug button{min-width:54px;padding:7px 5px 6px}}
+#fehler{position:fixed;inset:0;display:none;place-items:center;padding:24px;text-align:center;z-index:10;background:#0b1020}
+@media (max-width:440px){#werkzeug button{min-width:54px;padding:7px 5px 6px}#kopf img{display:none}#datum{display:none}}
 </style>
 <script type="importmap">{"imports":{"three":"../../shared/vendor/three-0.160.0/three.module.min.js","three/addons/":"../../shared/vendor/three-0.160.0/"}}</script>
 </head>
 <body>
-<div id="laden"><div><b>🏝️ Inselstadt</b>Die Insel wird geladen …</div></div>
+<div id="hauptmenue"><div class="box" id="hmBox"></div></div>
+<div id="laden" class="weg"><div><b>🏝️ Inselstadt</b>Die Karte wird gebaut …</div></div>
 <div id="fehler"><div><b>Das klappt auf diesem Gerät leider nicht.</b><p>Dein Browser kann kein 3D (WebGL). Probier es mit einem aktuellen Chrome, Safari oder Firefox.</p></div></div>
 
-<header id="kopf" class="glas"><img src="../../shared/marken/flaressa-zeichen.webp" alt=""><div id="werte">
-  <span class="geld">💶 <b id="wGeld">0</b> <small id="trend"></small></span><span>👥 <b id="wEinw">0</b></span><span>💼 <b id="wJobs">0</b></span>
-</div></header>
+<div id="oben">
+  <button id="kopf" class="glas" type="button" title="Budget & Steuern"><img src="../../shared/marken/flaressa-zeichen.webp" alt=""><div id="werte">
+    <span class="geld">💶 <b id="wGeld">0</b> <small id="trend"></small></span><span>👥 <b id="wEinw">0</b></span><span>💼 <b id="wJobs">0</b></span>
+  </div><div id="bedarf" title="Bedarf: Wohnen, Läden, Industrie"><i style="--c:var(--w)"></i><i style="--c:var(--l)"></i><i style="--c:var(--i)"></i></div></button>
+  <div id="zeitleiste" class="glas"><button type="button" data-t="0" aria-label="Pause">⏸️</button><button type="button" data-t="1" aria-label="Normal">▶️</button><button type="button" data-t="2" aria-label="Schnell">⏩</button><button type="button" data-t="4" aria-label="Sehr schnell">⏭️</button><span id="datum"></span></div>
+</div>
 <button id="menueKnopf" class="glas" type="button" aria-label="Menü" aria-expanded="false">☰</button>
 <div id="menue" class="glas" hidden>
+  <div><h3>Stadt</h3><div class="reihe"><button class="chip" type="button" id="budgetKnopf">💶 Budget &amp; Steuern</button><button class="chip" type="button" id="hauptmenueKnopf">🏠 Hauptmenü</button></div></div>
   <div><h3>Tageszeit</h3><div class="reihe" id="zeiten"><button class="chip" type="button" data-zeit="tag">☀️ Tag</button><button class="chip" type="button" data-zeit="abend">🌅 Abend</button><button class="chip" type="button" data-zeit="nacht">🌙 Nacht</button><button class="chip" type="button" data-zeit="auto">🔁 Ablauf</button></div></div>
   <div><h3>Grafik</h3><div class="reihe" id="grafik"><button class="chip" type="button" data-q="niedrig">Niedrig</button><button class="chip" type="button" data-q="mittel">Mittel</button><button class="chip" type="button" data-q="hoch">Hoch</button></div><small id="fps">– FPS</small></div>
-  <div><h3>Spielstand</h3><div class="reihe"><button type="button" class="chip gefahr" id="neuAnfangen">🗑️ Neu anfangen</button></div><small>Deine Stadt wird automatisch auf diesem Gerät gespeichert.</small></div>
-  <a href="aussehen.html">Zum Aussehen-Test (fertige Stadt ansehen)</a>
+  <div><h3>Spielstand</h3><div class="reihe"><button type="button" class="chip gefahr" id="neuAnfangen">🗑️ Diese Stadt löschen</button></div><small>Wird automatisch auf diesem Gerät gespeichert.</small></div>
 </div>
 <div id="info" class="glas" hidden></div>
+<div id="budget" class="glas" hidden></div>
 
 <div id="unten">
   <div id="tipp" class="glas weg"></div>
@@ -102,16 +150,11 @@ button{font:inherit;color:inherit;cursor:pointer}
   </nav>
 </div>
 
-<div id="start" hidden><div class="karte glas">
-  <h2>🏝️ Willkommen in Inselstadt!</h2>
-  <ol>
-    <li><b>🛣️ Straßen</b>: Tipp auf den Anfang, dann aufs Ende – und bestätige mit <b>✓</b>. Für Kurven wähl „〰️ Kurve“ und tipp dazwischen den Kurvenpunkt.</li>
-    <li><b>🏘️ Zonen</b>: Mal die Felder neben der Straße als Wohnen, Läden oder Industrie an.</li>
-    <li>Häuser wachsen, Steuern bringen Geld. Mit Geld kaufst du unter <b>🗺️ Gebiete</b> neues Land.</li>
-  </ol>
-  <p style="margin:0;color:var(--leise);font-size:.88rem">Kamera: zwei Finger zum Drehen und Zoomen, in 👆 Ansehen verschiebst du mit einem Finger. Tipp dort auf ein Haus für Infos.</p>
-  <button type="button" id="los">Los geht's</button>
-</div></div>
+<div id="tacho" class="glas" hidden><b id="kmh">0</b><span>km/h</span><button type="button" id="aussteigen">✕ Aussteigen</button></div>
+<div id="fahrpult" hidden>
+  <div><button type="button" data-f="links" aria-label="Links">◀</button><button type="button" data-f="rechts" aria-label="Rechts">▶</button></div>
+  <div><button type="button" data-f="bremse" aria-label="Bremsen">▼</button><button type="button" data-f="gas" aria-label="Gas">▲</button></div>
+</div>
 <script type="module" src="spiel.js"></script>
 </body>
 </html>
