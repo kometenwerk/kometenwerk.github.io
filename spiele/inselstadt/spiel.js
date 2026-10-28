@@ -41,8 +41,12 @@ const TYP = {
   fuss: { name: "Fußweg", em: "🚶", halb: 0.42, fahr: 0, preis: 15, zellen: false, autos: false, tempo: 0, spuren: [] },
   klein: { name: "Straße", em: "🛣️", halb: 0.68, fahr: 0.42, preis: 60, zellen: true, autos: true, tempo: 2.1, spuren: [0.21] },
   allee: { name: "Allee", em: "🌳", halb: 0.98, fahr: 0.42, preis: 100, zellen: true, autos: true, tempo: 2.1, spuren: [0.21] },
-  haupt: { name: "Hauptstraße", em: "🚗", halb: 1.12, fahr: 0.86, preis: 160, zellen: true, autos: true, tempo: 3.1, spuren: [0.22, 0.64] }
+  haupt: { name: "Hauptstraße", em: "🚗", halb: 1.12, fahr: 0.86, preis: 160, zellen: true, autos: true, tempo: 3.1, spuren: [0.22, 0.64], rang: 2 },
+  gross: { name: "Große Straße", em: "🛤", halb: 1.62, fahr: 1.36, preis: 260, zellen: true, autos: true, tempo: 3.4, spuren: [0.32, 0.74, 1.16], rang: 3, mitte: "gruen" },
+  autobahn: { name: "Autobahn", em: "🛣", halb: 1.55, fahr: 1.45, preis: 400, zellen: false, autos: true, tempo: 5.0, spuren: [0.3, 0.72, 1.14], rang: 4, mitte: "planke", ohneGehweg: true },
+  zone: { name: "Fußgängerzone", em: "🧺", halb: 0.72, fahr: 0, preis: 90, zellen: true, autos: false, tempo: 0, spuren: [], pflaster: true }
 };
+const rang = (k) => TYP[k.typ].rang || 1;
 const KARTEN = {
   insel: { name: "Große Insel", em: "🏝️", text: "Eine große Insel mitten im Meer, mit Leuchtturm und Stränden.", geld: 70000 },
   kueste: { name: "Küste", em: "🏖️", text: "Festland mit langer Küste und einer Bucht. Viel Platz nach hinten.", geld: 70000 },
@@ -52,8 +56,8 @@ const KARTEN = {
 const MEILEN = [
   { name: "Siedlung", ab: 0, gebiete: 1, geld: 0, frei: [] },
   { name: "Dorf", ab: 200, gebiete: 2, geld: 5000, frei: ["allee"] },
-  { name: "Kleinstadt", ab: 600, gebiete: 3, geld: 10000, frei: ["haupt"] },
-  { name: "Stadt", ab: 1500, gebiete: 5, geld: 15000, frei: [] },
+  { name: "Kleinstadt", ab: 600, gebiete: 3, geld: 10000, frei: ["haupt", "zone", "autobahn"] },
+  { name: "Stadt", ab: 1500, gebiete: 5, geld: 15000, frei: ["gross"] },
   { name: "Großstadt", ab: 4000, gebiete: 8, geld: 25000, frei: [] },
   { name: "Metropole", ab: 9000, gebiete: 13, geld: 40000, frei: [] },
   { name: "Weltstadt", ab: 20000, gebiete: 24, geld: 60000, frei: [] }
@@ -520,14 +524,20 @@ function geoAus(pos, col) { const g = new THREE.BufferGeometry(); g.setAttribute
 function kantenMesh(k) {
   const T = TYP[k.typ], pos = [], col = [], Y = (d) => k.ebene ? (p) => G + d + ebeneY(k, p.s) : G + d;
   if (k.typ === "fuss") band(pos, col, k.pts, T.halb, Y(0.014), SF.weg);
+  else if (T.pflaster) { band(pos, col, k.pts, T.halb, Y(0.014), farbe(0xd8cbb0)); band(pos, col, k.pts, 0.12, Y(0.016), farbe(0xb9a98a)); }
   else {
-    band(pos, col, k.pts, T.halb, Y(0.012), SF.gehweg);
+    band(pos, col, k.pts, T.halb, Y(0.012), T.ohneGehweg ? SF.gruen : SF.gehweg);
     if (k.typ === "allee") band(pos, col, k.pts, 0.78, Y(0.016), SF.gruen);
     band(pos, col, k.pts, T.fahr, Y(0.02), SF.fahrbahn);
-    if (k.typ === "haupt") { linie(pos, col, k, 0.05, SF.gelb); linie(pos, col, k, -0.05, SF.gelb); striche(pos, col, k, 0.43, SF.strich, 0.45, 0.65); striche(pos, col, k, -0.43, SF.strich, 0.45, 0.65); }
+    const sp = T.spuren;
+    if (sp.length > 1) {
+      if (T.mitte === "gruen") band(pos, col, k.pts, 0.1, Y(0.024), SF.gruen); else if (T.mitte === "planke") band(pos, col, k.pts, 0.05, Y(0.03), farbe(0xc9ced6)); else { linie(pos, col, k, 0.05, SF.gelb); linie(pos, col, k, -0.05, SF.gelb); }
+      for (let i = 0; i < sp.length - 1; i++) { const o = (sp[i] + sp[i + 1]) / 2; striche(pos, col, k, o, SF.strich, 0.45, 0.65); striche(pos, col, k, -o, SF.strich, 0.45, 0.65); }
+      if (T.ohneGehweg) for (const sei of [1, -1]) linie(pos, col, k, sei * (T.fahr - 0.04), SF.strich);
+    }
     else if (!k.einbahn) striche(pos, col, k, 0, SF.strich, 0.5, 0.6);
   }
-  if (k.busspur) for (const sei of [1, -1]) band(pos, col, k.pts, 0.2, Y(0.0205), farbe(0x8a3a3a), sei * 0.64);
+  if (k.busspur) { const o = T.spuren[T.spuren.length - 1]; for (const sei of [1, -1]) band(pos, col, k.pts, 0.2, Y(0.0205), farbe(0x8a3a3a), sei * o); }
   if (k.schienen) { const o = TYP[k.typ].spuren[TYP[k.typ].spuren.length - 1], c = farbe(0xb9bfc7); for (const sei of [1, -1]) for (const d of [0.085, -0.085]) band(pos, col, k.pts, 0.012, Y(0.027), c, sei * o + d); }
   if (k.ebene > 0) { const c = farbe(0xb9b4a8), unten = (p) => G - 0.1 + ebeneY(k, p.s), oben = (p) => G + 0.09 + ebeneY(k, p.s); for (const sei of [1, -1]) wand(pos, col, k.pts, sei * T.halb, unten, oben, c); band(pos, col, k.pts, T.halb, unten, farbe(0x8c877c)); }
   if (k.einbahn) { const w = farbe(0xffffff); for (let s2 = 1.6; s2 < k.len - 1.4; s2 += 2.4) { const S = k.einbahn > 0 ? s2 : k.len - s2, p = punktBei(k, S), tx = p.tx * k.einbahn, tz = p.tz * k.einbahn, y = G + 0.025 + ebeneY(k, S); for (const off of TYP[k.typ].spuren.length > 1 ? [0.22, 0.64, -0.22, -0.64] : [0.21, -0.21]) { const cx = p.x - tz * off, cz = p.z + tx * off; pos.push(cx + tx * 0.22, y, cz + tz * 0.22, cx - tx * 0.05 - tz * 0.1, y, cz - tz * 0.05 + tx * 0.1, cx - tx * 0.05 + tz * 0.1, y, cz - tz * 0.05 - tx * 0.1); for (let v = 0; v < 3; v++) col.push(w.r, w.g, w.b); pos.push(cx - tx * 0.05 - tz * 0.035, y, cz - tz * 0.05 + tx * 0.035, cx - tx * 0.25 - tz * 0.035, y, cz - tz * 0.25 + tx * 0.035, cx - tx * 0.05 + tz * 0.035, y, cz - tz * 0.05 - tx * 0.035, cx - tx * 0.05 + tz * 0.035, y, cz - tz * 0.05 - tx * 0.035, cx - tx * 0.25 - tz * 0.035, y, cz - tz * 0.25 + tx * 0.035, cx - tx * 0.25 + tz * 0.035, y, cz - tz * 0.25 - tx * 0.035); for (let v = 0; v < 6; v++) col.push(w.r, w.g, w.b); } } }
@@ -559,7 +569,7 @@ function kanteTeilen(k, t) {
   const a = knoten.get(k.a), b = knoten.get(k.b), m = bez(a, k.c, b, t), n = neuerKnoten(m);
   const c1 = lerp(a, k.c, t), c2 = lerp(k.c, b, t), aId = k.a, bId = k.b, typ = k.typ, ax = { x: a.x, z: a.z }, bx = { x: b.x, z: b.z };
   kanteWeg(k); if (!knoten.has(aId)) neuerKnoten(ax, aId); if (!knoten.has(bId)) neuerKnoten(bx, bId);
-  const opt = { aussen: k.aussen, einbahn: k.einbahn, ring: k.ring, kreisel: k.kreisel, busspur: k.busspur, schienen: k.schienen }, e1 = neueKante(aId, n.id, c1, typ, null, opt), e2 = neueKante(n.id, bId, c2, typ, null, opt); return n;
+  const opt = { aussen: k.aussen, einbahn: k.einbahn, ring: k.ring, kreisel: k.kreisel, busspur: k.busspur, schienen: k.schienen, parken: k.parken }, e1 = neueKante(aId, n.id, c1, typ, null, opt), e2 = neueKante(n.id, bId, c2, typ, null, opt); return n;
 }
 const fangRadius = () => Math.min(3, Math.max(1.1, kameraAbstand() / 32));
 function naechsterKnoten(p, r) { let best = null, bd = r; for (const n of knoten.values()) { const d = abst(n, p); if (d < bd) { bd = d; best = n; } } return best; }
@@ -603,7 +613,7 @@ function planen(A, C, Bp, typ, ebene) {
   if (len < 1.5) nein("Zu kurz");
   if (len > 90) nein("Zu lang – setz einen Zwischenpunkt");
   if (ebene && len < 7) nein(ebene > 0 ? "Brücken müssen mindestens 7 Felder lang sein" : "Tunnel müssen mindestens 7 Felder lang sein");
-  for (const q of pts) { if (!aufLand(q.x, q.z, ebene && Math.abs(ey(q)) > 0.3 ? -99 : ebene ? 1.5 : 3.5)) { nein(ebene ? "Die Enden müssen auf festem Land liegen" : "Zu nah am Wasser – bau eine 🌉 Brücke"); break; } if (!imBesitz(q.x, q.z)) { nein("Außerhalb deiner Gebiete – kauf erst Land"); break; } }
+  for (const q of pts) { if (!aufLand(q.x, q.z, ebene && Math.abs(ey(q)) > 0.3 ? -99 : ebene ? 1.5 : 3.5)) { if (!ebene) plan.wasser = true; nein(ebene ? "Die Enden müssen auf festem Land liegen" : "Zu nah am Wasser – bau eine 🌉 Brücke"); break; } if (!imBesitz(q.x, q.z)) { nein("Außerhalb deiner Gebiete – kauf erst Land"); break; } }
   for (let i = 1; i < pts.length - 1 && plan.ok; i++) { const a = pts[i - 1], b = pts[i + 1]; if (a.tx * b.tx + a.tz * b.tz < 0.55 && abst(a, b) < 1.2) nein("Kurve zu eng"); }
   if (plan.ok) {
     plan.kreuz = ebene ? [] : kreuzungen(pts, [A, Bp]);
@@ -869,7 +879,8 @@ function bodenwert(x, z, ohne) {
   w += Math.min(22, b * 1.6);
   const a = abstand(x, z); if (a < 9) w += 24 * (1 - Math.max(0, a - 3) / 6);
   if (naechsteKante({ x, z }, 3.2, (k) => k.typ === "allee")) w += 12;
-  if (naechsteKante({ x, z }, 2.6, (k) => k.typ === "haupt" && !k.aussen)) w -= 10;
+  if (naechsteKante({ x, z }, 3.2, (k) => rang(k) >= 2 && !k.aussen)) w -= 10;
+  if (naechsteKante({ x, z }, 3.2, (k) => k.parken)) w += 4;
   let laeden = 0; for (const q of ladenListe) if (Math.hypot(q.x - x, q.z - z) < 6) laeden++;
   w += Math.min(14, laeden * 4);
   let park = 0, dienstPlus = 0; const gedeckt = new Set();
@@ -1063,6 +1074,8 @@ const DIENSTE = {
   busdepot: { kat: "verkehr", name: "Busdepot", em: "🅿️", preis: 8000, unterhalt: 120, w: 3, d: 3, depot: "bus", text: "Hier starten die Busse. Ohne Depot fahren keine Busse." },
   tramdepot: { kat: "verkehr", name: "Straßenbahn-Depot", em: "🚋", preis: 15000, unterhalt: 200, w: 3, d: 3, depot: "tram", ab: 3, text: "Hier starten die Straßenbahnen." },
   bahnhof: { kat: "verkehr", name: "Bahnhof", em: "🚆", preis: 25000, unterhalt: 300, w: 3, d: 3, ab: 2, text: "Züge bringen Pendler und Touristen – mehr Bedarf an Wohnungen und Läden." },
+  parkplatz: { kat: "verkehr", name: "Parkplatz", em: "🅿️", preis: 2500, unterhalt: 20, w: 2, d: 2, radius: 8, wert: 5, text: "Kunden finden einen Parkplatz – Läden und Büros in der Nähe werden wertvoller." },
+  parkhaus: { kat: "verkehr", name: "Parkhaus", em: "🏢", preis: 12000, unterhalt: 90, w: 2, d: 2, radius: 13, wert: 8, ab: 3, text: "Viele Parkplätze auf wenig Platz – gut für die Innenstadt." },
   hafen: { kat: "verkehr", name: "Frachthafen", em: "🚢", preis: 30000, unterhalt: 350, w: 4, d: 3, ab: 1, amWasser: true, dreck: 5, text: "Schiffe bringen Waren – mehr Bedarf an Industrie, Lkw fahren vom Hafen los. Muss am Ufer stehen." }
 };
 const RESSOURCEN = { strom: { em: "⚡", name: "Strom" }, wasser: { em: "💧", name: "Wasser" }, abwasser: { em: "🚽", name: "Abwasser" }, muell: { em: "🗑️", name: "Müllabfuhr" } };
@@ -1108,6 +1121,8 @@ function dienstTeile(d) {
     case "busdepot": case "tramdepot": { const tr = d.typ === "tramdepot"; boden(0x9a9a92); box("haus", 0, -0.2, W * 0.86, 0.75, D * 0.6, tr ? 0xd8c3a5 : 0xc4c9cc); box("dach", 0, -0.2, W * 0.9, 0.25, D * 0.64, 0x5d6470, { ly: 0.75 }); for (let k = 0; k < 4; k++) box("flach", -W * 0.32 + k * W * 0.21, -0.2 + D * 0.3 + 0.006, W * 0.16, 0.5, 0.01, 0x2a2d33); for (let k = 0; k < 3; k++) box("flach", -W * 0.25 + k * W * 0.25, vorn - 0.25, 0.22, 0.28, tr ? 0.9 : 0.6, LINIEN_FARBEN[k], { ly: 0.01 }); break; }
     case "bahnhof": boden(0xb5b3ad); box("haus", 0, vorn - 0.45, W * 0.8, 0.75, 0.75, 0xd8c3a5); box("dach", 0, vorn - 0.45, W * 0.84, 0.3, 0.8, 0x5d6470, { ly: 0.75 }); box("haus", 0, vorn - 0.06, 0.4, 1.15, 0.2, 0xd8c3a5); box("flach", 0, vorn + 0.05, 0.22, 0.22, 0.02, 0xf4f4f4, { ly: 0.8 }); box("flach", 0, -D * 0.2, W * 0.9, 0.04, D * 0.5, 0x6d737a, { ly: 0.55 }); for (const sx of [-1, 1]) for (const sz of [-0.38, 0]) box("flach", sx * W * 0.4, sz, 0.05, 0.55, 0.05, 0x6d737a); flach(0, -D * 0.2, W * 0.86, D * 0.5, 0x9a9a92); break;
     case "hafen": boden(0x8c8a84); for (let k = 0; k < 6; k++) box("flach", -W * 0.32 + (k % 3) * 0.5, vorn - 0.6 - Math.floor(k / 3) * 0.32, 0.42, 0.14 * (1 + (k % 2)), 0.24, CONTAINER[(d.id + k) % CONTAINER.length]); box("haus", W * 0.33, vorn - 0.4, 0.6, 0.45, 0.5, 0xd9d4c7); for (const sx of [-0.25, 0.35]) { box("flach", sx * W, -D * 0.38, 0.06, 1.3, 0.06, 0xf2c14e); box("flach", sx * W, -D * 0.38 - 0.25, 0.06, 0.06, 0.8, 0xf2c14e, { ly: 1.25 }); } box("flach", 0, -D / 2 + 0.08, W * 0.98, 0.1, 0.2, 0x7a7a72); break;
+    case "parkplatz": { boden(0x55585e); for (let rz = 0; rz < 2; rz++) { const lz = vorn - 0.45 - rz * 0.85; for (let k = 0; k < 6; k++) { const lx = -W * 0.4 + k * W * 0.16; box("flach", lx - W * 0.08, lz, 0.015, 0.002, 0.42, 0xf2f2f2, { ly: 0.01 }); if (r() < 0.75) box("flach", lx, lz, 0.17, 0.12, 0.32, PAL.auto[(d.id + k + rz * 3) % PAL.auto.length], { ly: 0.01 }); } } baum(-W * 0.42, -D * 0.42, 0.4); baum(W * 0.42, -D * 0.42, 0.4); break; }
+    case "parkhaus": { boden(0x8c8f94); const w = W * 0.86, dd = D * 0.8, lz = vorn - dd / 2 - 0.04; for (let e = 0; e < 4; e++) { box("haus", 0, lz, w, 0.06, dd, 0xb8bcc2, { ly: e * 0.38 }); for (const sx of [-1, 0, 1]) box("flach", sx * w * 0.45, lz, 0.06, 0.38, 0.06, 0x9aa0a8, { ly: e * 0.38 }); for (let k = 0; k < 4; k++) if (r() < 0.7) box("flach", -w * 0.36 + k * w * 0.24, lz + (k % 2 ? 0.2 : -0.2), 0.16, 0.11, 0.3, PAL.auto[(d.id + k + e) % PAL.auto.length], { ly: e * 0.38 + 0.06 }); } box("haus", 0, lz, w, 0.08, dd, 0x9aa0a8, { ly: 1.52 }); box("flach", w / 2 - 0.12, lz + dd / 2 + 0.01, 0.2, 0.2, 0.02, 0x1f4fbf, { ly: 1.1 }); break; }
     case "spielplatz": boden(0x7fc463); flach(-0.15, 0.1, 0.35, 0.35, 0xe8d39a); box("flach", 0.2, -0.15, 0.04, 0.3, 0.04, 0xe8493f); box("flach", 0.2, 0.05, 0.08, 0.02, 0.4, 0xf2c14e, { ly: 0.15, rx: 0.5 }); box("flach", -0.25, -0.25, 0.4, 0.03, 0.03, 0x3f7fe8, { ly: 0.28 }); box("flach", -0.43, -0.25, 0.03, 0.28, 0.03, 0x3f7fe8); box("flach", -0.07, -0.25, 0.03, 0.28, 0.03, 0x3f7fe8); baum(0.3, 0.32, 0.4); break;
     case "park": boden(0x6fbf55); flach(0, 0, 0.18, D * 0.95, 0xd8c7a0); flach(0, 0, W * 0.95, 0.18, 0xd8c7a0); for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) baum(a * W * 0.27, b * D * 0.27, 0.55 + r() * 0.25); box("flach", 0.2, 0.12, 0.2, 0.05, 0.06, 0x8b5a2b, { ly: 0.05 }); break;
     case "brunnen": boden(0xd8d0c0); zyl(0, 0, 0.75, 0.1, 0xb9b4a8); zyl(0, 0, 0.65, 0.01, 0x5fc8e8, { ly: 0.1 }); zyl(0, 0, 0.08, 0.3, 0xb9b4a8); zyl(0, 0, 0.22, 0.04, 0x5fc8e8, { ly: 0.3 }); for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) baum(a * W * 0.38, b * D * 0.38, 0.45); break;
@@ -1883,7 +1898,7 @@ function gleisPlanen(A, C, Bp, ebene) {
   const { pts, len } = abtasten(A, C, Bp), plan = { A, C, B: Bp, pts, laenge: len, kosten: Math.round(len * GLEIS_PREIS * (ebene > 0 ? 3 : ebene < 0 ? 4 : 1)), ok: true, grund: "", ebene, kreuz: [], gleis: true };
   const nein = (g) => { plan.ok = false; plan.grund = plan.grund || g; }, kk = { ebene, len }, ey = (q) => ebeneY(kk, q.s);
   if (len < 2) nein("Zu kurz"); if (len > 120) nein("Zu lang – setz einen Zwischenpunkt"); if (ebene && len < 7) nein("Brücken und Tunnel brauchen mindestens 7 Felder");
-  for (const q of pts) { if (!aufLand(q.x, q.z, ebene && Math.abs(ey(q)) > 0.3 ? -99 : ebene ? 1.5 : 3.0)) { nein(ebene ? "Die Enden müssen auf festem Land liegen" : "Zu nah am Wasser – bau eine 🌉 Brücke"); break; } if (!imBesitz(q.x, q.z)) { nein("Außerhalb deiner Gebiete"); break; } }
+  for (const q of pts) { if (!aufLand(q.x, q.z, ebene && Math.abs(ey(q)) > 0.3 ? -99 : ebene ? 1.5 : 3.0)) { if (!ebene) plan.wasser = true; nein(ebene ? "Die Enden müssen auf festem Land liegen" : "Zu nah am Wasser – bau eine 🌉 Brücke"); break; } if (!imBesitz(q.x, q.z)) { nein("Außerhalb deiner Gebiete"); break; } }
   for (let i = 3; i < pts.length - 3 && plan.ok; i++) { const a = pts[i - 3], b = pts[i + 3]; if (a.tx * b.tx + a.tz * b.tz < 0.8) nein("Kurve zu eng für Züge – mach sie weiter"); }
   if (plan.ok && !ebene) { plan.kreuz = gleisKreuzungen(pts, [A, Bp]); for (const q of pts) { const n = naechsterKnoten(q, 1.6); if (n && [...n.kanten].length > 2) { nein("Gleise dürfen nicht über eine Straßenkreuzung"); break; } } }
   if (plan.ok && plan.kosten > geld) nein("Nicht genug Geld");
@@ -2157,8 +2172,8 @@ function spurWaehlen(f) {
   const st = f.route[f.ri], k = kanten.get(st.k); if (!k) return;
   const n = TYP[k.typ].spuren.length; if (n < 2) { f.spur = 0; return; }
   const nx = f.route[f.ri + 1]; const a = nx ? abbiegen(k, st.dir, nx) : "rechts";
-  f.spur = a === "links" || a === "wenden" ? 0 : a === "rechts" ? 1 : (f.spur != null ? Math.min(f.spur, 1) : 1);
-  if (k.busspur && !(f.linie || FZ[f.typ].blau || f.typ === "taxi")) f.spur = 0;
+  f.spur = a === "links" || a === "wenden" ? 0 : a === "rechts" ? n - 1 : (f.spur != null ? Math.min(Math.max(f.spur, n > 2 ? 1 : 0), n - 1) : Math.min(1, n - 1));
+  if (k.busspur && !(f.linie || FZ[f.typ].blau || f.typ === "taxi")) f.spur = Math.min(f.spur, n - 2);
 }
 function ampelZustand(n, kid) {
   const ph = simZeit % 20, gr = n.gruppe.get(kid) || 0;
@@ -2167,7 +2182,7 @@ function ampelZustand(n, kid) {
 }
 function netzVerkehrVorbereiten() {
   for (const n of knoten.values()) {
-    let autoKanten = 0, haupt = false; for (const id of n.kanten) { const k = kanten.get(id); if (TYP[k.typ].autos) { autoKanten++; if (k.typ === "haupt") haupt = true; } }
+    let autoKanten = 0, haupt = false; for (const id of n.kanten) { const k = kanten.get(id); if (TYP[k.typ].autos) { autoKanten++; if (rang(k) >= 2) haupt = true; } }
     if (!n.manuell) n.ampel = autoKanten >= 4 || (autoKanten >= 3 && haupt);
     if (autoKanten < 3 || [...n.kanten].some((id) => kanten.get(id).ring)) n.ampel = false;
     n.gruppe = new Map(); let ref = null;
@@ -2194,7 +2209,7 @@ function darfEinfahren(f, k, st, nx) {
   if (k.ring) return true;
   if ([...n.kanten].some((id) => kanten.get(id).ring)) return true;
   if (n.vorrang && n.vorrang !== f && n.vorrang.route[n.vorrang.ri].k !== k.id) return false;
-  if (k.typ !== "haupt") for (const g of n.naht) if (g !== f && kanten.get(g.route[g.ri].k).typ === "haupt" && g.v > 0.3 && g.warte < 3) return false;
+  for (const g of n.naht) if (g !== f && rang(kanten.get(g.route[g.ri].k)) > rang(k) && g.v > 0.3 && g.warte < 3) return false;
   return true;
 }
 /* Kreuzen sich die Wege zweier Autos auf der Kreuzung? (z. B. Linksabbieger und Gegenverkehr bei Grün) */
@@ -2452,17 +2467,17 @@ const HAUT = [0xf6d2b8, 0xeac09a, 0xd9a47a, 0xb97d55, 0x8d5a3b, 0x5e3b26];
 const KLEIDUNG = [0xe85b4a, 0x4a7fe8, 0xf2c14e, 0x4fbf7a, 0xf2f2f2, 0x9a5be8, 0x2c2f36, 0xff8a3c, 0x3fb0c9, 0x8a96a3];
 let leuteListe = [];
 function fussgaengerTakt(dt, einwohner) {
-  const ks = [...kanten.values()].filter((k) => !k.aussen); if (!ks.length) { menschen.count = koepfe.count = 0; return; }
-  const ziel = Math.min(STUFEN[stufe].leute, Math.round(einwohner / 9 + ks.filter((k) => k.typ === "fuss").length * 2));
+  const ks = [...kanten.values()].filter((k) => !k.aussen && !TYP[k.typ].ohneGehweg && !k.ebene); if (!ks.length) { menschen.count = koepfe.count = 0; return; }
+  const ziel = Math.min(STUFEN[stufe].leute, Math.round(einwohner / 9 + ks.filter((k) => k.typ === "fuss").length * 2 + ks.filter((k) => k.typ === "zone").length * 6));
   leuteListe = leuteListe.filter((p) => kanten.has(p.k));
-  while (leuteListe.length < ziel) { const k = wahl(rv, ks), kind = rv() < 0.12; leuteListe.push({ k: k.id, dir: rv() < 0.5 ? 1 : -1, s: rv() * k.len, v: (kind ? 0.38 : 0.28) + rv() * 0.2, seite: rv() < 0.5 ? 1 : -1, c: wahl(rv, KLEIDUNG), haut: wahl(rv, HAUT), g: kind ? 0.68 : 0.9 + rv() * 0.2, ph: rv() * 6, pause: 0 }); }
+  while (leuteListe.length < ziel) { const k = wahl(rv, ks), kind = rv() < 0.12; leuteListe.push({ o: rv(), k: k.id, dir: rv() < 0.5 ? 1 : -1, s: rv() * k.len, v: (kind ? 0.38 : 0.28) + rv() * 0.2, seite: rv() < 0.5 ? 1 : -1, c: wahl(rv, KLEIDUNG), haut: wahl(rv, HAUT), g: kind ? 0.68 : 0.9 + rv() * 0.2, ph: rv() * 6, pause: 0 }); }
   if (leuteListe.length > ziel) leuteListe.length = ziel;
   const lauf = dt * tempo;
   leuteListe.forEach((p, i) => {
     let k = kanten.get(p.k);
     if (p.pause > 0) p.pause -= lauf; else { p.s += p.v * lauf; p.ph += lauf * p.v * 22; if (rv() < lauf * 0.02) p.pause = 1 + rv() * 3; }
     if (p.s > k.len) { p.s -= k.len; const nid = p.dir > 0 ? k.b : k.a, n = knoten.get(nid), w = [...n.kanten].filter((id) => id !== k.id && !kanten.get(id).aussen), nk = kanten.get(w.length ? wahl(rv, w) : k.id); p.k = nk.id; p.dir = nk.a === nid ? 1 : -1; k = nk; }
-    const off = k.typ === "fuss" ? 0.17 * p.seite : (TYP[k.typ].halb - 0.14) * p.seite, q = spurPunkt(k, p.dir, Math.min(p.s, k.len), off);
+    const off = k.typ === "fuss" ? 0.17 * p.seite : TYP[k.typ].pflaster ? (0.1 + (p.o || 0.5) * 0.45) * p.seite : (TYP[k.typ].halb - 0.14) * p.seite, q = spurPunkt(k, p.dir, Math.min(p.s, k.len), off);
     const geht = p.pause <= 0 && tempo > 0, hub = geht ? Math.abs(Math.sin(p.ph)) * 0.014 : 0, wipp = geht ? Math.sin(p.ph) * 0.09 : 0;
     _o.position.set(q.x, G + 0.012 + hub + ebeneY(k, p.dir > 0 ? Math.min(p.s, k.len) : k.len - Math.min(p.s, k.len)), q.z); _o.rotation.set(wipp, Math.atan2(-q.tz, q.tx) - Math.PI / 2, 0); _o.rotation.order = "YXZ"; _o.scale.setScalar(p.g); _o.updateMatrix();
     menschen.setMatrixAt(i, _o.matrix); menschen.setColorAt(i, _farbe.setHex(p.c));
@@ -2509,7 +2524,7 @@ function brueckenZeichnen() {
   pfeiler.count = i; pfeiler.instanceMatrix.needsUpdate = true; if (pfeiler.instanceColor) pfeiler.instanceColor.needsUpdate = true;
 }
 function netzGeaendert() {
-  netzVersion++; brueckenZeichnen();
+  netzVersion++; brueckenZeichnen(); if (typeof parkenZeichnen === "function") parkenZeichnen();
   fahrzeuge.forEach((f) => { if (f.route.some((st) => !kanten.has(st.k))) fahrzeugWeg(f); }); fahrzeuge = fahrzeuge.filter((f) => !f.weg);
   for (const n of knoten.values()) n.drin = new Set([...n.drin].filter((f) => !f.weg));
   netzVerkehrVorbereiten(); laternenBauen(); alleeZeichnen(); kreiselZeichnen(); halteNeuAnkern(); uebergaengeBerechnen(); zellenNeu = true; speichernBald();
@@ -2526,7 +2541,7 @@ function zustand() {
     v: 3, zonenV: 2, karte, geld: Math.round(geld), besitz: [...besitz], gekauft, steuern, meilenstein, tage: Math.round(tage * 100) / 100, ids: { n: nId, k: kId, z: zId, g: gId, h: hId, d: dId, hs: haltId, l: linieId },
     meta: { einwohner: k.e, gespeichert: Date.now() },
     knoten: [...knoten.values()].map((n) => [n.id, r(n.x), r(n.z), n.manuell ? (n.ampel ? 1 : 0) : -1, n.aussen ? 1 : 0]),
-    kanten: [...kanten.values()].map((k) => [k.id, k.a, k.b, r(k.c.x), r(k.c.z), k.typ, k.aussen ? 1 : 0, k.einbahn || 0, k.ebene || 0, k.ring ? 1 : 0, k.busspur ? 1 : 0, k.schienen ? 1 : 0]), kreisel,
+    kanten: [...kanten.values()].map((k) => [k.id, k.a, k.b, r(k.c.x), r(k.c.z), k.typ, k.aussen ? 1 : 0, k.einbahn || 0, k.ebene || 0, k.ring ? 1 : 0, k.busspur ? 1 : 0, k.schienen ? 1 : 0, k.parken ? 1 : 0]), kreisel,
     zellen: [...zellen.values()].map((z) => [z.id, r(z.x), r(z.z), r(z.rot), z.zone, z.g, z.seite, z.i, z.r]),
     haeuser: [...haeuser.values()].map((h) => [h.id, h.zone, h.stufe, h.w, h.d, h.variante, h.zellen]),
     dienste: [...dienste.values()].map((d) => [d.id, d.typ, r(d.x), r(d.z), r(d.rot), d.ausbau || 0, d.gk ?? null, d.gs != null ? r(d.gs) : null]),
@@ -2553,7 +2568,7 @@ function zustandRein(d) {
     d.zellen = d.zellen.map((c) => { const n = c.slice(); n[4] = zz.get(c[0]) || um[c[4]] || 0; return n; });
   }
   d.knoten.forEach(([id, x, z, am, au]) => { const n = neuerKnoten({ x, z }, id); if (am != null && am >= 0) { n.manuell = true; n.ampel = am === 1; } if (au) { n.aussen = true; aussenKnoten = id; } });
-  d.kanten.forEach(([id, a, b, cx, cz, typ, au, eb, ebe, ri, bs, sch]) => { if (knoten.has(a) && knoten.has(b)) neueKante(a, b, { x: cx, z: cz }, TYP[typ] ? typ : "klein", id, { aussen: !!au, einbahn: eb || 0, ebene: ebe || 0, ring: !!ri, busspur: !!bs, schienen: !!sch }); });
+  d.kanten.forEach(([id, a, b, cx, cz, typ, au, eb, ebe, ri, bs, sch, pa]) => { if (knoten.has(a) && knoten.has(b)) neueKante(a, b, { x: cx, z: cz }, TYP[typ] ? typ : "klein", id, { aussen: !!au, einbahn: eb || 0, ebene: ebe || 0, ring: !!ri, busspur: !!bs, schienen: !!sch, parken: !!pa }); });
   kreisel.length = 0; (d.kreisel || []).forEach((q) => kreisel.push(q));
   for (const k of kanten.values()) if (k.ring) { let bi = 0, bd = 1e9; kreisel.forEach((q, i) => { const e = Math.hypot(k.c.x - q.x, k.c.z - q.z); if (e < bd) { bd = e; bi = i; } }); k.kreisel = bi; }
   for (const n of [...knoten.values()]) if (!n.kanten.size) knotenWeg(n);
@@ -2629,7 +2644,10 @@ let infoTimer = 0;
 function infoZeigen(html, ms) { const el = $("info"); el.innerHTML = html; el.hidden = false; clearTimeout(infoTimer); infoTimer = setTimeout(() => { el.hidden = true; }, ms || 5000); }
 
 let strTyp = lade("inselstadt-strtyp", "klein"), strModus = lade("inselstadt-strmodus", "gerade"), zoneWahl = 1, pinsel = "klein";
-if (!TYP[strTyp]) strTyp = "klein"; if (!["gerade", "kurve", "ampel", "bruecke", "tunnel", "einbahn", "kreisel", "busspur", "schienen"].includes(strModus)) strModus = "gerade";
+let ebeneWahl = 0, kreiselGr = 1, parallelAn = false;
+const KREISEL_R = [2.3, 3.2, 4.2, 5.5], KREISEL_NAME = ["Mini", "Klein", "Mittel", "Groß"], RASTER = 10;
+if (!TYP[strTyp]) strTyp = "klein"; if (strModus === "bruecke" || strModus === "tunnel") strModus = "gerade";
+if (!["gerade", "kurve", "raster", "ersetzen", "parken", "ampel", "einbahn", "kreisel", "busspur", "schienen"].includes(strModus)) strModus = "gerade";
 function schienenUmschalten(p) {
   const e = naechsteKante(p, Math.max(0.9, fangRadius() * 0.6), (k) => TYP[k.typ].autos); if (!e) { tipp("Tipp genau auf eine Straße.", 1800); return; }
   const k = e.k, preis = Math.round(k.len * 120); if (!k.schienen && geld < preis) { tipp("Schienen kosten hier " + euro(preis) + ".", 2000); return; }
@@ -2638,12 +2656,47 @@ function schienenUmschalten(p) {
 }
 function busspurUmschalten(p) {
   const e = naechsteKante(p, Math.max(0.9, fangRadius() * 0.6), (k) => TYP[k.typ].autos); if (!e) { tipp("Tipp genau auf eine Hauptstraße.", 1800); return; }
-  if (e.k.typ !== "haupt") { tipp("🚌 Busspuren gibt es nur auf Hauptstraßen (zwei Spuren pro Richtung).", 2600); return; }
+  if (TYP[e.k.typ].spuren.length < 2 || e.k.typ === "autobahn") { tipp("🚌 Busspuren gibt es nur auf Haupt- und großen Straßen.", 2600); return; }
   merkeRueck(); e.k.busspur = !e.k.busspur; kanteNeuZeichnen(e.k); netzGeaendert(); tipp(e.k.busspur ? "🚌 Busspur: Die rechte Spur ist nur für Busse, Taxis und Einsatzfahrzeuge." : "Busspur entfernt.", 2600);
 }
 const modus = () => werkzeug === "gleis" ? gleisModus : strModus, istBau = () => werkzeug === "strasse" || werkzeug === "gleis";
-const zweiPunkte = () => ["gerade", "bruecke", "tunnel"].includes(modus()), tippModus = () => ["ampel", "einbahn", "kreisel", "busspur", "schienen", "entfernen", "zuglinie", "bahnhof"].includes(modus());
-const ebeneModus = () => modus() === "bruecke" ? 1 : modus() === "tunnel" ? -1 : 0;
+const zweiPunkte = () => modus() === "gerade", tippModus = () => ["ampel", "einbahn", "kreisel", "busspur", "schienen", "ersetzen", "parken", "entfernen", "zuglinie", "bahnhof"].includes(modus());
+const ebeneModus = () => ebeneWahl;
+const ebeneBox = () => `<div class="zeilebox" title="Höhe"><button class="chip" type="button" id="ebeneRunter" aria-label="tiefer">▼</button><span style="min-width:74px;text-align:center">${ebeneWahl > 0 ? "🌉 Brücke" : ebeneWahl < 0 ? "🚇 Tunnel" : "⬛ Boden"}</span><button class="chip" type="button" id="ebeneHoch" aria-label="höher">▲</button></div>`;
+function ersetzenTippen(p) {
+  const e = naechsteKante(p, Math.max(0.9, fangRadius() * 0.6), (k) => !k.aussen); if (!e) { tipp("Tipp genau auf eine Straße.", 1800); return; }
+  const k = e.k, alt = TYP[k.typ], neu = TYP[strTyp]; if (k.typ === strTyp) { tipp("Das ist schon eine " + neu.name + ". Wähl unten einen anderen Straßentyp.", 2400); return; }
+  if (!typFrei(strTyp)) { tipp("🔒 " + neu.name + " ist noch gesperrt.", 2000); return; }
+  if (k.ring && !neu.autos) { tipp("Im Kreisverkehr müssen Autos fahren können.", 2200); return; }
+  const diff = Math.round(k.len * (neu.preis - alt.preis) * (k.ebene > 0 ? 3 : k.ebene < 0 ? 4 : 1)), preis = diff > 0 ? diff : 0;
+  if (preis > geld) { tipp("Das kostet " + euro(preis) + ".", 2000); return; }
+  merkeRueck(); geld -= preis; if (diff < 0) geld += Math.round(-diff * 0.3);
+  k.typ = strTyp; k.h = huelle(k.pts, neu.halb); if (!neu.autos) { k.busspur = false; k.schienen = false; k.parken = false; k.einbahn = 0; } if (neu.spuren.length < 2) k.busspur = false; if (strTyp === "autobahn") k.parken = false;
+  for (const f of fahrzeuge) if (f.route.some((st) => st.k === k.id)) fahrzeugWeg(f); fahrzeuge = fahrzeuge.filter((f) => !f.weg);
+  for (const z of zellenIn(k.h)) if (abstandZuLinie(z, k.pts) < neu.halb + 0.45) zelleWeg(z);
+  if (neu.zellen) zellenFuer(k); kanteNeuZeichnen(k); const a = knoten.get(k.a), b = knoten.get(k.b); if (a) knotenNeuZeichnen(a); if (b) knotenNeuZeichnen(b);
+  netzGeaendert(); zeigeWerte(); tipp("🔁 Ersetzt durch " + neu.em + " " + neu.name + (preis ? " (" + euro(preis) + ")" : diff < 0 ? " (+" + euro(Math.round(-diff * 0.3)) + " zurück)" : ""), 2400);
+}
+function parkenTippen(p) {
+  const e = naechsteKante(p, Math.max(0.9, fangRadius() * 0.6), (k) => TYP[k.typ].autos); if (!e) { tipp("Tipp genau auf eine Straße.", 1800); return; }
+  const k = e.k; if (k.typ === "autobahn" || k.ring || k.ebene || k.aussen) { tipp("Hier kann man nicht parken.", 2000); return; }
+  const preis = Math.round(k.len * 10); if (!k.parken && geld < preis) { tipp("Parkstreifen kosten hier " + euro(preis) + ".", 2000); return; }
+  merkeRueck(); k.parken = !k.parken; if (k.parken) geld -= preis; parkenZeichnen(); zeigeWerte(); speichernBald(); werteAuffrischen();
+  tipp(k.parken ? "🅿️ Parkstreifen angelegt – Läden an dieser Straße bekommen mehr Kunden." : "Parkstreifen entfernt.", 2400);
+}
+const parkAuto = becken(G_BOX_UNTEN, new THREE.MeshLambertMaterial({ color: 0xffffff }), 2500, true), parkDach = becken(G_BOX_UNTEN, new THREE.MeshLambertMaterial({ color: 0x2b3440 }), 2500, false);
+function parkenZeichnen() {
+  let i = 0;
+  for (const k of kanten.values()) {
+    if (!k.parken) continue; const T = TYP[k.typ], r = zufall(k.id * 31 + 7);
+    for (const sei of [1, -1]) for (let s = 1.0; s < k.len - 1.0 && i < 2500; s += 0.55) {
+      if (r() < 0.4) continue; const p = punktBei(k, s), off = (T.fahr + 0.04) * sei, x = p.x - p.tz * off, z = p.z + p.tx * off, rot = Math.atan2(-p.tz, p.tx), y = G + ebeneY(k, s);
+      _o.position.set(x, y + 0.02, z); _o.rotation.set(0, rot, 0); _o.scale.set(0.34, 0.08, 0.17); _o.updateMatrix(); parkAuto.setMatrixAt(i, _o.matrix); parkAuto.setColorAt(i, _farbe.setHex(PAL.auto[Math.floor(r() * PAL.auto.length)]));
+      _o.position.set(x, y + 0.1, z); _o.scale.set(0.18, 0.055, 0.15); _o.updateMatrix(); parkDach.setMatrixAt(i, _o.matrix); i++;
+    }
+  }
+  for (const m of [parkAuto, parkDach]) { m.count = i; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
+}
 const ZONEN_TEXT = {
   1: "Einfamilienhäuser und Villen – wird bei hohem Bodenwert immer schöner (5 Stufen).",
   2: "Mehrfamilienhäuser bis Wolkenkratzer – viele Einwohner auf wenig Platz.",
@@ -2656,7 +2709,7 @@ const ZONEN_TEXT = {
 };
 const TIPPS = {
   ansehen: "👆 Ein Finger: verschieben · ✌️ Zwei Finger: drehen & zoomen · Haus antippen: Infos",
-  strasse: () => strModus === "schienen" ? "🚋 Tipp auf eine Straße, um Straßenbahn-Schienen zu verlegen (120 €/Feld)." : strModus === "busspur" ? "🚌 Tipp auf eine Hauptstraße, um eine Busspur ein- oder auszuschalten." : strModus === "ampel" ? "🚦 Tipp auf eine Kreuzung, um die Ampel ein- oder auszuschalten." : strModus === "einbahn" ? "➡️ Tipp auf eine Straße: Einbahnstraße in eine Richtung, nochmal tippen dreht sie um, beim dritten Mal wieder normal." : strModus === "kreisel" ? "⭕ Tipp auf eine Kreuzung mit 3 oder mehr Straßen, um einen Kreisverkehr zu bauen." : strModus === "bruecke" ? "🌉 Brücke: Anfang und Ende antippen. Sie führt über Wasser und über andere Straßen." : strModus === "tunnel" ? "🚇 Tunnel: Anfang und Ende antippen. Er führt unter allem hindurch." : strModus === "gerade" ? "🛣️ Tipp auf den Anfang, dann aufs Ende. Dann ✓ zum Bauen." : "〰️ Tipp auf den Anfang, dann den Kurvenpunkt, dann das Ende. Dann ✓.",
+  strasse: () => strModus === "raster" ? "▦ Raster: 1. Ecke antippen · 2. Länge und Richtung · 3. Tiefe. Dann ✓ – ein ganzes Straßennetz auf einmal." : strModus === "ersetzen" ? "🔁 Wähl unten den neuen Straßentyp und tipp eine Straße an – sie wird umgebaut." : strModus === "parken" ? "🅿️ Tipp auf eine Straße, um Parkstreifen anzulegen (10 €/Feld)." : strModus === "schienen" ? "🚋 Tipp auf eine Straße, um Straßenbahn-Schienen zu verlegen (120 €/Feld)." : strModus === "busspur" ? "🚌 Tipp auf eine Hauptstraße, um eine Busspur ein- oder auszuschalten." : strModus === "ampel" ? "🚦 Tipp auf eine Kreuzung, um die Ampel ein- oder auszuschalten." : strModus === "einbahn" ? "➡️ Tipp auf eine Straße: Einbahnstraße in eine Richtung, nochmal tippen dreht sie um, beim dritten Mal wieder normal." : strModus === "kreisel" ? "⭕ Tipp auf eine Kreuzung mit 3 oder mehr Straßen, um einen Kreisverkehr zu bauen." : strModus === "bruecke" ? "🌉 Brücke: Anfang und Ende antippen. Sie führt über Wasser und über andere Straßen." : strModus === "tunnel" ? "🚇 Tunnel: Anfang und Ende antippen. Er führt unter allem hindurch." : strModus === "gerade" ? "🛣️ Tipp auf den Anfang, dann aufs Ende. Dann ✓ zum Bauen." : "〰️ Tipp auf den Anfang, dann den Kurvenpunkt, dann das Ende. Dann ✓.",
   gleis: () => gleisModus === "entfernen" ? "🧹 Tipp auf ein Gleis, um es abzureißen." : gleisModus === "zuglinie" ? "🚆 Tipp die Bahnhöfe der Reihe nach an. Dann ✓." : gleisModus === "bahnhof" ? "🚆 Tipp direkt neben ein Gleis. Vorne muss eine Straße sein." : gleisModus === "bruecke" ? "🌉 Gleis-Brücke: Anfang und Ende antippen." : gleisModus === "tunnel" ? "🚇 Gleis-Tunnel: Anfang und Ende antippen." : "🛤️ Tipp auf den Anfang, dann aufs Ende (" + GLEIS_PREIS + " €/Feld). Fang am besten am Bahnanschluss am Kartenrand an.",
   dienst: "🏛️ Wähl ein Gebäude und tipp neben eine Straße. Dann ✓ zum Bauen.",
   park: "🌳 Wähl einen Park und tipp neben eine Straße. Dann ✓ zum Bauen.",
@@ -2676,7 +2729,7 @@ function unterleiste() {
     kopf = '<span class="ftitel">👆 Ansehen</span><small style="color:var(--leise)">Haus oder Auto antippen für Infos</small>';
     karten = kk("id", "fahrenKnopf", "🚗", "Selbst fahren", "", false) + kk("id", "budgetKarte", "💶", "Budget &amp; Steuern", "", false) + kk("id", "ansichtKarte", "🔍", "Info-Ansichten", "", false);
   } else if (werkzeug === "strasse") {
-    kopf = '<span class="ftitel">🛣️ Straßen</span>' + chip("data-modus", "gerade", "📏 Gerade", strModus === "gerade") + chip("data-modus", "kurve", "〰️ Kurve", strModus === "kurve") + chip("data-modus", "bruecke", "🌉 Brücke", strModus === "bruecke") + chip("data-modus", "tunnel", "🚇 Tunnel", strModus === "tunnel") + chip("data-modus", "einbahn", "➡️ Einbahn", strModus === "einbahn") + chip("data-modus", "kreisel", "⭕ Kreisverkehr", strModus === "kreisel") + chip("data-modus", "busspur", "🚌 Busspur", strModus === "busspur") + chip("data-modus", "schienen", "🚋 Schienen", strModus === "schienen") + chip("data-modus", "ampel", "🚦 Ampeln", strModus === "ampel") + '<span class="trenn"></span>' + rueckChip;
+    kopf = '<span class="ftitel">🛣️ Straßen</span>' + chip("data-modus", "gerade", "📏 Gerade", strModus === "gerade") + chip("data-modus", "kurve", "〰️ Kurve", strModus === "kurve") + chip("data-modus", "raster", "▦ Raster", strModus === "raster") + (["gerade", "kurve"].includes(strModus) ? chip("data-parallel", "1", "⇉ Parallel", parallelAn) : "") + (["gerade", "kurve"].includes(strModus) ? ebeneBox() : "") + '<span class="trenn"></span>' + chip("data-modus", "ersetzen", "🔁 Ersetzen", strModus === "ersetzen") + chip("data-modus", "einbahn", "➡️ Einbahn", strModus === "einbahn") + chip("data-modus", "kreisel", "⭕ Kreisverkehr", strModus === "kreisel") + (strModus === "kreisel" ? KREISEL_R.map((R, i) => chip("data-kreisel", i, KREISEL_NAME[i], kreiselGr === i)).join("") : "") + chip("data-modus", "parken", "🅿️ Parkstreifen", strModus === "parken") + chip("data-modus", "busspur", "🚌 Busspur", strModus === "busspur") + chip("data-modus", "schienen", "🚋 Schienen", strModus === "schienen") + chip("data-modus", "ampel", "🚦 Ampeln", strModus === "ampel") + '<span class="trenn"></span>' + rueckChip;
     karten = Object.keys(TYP).map((k) => { const frei = typFrei(k), m = MEILEN.find((x) => x.frei.includes(k)); return kk("data-typ", k, TYP[k].em, TYP[k].name, frei ? TYP[k].preis + " €/Feld" : "ab " + (m ? m.name : ""), k === strTyp, !frei); }).join("");
   } else if (werkzeug === "zone") {
     kopf = '<span class="ftitel">🏘️ Zonen</span>' + chip("data-pinsel", "klein", "🖌️ Klein", pinsel === "klein") + chip("data-pinsel", "gross", "🖌️ Groß", pinsel === "gross") + chip("data-pinsel", "fuellen", "🪣 Füllen", pinsel === "fuellen") + '<span class="trenn"></span>' + rueckChip;
@@ -2686,7 +2739,7 @@ function unterleiste() {
     else kopf = '<span class="ftitel">🌳 Parks & Freizeit</span>' + PARK_KATS.map((k) => chip("data-dkat", k, DIENST_KAT[k].em + " " + DIENST_KAT[k].name, dienstKat === k)).join("");
     karten = Object.keys(DIENSTE).filter((k) => DIENSTE[k].kat === dienstKat).map((k) => { const D = DIENSTE[k], f = dienstFrei(k); return kk("data-dienst", k, D.em, D.name, f ? euro(D.preis) : "ab " + MEILEN[D.ab].name, k === dienstWahl, !f); }).join("");
   } else if (werkzeug === "gleis") {
-    kopf = '<span class="ftitel">🛤️ Gleise</span>' + chip("data-gmodus", "gerade", "📏 Gerade", gleisModus === "gerade") + chip("data-gmodus", "kurve", "〰️ Kurve", gleisModus === "kurve") + chip("data-gmodus", "bruecke", "🌉 Brücke", gleisModus === "bruecke") + chip("data-gmodus", "tunnel", "🚇 Tunnel", gleisModus === "tunnel") + chip("data-gmodus", "entfernen", "🧹 Entfernen", gleisModus === "entfernen") + chip("data-gmodus", "zuglinie", "🚆 Neue Zuglinie", gleisModus === "zuglinie") + '<span class="trenn"></span>' + rueckChip;
+    kopf = '<span class="ftitel">🛤️ Gleise</span>' + chip("data-gmodus", "gerade", "📏 Gerade", gleisModus === "gerade") + chip("data-gmodus", "kurve", "〰️ Kurve", gleisModus === "kurve") + (["gerade", "kurve"].includes(gleisModus) ? ebeneBox() : "") + chip("data-gmodus", "entfernen", "🧹 Entfernen", gleisModus === "entfernen") + chip("data-gmodus", "zuglinie", "🚆 Neue Zuglinie", gleisModus === "zuglinie") + '<span class="trenn"></span>' + rueckChip;
     const ZL = zuglinieWahl && zuglinien.get(zuglinieWahl);
     if (ZL) kopf += `<span class="trenn"></span><span class="ftitel" style="color:#${ZL.farbe.toString(16).padStart(6, "0")}">Zuglinie ${ZL.nr}</span><span style="white-space:nowrap;color:var(--leise)">${ZL.st.length} Bahnhöfe</span><button class="chip gefahr" type="button" id="zuglinieLoeschen">🗑️</button>`;
     const D = DIENSTE.bahnhof, fr = dienstFrei("bahnhof");
@@ -2697,7 +2750,7 @@ function unterleiste() {
     kopf = '<span class="ftitel">🚌 Nahverkehr</span>' + chip("data-bmodus", "halt", "🚏 Haltestelle", busModus === "halt") + chip("data-bmodus", "linie", "🚌 Neue Buslinie", busModus === "linie") + chip("data-bmodus", "tram", (meilenstein >= 3 ? "🚋" : "🔒") + " Neue Straßenbahn", busModus === "tram") + chip("data-bmodus", "weg", "🧹 Entfernen", busModus === "weg") + '<span class="trenn"></span>' + rueckChip;
     kopf += `<span class="trenn"></span><div class="zeilebox"><button class="chip" type="button" id="ticketMinus">−</button><span>🎫 ${ticketPreis.toFixed(2).replace(".", ",")} €</span><button class="chip" type="button" id="ticketPlus">+</button></div>`;
     if (L) kopf += `<span class="trenn"></span><span class="ftitel" style="color:#${L.farbe.toString(16).padStart(6, "0")}">Linie ${L.nr}</span>${L.keinDepot ? `<span style="color:#ff9b9b;white-space:nowrap">⚠️ Kein ${L.art === "tram" ? "Straßenbahn-Depot" : "Busdepot"}!</span>` : ""}<div class="zeilebox"><button class="chip" type="button" id="busMinus">−</button><span>⏱️ ${L.takt || 40} s · ${L.art === "tram" ? "🚋" : "🚌"} ${L.busse || 1}</span><button class="chip" type="button" id="busPlus">+</button></div><span style="white-space:nowrap;color:var(--leise)">👥 ${zahl(L.letzteWoche || 0)}/Wo · ${Math.round((L.auslastung || 0) * 100)} % voll</span>${chip("data-bmodus", "bearbeiten", "✏️ Bearbeiten", busModus === "bearbeiten")}${L.art !== "tram" ? `<button class="chip" type="button" id="busModell">${BUS_MODELLE[L.modell || "mix"]}</button>` : ""}<button class="chip gefahr" type="button" id="linieLoeschen">🗑️</button>`;
-    karten = ["busdepot", "tramdepot", "bahnhof", "hafen"].map((k) => { const D = DIENSTE[k], f = dienstFrei(k); return kk("data-dienst", k, D.em, D.name, f ? euro(D.preis) : "ab " + MEILEN[D.ab].name, busModus === "bau" && dienstWahl === k, !f); }).join("") + [...linien.values()].map((x) => kk("data-linie", x.id, `<span style="display:inline-block;width:26px;height:26px;border-radius:50%;background:#${x.farbe.toString(16).padStart(6, "0")};color:#fff;font-size:.9rem;line-height:26px;font-weight:700">${x.nr}</span>`, "Linie " + x.nr, x.halte.length + " Halte · " + x.busse + " 🚌", x.id === linieWahl)).join("") || "";
+    karten = ["busdepot", "tramdepot", "bahnhof", "hafen", "parkplatz", "parkhaus"].map((k) => { const D = DIENSTE[k], f = dienstFrei(k); return kk("data-dienst", k, D.em, D.name, f ? euro(D.preis) : "ab " + MEILEN[D.ab].name, busModus === "bau" && dienstWahl === k, !f); }).join("") + [...linien.values()].map((x) => kk("data-linie", x.id, `<span style="display:inline-block;width:26px;height:26px;border-radius:50%;background:#${x.farbe.toString(16).padStart(6, "0")};color:#fff;font-size:.9rem;line-height:26px;font-weight:700">${x.nr}</span>`, "Linie " + x.nr, x.halte.length + " Halte · " + x.busse + " 🚌", x.id === linieWahl)).join("") || "";
     if (!linien.size) karten += `<small style="color:var(--leise);padding:8px">Noch keine Linie. 1. Haltestellen bauen · 2. „Neue Linie“ und Haltestellen antippen · ${zahl(busAbdeckung.fahrgaeste)} Fahrgäste</small>`;
   } else if (werkzeug === "gebiet") {
     const m = MEILEN[meilenstein], frei = m.gebiete - gekauft;
@@ -2719,6 +2772,9 @@ function fachKlick(e) {
   if (b.id === "budgetKarte") { budgetZeigen(); return; }
   if (b.id === "ansichtKarte") { ansichtenAufZu(); return; }
   if (b.dataset.typ) { if (!typFrei(b.dataset.typ)) { const m = MEILEN.find((x) => x.frei.includes(b.dataset.typ)); tipp("🔒 " + TYP[b.dataset.typ].name + " gibt es ab " + (m ? m.name + " (" + zahl(m.ab) + " Einwohner)" : "später") + ".", 3000); return; } strTyp = b.dataset.typ; merke("inselstadt-strtyp", strTyp); planNeu(); }
+  if (b.id === "ebeneHoch" || b.id === "ebeneRunter") { ebeneWahl = klemme(ebeneWahl + (b.id === "ebeneHoch" ? 1 : -1), -1, 1); planNeu(); tippEinmal("ebene", "▲▼ Höhe: Brücken führen über Wasser, Straßen und Gleise. Tunnel gehen unten durch. Über Wasser baut sich die Brücke von selbst.", 4500); }
+  if (b.dataset.parallel) { parallelAn = !parallelAn; planNeu(); if (parallelAn) tippEinmal("parallel", "⇉ Parallel: Es wird gleich eine zweite Straße im Abstand von " + RASTER + " Feldern mitgebaut – perfekt für Wohnblöcke.", 4000); }
+  if (b.dataset.kreisel != null) { kreiselGr = +b.dataset.kreisel; tipp("⭕ " + KREISEL_NAME[kreiselGr] + "er Kreisverkehr – ca. " + euro(Math.round(2 * Math.PI * KREISEL_R[kreiselGr] * 80 + 600)) + ". Tipp auf eine Kreuzung.", 2600); }
   if (b.dataset.modus) { strModus = b.dataset.modus; merke("inselstadt-strmodus", strModus); bauAbbrechen(); tippEinmal("m-" + strModus, TIPPS.strasse(), 3500); }
   if (b.dataset.zone != null) { const z = +b.dataset.zone; if (z && !zoneFrei(z)) { tipp("🔒 " + ZONEN[z].name + " gibt es ab dem Meilenstein " + MEILEN[ZONEN[z].ab].name + " (" + zahl(MEILEN[ZONEN[z].ab].ab) + " Einwohner).", 3500); return; } zoneWahl = z; if (z) tippEinmal("z-" + z, ZONEN[z].em + " " + ZONEN[z].name + ": " + ZONEN_TEXT[z], 4000); }
   if (b.dataset.pinsel) { pinsel = b.dataset.pinsel; tippEinmal("p-" + pinsel, TIPPS.zone(), 3500); }
@@ -2797,7 +2853,38 @@ const vorschau = new THREE.Mesh(new THREE.BufferGeometry(), M.vorschau); vorscha
 const markerGeo = new THREE.RingGeometry(0.55, 0.85, 28).rotateX(-Math.PI / 2);
 const marker = [0, 1, 2].map(() => { const m = new THREE.Mesh(markerGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthWrite: false, toneMapped: false })); m.visible = false; m.renderOrder = 4; szene.add(m); return m; });
 const hilfslinie = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 0.4, gapSize: 0.3, transparent: true, opacity: 0.7 })); hilfslinie.visible = false; szene.add(hilfslinie);
-function bauAbbrechen() { bau.punkte = []; bau.kandidat = null; bau.plan = null; vorschau.visible = false; marker.forEach((m) => { m.visible = false; }); hilfslinie.visible = false; if (istBau()) frageZu(); }
+const fuehrung = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineDashedMaterial({ color: 0xbfe3ff, dashSize: 0.5, gapSize: 0.35, transparent: true, opacity: 0.55, depthWrite: false })); fuehrung.visible = false; fuehrung.renderOrder = 4; szene.add(fuehrung);
+function bauAbbrechen() { bau.punkte = []; bau.kandidat = null; bau.plan = null; bau.plan2 = null; vorschau.visible = false; marker.forEach((m) => { m.visible = false; }); hilfslinie.visible = fuehrung.visible = false; if (istBau()) frageZu(); }
+const rasterAbst = () => Math.round((2 * (TYP[strTyp].halb + REIHEN * ZELLE) + 0.4) * 2) / 2;
+function refRichtungen(start) {
+  const r = [];
+  if (start.art === "knoten") { const n = knoten.get(start.id); if (n) for (const id of n.kanten) { const k = kanten.get(id), q = k.a === n.id ? k.pts[Math.min(2, k.pts.length - 1)] : k.pts[Math.max(0, k.pts.length - 3)]; r.push(Math.atan2(q.z - n.z, q.x - n.x)); } }
+  if (start.art === "kante") { const k = kanten.get(start.id); if (k) { const e = abstandZuLinie(start, k.pts, true), q = punktBei(k, e.s); r.push(Math.atan2(q.tz, q.tx)); } }
+  return r;
+}
+function fuehrungZeigen(A, B) {
+  const refs = refRichtungen(A); if (!refs.length || !B) { fuehrung.visible = false; return ""; }
+  const pts = [], L = 14; for (const a of [refs[0], refs[0] + Math.PI / 2]) pts.push(new THREE.Vector3(A.x - Math.cos(a) * L, G + 0.08, A.z - Math.sin(a) * L), new THREE.Vector3(A.x + Math.cos(a) * L, G + 0.08, A.z + Math.sin(a) * L));
+  fuehrung.geometry.dispose(); fuehrung.geometry = new THREE.BufferGeometry().setFromPoints(pts); fuehrung.computeLineDistances(); fuehrung.visible = true;
+  const a = Math.atan2(B.z - A.z, B.x - A.x); let best = 999;
+  for (const r of refs) { let d = Math.abs(Math.atan2(Math.sin(a - r), Math.cos(a - r))) * 180 / Math.PI; if (A.art === "kante") d = Math.min(d, 180 - d); if (d < best) best = d; }
+  return " · ∠ " + Math.round(best) + "°";
+}
+function rasterLinien(A, B, C) {
+  const ux = B.x - A.x, uz = B.z - A.z, L = Math.hypot(ux, uz); if (L < 2) return [];
+  const ex = ux / L, ez = uz / L, nx = -ez, nz = ex, st = rasterAbst(), n = Math.max(1, Math.round(L / st)), sp = L / n;
+  if (!C) return [[A, B]];
+  const d = (C.x - A.x) * nx + (C.z - A.z) * nz, sg = d < 0 ? -1 : 1, m = Math.max(1, Math.round(Math.abs(d) / st)), dd = m * st * sg, liste = [];
+  for (let j = 0; j <= m; j++) { const o = j * st * sg; liste.push([{ art: "frei", x: A.x + nx * o, z: A.z + nz * o }, { art: "frei", x: B.x + nx * o, z: B.z + nz * o }]); }
+  for (let i = 0; i <= n; i++) { const x = A.x + ex * i * sp, z = A.z + ez * i * sp; liste.push([{ art: "frei", x, z }, { art: "frei", x: x + nx * dd, z: z + nz * dd }]); }
+  return liste;
+}
+const fangOderFrei = (q) => { if (q.art && q.art !== "frei") return q; const f = fangen(q); return f.art !== "frei" && abst(f, q) < 0.9 ? f : q; };
+function parallelPlan(A, C, Bp) {
+  const L = Math.hypot(Bp.x - A.x, Bp.z - A.z) || 1, nx = -(Bp.z - A.z) / L, nz = (Bp.x - A.x) / L; let erst = null;
+  for (const o of [rasterAbst(), -rasterAbst()]) { const v = (q) => ({ art: "frei", x: q.x + nx * o, z: q.z + nz * o }), pl = planen(fangOderFrei(v(A)), { x: C.x + nx * o, z: C.z + nz * o }, fangOderFrei(v(Bp)), strTyp, ebeneModus()); if (pl.ok) return pl; erst = erst || pl; }
+  return erst;
+}
 function winkelFang(start, p) {
   const dx = p.x - start.x, dz = p.z - start.z, L = Math.hypot(dx, dz); if (L < 0.6) return { art: "frei", x: p.x, z: p.z };
   let a = Math.atan2(dz, dx); const refs = [0];
@@ -2810,6 +2897,8 @@ function winkelFang(start, p) {
 }
 function kandidatAus(p) {
   const n = bau.punkte.length, f = werkzeug === "gleis" ? gleisFangen(p) : fangen(p);
+  if (modus() === "raster" && n === 1) return winkelFang(bau.punkte[0], p);
+  if (modus() === "raster" && n === 2) { const A = bau.punkte[0], B = bau.punkte[1], L = abst(A, B) || 1, nx = -(B.z - A.z) / L, nz = (B.x - A.x) / L, d = (p.x - A.x) * nx + (p.z - A.z) * nz, st = rasterAbst(), m = Math.max(1, Math.round(Math.abs(d) / st)) * st * (d < 0 ? -1 : 1); return { art: "frei", x: A.x + nx * m, z: A.z + nz * m }; }
   if (modus() === "kurve" && n === 1) return winkelFang(bau.punkte[0], p);
   if (f.art !== "frei" || n === 0) return f;
   if (zweiPunkte()) return winkelFang(bau.punkte[0], p);
@@ -2819,20 +2908,28 @@ function planNeu() {
   if (!istBau() || tippModus()) return;
   const P = bau.punkte.slice(); if (bau.kandidat) P.push(bau.kandidat);
   const noetig = zweiPunkte() ? 2 : 3;
+  fuehrung.visible = false;
   marker.forEach((m, i) => { const q = P[i]; m.visible = !!q && i < noetig; if (q) { m.position.set(q.x, G + 0.06, q.z); m.material.color.setHex(modus() === "kurve" && i === 1 ? 0xffd34d : (q.art && q.art !== "frei" ? 0x7dffb0 : 0xffffff)); } });
   hilfslinie.visible = modus() === "kurve" && P.length >= 2;
   if (hilfslinie.visible) { hilfslinie.geometry.dispose(); hilfslinie.geometry = new THREE.BufferGeometry().setFromPoints(P.map((q) => new THREE.Vector3(q.x, G + 0.07, q.z))); hilfslinie.computeLineDistances(); }
-  if (P.length < 2) { vorschau.visible = false; bau.plan = null; if (!P.length) frageZu(); else frage("Jetzt " + (modus() === "kurve" ? "den Kurvenpunkt" : "das Ende") + " antippen", false, null); return; }
+  if (P.length < 2) { vorschau.visible = false; fuehrung.visible = false; bau.plan = null; if (!P.length) frageZu(); else frage("Jetzt " + (modus() === "kurve" ? "den Kurvenpunkt" : modus() === "raster" ? "die zweite Ecke" : "das Ende") + " antippen", false, null); return; }
+  if (modus() === "raster" && werkzeug === "strasse") { rasterPlanen(P); return; }
   const A = P[0]; let C, Bp;
   if (zweiPunkte() || P.length === 2) { Bp = P[1]; C = lerp(A, Bp, 0.5); } else { C = { x: P[1].x, z: P[1].z }; Bp = P[2]; }
-  const gl = werkzeug === "gleis", plan = gl ? gleisPlanen(A, C, Bp, ebeneModus()) : planen(A, C, Bp, strTyp, ebeneModus()); bau.plan = P.length >= noetig ? plan : null;
+  const gl = werkzeug === "gleis"; let plan = gl ? gleisPlanen(A, C, Bp, ebeneModus()) : planen(A, C, Bp, strTyp, ebeneModus());
+  if (!plan.ok && plan.wasser && !ebeneModus() && plan.pts.some((q) => abstand(q.x, q.z) < 0.3)) { const p2 = gl ? gleisPlanen(A, C, Bp, 1) : planen(A, C, Bp, strTyp, 1); if (p2.ok || plan.laenge >= 7) { plan = p2; plan.auto = true; } }
+  bau.plan = P.length >= noetig ? plan : null;
+  const winkelTxt = fuehrungZeigen(A, P.length === 2 ? P[1] : C);
+  let p2 = null; if (!gl && parallelAn && plan.ok && P.length >= noetig) { p2 = parallelPlan(A, C, Bp); if (p2.ok && p2.kosten + plan.kosten > geld) { p2.ok = false; p2.grund = "Nicht genug Geld"; } } bau.plan2 = p2;
   const pos = [], col = [], f = plan.ok ? farbe(0x7fb8ff) : farbe(0xff5a5a), hw = gl ? 0.32 : TYP[strTyp].halb;
   band(pos, col, plan.pts, hw, G + 0.04, f);
   for (const k of plan.kreuz) scheibe(pos, col, k.x, k.z, hw * 0.7, G + 0.045, farbe(0xffffff));
+  if (p2) band(pos, col, p2.pts, hw, G + 0.04, p2.ok ? farbe(0x9fd0ff) : farbe(0xff8a5a));
   vorschau.geometry.dispose(); vorschau.geometry = geoAus(pos, col); vorschau.visible = true;
   if (!bau.plan) { frage("Jetzt das Ende antippen", false, null); return; }
-  if (gl) { frage((plan.ebene > 0 ? "🌉 " : plan.ebene < 0 ? "🚇 " : "") + "🛤️ Gleis " + meter(plan.laenge) + " · " + euro(plan.kosten) + (plan.ok ? "" : " – " + plan.grund), plan.ok, gleisBestaetigen); return; }
-  frage((plan.ebene > 0 ? "🌉 " : plan.ebene < 0 ? "🚇 " : "") + TYP[strTyp].em + " " + meter(plan.laenge) + " · " + euro(plan.kosten) + (plan.baeume ? " (" + plan.baeume + " 🌳)" : "") + (plan.ok ? "" : " – " + plan.grund), plan.ok, strasseBestaetigen);
+  if (gl) { frage((plan.ebene > 0 ? "🌉 " : plan.ebene < 0 ? "🚇 " : "") + "🛤️ Gleis " + meter(plan.laenge) + winkelTxt + " · " + euro(plan.kosten) + (plan.ok ? "" : " – " + plan.grund), plan.ok, gleisBestaetigen); return; }
+  const ok = plan.ok && (!p2 || p2.ok);
+  frage((plan.ebene > 0 ? "🌉 " : plan.ebene < 0 ? "🚇 " : "") + (plan.auto ? "Brücke · " : "") + TYP[strTyp].em + " " + meter(plan.laenge) + winkelTxt + " · " + euro(plan.kosten + (p2 ? p2.kosten : 0)) + (p2 ? " (2 Straßen)" : "") + (plan.baeume ? " (" + plan.baeume + " 🌳)" : "") + (plan.ok ? (p2 && !p2.ok ? " – Parallele: " + p2.grund : "") : " – " + plan.grund), ok, strasseBestaetigen);
 }
 function gleisBestaetigen() {
   const plan = bau.plan; if (!plan || !plan.ok) return;
@@ -2840,9 +2937,27 @@ function gleisBestaetigen() {
   bahnhofAnkern(); const endK = naechsterGKnoten(plan.B, 0.7); bau.punkte = endK ? [{ art: "gknoten", id: endK.id, x: endK.x, z: endK.z }] : []; bau.kandidat = null; bau.plan = null;
   planNeu(); tipp("✅ Gleis gebaut! Tipp weiter – oder ✕ zum Beenden. Bahnhöfe stellst du direkt neben ein Gleis.", 3000);
 }
+function rasterPlanen(P) {
+  const linien = rasterLinien(P[0], P[1], P[2]), pos = [], col = [], hw = TYP[strTyp].halb; let kosten = 0, grund = "", ok = P.length >= 3;
+  for (const [a, b] of linien) { const pl = planen(fangOderFrei(a), lerp(a, b, 0.5), fangOderFrei(b), strTyp, 0); kosten += pl.kosten; if (!pl.ok && pl.grund !== "Nicht genug Geld") { ok = false; grund = grund || pl.grund; } band(pos, col, pl.pts, hw, G + 0.04, pl.ok || pl.grund === "Nicht genug Geld" ? farbe(0x7fb8ff) : farbe(0xff5a5a)); }
+  if (ok && kosten > geld) { ok = false; grund = "Nicht genug Geld"; }
+  vorschau.geometry.dispose(); vorschau.geometry = geoAus(pos, col); vorschau.visible = true;
+  bau.plan = P.length >= 3 ? { raster: linien, ok, kosten } : null;
+  if (P.length < 3) { frage("▦ " + meter(abst(P[0], P[1])) + fuehrungZeigen(P[0], P[1]) + " – jetzt die Tiefe antippen", false, null); return; }
+  fuehrung.visible = false;
+  const n = linien.length; frage("▦ Raster · " + n + " Straßen · " + euro(kosten) + (ok ? "" : " – " + grund), ok, rasterBestaetigen);
+}
+function rasterBestaetigen() {
+  const plan = bau.plan; if (!plan || !plan.raster || !plan.ok) return;
+  merkeRueck(); let n = 0;
+  for (const [a, b] of plan.raster) { const pl = planen(fangOderFrei(a), lerp(a, b, 0.5), fangOderFrei(b), strTyp, 0); if (pl.ok && bauen(pl).length) n++; }
+  bauAbbrechen(); tipp("▦ " + n + " Straßen gebaut! Jetzt Zonen anmalen.", 2800);
+}
 function strasseBestaetigen() {
   const plan = bau.plan; if (!plan || !plan.ok) return;
+  if (bau.plan2 && !bau.plan2.ok) return;
   merkeRueck(); const neu = bauen(plan);
+  if (bau.plan2 && neu.length) { const q = bau.plan2, p3 = planen(fangOderFrei(q.A), q.C, fangOderFrei(q.B), strTyp, q.ebene); if (p3.ok) bauen(p3); bau.plan2 = null; }
   if (!neu.length) { rueck.pop(); rueckKnopf(); tipp("Hier ist schon eine Straße.", 2000); bauAbbrechen(); return; }
   const endK = naechsterKnoten(plan.B, 0.7);
   bau.punkte = endK ? [{ art: "knoten", id: endK.id, x: endK.x, z: endK.z }] : []; bau.kandidat = null; bau.plan = null;
@@ -2870,9 +2985,9 @@ function kreiselBauen(p) {
   const ein = [...n.kanten].map((id) => kanten.get(id)).filter((k) => k && TYP[k.typ].autos);
   if (ein.length < 3) { tipp("Kreisverkehre gehen nur an Kreuzungen mit mindestens 3 Straßen.", 2600); return; }
   if (ein.some((k) => k.ring || k.ebene)) { tipp("Hier geht kein Kreisverkehr.", 2000); return; }
-  const R = 2.3; if (ein.some((k) => k.len < R + 1.8)) { tipp("Die Straßen an dieser Kreuzung sind zu kurz für einen Kreisverkehr.", 2600); return; }
+  const R = KREISEL_R[kreiselGr] || 2.3; if (ein.some((k) => k.len < R + 1.8)) { tipp("Die Straßen an dieser Kreuzung sind zu kurz für einen Kreisverkehr.", 2600); return; }
   for (let a = 0; a < 16; a++) { const x = n.x + (R + 1.0) * Math.cos(a / 16 * 6.283), z = n.z + (R + 1.0) * Math.sin(a / 16 * 6.283); if (!imBesitz(x, z) || !aufLand(x, z, 1.5)) { tipp("Dafür ist hier nicht genug Platz.", 2200); return; } }
-  const preis = Math.round(2 * Math.PI * R * 80 + 600); if (geld < preis) { tipp("Ein Kreisverkehr kostet " + euro(preis) + ".", 2200); return; }
+  const preis = Math.round(2 * Math.PI * R * 80 + 600); if (geld < preis) { tipp("Dieser Kreisverkehr kostet " + euro(preis) + ".", 2200); return; }
   merkeRueck(); geld -= preis;
   const winkel = ein.map((k) => { const q = k.a === n.id ? k.pts[2] : k.pts[k.pts.length - 3]; return Math.atan2(q.z - n.z, q.x - n.x); });
   let phi = winkel[0] + Math.PI / 4; for (let v = 0; v < 8; v++) { const nah = winkel.some((w) => [0, 1, 2, 3].some((q) => Math.abs(Math.atan2(Math.sin(phi + q * Math.PI / 2 - w), Math.cos(phi + q * Math.PI / 2 - w))) < 0.47)); if (!nah) break; phi += Math.PI / 16; }
@@ -2933,7 +3048,7 @@ function loslassen(e) {
   if (!aktion || aktion.id !== e.pointerId) return;
   const a = aktion; aktion = null;
   if (werkzeug === "gleis" && tippModus()) { if (!a.bewegt) gleisTippen(a.letzte); }
-  else if (istBau()) { if (tippModus()) { if (!a.bewegt) (strModus === "ampel" ? ampelUmschalten : strModus === "einbahn" ? einbahnUmschalten : strModus === "busspur" ? busspurUmschalten : strModus === "schienen" ? schienenUmschalten : kreiselBauen)(a.letzte); } else { if (bau.kandidat) { bau.punkte.push(bau.kandidat); bau.kandidat = null; } planNeu(); } }
+  else if (istBau()) { if (tippModus()) { if (!a.bewegt) (strModus === "ampel" ? ampelUmschalten : strModus === "einbahn" ? einbahnUmschalten : strModus === "busspur" ? busspurUmschalten : strModus === "schienen" ? schienenUmschalten : strModus === "ersetzen" ? ersetzenTippen : strModus === "parken" ? parkenTippen : kreiselBauen)(a.letzte); } else { if (bau.kandidat) { bau.punkte.push(bau.kandidat); bau.kandidat = null; } planNeu(); } }
   else if (werkzeug === "abriss" && !a.bewegt) abreissenStrasse(a.letzte);
   else if (werkzeug === "ansehen" && !a.bewegt) { const f = fahrzeugBei(a.letzte), d = inDienst(a.letzte.x, a.letzte.z, 0.1), hs = halteBei(a.letzte, 0.7); if (f) fahrzeugInfo(f); else if (hs) haltInfo(hs); else if (d) dienstInfo(d); else hausInfo(a.letzte); }
   else if ((werkzeug === "dienst" || werkzeug === "park") && !a.bewegt) dienstVorschau(a.letzte);
@@ -3228,7 +3343,7 @@ function starten(n, daten, neueKarte) {
     setTimeout(() => $("laden").classList.add("weg"), 200);
   }, 60);
 }
-window.inselstadt = { bildschirm: (x, z) => { const v = new THREE.Vector3(x, G, z).project(kamera), r = renderer.domElement.getBoundingClientRect(); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; }, linienListe: () => [...linien.values()].map((L) => ({ nr: L.nr, art: L.art, halte: L.halte.length, busse: L.busse, keinDepot: L.keinDepot })), gleisPlanen, gleisBauen, bahnhofPlan, gKanten, gKnoten, zuege: () => zuege, zuglinien, uebergaenge: () => uebergaenge, gleisModus: (m) => { gleisModus = m; }, zuglinieBau: (ids) => { zuglinieBau = ids; }, zuglinieFertig, schienenUmschalten, aussenGleisBauen, zugTakt, modellTest: () => { const ks = Object.keys(FZ); let n = 0; for (const k of kanten.values()) { if (!autoKante(k) || k.aussen || k.len < 8) continue; for (let s = 1.5; s < k.len - 1.5 && n < ks.length; s += 2.2) { const f = fahrzeugAusWeg({ route: [{ k: k.id, dir: 1 }], s0: s, s1: k.len - 0.5 }, ks[n], mitAuflieger(ks[n]) ? "container" : null, "Test", "Test", "aussen"); if (f) { f.farbe = PAL.auto[n % PAL.auto.length]; f.v = 0; n++; } } } return n; }, allesBesitzen: () => { for (let i = 0; i < KN; i++) for (let j = 0; j < KN; j++) besitz.add(i + "," + j); gebieteZeichnen(); }, kameraAuf: (x, z, d) => { steuerung.target.set(x, 0, z); kamera.position.set(x + d * 0.55, d * 0.75, z + d * 0.65); steuerung.update(); }, dbgF: (id) => { const f = fahrzeuge.find((x) => x.id === id); if (!f || f.modus !== "kante") return null; const st = f.route[f.ri], k = kanten.get(st.k), nx = f.route[f.ri + 1]; if (!nx) return "letzte"; const n = endKnoten(k, st.dir), k2 = kanten.get(nx.k), s2 = anfang(k2, nx.dir); return { rest: +(ende(k, st.dir) - f.s).toFixed(2), frei: f.frei, darf: darfEinfahren(f, k, st, nx), k2: k2.id + (k2.ring ? "R" : ""), platz: fahrzeuge.filter((g) => g !== f && g.modus === "kante" && g.route[g.ri].k === k2.id && g.route[g.ri].dir === nx.dir && g.s < s2 + g.hintenL + f.vorneL + 0.35).map((g) => g.id + ":" + g.s.toFixed(2) + ":w" + g.warte.toFixed(0)), drin: [...n.drin].map((g) => g.id + (g.tr ? "t" + g.tr.t.toFixed(2) : "res") + " von" + g.von), naht: n.naht.map((g) => g.id), luecke: f.block }; }, kreiselBauen, einbahnUmschalten, strModus: (m) => { strModus = m; }, halte, linien, neueHalte, busTippen, linieFertig, busRechnen, busModus: (m) => { busModus = m; }, linieBau: (ids) => { linieBau = ids; }, abstand: (x, z) => abstand(x, z), dienstPlan, dienstBauen, dienste, versorgung: () => versorgung, versorgungRechnen, dienstTakt, ansichtSetzen, sim: (sek, ziel) => { const ev = new Map(); let tk = 0; for (let t = 0; t < sek; t += 0.05) { simZeit += 0.05; jetztS += 0.05; if (++tk % 10 === 0) dienstTakt(0.5); verkehrTakt(0.05, ziel || 60); fahrzeugeZeichnen(); const F = fahrzeuge.filter((f) => f.pos && f.skala > 0.9 && !f.parkt); for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) { const A = F[i], Bf = F[j]; let hit = false; for (let q = 0; q <= 6 && !hit; q++) { const o = Bf.vorneL - (Bf.vorneL + Bf.hintenL) * q / 6, dx = Bf.pos.x + Bf.pos.tx * o - A.pos.x, dz = Bf.pos.z + Bf.pos.tz * o - A.pos.z, lx = dx * A.pos.tx + dz * A.pos.tz, lz = Math.abs(-dx * A.pos.tz + dz * A.pos.tx); if (lx < A.vorneL * 0.8 && lx > -A.hintenL * 0.8 && lz < (A.B + Bf.B) / 2 * 0.7) hit = true; } if (hit) { const key = A.id + "-" + Bf.id; if (!ev.has(key)) { const d = (f) => f.modus === "kante" ? f.route[f.ri].k + "/" + f.route[f.ri].dir + "/sp" + f.spur + "/off" + f.off.toFixed(2) + "/s" + f.s.toFixed(2) + (f.ausparken ? "/AUS" : "") + (f.frei ? "/FREI" : "") : "KN" + f.tr.knoten + "/t" + f.tr.t.toFixed(2) + "/von" + f.von + "->" + f.route[f.ri + 1].k; ev.set(key, [A.typ, d(A), "blk" + (A.block == null ? "-" : A.block.toFixed(2)) + "w" + A.warte.toFixed(1), Bf.typ, d(Bf), "blk" + (Bf.block == null ? "-" : Bf.block.toFixed(2)) + "w" + Bf.warte.toFixed(1), "t" + t.toFixed(1)]); } } } } return [fahrzeuge.length, ev.size, [...ev.values()].slice(0, 12)]; }, fahrtStarten: () => { try { return fahrtStarten(); } catch (e) { return "FEHLER " + e.message + e.stack; } }, folgen: (f) => folgenStart(f), baeume: () => baeume.length, stufenTest: (st) => { let i = 0; for (const h of haeuser.values()) { h.stufe = Math.min(ZONEN[h.zone].max, st || 1 + (i++ % 5)); h.teile = hausTeile(h); } haeuserNeu = true; }, meilenstein: (m) => { meilenstein = m; unterleiste(); }, zoneWahl: (z) => { zoneWahl = z; }, malen: (a, b) => malen(a, b), werteAuffrischen, hausTeile, bedarf: () => bedarf, wertAnsicht: (v) => { wertAnsicht = v; wertZeichnen(); }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
+window.inselstadt = { kreiselGroesse: (i) => { kreiselGr = i; }, rasterTest: (A, B, C, t) => { strTyp = t || "klein"; const ls = rasterLinien(A, B, C); let n = 0; for (const [a, b] of ls) { const pl = planen(fangOderFrei(a), lerp(a, b, 0.5), fangOderFrei(b), strTyp, 0); if (pl.ok && bauen(pl).length) n++; else if (!pl.ok) console.log("raster", pl.grund); } return [ls.length, n]; }, ersetzen: (p, t) => { strTyp = t; ersetzenTippen(p); }, parken: (p) => parkenTippen(p), autoBruecke: (A, B) => { const pl = planen(fangen(A), lerp(A, B, 0.5), fangen(B), "klein", 0); if (!pl.ok && pl.wasser && pl.pts.some((q) => abstand(q.x, q.z) < 0.3)) { const p2 = planen(fangen(A), lerp(A, B, 0.5), fangen(B), "klein", 1); return [pl.grund, p2.ok, p2.grund]; } return [pl.ok, pl.grund]; }, bildschirm: (x, z) => { const v = new THREE.Vector3(x, G, z).project(kamera), r = renderer.domElement.getBoundingClientRect(); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; }, linienListe: () => [...linien.values()].map((L) => ({ nr: L.nr, art: L.art, halte: L.halte.length, busse: L.busse, keinDepot: L.keinDepot })), gleisPlanen, gleisBauen, bahnhofPlan, gKanten, gKnoten, zuege: () => zuege, zuglinien, uebergaenge: () => uebergaenge, gleisModus: (m) => { gleisModus = m; }, zuglinieBau: (ids) => { zuglinieBau = ids; }, zuglinieFertig, schienenUmschalten, aussenGleisBauen, zugTakt, modellTest: () => { const ks = Object.keys(FZ); let n = 0; for (const k of kanten.values()) { if (!autoKante(k) || k.aussen || k.len < 8) continue; for (let s = 1.5; s < k.len - 1.5 && n < ks.length; s += 2.2) { const f = fahrzeugAusWeg({ route: [{ k: k.id, dir: 1 }], s0: s, s1: k.len - 0.5 }, ks[n], mitAuflieger(ks[n]) ? "container" : null, "Test", "Test", "aussen"); if (f) { f.farbe = PAL.auto[n % PAL.auto.length]; f.v = 0; n++; } } } return n; }, allesBesitzen: () => { for (let i = 0; i < KN; i++) for (let j = 0; j < KN; j++) besitz.add(i + "," + j); gebieteZeichnen(); }, kameraAuf: (x, z, d) => { steuerung.target.set(x, 0, z); kamera.position.set(x + d * 0.55, d * 0.75, z + d * 0.65); steuerung.update(); }, dbgF: (id) => { const f = fahrzeuge.find((x) => x.id === id); if (!f || f.modus !== "kante") return null; const st = f.route[f.ri], k = kanten.get(st.k), nx = f.route[f.ri + 1]; if (!nx) return "letzte"; const n = endKnoten(k, st.dir), k2 = kanten.get(nx.k), s2 = anfang(k2, nx.dir); return { rest: +(ende(k, st.dir) - f.s).toFixed(2), frei: f.frei, darf: darfEinfahren(f, k, st, nx), k2: k2.id + (k2.ring ? "R" : ""), platz: fahrzeuge.filter((g) => g !== f && g.modus === "kante" && g.route[g.ri].k === k2.id && g.route[g.ri].dir === nx.dir && g.s < s2 + g.hintenL + f.vorneL + 0.35).map((g) => g.id + ":" + g.s.toFixed(2) + ":w" + g.warte.toFixed(0)), drin: [...n.drin].map((g) => g.id + (g.tr ? "t" + g.tr.t.toFixed(2) : "res") + " von" + g.von), naht: n.naht.map((g) => g.id), luecke: f.block }; }, kreiselBauen, einbahnUmschalten, strModus: (m) => { strModus = m; }, halte, linien, neueHalte, busTippen, linieFertig, busRechnen, busModus: (m) => { busModus = m; }, linieBau: (ids) => { linieBau = ids; }, abstand: (x, z) => abstand(x, z), dienstPlan, dienstBauen, dienste, versorgung: () => versorgung, versorgungRechnen, dienstTakt, ansichtSetzen, sim: (sek, ziel) => { const ev = new Map(); let tk = 0; for (let t = 0; t < sek; t += 0.05) { simZeit += 0.05; jetztS += 0.05; if (++tk % 10 === 0) dienstTakt(0.5); verkehrTakt(0.05, ziel || 60); fahrzeugeZeichnen(); const F = fahrzeuge.filter((f) => f.pos && f.skala > 0.9 && !f.parkt); for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) { const A = F[i], Bf = F[j]; let hit = false; for (let q = 0; q <= 6 && !hit; q++) { const o = Bf.vorneL - (Bf.vorneL + Bf.hintenL) * q / 6, dx = Bf.pos.x + Bf.pos.tx * o - A.pos.x, dz = Bf.pos.z + Bf.pos.tz * o - A.pos.z, lx = dx * A.pos.tx + dz * A.pos.tz, lz = Math.abs(-dx * A.pos.tz + dz * A.pos.tx); if (lx < A.vorneL * 0.8 && lx > -A.hintenL * 0.8 && lz < (A.B + Bf.B) / 2 * 0.7) hit = true; } if (hit) { const key = A.id + "-" + Bf.id; if (!ev.has(key)) { const d = (f) => f.modus === "kante" ? f.route[f.ri].k + "/" + f.route[f.ri].dir + "/sp" + f.spur + "/off" + f.off.toFixed(2) + "/s" + f.s.toFixed(2) + (f.ausparken ? "/AUS" : "") + (f.frei ? "/FREI" : "") : "KN" + f.tr.knoten + "/t" + f.tr.t.toFixed(2) + "/von" + f.von + "->" + f.route[f.ri + 1].k; ev.set(key, [A.typ, d(A), "blk" + (A.block == null ? "-" : A.block.toFixed(2)) + "w" + A.warte.toFixed(1), Bf.typ, d(Bf), "blk" + (Bf.block == null ? "-" : Bf.block.toFixed(2)) + "w" + Bf.warte.toFixed(1), "t" + t.toFixed(1)]); } } } } return [fahrzeuge.length, ev.size, [...ev.values()].slice(0, 12)]; }, fahrtStarten: () => { try { return fahrtStarten(); } catch (e) { return "FEHLER " + e.message + e.stack; } }, folgen: (f) => folgenStart(f), baeume: () => baeume.length, stufenTest: (st) => { let i = 0; for (const h of haeuser.values()) { h.stufe = Math.min(ZONEN[h.zone].max, st || 1 + (i++ % 5)); h.teile = hausTeile(h); } haeuserNeu = true; }, meilenstein: (m) => { meilenstein = m; unterleiste(); }, zoneWahl: (z) => { zoneWahl = z; }, malen: (a, b) => malen(a, b), werteAuffrischen, hausTeile, bedarf: () => bedarf, wertAnsicht: (v) => { wertAnsicht = v; wertZeichnen(); }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
 
 /* ================================================================
    Hauptschleife
