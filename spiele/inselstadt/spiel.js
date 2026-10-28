@@ -871,7 +871,7 @@ function bodenwert(x, z, ohne) {
   let laeden = 0; for (const q of ladenListe) if (Math.hypot(q.x - x, q.z - z) < 6) laeden++;
   w += Math.min(14, laeden * 4);
   let park = 0, dienstPlus = 0; const gedeckt = new Set();
-  for (const q of dienste.values()) { const D = DIENSTE[q.typ]; if (!D.radius) continue; const e = Math.hypot(q.x - x, q.z - z); if (e >= D.radius) continue; if (D.wert) park += D.wert * (1 - e / D.radius); else gedeckt.add(D.kat); }
+  for (const q of dienste.values()) { const D = DIENSTE[q.typ]; if (!D.radius) continue; if (D.wert) { const e = Math.hypot(q.x - x, q.z - z); if (e < D.radius) park += D.wert * (1 - e / D.radius); } else if (!gedeckt.has(D.kat) && abdeckung(x, z, D.kat) > 0) gedeckt.add(D.kat); }
   w += Math.min(26, park) + gedeckt.size * 3;
   for (const s of halte.values()) if (s.inLinie && Math.hypot(s.x - x, s.z - z) < HALT_RADIUS) { w += 4; break; }
   const dreck = dreckBei(x, z, ohne);
@@ -1093,7 +1093,7 @@ function dienstPlan(p, typ) {
   if (!e) return { ok: false, grund: "Muss an einer Straße stehen", x: p.x, z: p.z, rot: 0, W, D: Dd, typ };
   const q = punktBei(e.k, e.s), nx = -q.tz, nz = q.tx, seite = ((p.x - q.x) * nx + (p.z - q.z) * nz) >= 0 ? 1 : -1, ab = TYP[e.k.typ].halb + Dd / 2 + 0.06;
   const x = q.x + nx * seite * ab, z = q.z + nz * seite * ab, rot = Math.atan2(-nx * seite, -nz * seite), cs = Math.cos(rot), sn = Math.sin(rot);
-  const plan = { ok: true, typ, x, z, rot, W, D: Dd, preis: D.preis, haeuser: 0 };
+  const plan = { ok: true, typ, x, z, rot, W, D: Dd, preis: D.preis, haeuser: 0, zug: { k: e.k.id, S: e.s } };
   let zuNah = false, land = true, bes = true, ufer = 99;
   for (let a = -0.5; a <= 0.501; a += 0.25) for (let b = -0.5; b <= 0.501; b += 0.25) {
     const lx = a * W * 0.94, lz = b * Dd * 0.94, wx = x + lx * cs + lz * sn, wz = z - lx * sn + lz * cs, ab2 = abstand(wx, wz);
@@ -1131,7 +1131,35 @@ function komponenten() {
 const kompVon = (o) => { const z = zufahrt(o); return z ? netzKomp.get(z.k) : null; };
 function bedarfVon(h, r) { const b = leute(h) + jobs(h) * (gruppe(h) === "i" ? 1.0 : 0.6); return r === "abwasser" ? b * 0.9 : r === "muell" ? b * 0.8 : b; }
 let versorgung = { strom: [0, 0], wasser: [0, 0], abwasser: [0, 0], muell: [0, 0] }, versorgungZeit = -99, warteListe = [];
-function abdeckung(x, z, kat) { let best = 0; for (const d of dienste.values()) { const D = DIENSTE[d.typ]; if (D.kat !== kat || !D.radius) continue; const e = Math.hypot(d.x - x, d.z - z); if (e < D.radius) best = Math.max(best, kat === "bildung" ? D.bildung : 1 - e / D.radius * 0.5); } return best; }
+/* Reichweite über die Straßen (wie bei Cities: Skylines): Wie weit kommen die Fahrzeuge in einer bestimmten Zeit? */
+const STRASSEN_DIENST = new Set(["polizei", "feuer", "gesund", "bildung"]), REICH_FAKTOR = 1.5 / 2.1;
+const autoKante = (k) => TYP[k.typ].autos && !k.ring && !k.ebene;
+function reichweite(start, T) {
+  const k0 = kanten.get(start.k), r = { T, t: new Map(), k0: start.k, S: start.S }; if (!k0) return r;
+  const zeit = new Map(), h = [], push = (id, w) => { h.push([w, id]); let i = h.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (h[p][0] <= h[i][0]) break; [h[p], h[i]] = [h[i], h[p]]; i = p; } }, pop = () => { const top = h[0], last = h.pop(); if (h.length) { h[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, q = l + 1; let m = i; if (l < h.length && h[l][0] < h[m][0]) m = l; if (q < h.length && h[q][0] < h[m][0]) m = q; if (m === i) break; [h[m], h[i]] = [h[i], h[m]]; i = m; } } return top; };
+  const v0 = TYP[k0.typ].tempo; zeit.set(k0.a, start.S / v0); zeit.set(k0.b, (k0.len - start.S) / v0); push(k0.a, start.S / v0); push(k0.b, (k0.len - start.S) / v0);
+  while (h.length) { const [w, id] = pop(); if (w > (zeit.get(id) ?? 1e9) || w > T) continue; const n = knoten.get(id); if (!n) continue; for (const kid of n.kanten) { const k = kanten.get(kid); if (!k || !TYP[k.typ].autos) continue; const nach = k.a === id ? k.b : k.a, w2 = w + k.len / TYP[k.typ].tempo; if (w2 < (zeit.get(nach) ?? 1e9)) { zeit.set(nach, w2); push(nach, w2); } } }
+  for (const k of kanten.values()) { if (!TYP[k.typ].autos) continue; const a = zeit.get(k.a) ?? 1e9, b = zeit.get(k.b) ?? 1e9; if (a <= T || b <= T) r.t.set(k.id, [a, b]); }
+  return r;
+}
+function zeitBis(r, k, S) { const v = TYP[k.typ].tempo; let t = 1e9; if (k.id === r.k0) t = Math.abs(S - r.S) / v; const e = r.t.get(k.id); if (e) t = Math.min(t, e[0] + S / v, e[1] + (k.len - S) / v); return t; }
+let reichCache = { key: "", m: new Map() };
+function reichAktuell() {
+  const key = netzVersion + "|" + [...dienste.keys()].join(","); if (reichCache.key === key) return reichCache.m;
+  const m = new Map(); for (const d of dienste.values()) { const D = DIENSTE[d.typ]; if (!STRASSEN_DIENST.has(D.kat) || !D.radius) continue; const z = zufahrt(d); if (z) m.set(d.id, reichweite(z, D.radius * REICH_FAKTOR)); }
+  reichCache = { key, m }; return m;
+}
+function abdeckungStrasse(k, S, kat, nur) {
+  if (!k) return 0; let best = 0; const m = reichAktuell();
+  for (const d of dienste.values()) { const D = DIENSTE[d.typ]; if (D.kat !== kat || (nur && d !== nur)) continue; const r = m.get(d.id); if (!r) continue; const t = zeitBis(r, k, S); if (t <= r.T) best = Math.max(best, kat === "bildung" ? D.bildung : 1 - t / r.T * 0.5); }
+  return best;
+}
+const abdHaus = (h, kat, nur) => { const z = zufahrt(h); return z ? abdeckungStrasse(kanten.get(z.k), z.S, kat, nur) : 0; };
+function abdeckung(x, z, kat) {
+  if (STRASSEN_DIENST.has(kat)) { const e = naechsteKante({ x, z }, 3.5, autoKante); return e ? abdeckungStrasse(e.k, e.s, kat) : 0; }
+  return abdeckungKreis(x, z, kat);
+}
+function abdeckungKreis(x, z, kat) { let best = 0; for (const d of dienste.values()) { const D = DIENSTE[d.typ]; if (D.kat !== kat || !D.radius) continue; const e = Math.hypot(d.x - x, d.z - z); if (e < D.radius) best = Math.max(best, kat === "bildung" ? D.bildung : 1 - e / D.radius * 0.5); } return best; }
 function versorgungRechnen() {
   komponenten();
   const prod = new Map(), RS = ["strom", "wasser", "abwasser", "muell"];
@@ -1140,7 +1168,7 @@ function versorgungRechnen() {
   const proKomp = new Map();
   for (const h of haeuser.values()) {
     h.hat = h.hat || {}; h.komp = kompVon(h);
-    h.abd = { polizei: abdeckung(h.x, h.z, "polizei"), feuer: abdeckung(h.x, h.z, "feuer"), gesund: abdeckung(h.x, h.z, "gesund") }; h.bildung = abdeckung(h.x, h.z, "bildung");
+    h.abd = { polizei: abdHaus(h, "polizei"), feuer: abdHaus(h, "feuer"), gesund: abdHaus(h, "gesund") }; h.bildung = abdHaus(h, "bildung");
     if (h.verlassen) continue;
     if (h.komp == null) { for (const r of RS) { h.hat[r] = false; gesamt[r][1] += bedarfVon(h, r); } continue; }
     if (!proKomp.has(h.komp)) proKomp.set(h.komp, []); proKomp.get(h.komp).push(h);
@@ -1181,7 +1209,7 @@ function dienstTakt(dt) {
     // Brand
     if (h.brand) {
       const b = h.brand;
-      if (!b.gerufen && a.feuer) { const w = naechsteWache(h, "feuer"); if (w) { const f = einsatz(w, h, "feuerwehr", () => { if (h.brand) { h.brand = null; tipp("🚒 Feuer gelöscht: " + hausName(h), 2500); } }); if (f) b.gerufen = true; } }
+      if (!b.gerufen && a.feuer) { const w = naechsteWache(h, "feuer"); if (w) { const f = einsatz(w, h, DIENSTE[w.typ].radius > 15 && (h.hoehe || 0) > 1.2 ? "drehleiter" : "feuerwehr", () => { if (h.brand) { h.brand = null; tipp("🚒 Feuer gelöscht: " + hausName(h), 2500); } }); if (f) b.gerufen = true; } }
       if (simZeit - b.t > (a.feuer ? 45 : 28)) { tipp("🔥 " + hausName(h) + " ist abgebrannt" + (a.feuer ? "." : " – bau eine Feuerwache in der Nähe!"), 4000); h.brand = null; hausWeg(h); }
     }
   }
@@ -1199,13 +1227,13 @@ function dienstTakt(dt) {
   for (const d of dienste.values()) {
     d.timer -= dt; if (d.timer > 0) continue;
     const D = DIENSTE[d.typ];
-    if (D.muell) { d.timer = 7; if (eigeneFahrzeuge(d) < 2) { const L = [...haeuser.values()].filter((h) => h.komp === d.komp && !h.verlassen); if (L.length) einsatz(d, wahl(Math.random, L), "muell", null, true); } }
-    else if (D.kat === "polizei") { d.timer = 9; if (eigeneFahrzeuge(d) < (D.radius > 15 ? 3 : 2)) { const L = [...haeuser.values()].filter((h) => Math.hypot(h.x - d.x, h.z - d.z) < D.radius); if (L.length) { const h = L.reduce((m, x) => (x.krimi || 0) > (m.krimi || 0) ? x : m, wahl(Math.random, L)); einsatz(d, h, "polizei", () => { h.krimi = 0; }, true); } } }
-    else if (D.kat === "gesund" && D.radius > 10) { d.timer = 10; if (eigeneFahrzeuge(d) < 2) { const L = [...haeuser.values()].filter((h) => Math.hypot(h.x - d.x, h.z - d.z) < D.radius && (h.krank || 0) > 20); if (L.length) { const h = wahl(Math.random, L); einsatz(d, h, "kranken", () => { h.krank = 0; }, true); } } }
+    if (D.muell) { d.timer = 7; if (eigeneFahrzeuge(d) < 3) { const L = [...haeuser.values()].filter((h) => h.komp === d.komp && !h.verlassen); if (L.length) einsatz(d, wahl(Math.random, L), Math.random() < 0.2 ? "kehrmaschine" : "muell", null, true); } }
+    else if (D.kat === "polizei") { d.timer = 9; if (eigeneFahrzeuge(d) < (D.radius > 15 ? 3 : 2)) { const L = [...haeuser.values()].filter((h) => abdHaus(h, "polizei", d) > 0); if (L.length) { const h = L.reduce((m, x) => (x.krimi || 0) > (m.krimi || 0) ? x : m, wahl(Math.random, L)); einsatz(d, h, D.radius > 15 && Math.random() < 0.4 ? "polizeivan" : "polizei", () => { h.krimi = 0; }, true); } } }
+    else if (D.kat === "gesund") { d.timer = D.radius > 10 ? 10 : 16; if (eigeneFahrzeuge(d) < (D.radius > 10 ? 2 : 1)) { const L = [...haeuser.values()].filter((h) => (h.krank || 0) > 20 && abdHaus(h, "gesund", d) > 0); if (L.length) { const h = wahl(Math.random, L); einsatz(d, h, D.radius > 10 ? "kranken" : "notarzt", () => { h.krank = 0; }, true); } } }
     else d.timer = 5;
   }
 }
-const naechsteWache = (h, kat) => { let best = null, bd = 1e9; for (const d of dienste.values()) { const D = DIENSTE[d.typ]; if (D.kat !== kat) continue; const e = Math.hypot(d.x - h.x, d.z - h.z); if (e < D.radius && e < bd) { bd = e; best = d; } } return best; };
+const naechsteWache = (h, kat) => { const z = zufahrt(h), k = z && kanten.get(z.k); if (!k) return null; const m = reichAktuell(); let best = null, bd = 1e9; for (const d of dienste.values()) { const D = DIENSTE[d.typ], r = m.get(d.id); if (D.kat !== kat || !r) continue; const t = zeitBis(r, k, z.S); if (t <= r.T && t < bd) { bd = t; best = d; } } return best; };
 const eigeneFahrzeuge = (d) => fahrzeuge.filter((f) => f.dienstId === d.id).length;
 function einsatz(d, h, typ, beiAnkunft, zurueck) {
   const za = zufahrt(d), zb = zufahrt(h); if (!za || !zb) return null;
@@ -1236,14 +1264,31 @@ let dienstWahl = "windrad", dienstKat = "strom", dienstPlanAktuell = null;
 function dienstVorschau(p) {
   const plan = dienstPlan(p, dienstWahl), D = DIENSTE[dienstWahl]; dienstPlanAktuell = plan;
   geist.visible = true; geist.position.set(plan.x, G + 0.01, plan.z); geist.rotation.set(0, plan.rot, 0); geist.scale.set(plan.W, 0.5, plan.D); geist.material.color.setHex(plan.ok ? 0x7dffb0 : 0xff5a5a);
-  const rad = D.radius || 0; geistRing.visible = geistFlaeche.visible = rad > 0;
+  const strasse = STRASSEN_DIENST.has(D.kat), rad = strasse ? 0 : D.radius || 0; geistRing.visible = geistFlaeche.visible = rad > 0;
+  reichZeichnen(strasse && plan.zug ? D.kat : null, strasse && plan.zug ? reichweite(plan.zug, D.radius * REICH_FAKTOR) : null);
   if (rad) { geistRing.position.set(plan.x, G + 0.06, plan.z); geistRing.scale.setScalar(rad); geistFlaeche.position.set(plan.x, G + 0.055, plan.z); geistFlaeche.scale.setScalar(rad); }
   frage(D.em + " " + D.name + " · " + euro(D.preis) + " · " + euro(D.unterhalt) + "/Wo" + (plan.ok ? (plan.haeuser ? " · reißt " + plan.haeuser + " Haus ab" : "") : " – " + plan.grund), plan.ok, () => {
     merkeRueck(); const d = dienstBauen(dienstPlanAktuell); if (!d) return; geist.visible = geistRing.visible = geistFlaeche.visible = false; frageZu();
     tipp("✅ " + D.name + " gebaut! " + (D.radius ? "Der Kreis zeigt, wie weit es wirkt." : "Strom und Rohre laufen automatisch durch die Straßen."), 3500); versorgungRechnen();
   });
 }
-function vorschauWeg() { geist.visible = geistRing.visible = geistFlaeche.visible = false; dienstPlanAktuell = null; }
+function vorschauWeg() { geist.visible = geistRing.visible = geistFlaeche.visible = false; dienstPlanAktuell = null; if (!(ansicht && ANSICHTEN[ansicht] && STRASSEN_DIENST.has(ANSICHTEN[ansicht].kat))) reichZeichnen(null); }
+/* Erreichte Straßen einfärben */
+const reichMesh = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.75, depthWrite: false, toneMapped: false })); reichMesh.renderOrder = 4; reichMesh.visible = false; szene.add(reichMesh);
+function reichZeichnen(kat, extra) {
+  if (!kat) { reichMesh.visible = false; return; }
+  const pos = [], col = [], c = new THREE.Color(), rot = farbe(0xff4a3d), gelb = farbe(0xffd23d), gruen = farbe(0x2fd66b), m = extra ? null : reichAktuell();
+  for (const k of kanten.values()) {
+    if (!TYP[k.typ].autos) continue;
+    for (let i = 0; i < k.pts.length - 1; i += 1) {
+      const a = k.pts[i], b = k.pts[i + 1], S = (a.s + b.s) / 2; let v = 0;
+      if (extra) { const t = zeitBis(extra, k, S); v = t <= extra.T ? 1 - t / extra.T * 0.5 : 0; } else v = Math.min(1, abdeckungStrasse(k, S, kat) / (kat === "bildung" ? 3 : 1));
+      if (v <= 0) continue; c.copy(gelb).lerp(gruen, klemme((v - 0.5) * 2, 0, 1)); if (v < 0.5) c.copy(rot).lerp(gelb, v * 2);
+      band(pos, col, [a, b], TYP[k.typ].fahr + 0.1, (q) => G + 0.05 + ebeneY(k, q.s), c);
+    }
+  }
+  reichMesh.geometry.dispose(); reichMesh.geometry = pos.length ? geoAus(pos, col) : new THREE.BufferGeometry(); reichMesh.visible = true;
+}
 /* Wirkungskreise in den Info-Ansichten */
 const kreise = new THREE.InstancedMesh(new THREE.RingGeometry(0.975, 1, 72).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.85, depthWrite: false, toneMapped: false }), 200);
 kreise.count = 0; kreise.frustumCulled = false; kreise.renderOrder = 4; kreise.setColorAt(0, new THREE.Color()); szene.add(kreise);
@@ -1256,7 +1301,7 @@ function dienstInfo(d) {
   const D = DIENSTE[d.typ];
   let leistung = "";
   for (const r of ["strom", "wasser", "abwasser", "muell"]) if (D[r]) { const v = versorgung[r]; leistung += `<br>${RESSOURCEN[r].em} ${RESSOURCEN[r].name}: ${zahl(D[r])} · Stadt: ${zahl(v[1])} von ${zahl(v[0])} gebraucht`; }
-  if (D.radius) leistung += `<br>⭕ Wirkungskreis: ${D.radius} Felder`;
+  if (D.radius) leistung += STRASSEN_DIENST.has(D.kat) ? `<br>🛣️ Reichweite: ca. ${Math.round(D.radius * 1.5)} Felder über die Straßen (Hauptstraßen weiter)` : `<br>⭕ Wirkungskreis: ${D.radius} Felder`;
   if (D.wert) leistung += `<br>💎 Bodenwert +${D.wert} in der Nähe`;
   infoZeigen(`<b>${D.em} ${D.name}</b><small>${DIENST_KAT[D.kat].name} · ${euro(D.unterhalt)} Unterhalt pro Woche</small>${leistung}${d.komp == null ? "<br>⚠️ Nicht an eine Straße angeschlossen" : ""}<br><small>${D.text}</small><br><button class="chip gefahr" type="button" id="dienstAbriss" style="margin-top:6px">🧹 Abreißen (+${euro(D.preis * 0.3)})</button>`, 9000);
   $("dienstAbriss").onclick = () => { merkeRueck(); dienstWeg(d); geld += D.preis * 0.3; $("info").hidden = true; zeigeWerte(); tipp("🧹 " + D.name + " abgerissen.", 2000); };
@@ -1267,6 +1312,7 @@ function dienstInfo(d) {
    ================================================================ */
 const halte = new Map(), linien = new Map(); let haltId = 1, linieId = 1;
 const LINIEN_FARBEN = [0xe8493f, 0x3f7fe8, 0x2fbf6a, 0xf2a93b, 0x9a5be8, 0xe85b9a, 0x2fb8c9, 0x8a6a3a];
+const BUS_MODELLE = { mix: "🔀 Gemischt", bus: "🚌 Stadtbus", gelenkbus: "🚍 Gelenkbus", doppeldecker: "🚌 Doppeldecker", ebus: "⚡ Elektrobus", minibus: "🚐 Kleinbus" };
 const HALT_PREIS = 300, BUS_UNTERHALT = 120, HALT_RADIUS = 6;
 function haltTeile(h) {
   const k = kanten.get(h.k), o = k ? TYP[k.typ].halb - 0.13 : 0.55, T = [];
@@ -1297,7 +1343,7 @@ const haltPunkt = (h) => ({ k: h.k, S: klemme(h.s, 0.6, kanten.get(h.k).len - 0.
 function linieErreichbar(ids) { for (let i = 0; i < ids.length; i++) { const a = halte.get(ids[i]), b = halte.get(ids[(i + 1) % ids.length]); if (!a || !b || !kanten.has(a.k) || !kanten.has(b.k)) return false; if (!wegSuchen(haltPunkt(a), haltPunkt(b))) return false; } return true; }
 function busStarten(L, i) {
   const a = halte.get(L.halte[i % L.halte.length]), b = halte.get(L.halte[(i + 1) % L.halte.length]); if (!a || !b) return null;
-  const tram = L.art === "tram", f = fahrzeugAusWeg(wegSuchen(haltPunkt(a), haltPunkt(b)), tram ? "tram" : "bus", null, "Linie " + L.nr, "Haltestelle", "aussen"); if (!f) return null;
+  const tram = L.art === "tram", mod = L.modell && L.modell !== "mix" ? L.modell : wahl(Math.random, ["bus", "bus", "gelenkbus", "doppeldecker", "ebus", "minibus"]), f = fahrzeugAusWeg(wegSuchen(haltPunkt(a), haltPunkt(b)), tram ? "tram" : mod, null, "Linie " + L.nr, "Haltestelle", "aussen"); if (!f) return null;
   f.linie = L.id; f.ziel = (i + 1) % L.halte.length; f.farbe = L.farbe; f.nachText = "🚏 Haltestelle " + (f.ziel + 1); f.vonText = (tram ? "🚋" : "🚌") + " Linie " + L.nr; return f;
 }
 function busWeiter(f) {
@@ -1562,6 +1608,16 @@ const FZ = {
   muell: { name: "Müllwagen", L: 0.84, B: 0.28, rad: 0.056, achsen: [0.28, -0.14, -0.26], beschl: 1.4, brems: 5, vf: 0.78, lack: 0xf28c28, form: { art: "kasten", L: 0.24, x0: 0.3, sill: 0.06, belt: 0.2, roof: 0.38, nase: 0.17, hf: 0.1, wf: 0.07, glasBis: -0.04, extra: (t) => { t.push(profil([[-0.42, 0.07], [0.17, 0.07], [0.17, 0.43], [-0.36, 0.43], [-0.42, 0.37]], 0.28, LACK, 0.02), kiste(-0.12, 0.25, 0, 0.5, 0.02, 0.284, ZIER), kiste(-0.43, 0.2, 0, 0.02, 0.24, 0.26, ZIER), kiste(0.0, 0.07, 0, 0.6, 0.04, 0.22, ZIER)); } } },
   feuerwehr: { name: "Löschzug", L: 0.74, B: 0.29, rad: 0.056, achsen: [0.24, -0.2], beschl: 1.9, brems: 6, vf: 1.05, lack: 0xd9302f, blau: 0.43, form: { art: "kasten", sill: 0.06, belt: 0.2, roof: 0.42, nase: 0.18, hf: 0.3, wf: 0.27, glasBis: 0.17, extra: (t) => { t.push(kiste(-0.06, 0.18, 0, 0.62, 0.025, 0.296, 0xf2f2f2), kiste(-0.08, 0.44, 0, 0.5, 0.025, 0.12, 0xb9bfc7)); blaulichtBalken(0.25, 0.42)(t); } } },
   tram: { name: "Straßenbahn", L: 1.8, B: 0.28, rad: 0.04, achsen: [0.7, 0.25, -0.25, -0.7], beschl: 1.4, brems: 5, vf: 0.8, lack: 0xe8493f, form: { art: "kasten", sill: 0.05, belt: 0.17, roof: 0.4, nase: 0.2, hf: 0.895, wf: 0.86, glasBis: 0.895, band: true, extra: (t) => { t.push(kiste(0, 0.22, 0, 0.06, 0.34, 0.286, ZIER), kiste(0.3, 0.42, 0, 0.3, 0.04, 0.16, 0x5d6470), kiste(0.3, 0.47, 0, 0.02, 0.06, 0.2, 0x2a2d33)); } } },
+  gelenkbus: { name: "Gelenkbus", L: 1.9, B: 0.29, rad: 0.056, achsen: [0.66, 0.05, -0.68], beschl: 1.3, brems: 5, vf: 0.8, max: 40, form: { art: "kasten", sill: 0.06, belt: 0.18, roof: 0.4, nase: 0.18, hf: 0.945, wf: 0.935, glasBis: 0.945, band: true, extra: (t) => { t.push(kiste(-0.1, 0.22, 0, 0.1, 0.36, 0.3, SCHWARZ), kiste(0.4, 0.408, 0, 0.6, 0.02, 0.24, 0xd8d8d8)); } } },
+  doppeldecker: { name: "Doppeldecker", L: 1.3, B: 0.29, rad: 0.056, achsen: [0.43, -0.36], beschl: 1.4, brems: 5, vf: 0.8, max: 40, form: { art: "kasten", sill: 0.06, belt: 0.18, roof: 0.62, nase: 0.18, hf: 0.645, wf: 0.635, glasBis: 0.645, band: true, extra: (t) => { t.push(kiste(0, 0.4, 0, 1.24, 0.06, 0.302, LACK), kiste(0.66, 0.36, 0, 0.01, 0.03, 0.14, SCHWARZ)); } } },
+  ebus: { name: "Elektrobus", L: 1.3, B: 0.29, rad: 0.056, achsen: [0.43, -0.36], beschl: 1.8, brems: 5, vf: 0.82, max: 40, form: { art: "kasten", sill: 0.06, belt: 0.18, roof: 0.4, nase: 0.18, hf: 0.645, wf: 0.635, glasBis: 0.645, band: true, extra: (t) => { t.push(kiste(-0.1, 0.43, 0, 0.8, 0.05, 0.22, 0xd8d8d8), kiste(0, 0.13, 0, 1.2, 0.03, 0.296, 0x2fbf6a)); } } },
+  minibus: { name: "Kleinbus", L: 0.74, B: 0.27, rad: 0.048, achsen: [0.24, -0.22], beschl: 2.0, brems: 6, vf: 0.9, max: 40, form: { art: "kasten", sill: 0.055, belt: 0.17, roof: 0.37, nase: 0.15, hf: 0.23, wf: 0.16, glasBis: 0.11, band: true } },
+  polizeivan: { name: "Mannschaftswagen", L: 0.68, B: 0.27, rad: 0.05, achsen: [0.22, -0.21], beschl: 2.2, brems: 6.5, vf: 1.0, lack: 0xf2f4f7, blau: 0.4, blauX: 0.12, max: 40, form: { art: "kasten", sill: 0.055, belt: 0.17, roof: 0.39, nase: 0.15, hf: 0.24, wf: 0.17, glasBis: 0.12, band: true, extra: (t) => { t.push(kiste(-0.02, 0.15, 0, 0.62, 0.035, 0.276, 0x1f4fbf)); blaulichtBalken(0.12, 0.39)(t); } } },
+  drehleiter: { name: "Drehleiter", L: 0.92, B: 0.29, rad: 0.056, achsen: [0.3, -0.18, -0.3], beschl: 1.6, brems: 5.5, vf: 1.0, lack: 0xd9302f, blau: 0.43, blauX: 0.34, max: 40, form: { art: "kasten", L: 0.3, x0: 0.31, sill: 0.06, belt: 0.2, roof: 0.42, nase: 0.18, hf: 0.12, wf: 0.1, glasBis: -0.05, extra: (t) => { t.push(kiste(-0.15, 0.17, 0, 0.62, 0.22, 0.29, LACK), kiste(-0.36, 0.3, 0, 0.12, 0.08, 0.14, 0x9aa0a8), kiste(-0.05, 0.36, 0, 0.96, 0.035, 0.11, 0xc9ced6), kiste(-0.05, 0.395, 0, 0.96, 0.01, 0.11, 0x9aa0a8)); blaulichtBalken(0.34, 0.42)(t); } } },
+  notarzt: { name: "Notarzt", L: 0.52, B: 0.26, rad: 0.054, achsen: [0.165, -0.165], beschl: 2.8, brems: 7, vf: 1.1, lack: 0xf6f6f6, blau: 0.31, max: 40, form: { art: "pkw", sill: 0.065, belt: 0.19, roof: 0.295, nase: 0.15, hf: 0.12, wf: 0.05, rt: -0.2, rb: -0.245, extra: (t) => { t.push(kiste(0, 0.15, 0, 0.5, 0.03, 0.264, 0xd9302f)); blaulichtBalken(-0.05, 0.295)(t); } } },
+  kehrmaschine: { name: "Kehrmaschine", L: 0.5, B: 0.23, rad: 0.04, achsen: [0.14, -0.15], beschl: 1.4, brems: 6, vf: 0.6, lack: 0xf28c28, max: 40, form: { art: "kasten", sill: 0.05, belt: 0.15, roof: 0.3, nase: 0.13, hf: 0.17, wf: 0.13, glasBis: 0.05, extra: (t) => { for (const s of [1, -1]) t.push(kiste(0.27, 0.03, s * 0.09, 0.06, 0.03, 0.06, SCHWARZ)); t.push(kiste(-0.1, 0.32, 0, 0.04, 0.04, 0.04, 0xf2c14e)); } } },
+  lkw2: { name: "Lkw", L: 0.95, B: 0.28, rad: 0.055, achsen: [0.07], beschl: 1.3, brems: 4.5, vf: 0.82, vorneL: 0.15, hintenL: 0.8, max: 60, form: { art: "kasten", L: 0.28, sill: 0.06, belt: 0.21, roof: 0.43, nase: 0.2, hf: 0.135, wf: 0.12, glasBis: 0.05, extra: (t) => { t.push(kiste(0.142, 0.12, 0, 0.01, 0.08, 0.2, 0xc9ced6), kiste(-0.2, 0.065, 0, 0.16, 0.05, 0.2, ZIER), kiste(0.0, 0.46, 0, 0.2, 0.05, 0.26, LACK)); } } },
+  kipper: { name: "Kipper", L: 0.82, B: 0.28, rad: 0.056, achsen: [0.27, -0.14, -0.27], beschl: 1.3, brems: 4.8, vf: 0.8, max: 60, form: { art: "kasten", L: 0.26, x0: 0.28, sill: 0.06, belt: 0.2, roof: 0.38, nase: 0.18, hf: 0.11, wf: 0.09, glasBis: -0.04, extra: (t) => { t.push(profil([[-0.41, 0.1], [0.13, 0.1], [0.13, 0.33], [-0.41, 0.37]], 0.28, 0x9aa0a8, 0.015), kiste(-0.14, 0.08, 0, 0.56, 0.04, 0.22, ZIER)); } } },
   bus: { name: "Bus", L: 1.3, B: 0.29, rad: 0.056, achsen: [0.43, -0.36], beschl: 1.5, brems: 5, vf: 0.82, lack: 0xf2c14e, form: { art: "kasten", sill: 0.06, belt: 0.18, roof: 0.4, nase: 0.18, hf: 0.645, wf: 0.635, glasBis: 0.645, band: true, extra: (t) => { t.push(kiste(0, 0.408, 0, 1.0, 0.02, 0.24, 0xd8d8d8), kiste(0.66, 0.36, 0, 0.01, 0.03, 0.14, SCHWARZ)); } } },
   lkw: { name: "Lkw", L: 0.95, B: 0.28, rad: 0.055, achsen: [0.07], beschl: 1.3, brems: 4.5, vf: 0.8, vorneL: 0.15, hintenL: 0.8, form: { art: "kasten", L: 0.27, sill: 0.06, belt: 0.2, roof: 0.36, nase: 0.18, hf: 0.13, wf: 0.115, glasBis: 0.06, extra: (t) => { t.push(kiste(-0.2, 0.065, 0, 0.16, 0.05, 0.2, ZIER), kiste(-0.09, 0.27, 0, 0.04, 0.14, 0.22, ZIER)); } } }
 };
@@ -1585,7 +1641,7 @@ const fzTeile = becken(G_BOX, M.auto, FZ_MAX * 5 + 10, true), fzLicht = becken(G
 const G_RAD = mergeGeometries([bunt(new THREE.CylinderGeometry(1, 1, 0.04, 12).rotateX(Math.PI / 2), 0x1b1d22), bunt(new THREE.CylinderGeometry(0.58, 0.58, 0.044, 10).rotateX(Math.PI / 2), 0xb9bfc7)]);
 const fzRaeder = becken(G_RAD, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7 }), FZ_MAX * 8 + 12, false);
 const AUTO_MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.36, metalness: 0.18 });
-const fzMesh = {}; for (const k in FZ) fzMesh[k] = becken(FZ[k].geo, AUTO_MAT, k === "bus" || k === "tram" || k === "muell" || k === "polizei" || k === "kranken" || k === "feuerwehr" ? 40 : FZ_MAX, true);
+const fzMesh = {}; for (const k in FZ) fzMesh[k] = becken(FZ[k].geo, AUTO_MAT, FZ[k].max || (k === "bus" || k === "tram" || k === "muell" || k === "polizei" || k === "kranken" || k === "feuerwehr" ? 40 : FZ_MAX), true);
 
 /* ================================================================
    Bahn und Hafen: Züge und Schiffe kommen von außerhalb
@@ -1712,24 +1768,25 @@ function aussenBauen() {
   return false;
 }
 const pkwTyp = () => wahl(rv, PKW_TYPEN);
+const lkwWahl = () => { const r = rv(); return r < 0.45 ? "lkw" : r < 0.85 ? "lkw2" : "kipper"; }, mitAuflieger = (t) => t === "lkw" || t === "lkw2";
 function hausName(h) { return h.name || ZONEN[h.zone].name; }
 function auflieger(von, nach) { const q = von || nach; if (q && q.zone === 7) return "getreide"; if (q && q.zone === 8) return "holz"; if (karte === "wald" && rv() < 0.15) return "holz"; return nach && gruppe(nach) === "g" ? (rv() < 0.5 ? "kuehl" : "container") : wahl(rv, ["container", "container", "tank"]); }
 function fahrtStarten() {
   if (simZeit - listenZeit > 2) listenAuffrischen();
   if (!wohnListe.length && !arbeitListe.length) return false;
   const r = rv(); let von, nach, typ, anh = null;
-  if (r < 0.1 && (industrieListe.length || ladenListe.length)) { const hs = [...dienste.values()].filter((d) => d.typ === "hafen"); if (hs.length) { const h = wahl(rv, hs), ziel = industrieListe.length && rv() < 0.6 ? gewichtet(industrieListe, jobs) : ladenListe.length ? gewichtet(ladenListe, jobs) : null; const za = zufahrt(h), zb = ziel && zufahrt(ziel); if (za && zb) return fahrzeugAusWeg(wegSuchen(za, zb), "lkw", "container", "🚢 Frachthafen", hausName(ziel), "aussen"); } }
+  if (r < 0.1 && (industrieListe.length || ladenListe.length)) { const hs = [...dienste.values()].filter((d) => d.typ === "hafen"); if (hs.length) { const h = wahl(rv, hs), ziel = industrieListe.length && rv() < 0.6 ? gewichtet(industrieListe, jobs) : ladenListe.length ? gewichtet(ladenListe, jobs) : null; const za = zufahrt(h), zb = ziel && zufahrt(ziel); if (za && zb) return fahrzeugAusWeg(wegSuchen(za, zb), rv() < 0.5 ? "lkw" : "lkw2", "container", "🚢 Frachthafen", hausName(ziel), "aussen"); } }
   if (aussenKnoten && r < 0.24) {
     // Verkehr von und nach außen: Pendler, Besucher, Lieferungen
     const ziel = rv() < 0.4 && industrieListe.length ? gewichtet(industrieListe, jobs) : arbeitListe.length && rv() < 0.6 ? gewichtet(arbeitListe, jobs) : wohnListe.length ? gewichtet(wohnListe, leute) : null;
     if (!ziel) return false;
-    typ = gruppe(ziel) === "i" ? (rv() < 0.6 ? "lkw" : "liefer") : pkwTyp(); if (typ === "lkw") anh = auflieger(ziel, null);
+    typ = gruppe(ziel) === "i" ? (rv() < 0.6 ? lkwWahl() : "liefer") : pkwTyp(); if (mitAuflieger(typ)) anh = auflieger(ziel, null);
     const za = zufahrtAussen(), zb = zufahrt(ziel); if (!za || !zb) return false;
     const rein = rv() < 0.55;
     return fahrzeugAusWeg(rein ? wegSuchen(za, zb) : wegSuchen(zb, za), typ, anh, rein ? "außerhalb der Stadt" : hausName(ziel), rein ? hausName(ziel) : "außerhalb der Stadt", rein ? "aussen" : "haus");
   }
   if (!wohnListe.length || !arbeitListe.length) return false;
-  if (r < 0.38 && industrieListe.length && ladenListe.length) { von = gewichtet(industrieListe, jobs); nach = gewichtet(ladenListe, jobs); typ = rv() < 0.55 ? "lkw" : "liefer"; if (typ === "lkw") anh = auflieger(von, nach); }
+  if (r < 0.38 && industrieListe.length && ladenListe.length) { von = gewichtet(industrieListe, jobs); nach = gewichtet(ladenListe, jobs); typ = rv() < 0.55 ? lkwWahl() : "liefer"; if (mitAuflieger(typ)) anh = auflieger(von, nach); }
   else { von = gewichtet(wohnListe, leute); nach = rv() < 0.25 && ladenListe.length ? gewichtet(ladenListe, jobs) : gewichtet(arbeitListe, jobs); typ = pkwTyp(); if (rv() < 0.5) [von, nach] = [nach, von]; }
   const za = zufahrt(von), zb = zufahrt(nach); if (!za || !zb) return false;
   const weg = wegSuchen(za, zb); if (!weg) { von.keinWeg = true; return false; }
@@ -1993,7 +2050,7 @@ function fahrzeugeZeichnen() {
     licht(L, D.ly, Bq, f.blink === -1 && blinkAn ? orange : scheinwerfer, _m); licht(L, D.ly, -Bq, f.blink === 1 && blinkAn ? orange : scheinwerfer, _m);
     const hinten = f.anh ? _m2 : _m, hx2 = f.anh ? -0.325 : Lh, hy = f.anh ? 0.1 : D.lyh, rueckFarbe = f.rueckT > 0 ? weiss : f.bremst ? rueck : rueckSchwach;
     licht(hx2, hy, Bq, f.blink === -1 && blinkAn ? orange : rueckFarbe, hinten); licht(hx2, hy, -Bq, f.blink === 1 && blinkAn ? orange : rueckFarbe, hinten);
-    if (D.blau) { const bx = f.typ === "kranken" ? 0.1 : f.typ === "feuerwehr" ? 0.25 : -0.05; licht(bx, D.blau + 0.006, 0.035, blauAn ? blau1 : aus, _m, 0.03); licht(bx, D.blau + 0.006, -0.035, blauAn ? aus : blau1, _m, 0.03); }
+    if (D.blau) { const bx = D.blauX != null ? D.blauX : f.typ === "kranken" ? 0.1 : f.typ === "feuerwehr" ? 0.25 : -0.05; licht(bx, D.blau + 0.006, 0.035, blauAn ? blau1 : aus, _m, 0.03); licht(bx, D.blau + 0.006, -0.035, blauAn ? aus : blau1, _m, 0.03); }
   }
   fzTeile.count = ti; fzLicht.count = li; fzRaeder.count = ri2;
   for (const k in fzMesh) { const m = fzMesh[k]; m.count = anzahl[k]; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
@@ -2125,7 +2182,7 @@ function zustand() {
     zellen: [...zellen.values()].map((z) => [z.id, r(z.x), r(z.z), r(z.rot), z.zone, z.g, z.seite, z.i, z.r]),
     haeuser: [...haeuser.values()].map((h) => [h.id, h.zone, h.stufe, h.w, h.d, h.variante, h.zellen]),
     dienste: [...dienste.values()].map((d) => [d.id, d.typ, r(d.x), r(d.z), r(d.rot)]), dienstV: 1,
-    halte: [...halte.values()].map((h) => [h.id, h.k, r(h.s)]), linien: [...linien.values()].map((L) => [L.id, L.nr, L.farbe, L.halte, L.busse, L.art]),
+    halte: [...halte.values()].map((h) => [h.id, h.k, r(h.s)]), linien: [...linien.values()].map((L) => [L.id, L.nr, L.farbe, L.halte, L.busse, L.art, L.modell || "mix"]),
     baeume: baeume.filter((b) => b.weg).map((b) => b.idx)
   };
 }
@@ -2157,7 +2214,7 @@ function zustandRein(d) {
   (d.dienste || []).forEach(([id, typ, x, z, rot]) => { if (DIENSTE[typ]) neuerDienst({ id, typ, x, z, rot }, true); }); bahnGleiseZeichnen();
   if (d.ids.d) dId = Math.max(dId, d.ids.d);
   (d.halte || []).forEach(([id, k, s2]) => { if (kanten.has(k)) neueHalte({ id, k, s: s2 }, true); });
-  (d.linien || []).forEach(([id, nr, f, hs, busse, art]) => { const L = { id, nr, farbe: f, halte: hs.filter((x) => halte.has(x)), busse, art: art || "bus" }; if (L.halte.length >= 2) linien.set(id, L); linieId = Math.max(linieId, id + 1); });
+  (d.linien || []).forEach(([id, nr, f, hs, busse, art, modell]) => { const L = { id, nr, farbe: f, halte: hs.filter((x) => halte.has(x)), busse, art: art || "bus", modell: modell || "mix" }; if (L.halte.length >= 2) linien.set(id, L); linieId = Math.max(linieId, id + 1); });
   haltId = Math.max(haltId, d.ids.hs || 1); linieId = Math.max(linieId, d.ids.l || 1); linienNeu = true;
   if (!d.dienstV && d.haeuser.length > 8) { geld += 20000; warteListe.push({ t: simZeit + 0.5, fn: () => infoZeigen("<b>🏛️ Neu: Dienste!</b>Deine Häuser brauchen jetzt Strom, Wasser, Abwasser und Müllabfuhr – sonst ziehen die Leute weg.<br>Du bekommst <b>20.000 €</b> Zuschuss, um sie zu bauen.<br><small>Unten: 🏛️ Dienste und 🌳 Parks</small>", 12000) }); }
   nId = Math.max(nId, d.ids.n); kId = Math.max(kId, d.ids.k); zId = Math.max(zId, d.ids.z); gId = Math.max(gId, d.ids.g); hId = Math.max(hId, d.ids.h);
@@ -2259,7 +2316,7 @@ function unterleiste() {
   } else if (werkzeug === "verkehr") {
     const L = linieWahl && linien.get(linieWahl);
     kopf = '<span class="ftitel">🚌 Nahverkehr</span>' + chip("data-bmodus", "halt", "🚏 Haltestelle", busModus === "halt") + chip("data-bmodus", "linie", "🚌 Neue Buslinie", busModus === "linie") + chip("data-bmodus", "tram", (meilenstein >= 3 ? "🚋" : "🔒") + " Neue Straßenbahn", busModus === "tram") + chip("data-bmodus", "weg", "🧹 Entfernen", busModus === "weg") + '<span class="trenn"></span>' + rueckChip;
-    if (L) kopf += `<span class="trenn"></span><span class="ftitel" style="color:#${L.farbe.toString(16).padStart(6, "0")}">Linie ${L.nr}</span><button class="chip" type="button" id="busMinus">−</button><span style="white-space:nowrap">🚌 ${L.busse}</span><button class="chip" type="button" id="busPlus">+</button><button class="chip gefahr" type="button" id="linieLoeschen">🗑️</button>`;
+    if (L) kopf += `<span class="trenn"></span><span class="ftitel" style="color:#${L.farbe.toString(16).padStart(6, "0")}">Linie ${L.nr}</span><button class="chip" type="button" id="busMinus">−</button><span style="white-space:nowrap">🚌 ${L.busse}</span><button class="chip" type="button" id="busPlus">+</button>${L.art !== "tram" ? `<button class="chip" type="button" id="busModell">${BUS_MODELLE[L.modell || "mix"]}</button>` : ""}<button class="chip gefahr" type="button" id="linieLoeschen">🗑️</button>`;
     karten = ["bahnhof", "hafen"].map((k) => { const D = DIENSTE[k], f = dienstFrei(k); return kk("data-dienst", k, D.em, D.name, f ? euro(D.preis) : "ab " + MEILEN[D.ab].name, busModus === "bau" && dienstWahl === k, !f); }).join("") + [...linien.values()].map((x) => kk("data-linie", x.id, `<span style="display:inline-block;width:26px;height:26px;border-radius:50%;background:#${x.farbe.toString(16).padStart(6, "0")};color:#fff;font-size:.9rem;line-height:26px;font-weight:700">${x.nr}</span>`, "Linie " + x.nr, x.halte.length + " Halte · " + x.busse + " 🚌", x.id === linieWahl)).join("") || "";
     if (!linien.size) karten += `<small style="color:var(--leise);padding:8px">Noch keine Linie. 1. Haltestellen bauen · 2. „Neue Linie“ und Haltestellen antippen · ${zahl(busAbdeckung.fahrgaeste)} Fahrgäste</small>`;
   } else if (werkzeug === "gebiet") {
@@ -2285,6 +2342,7 @@ $("fach").addEventListener("click", (e) => {
   if (b.dataset.bmodus) { busModus = b.dataset.bmodus; vorschauWeg(); linieBau = []; frageZu(); linienNeu = true; tipp(TIPPS.verkehr(), 3500); }
   if (b.dataset.linie) { linieWahl = +b.dataset.linie === linieWahl ? null : +b.dataset.linie; }
   if (b.id === "busPlus" || b.id === "busMinus") { const L = linien.get(linieWahl); if (L) { L.busse = klemme(L.busse + (b.id === "busPlus" ? 1 : -1), 1, 12); if (b.id === "busMinus") { const fz = fahrzeuge.filter((f) => f.linie === L.id); if (fz.length > L.busse) fahrzeugWeg(fz[0]); fahrzeuge = fahrzeuge.filter((f) => !f.weg); } speichernBald(); zeigeWerte(); } }
+  if (b.id === "busModell") { const L = linien.get(linieWahl); if (L) { const ks = Object.keys(BUS_MODELLE), i = ks.indexOf(L.modell || "mix"); L.modell = ks[(i + 1) % ks.length]; for (const f of fahrzeuge) if (f.linie === L.id) fahrzeugWeg(f); fahrzeuge = fahrzeuge.filter((f) => !f.weg); tipp("Linie " + L.nr + ": " + BUS_MODELLE[L.modell], 2000); speichernBald(); } }
   if (b.id === "linieLoeschen") { const L = linien.get(linieWahl); if (L) { merkeRueck(); linieWeg(L); linieWahl = null; busRechnen(); speichernBald(); } }
   if (b.dataset.dkat) { dienstKat = b.dataset.dkat; dienstWahl = Object.keys(DIENSTE).find((k) => DIENSTE[k].kat === dienstKat); vorschauWeg(); frageZu(); }
   if (b.dataset.dienst) { const k = b.dataset.dienst, D = DIENSTE[k]; if (!dienstFrei(k)) { tipp("🔒 " + D.name + " gibt es ab " + MEILEN[D.ab].name + " (" + zahl(MEILEN[D.ab].ab) + " Einwohner).", 3500); return; } dienstWahl = k; if (werkzeug === "verkehr") busModus = "bau"; vorschauWeg(); frageZu(); tipp(D.em + " " + D.name + ": " + D.text + " Tipp neben eine Straße.", 4500); }
@@ -2312,7 +2370,7 @@ Object.assign(ANSICHTEN, {
   bus: { em: "🚌", name: "Nahverkehr", legende: [...ROT_GRUEN, "keine Haltestelle", "nah am Bus"], wert: (z) => { let b = 0; for (const s of halte.values()) if (s.inLinie) b = Math.max(b, 1 - Math.hypot(s.x - z.x, s.z - z.z) / HALT_RADIUS); return Math.round(b * 100); } },
   park: { em: "🌳", name: "Parks", legende: [...ROT_GRUEN, "keine", "viel Grün"], wert: deckung("park"), kat: "park" }
 });
-for (const k of Object.keys(ANSICHTEN)) { const A = ANSICHTEN[k]; if (A.wert) { A.an = () => { wertAnsicht = true; versorgungRechnen(); busRechnen(); listenAuffrischen(); wertZeichnen(); kreiseZeichnen(A.kat); if (k === "bus") { linienMesh.visible = true; linienNeu = true; } }; A.aus = () => { wertAnsicht = false; wertZeichnen(); kreiseZeichnen(null); if (k === "bus") linienMesh.visible = werkzeug === "verkehr"; }; } }
+for (const k of Object.keys(ANSICHTEN)) { const A = ANSICHTEN[k]; if (A.wert) { A.an = () => { wertAnsicht = true; versorgungRechnen(); busRechnen(); listenAuffrischen(); wertZeichnen(); if (STRASSEN_DIENST.has(A.kat)) reichZeichnen(A.kat); else kreiseZeichnen(A.kat); if (k === "bus") { linienMesh.visible = true; linienNeu = true; } }; A.aus = () => { wertAnsicht = false; wertZeichnen(); kreiseZeichnen(null); reichZeichnen(null); if (k === "bus") linienMesh.visible = werkzeug === "verkehr"; }; } }
 function hausFroh(h) { const a = h.abd || {}; let v = 52 + ((h.wert || 30) - 30) * 0.3 - (h.dreck || 0) * 0.5 + (a.polizei ? 5 : 0) + (a.feuer ? 5 : 0) + (a.gesund ? 5 : 0) + (h.bildung || 0) * 3 + (h.bus ? 3 : 0); if (h.problem) v -= ["krimi", "krank"].includes(h.problem) ? 10 : 25; const st = (steuern.w + steuern.g + steuern.b + steuern.i) / 4; return Math.round(klemme(v - (st - 9) * 3, 0, 100)); }
 let ansicht = null;
 function ansichtSetzen(n) {
@@ -2702,7 +2760,7 @@ let folgen = null;
 function fahrzeugBei(p) { let best = null, bd = Math.max(0.5, fangRadius() * 0.45); for (const f of fahrzeuge) { if (!f.pos) continue; const d = Math.hypot(f.pos.x - p.x, f.pos.z - p.z); if (d < bd) { bd = d; best = f; } } return best; }
 function fahrzeugInfo(f) {
   const ladung = f.anh ? "<br>📦 Ladung: " + AUFLIEGER[f.anh].name : f.typ === "liefer" ? "<br>📦 Lieferung" : "";
-  infoZeigen(`<b>${f.typ === "lkw" ? "🚛" : f.typ === "bus" ? "🚌" : f.typ === "liefer" ? "🚐" : "🚗"} ${f.name}</b>fährt von <b style="display:inline;font-size:inherit">${f.vonText}</b> nach <b style="display:inline;font-size:inherit">${f.nachText}</b>${ladung}<br><small>Tempo: ${Math.round(f.v * 8 * 3.6)} km/h</small><div style="margin-top:8px"><button class="chip" type="button" data-folgen="${f.id}">📷 Folgen</button></div>`, 7000);
+  infoZeigen(`<b>${mitAuflieger(f.typ) || f.typ === "kipper" ? "🚛" : f.linie ? (f.typ === "tram" ? "🚋" : "🚌") : FZ[f.typ].blau ? "🚨" : f.typ === "liefer" ? "🚐" : "🚗"} ${f.name}</b>fährt von <b style="display:inline;font-size:inherit">${f.vonText}</b> nach <b style="display:inline;font-size:inherit">${f.nachText}</b>${ladung}<br><small>Tempo: ${Math.round(f.v * 8 * 3.6)} km/h</small><div style="margin-top:8px"><button class="chip" type="button" data-folgen="${f.id}">📷 Folgen</button></div>`, 7000);
 }
 $("info").addEventListener("click", (e) => { const b = e.target.closest("[data-folgen]"); if (!b) return; const f = fahrzeuge.find((x) => x.id === +b.dataset.folgen); if (f) folgenStart(f); });
 function folgenStart(f) {
@@ -2762,7 +2820,7 @@ function starten(n, daten, neueKarte) {
     setTimeout(() => $("laden").classList.add("weg"), 200);
   }, 60);
 }
-window.inselstadt = { allesBesitzen: () => { for (let i = 0; i < KN; i++) for (let j = 0; j < KN; j++) besitz.add(i + "," + j); gebieteZeichnen(); }, kameraAuf: (x, z, d) => { steuerung.target.set(x, 0, z); kamera.position.set(x + d * 0.55, d * 0.75, z + d * 0.65); steuerung.update(); }, dbgF: (id) => { const f = fahrzeuge.find((x) => x.id === id); if (!f || f.modus !== "kante") return null; const st = f.route[f.ri], k = kanten.get(st.k), nx = f.route[f.ri + 1]; if (!nx) return "letzte"; const n = endKnoten(k, st.dir), k2 = kanten.get(nx.k), s2 = anfang(k2, nx.dir); return { rest: +(ende(k, st.dir) - f.s).toFixed(2), frei: f.frei, darf: darfEinfahren(f, k, st, nx), k2: k2.id + (k2.ring ? "R" : ""), platz: fahrzeuge.filter((g) => g !== f && g.modus === "kante" && g.route[g.ri].k === k2.id && g.route[g.ri].dir === nx.dir && g.s < s2 + g.hintenL + f.vorneL + 0.35).map((g) => g.id + ":" + g.s.toFixed(2) + ":w" + g.warte.toFixed(0)), drin: [...n.drin].map((g) => g.id + (g.tr ? "t" + g.tr.t.toFixed(2) : "res") + " von" + g.von), naht: n.naht.map((g) => g.id), luecke: f.block }; }, kreiselBauen, einbahnUmschalten, strModus: (m) => { strModus = m; }, halte, linien, neueHalte, busTippen, linieFertig, busRechnen, busModus: (m) => { busModus = m; }, linieBau: (ids) => { linieBau = ids; }, abstand: (x, z) => abstand(x, z), dienstPlan, dienstBauen, dienste, versorgung: () => versorgung, versorgungRechnen, dienstTakt, ansichtSetzen, sim: (sek, ziel) => { const ev = new Map(); let tk = 0; for (let t = 0; t < sek; t += 0.05) { simZeit += 0.05; jetztS += 0.05; if (++tk % 10 === 0) dienstTakt(0.5); verkehrTakt(0.05, ziel || 60); fahrzeugeZeichnen(); const F = fahrzeuge.filter((f) => f.pos && f.skala > 0.9 && !f.parkt); for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) { const A = F[i], Bf = F[j]; let hit = false; for (let q = 0; q <= 6 && !hit; q++) { const o = Bf.vorneL - (Bf.vorneL + Bf.hintenL) * q / 6, dx = Bf.pos.x + Bf.pos.tx * o - A.pos.x, dz = Bf.pos.z + Bf.pos.tz * o - A.pos.z, lx = dx * A.pos.tx + dz * A.pos.tz, lz = Math.abs(-dx * A.pos.tz + dz * A.pos.tx); if (lx < A.vorneL * 0.8 && lx > -A.hintenL * 0.8 && lz < (A.B + Bf.B) / 2 * 0.7) hit = true; } if (hit) { const key = A.id + "-" + Bf.id; if (!ev.has(key)) { const d = (f) => f.modus === "kante" ? f.route[f.ri].k + "/" + f.route[f.ri].dir + "/sp" + f.spur + "/off" + f.off.toFixed(2) + "/s" + f.s.toFixed(2) + (f.ausparken ? "/AUS" : "") + (f.frei ? "/FREI" : "") : "KN" + f.tr.knoten + "/t" + f.tr.t.toFixed(2) + "/von" + f.von + "->" + f.route[f.ri + 1].k; ev.set(key, [A.typ, d(A), "blk" + (A.block == null ? "-" : A.block.toFixed(2)) + "w" + A.warte.toFixed(1), Bf.typ, d(Bf), "blk" + (Bf.block == null ? "-" : Bf.block.toFixed(2)) + "w" + Bf.warte.toFixed(1), "t" + t.toFixed(1)]); } } } } return [fahrzeuge.length, ev.size, [...ev.values()].slice(0, 12)]; }, fahrtStarten: () => { try { return fahrtStarten(); } catch (e) { return "FEHLER " + e.message + e.stack; } }, folgen: (f) => folgenStart(f), baeume: () => baeume.length, stufenTest: (st) => { let i = 0; for (const h of haeuser.values()) { h.stufe = Math.min(ZONEN[h.zone].max, st || 1 + (i++ % 5)); h.teile = hausTeile(h); } haeuserNeu = true; }, meilenstein: (m) => { meilenstein = m; unterleiste(); }, zoneWahl: (z) => { zoneWahl = z; }, malen: (a, b) => malen(a, b), werteAuffrischen, hausTeile, bedarf: () => bedarf, wertAnsicht: (v) => { wertAnsicht = v; wertZeichnen(); }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
+window.inselstadt = { modellTest: () => { const ks = Object.keys(FZ); let n = 0; for (const k of kanten.values()) { if (!autoKante(k) || k.aussen || k.len < 8) continue; for (let s = 1.5; s < k.len - 1.5 && n < ks.length; s += 2.2) { const f = fahrzeugAusWeg({ route: [{ k: k.id, dir: 1 }], s0: s, s1: k.len - 0.5 }, ks[n], mitAuflieger(ks[n]) ? "container" : null, "Test", "Test", "aussen"); if (f) { f.farbe = PAL.auto[n % PAL.auto.length]; f.v = 0; n++; } } } return n; }, allesBesitzen: () => { for (let i = 0; i < KN; i++) for (let j = 0; j < KN; j++) besitz.add(i + "," + j); gebieteZeichnen(); }, kameraAuf: (x, z, d) => { steuerung.target.set(x, 0, z); kamera.position.set(x + d * 0.55, d * 0.75, z + d * 0.65); steuerung.update(); }, dbgF: (id) => { const f = fahrzeuge.find((x) => x.id === id); if (!f || f.modus !== "kante") return null; const st = f.route[f.ri], k = kanten.get(st.k), nx = f.route[f.ri + 1]; if (!nx) return "letzte"; const n = endKnoten(k, st.dir), k2 = kanten.get(nx.k), s2 = anfang(k2, nx.dir); return { rest: +(ende(k, st.dir) - f.s).toFixed(2), frei: f.frei, darf: darfEinfahren(f, k, st, nx), k2: k2.id + (k2.ring ? "R" : ""), platz: fahrzeuge.filter((g) => g !== f && g.modus === "kante" && g.route[g.ri].k === k2.id && g.route[g.ri].dir === nx.dir && g.s < s2 + g.hintenL + f.vorneL + 0.35).map((g) => g.id + ":" + g.s.toFixed(2) + ":w" + g.warte.toFixed(0)), drin: [...n.drin].map((g) => g.id + (g.tr ? "t" + g.tr.t.toFixed(2) : "res") + " von" + g.von), naht: n.naht.map((g) => g.id), luecke: f.block }; }, kreiselBauen, einbahnUmschalten, strModus: (m) => { strModus = m; }, halte, linien, neueHalte, busTippen, linieFertig, busRechnen, busModus: (m) => { busModus = m; }, linieBau: (ids) => { linieBau = ids; }, abstand: (x, z) => abstand(x, z), dienstPlan, dienstBauen, dienste, versorgung: () => versorgung, versorgungRechnen, dienstTakt, ansichtSetzen, sim: (sek, ziel) => { const ev = new Map(); let tk = 0; for (let t = 0; t < sek; t += 0.05) { simZeit += 0.05; jetztS += 0.05; if (++tk % 10 === 0) dienstTakt(0.5); verkehrTakt(0.05, ziel || 60); fahrzeugeZeichnen(); const F = fahrzeuge.filter((f) => f.pos && f.skala > 0.9 && !f.parkt); for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) { const A = F[i], Bf = F[j]; let hit = false; for (let q = 0; q <= 6 && !hit; q++) { const o = Bf.vorneL - (Bf.vorneL + Bf.hintenL) * q / 6, dx = Bf.pos.x + Bf.pos.tx * o - A.pos.x, dz = Bf.pos.z + Bf.pos.tz * o - A.pos.z, lx = dx * A.pos.tx + dz * A.pos.tz, lz = Math.abs(-dx * A.pos.tz + dz * A.pos.tx); if (lx < A.vorneL * 0.8 && lx > -A.hintenL * 0.8 && lz < (A.B + Bf.B) / 2 * 0.7) hit = true; } if (hit) { const key = A.id + "-" + Bf.id; if (!ev.has(key)) { const d = (f) => f.modus === "kante" ? f.route[f.ri].k + "/" + f.route[f.ri].dir + "/sp" + f.spur + "/off" + f.off.toFixed(2) + "/s" + f.s.toFixed(2) + (f.ausparken ? "/AUS" : "") + (f.frei ? "/FREI" : "") : "KN" + f.tr.knoten + "/t" + f.tr.t.toFixed(2) + "/von" + f.von + "->" + f.route[f.ri + 1].k; ev.set(key, [A.typ, d(A), "blk" + (A.block == null ? "-" : A.block.toFixed(2)) + "w" + A.warte.toFixed(1), Bf.typ, d(Bf), "blk" + (Bf.block == null ? "-" : Bf.block.toFixed(2)) + "w" + Bf.warte.toFixed(1), "t" + t.toFixed(1)]); } } } } return [fahrzeuge.length, ev.size, [...ev.values()].slice(0, 12)]; }, fahrtStarten: () => { try { return fahrtStarten(); } catch (e) { return "FEHLER " + e.message + e.stack; } }, folgen: (f) => folgenStart(f), baeume: () => baeume.length, stufenTest: (st) => { let i = 0; for (const h of haeuser.values()) { h.stufe = Math.min(ZONEN[h.zone].max, st || 1 + (i++ % 5)); h.teile = hausTeile(h); } haeuserNeu = true; }, meilenstein: (m) => { meilenstein = m; unterleiste(); }, zoneWahl: (z) => { zoneWahl = z; }, malen: (a, b) => malen(a, b), werteAuffrischen, hausTeile, bedarf: () => bedarf, wertAnsicht: (v) => { wertAnsicht = v; wertZeichnen(); }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
 
 /* ================================================================
    Hauptschleife
