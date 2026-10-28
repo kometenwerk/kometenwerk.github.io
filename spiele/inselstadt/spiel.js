@@ -20,7 +20,8 @@ const meter = (u) => Math.round(u * 8) + " m";
 
 /* ---------- Grundwerte ---------- */
 const G = 0.12, BODEN = G + 0.02, WASSER = -0.3, ZELLE = 1.0, REIHEN = 4;
-const KACHEL = 40, KN = 5, HALB = KACHEL * KN / 2;
+const KACHEL = 40, KN = 7, HALB = KACHEL * KN / 2, ALT_HALB = 100;
+let grossKarte = true;   // neue Spiele: größere Insel/Seen und Autobahn
 const FELD = 400;   // Größe des Geländes (±200)
 /* Zonen wie bei Cities: Skylines – Gruppe w/g/b/i für Bedarf und Steuern */
 const ZONEN = {
@@ -248,7 +249,7 @@ const boote = [], baeume = [], baumRaster = new Map(), baumMesh = {};
 function kartenFunktion(typ) {
   if (typ === "insel") {
     const ri = zufall(20261028);
-    insel = { a0: 86, h: [[2, 6 + ri() * 3, ri() * 6.283], [3, 4 + ri() * 3, ri() * 6.283], [5, 2.5 + ri() * 2, ri() * 6.283], [7, 1.5 + ri() * 1.5, ri() * 6.283], [11, 0.8 + ri(), ri() * 6.283]] };
+    insel = { a0: grossKarte ? 116 : 86, h: [[2, 6 + ri() * 3, ri() * 6.283], [3, 4 + ri() * 3, ri() * 6.283], [5, 2.5 + ri() * 2, ri() * 6.283], [7, 1.5 + ri() * 1.5, ri() * 6.283], [11, 0.8 + ri(), ri() * 6.283]] };
     const radius = (th) => { let r = insel.a0; for (const [k, a, p] of insel.h) r += a * Math.sin(k * th + p); return r; };
     insel.radius = radius;
     return (x, z) => radius(Math.atan2(z, x)) - Math.hypot(x, z);
@@ -267,6 +268,7 @@ function kartenFunktion(typ) {
     if (seen.some((s) => Math.hypot(s.x - x, s.z - z) < s.r + rad + 8)) continue;
     seen.push({ x, z, r: rad, w: [r() * 6.3, r() * 6.3, 0.12 + r() * 0.12] });
   }
+  if (grossKarte) { const r2 = zufall(typ === "seen" ? 777 : 778), ziel = seen.length + (typ === "seen" ? 6 : 3); for (let i = 0; seen.length < ziel && i < 400; i++) { const a = r2() * 6.283, d = 118 + r2() * 40, x = Math.cos(a) * d, z = Math.sin(a) * d, rad = 8 + r2() * 10; if (Math.abs(x) < 30 || Math.abs(z) < 30) continue; if (seen.some((s) => Math.hypot(s.x - x, s.z - z) < s.r + rad + 8)) continue; seen.push({ x, z, r: rad, w: [r2() * 6.3, r2() * 6.3, 0.12 + r2() * 0.12] }); } }
   return (x, z) => {
     let m = 60;
     for (const s of seen) { const th = Math.atan2(z - s.z, x - s.x), rr = s.r * (1 + s.w[2] * Math.sin(3 * th + s.w[0]) + 0.08 * Math.sin(5 * th + s.w[1])); m = Math.min(m, Math.hypot(x - s.x, z - s.z) - rr); }
@@ -342,16 +344,17 @@ function baeumeBauen() {
   if (karte === "insel") {
     // genau wie in Teil A, damit alte Spielstände passen
     const r = zufall(20261028 + 1);
-    for (let gx = -HALB; gx < HALB; gx += 1.5) for (let gz = -HALB; gz < HALB; gz += 1.5) {
+    for (let gx = -ALT_HALB; gx < ALT_HALB; gx += 1.5) for (let gz = -ALT_HALB; gz < ALT_HALB; gz += 1.5) {
       const x = gx + r() * 1.4, z = gz + r() * 1.4; if (!aufLand(x, z, 3.6)) continue;
       const d = 0.5 + 0.5 * Math.sin(x * 0.07 + 1.3) * Math.cos(z * 0.06 - 0.4) + 0.3 * Math.sin((x - z) * 0.13) + 0.15 * Math.sin(x * 0.4 + z * 0.31);
       if (r() > d * 0.85 - 0.12) continue;
       if (Math.abs(x) < 9 && Math.abs(z) < 9 && r() < 0.85) continue;
       neu(x, z, r);
     }
+    if (grossKarte) { const r2 = zufall(20261029); for (let gx = -150; gx < 150; gx += 1.6) for (let gz = -150; gz < 150; gz += 1.6) { if (Math.abs(gx) < ALT_HALB && Math.abs(gz) < ALT_HALB) continue; const x = gx + r2() * 1.4, z = gz + r2() * 1.4; if (!aufLand(x, z, 3.6)) continue; const d = 0.5 + 0.5 * Math.sin(x * 0.07 + 1.3) * Math.cos(z * 0.06 - 0.4) + 0.3 * Math.sin((x - z) * 0.13); if (r2() > d * 0.85 - 0.12) continue; neu(x, z, r2); } }
   } else {
     const r = zufall(karte === "kueste" ? 501 : karte === "seen" ? 502 : 503), dicht = karte === "wald" ? 1.1 : karte === "seen" ? 0.68 : 0.8, schritt = karte === "wald" ? 1.7 : 1.7;
-    for (let gx = -HALB - 20; gx < HALB + 20; gx += schritt) for (let gz = -HALB - 20; gz < HALB + 20; gz += schritt) {
+    for (let gx = -ALT_HALB - 20; gx < ALT_HALB + 20; gx += schritt) for (let gz = -ALT_HALB - 20; gz < ALT_HALB + 20; gz += schritt) {
       const x = gx + r() * schritt * 0.9, z = gz + r() * schritt * 0.9; if (!aufLand(x, z, 3.4)) continue;
       const d = 0.5 + 0.5 * Math.sin(x * 0.06 + 0.7) * Math.cos(z * 0.07 + 1.1) + 0.3 * Math.sin((x + z) * 0.11) + 0.15 * Math.sin(x * 0.37 - z * 0.29);
       if (r() > d * dicht - 0.15) continue;
@@ -360,8 +363,8 @@ function baeumeBauen() {
     }
     // lichter Wald am Horizont
     for (let gx = -190; gx < 190; gx += 4.5) for (let gz = -190; gz < 190; gz += 4.5) {
-      if (Math.abs(gx) < HALB + 20 && Math.abs(gz) < HALB + 20) continue;
-      const x = gx + r() * 4, z = gz + r() * 4; if (!aufLand(x, z, 3) || r() > 0.38) continue; neu(x, z, r);
+      if (Math.abs(gx) < ALT_HALB + 20 && Math.abs(gz) < ALT_HALB + 20) continue;
+      const x = gx + r() * 4, z = gz + r() * 4; if (!aufLand(x, z, 3) || r() > (Math.max(Math.abs(gx), Math.abs(gz)) < HALB ? 0.62 : 0.38)) continue; neu(x, z, r);
     }
   }
   for (const art of ["laub", "nadel"]) {
@@ -415,7 +418,8 @@ function weltBauen(typ) {
 /* ================================================================
    Gebiete (5 × 5)
    ================================================================ */
-let besitz = new Set(["2,2"]), gekauft = 0, geld = 70000;
+const START_KACHEL = Math.floor(KN / 2) + "," + Math.floor(KN / 2);
+let besitz = new Set([START_KACHEL]), gekauft = 0, geld = 70000;
 const kachelVon = (x, z) => [Math.floor((x + HALB) / KACHEL), Math.floor((z + HALB) / KACHEL)];
 const imBesitz = (x, z) => { const [i, j] = kachelVon(x, z); return besitz.has(i + "," + j); };
 const kachelMitte = (i, j) => ({ x: -HALB + (i + 0.5) * KACHEL, z: -HALB + (j + 0.5) * KACHEL });
@@ -1920,9 +1924,10 @@ function aussenGleisBauen() {
   const n = knoten.get(aussenKnoten); if (!n) return; const l = Math.hypot(n.x, n.z) || 1, dx = n.x / l, dz = n.z / l, px = -dz, pz = dx;
   let seite = 7; if (karte !== "insel" && abstand(dx * 60 + px * 7, dz * 60 + pz * 7) < 4) seite = -7;
   const punkte = [19, 60, 100, 140, 180, 214];
-  for (let i = 0; i < punkte.length - 1; i++) { const A = { x: dx * punkte[i] + px * seite, z: dz * punkte[i] + pz * seite }, B = { x: dx * punkte[i + 1] + px * seite, z: dz * punkte[i + 1] + pz * seite }; gleisBauen({ A, B, C: lerp(A, B, 0.5), kosten: 0, ebene: 0, aussen: true }); }
+  for (let i = 0; i < punkte.length - 1; i++) { const A = { x: dx * punkte[i] + px * seite, z: dz * punkte[i] + pz * seite }, B = { x: dx * punkte[i + 1] + px * seite, z: dz * punkte[i + 1] + pz * seite }; const ueber = [...kanten.values()].some((k) => k.typ === "autobahn" && kreuztKante(A, B, k)); gleisBauen({ A, B, C: lerp(A, B, 0.5), kosten: 0, ebene: ueber ? 1 : 0, aussen: true }); }
   for (const k of gKanten.values()) k.aussen = true;
 }
+function kreuztKante(A, B, k) { for (let i = 0; i < k.pts.length - 1; i++) { const p = k.pts[i], q = k.pts[i + 1], d = (B.x - A.x) * (q.z - p.z) - (B.z - A.z) * (q.x - p.x); if (Math.abs(d) < 1e-9) continue; const ua = ((p.x - A.x) * (q.z - p.z) - (p.z - A.z) * (q.x - p.x)) / d, ub = ((p.x - A.x) * (B.z - A.z) - (p.z - A.z) * (B.x - A.x)) / d; if (ua > 0 && ua < 1 && ub >= 0 && ub <= 1) return true; } return false; }
 const randGleis = () => { let best = null, bd = -1; for (const n of gKnoten.values()) { const d = Math.hypot(n.x, n.z); if (d > bd) { bd = d; best = n; } } return best && bd > 150 ? best : null; };
 /* Wegsuche auf den Gleisen → Linienzug zum Fahren */
 function gleisWeg(start, ziel) {
@@ -2106,7 +2111,8 @@ const gewichtet = (liste, f) => { let s = 0; for (const x of liste) s += f(x); l
 function berufsverkehr() { const h = ((zeit + 0.25) % 1) * 24; let f = h < 5 ? 0.25 : h < 6.5 ? 0.6 : h < 9 ? 1.7 : h < 16 ? 1.0 : h < 18.5 ? 1.7 : h < 22 ? 0.8 : 0.35; return f; }
 let aussenKnoten = null;
 const AUSSEN = { aussen: true };
-function zufahrtAussen() { const n = knoten.get(aussenKnoten); if (!n) return null; const k = kanten.get([...n.kanten][0]); if (!k) return null; return { k: k.id, S: k.a === n.id ? 0.3 : k.len - 0.3 }; }
+const aussenListe = () => [...knoten.values()].filter((n) => n.aussen && n.kanten.size);
+function zufahrtAussen(n) { if (!n) { const L = aussenListe(); n = L.length ? gewichtet(L, (q) => [...q.kanten].some((id) => kanten.get(id).typ === "autobahn") ? 1.4 : 1) : knoten.get(aussenKnoten); } if (!n) return null; const k = kanten.get([...n.kanten][0]); if (!k) return null; return { k: k.id, S: k.a === n.id ? 0.3 : k.len - 0.3 }; }
 function aussenBauen() {
   const richtungen = karte === "kueste" ? [[0, -1]] : [[1, 0], [0, 1], [-1, 0], [0, -1]];
   for (const [dx, dz] of richtungen) {
@@ -2120,9 +2126,20 @@ function aussenBauen() {
     }
     neu.forEach((k) => { k.aussen = true; });
     const n = naechsterKnoten({ x: dx * 212, z: dz * 212 }, 1); if (n) { n.aussen = true; aussenKnoten = n.id; }
+    if (grossKarte) autobahnBauen(dx, dz);
     netzGeaendert(); return true;
   }
   return false;
+}
+function autobahnBauen(dx, dz) {
+  // Autobahn quer durch die Karte – sie kreuzt die Landstraße bei 70 Feldern: das ist die Abfahrt in die Stadt
+  const px = -dz, pz = dx, mx = dx * 70, mz = dz * 70, t = [-212, -150, -90, -36, 36, 90, 150, 212], neu = [];
+  const pkt = (v) => ({ art: "frei", x: mx + px * v, z: mz + pz * v });
+  neu.push(...bauen({ A: pkt(t[3]), B: pkt(t[4]), C: lerp(pkt(t[3]), pkt(t[4]), 0.5), typ: "autobahn", kosten: 0 }));
+  for (let i = 0; i < t.length - 1; i++) if (i !== 3) { const A = naechsterKnoten(pkt(t[i]), 0.5) ? { art: "frei", ...pkt(t[i]) } : pkt(t[i]); neu.push(...bauen({ A, B: pkt(t[i + 1]), C: lerp(pkt(t[i]), pkt(t[i + 1]), 0.5), typ: "autobahn", kosten: 0 })); }
+  for (const k of kanten.values()) if (k.typ === "autobahn") k.aussen = true;
+  for (const v of [t[0], t[t.length - 1]]) { const n = naechsterKnoten(pkt(v), 1); if (n) n.aussen = true; }
+  const ab = naechsterKnoten({ x: mx, z: mz }, 1.5); if (ab) ab.abfahrt = true;
 }
 const pkwTyp = () => wahl(rv, PKW_TYPEN);
 const lkwWahl = () => { const r = rv(); return r < 0.45 ? "lkw" : r < 0.85 ? "lkw2" : "kipper"; }, mitAuflieger = (t) => t === "lkw" || t === "lkw2";
@@ -2133,7 +2150,9 @@ function fahrtStarten() {
   if (!wohnListe.length && !arbeitListe.length) return false;
   const r = rv(); let von, nach, typ, anh = null;
   if (r < 0.1 && (industrieListe.length || ladenListe.length)) { const hs = [...dienste.values()].filter((d) => d.typ === "hafen"); if (hs.length) { const h = wahl(rv, hs), ziel = industrieListe.length && rv() < 0.6 ? gewichtet(industrieListe, jobs) : ladenListe.length ? gewichtet(ladenListe, jobs) : null; const za = zufahrt(h), zb = ziel && zufahrt(ziel); if (za && zb) return fahrzeugAusWeg(wegSuchen(za, zb), rv() < 0.5 ? "lkw" : "lkw2", "container", "🚢 Frachthafen", hausName(ziel), "aussen"); } }
-  if (aussenKnoten && r < 0.24) {
+  if (aussenKnoten && r < 0.3) {
+    const AL = aussenListe();
+    if (AL.length > 1 && rv() < 0.3) { const a = wahl(rv, AL), b = wahl(rv, AL.filter((q) => q !== a)), za = zufahrtAussen(a), zb = zufahrtAussen(b); if (!za || !zb) return false; const t = rv() < 0.35 ? lkwWahl() : pkwTyp(); return fahrzeugAusWeg(wegSuchen(za, zb), t, mitAuflieger(t) ? auflieger(null, null) : null, "außerhalb der Stadt", "außerhalb der Stadt", "aussen"); }
     // Verkehr von und nach außen: Pendler, Besucher, Lieferungen
     const ziel = rv() < 0.4 && industrieListe.length ? gewichtet(industrieListe, jobs) : arbeitListe.length && rv() < 0.6 ? gewichtet(arbeitListe, jobs) : wohnListe.length ? gewichtet(wohnListe, leute) : null;
     if (!ziel) return false;
@@ -2183,7 +2202,7 @@ function ampelZustand(n, kid) {
 function netzVerkehrVorbereiten() {
   for (const n of knoten.values()) {
     let autoKanten = 0, haupt = false; for (const id of n.kanten) { const k = kanten.get(id); if (TYP[k.typ].autos) { autoKanten++; if (rang(k) >= 2) haupt = true; } }
-    if (!n.manuell) n.ampel = autoKanten >= 4 || (autoKanten >= 3 && haupt);
+    if (!n.manuell) n.ampel = (autoKanten >= 4 || (autoKanten >= 3 && haupt)) && ![...n.kanten].some((id) => kanten.get(id).typ === "autobahn");
     if (autoKanten < 3 || [...n.kanten].some((id) => kanten.get(id).ring)) n.ampel = false;
     n.gruppe = new Map(); let ref = null;
     for (const id of n.kanten) { const k = kanten.get(id); if (!TYP[k.typ].autos) continue; const d = richtungAm(k, k.a === n.id ? 1 : -1, true); if (!ref) ref = d; n.gruppe.set(id, Math.abs(ref.x * d.x + ref.z * d.z) > 0.7 ? 0 : 1); }
@@ -2538,7 +2557,7 @@ const platzKey = (n) => "inselstadt-v3-" + n;
 function zustand() {
   const r = (v) => Math.round(v * 1000) / 1000, k = kennzahlen();
   return {
-    v: 3, zonenV: 2, karte, geld: Math.round(geld), besitz: [...besitz], gekauft, steuern, meilenstein, tage: Math.round(tage * 100) / 100, ids: { n: nId, k: kId, z: zId, g: gId, h: hId, d: dId, hs: haltId, l: linieId },
+    v: 3, zonenV: 2, karte, kn: KN, gross: grossKarte ? 1 : 0, geld: Math.round(geld), besitz: [...besitz], gekauft, steuern, meilenstein, tage: Math.round(tage * 100) / 100, ids: { n: nId, k: kId, z: zId, g: gId, h: hId, d: dId, hs: haltId, l: linieId },
     meta: { einwohner: k.e, gespeichert: Date.now() },
     knoten: [...knoten.values()].map((n) => [n.id, r(n.x), r(n.z), n.manuell ? (n.ampel ? 1 : 0) : -1, n.aussen ? 1 : 0]),
     kanten: [...kanten.values()].map((k) => [k.id, k.a, k.b, r(k.c.x), r(k.c.z), k.typ, k.aussen ? 1 : 0, k.einbahn || 0, k.ebene || 0, k.ring ? 1 : 0, k.busspur ? 1 : 0, k.schienen ? 1 : 0, k.parken ? 1 : 0]), kreisel,
@@ -2559,7 +2578,7 @@ function allesLeeren() {
   for (const b of baeume) if (b.weg) { b.weg = false; baumSetzen(b); }
 }
 function zustandRein(d) {
-  geld = d.geld; besitz = new Set(d.besitz); gekauft = d.gekauft || 0; meilenstein = d.meilenstein || 0; tage = d.tage || 0;
+  geld = d.geld; besitz = new Set(d.kn ? d.besitz : d.besitz.map((t) => { const [i, j] = t.split(",").map(Number), o = (KN - 5) / 2; return (i + o) + "," + (j + o); })); gekauft = d.gekauft || 0; meilenstein = d.meilenstein || 0; tage = d.tage || 0;
   if (d.steuern) steuern = d.steuern.w != null ? Object.assign({ w: 9, g: 9, b: 9, i: 9 }, d.steuern) : { w: d.steuern[1] || 9, g: d.steuern[2] || 9, b: 9, i: d.steuern[3] || 9 };
   if (!d.zonenV) {
     // alte Spielstände: 3 Zonen → neue Zonen wie bei Cities: Skylines
@@ -3332,7 +3351,7 @@ function hauptmenue(ansicht) {
 function starten(n, daten, neueKarte) {
   platz = n; $("hauptmenue").hidden = true; $("laden").classList.remove("weg");
   setTimeout(() => {
-    weltBauen(daten ? (daten.karte || "insel") : neueKarte);
+    grossKarte = daten ? !!daten.gross : true; weltBauen(daten ? (daten.karte || "insel") : neueKarte);
     if (daten) zustandRein(daten);
     else { geld = KARTEN[karte].geld; netzGeaendert(); gebieteZeichnen(); bedarfBerechnen(); zeigeWerte(); datumZeigen(); }
     if (!aussenKnoten) aussenBauen(); aussenGleisBauen();
@@ -3343,7 +3362,7 @@ function starten(n, daten, neueKarte) {
     setTimeout(() => $("laden").classList.add("weg"), 200);
   }, 60);
 }
-window.inselstadt = { kreiselGroesse: (i) => { kreiselGr = i; }, rasterTest: (A, B, C, t) => { strTyp = t || "klein"; const ls = rasterLinien(A, B, C); let n = 0; for (const [a, b] of ls) { const pl = planen(fangOderFrei(a), lerp(a, b, 0.5), fangOderFrei(b), strTyp, 0); if (pl.ok && bauen(pl).length) n++; else if (!pl.ok) console.log("raster", pl.grund); } return [ls.length, n]; }, ersetzen: (p, t) => { strTyp = t; ersetzenTippen(p); }, parken: (p) => parkenTippen(p), autoBruecke: (A, B) => { const pl = planen(fangen(A), lerp(A, B, 0.5), fangen(B), "klein", 0); if (!pl.ok && pl.wasser && pl.pts.some((q) => abstand(q.x, q.z) < 0.3)) { const p2 = planen(fangen(A), lerp(A, B, 0.5), fangen(B), "klein", 1); return [pl.grund, p2.ok, p2.grund]; } return [pl.ok, pl.grund]; }, bildschirm: (x, z) => { const v = new THREE.Vector3(x, G, z).project(kamera), r = renderer.domElement.getBoundingClientRect(); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; }, linienListe: () => [...linien.values()].map((L) => ({ nr: L.nr, art: L.art, halte: L.halte.length, busse: L.busse, keinDepot: L.keinDepot })), gleisPlanen, gleisBauen, bahnhofPlan, gKanten, gKnoten, zuege: () => zuege, zuglinien, uebergaenge: () => uebergaenge, gleisModus: (m) => { gleisModus = m; }, zuglinieBau: (ids) => { zuglinieBau = ids; }, zuglinieFertig, schienenUmschalten, aussenGleisBauen, zugTakt, modellTest: () => { const ks = Object.keys(FZ); let n = 0; for (const k of kanten.values()) { if (!autoKante(k) || k.aussen || k.len < 8) continue; for (let s = 1.5; s < k.len - 1.5 && n < ks.length; s += 2.2) { const f = fahrzeugAusWeg({ route: [{ k: k.id, dir: 1 }], s0: s, s1: k.len - 0.5 }, ks[n], mitAuflieger(ks[n]) ? "container" : null, "Test", "Test", "aussen"); if (f) { f.farbe = PAL.auto[n % PAL.auto.length]; f.v = 0; n++; } } } return n; }, allesBesitzen: () => { for (let i = 0; i < KN; i++) for (let j = 0; j < KN; j++) besitz.add(i + "," + j); gebieteZeichnen(); }, kameraAuf: (x, z, d) => { steuerung.target.set(x, 0, z); kamera.position.set(x + d * 0.55, d * 0.75, z + d * 0.65); steuerung.update(); }, dbgF: (id) => { const f = fahrzeuge.find((x) => x.id === id); if (!f || f.modus !== "kante") return null; const st = f.route[f.ri], k = kanten.get(st.k), nx = f.route[f.ri + 1]; if (!nx) return "letzte"; const n = endKnoten(k, st.dir), k2 = kanten.get(nx.k), s2 = anfang(k2, nx.dir); return { rest: +(ende(k, st.dir) - f.s).toFixed(2), frei: f.frei, darf: darfEinfahren(f, k, st, nx), k2: k2.id + (k2.ring ? "R" : ""), platz: fahrzeuge.filter((g) => g !== f && g.modus === "kante" && g.route[g.ri].k === k2.id && g.route[g.ri].dir === nx.dir && g.s < s2 + g.hintenL + f.vorneL + 0.35).map((g) => g.id + ":" + g.s.toFixed(2) + ":w" + g.warte.toFixed(0)), drin: [...n.drin].map((g) => g.id + (g.tr ? "t" + g.tr.t.toFixed(2) : "res") + " von" + g.von), naht: n.naht.map((g) => g.id), luecke: f.block }; }, kreiselBauen, einbahnUmschalten, strModus: (m) => { strModus = m; }, halte, linien, neueHalte, busTippen, linieFertig, busRechnen, busModus: (m) => { busModus = m; }, linieBau: (ids) => { linieBau = ids; }, abstand: (x, z) => abstand(x, z), dienstPlan, dienstBauen, dienste, versorgung: () => versorgung, versorgungRechnen, dienstTakt, ansichtSetzen, sim: (sek, ziel) => { const ev = new Map(); let tk = 0; for (let t = 0; t < sek; t += 0.05) { simZeit += 0.05; jetztS += 0.05; if (++tk % 10 === 0) dienstTakt(0.5); verkehrTakt(0.05, ziel || 60); fahrzeugeZeichnen(); const F = fahrzeuge.filter((f) => f.pos && f.skala > 0.9 && !f.parkt); for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) { const A = F[i], Bf = F[j]; let hit = false; for (let q = 0; q <= 6 && !hit; q++) { const o = Bf.vorneL - (Bf.vorneL + Bf.hintenL) * q / 6, dx = Bf.pos.x + Bf.pos.tx * o - A.pos.x, dz = Bf.pos.z + Bf.pos.tz * o - A.pos.z, lx = dx * A.pos.tx + dz * A.pos.tz, lz = Math.abs(-dx * A.pos.tz + dz * A.pos.tx); if (lx < A.vorneL * 0.8 && lx > -A.hintenL * 0.8 && lz < (A.B + Bf.B) / 2 * 0.7) hit = true; } if (hit) { const key = A.id + "-" + Bf.id; if (!ev.has(key)) { const d = (f) => f.modus === "kante" ? f.route[f.ri].k + "/" + f.route[f.ri].dir + "/sp" + f.spur + "/off" + f.off.toFixed(2) + "/s" + f.s.toFixed(2) + (f.ausparken ? "/AUS" : "") + (f.frei ? "/FREI" : "") : "KN" + f.tr.knoten + "/t" + f.tr.t.toFixed(2) + "/von" + f.von + "->" + f.route[f.ri + 1].k; ev.set(key, [A.typ, d(A), "blk" + (A.block == null ? "-" : A.block.toFixed(2)) + "w" + A.warte.toFixed(1), Bf.typ, d(Bf), "blk" + (Bf.block == null ? "-" : Bf.block.toFixed(2)) + "w" + Bf.warte.toFixed(1), "t" + t.toFixed(1)]); } } } } return [fahrzeuge.length, ev.size, [...ev.values()].slice(0, 12)]; }, fahrtStarten: () => { try { return fahrtStarten(); } catch (e) { return "FEHLER " + e.message + e.stack; } }, folgen: (f) => folgenStart(f), baeume: () => baeume.length, stufenTest: (st) => { let i = 0; for (const h of haeuser.values()) { h.stufe = Math.min(ZONEN[h.zone].max, st || 1 + (i++ % 5)); h.teile = hausTeile(h); } haeuserNeu = true; }, meilenstein: (m) => { meilenstein = m; unterleiste(); }, zoneWahl: (z) => { zoneWahl = z; }, malen: (a, b) => malen(a, b), werteAuffrischen, hausTeile, bedarf: () => bedarf, wertAnsicht: (v) => { wertAnsicht = v; wertZeichnen(); }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
+window.inselstadt = { zustandHolen: () => zustand(), kreiselGroesse: (i) => { kreiselGr = i; }, rasterTest: (A, B, C, t) => { strTyp = t || "klein"; const ls = rasterLinien(A, B, C); let n = 0; for (const [a, b] of ls) { const pl = planen(fangOderFrei(a), lerp(a, b, 0.5), fangOderFrei(b), strTyp, 0); if (pl.ok && bauen(pl).length) n++; else if (!pl.ok) console.log("raster", pl.grund); } return [ls.length, n]; }, ersetzen: (p, t) => { strTyp = t; ersetzenTippen(p); }, parken: (p) => parkenTippen(p), autoBruecke: (A, B) => { const pl = planen(fangen(A), lerp(A, B, 0.5), fangen(B), "klein", 0); if (!pl.ok && pl.wasser && pl.pts.some((q) => abstand(q.x, q.z) < 0.3)) { const p2 = planen(fangen(A), lerp(A, B, 0.5), fangen(B), "klein", 1); return [pl.grund, p2.ok, p2.grund]; } return [pl.ok, pl.grund]; }, bildschirm: (x, z) => { const v = new THREE.Vector3(x, G, z).project(kamera), r = renderer.domElement.getBoundingClientRect(); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; }, linienListe: () => [...linien.values()].map((L) => ({ nr: L.nr, art: L.art, halte: L.halte.length, busse: L.busse, keinDepot: L.keinDepot })), gleisPlanen, gleisBauen, bahnhofPlan, gKanten, gKnoten, zuege: () => zuege, zuglinien, uebergaenge: () => uebergaenge, gleisModus: (m) => { gleisModus = m; }, zuglinieBau: (ids) => { zuglinieBau = ids; }, zuglinieFertig, schienenUmschalten, aussenGleisBauen, zugTakt, modellTest: () => { const ks = Object.keys(FZ); let n = 0; for (const k of kanten.values()) { if (!autoKante(k) || k.aussen || k.len < 8) continue; for (let s = 1.5; s < k.len - 1.5 && n < ks.length; s += 2.2) { const f = fahrzeugAusWeg({ route: [{ k: k.id, dir: 1 }], s0: s, s1: k.len - 0.5 }, ks[n], mitAuflieger(ks[n]) ? "container" : null, "Test", "Test", "aussen"); if (f) { f.farbe = PAL.auto[n % PAL.auto.length]; f.v = 0; n++; } } } return n; }, allesBesitzen: () => { for (let i = 0; i < KN; i++) for (let j = 0; j < KN; j++) besitz.add(i + "," + j); gebieteZeichnen(); }, kameraAuf: (x, z, d) => { steuerung.target.set(x, 0, z); kamera.position.set(x + d * 0.55, d * 0.75, z + d * 0.65); steuerung.update(); }, dbgF: (id) => { const f = fahrzeuge.find((x) => x.id === id); if (!f || f.modus !== "kante") return null; const st = f.route[f.ri], k = kanten.get(st.k), nx = f.route[f.ri + 1]; if (!nx) return "letzte"; const n = endKnoten(k, st.dir), k2 = kanten.get(nx.k), s2 = anfang(k2, nx.dir); return { rest: +(ende(k, st.dir) - f.s).toFixed(2), frei: f.frei, darf: darfEinfahren(f, k, st, nx), k2: k2.id + (k2.ring ? "R" : ""), platz: fahrzeuge.filter((g) => g !== f && g.modus === "kante" && g.route[g.ri].k === k2.id && g.route[g.ri].dir === nx.dir && g.s < s2 + g.hintenL + f.vorneL + 0.35).map((g) => g.id + ":" + g.s.toFixed(2) + ":w" + g.warte.toFixed(0)), drin: [...n.drin].map((g) => g.id + (g.tr ? "t" + g.tr.t.toFixed(2) : "res") + " von" + g.von), naht: n.naht.map((g) => g.id), luecke: f.block }; }, kreiselBauen, einbahnUmschalten, strModus: (m) => { strModus = m; }, halte, linien, neueHalte, busTippen, linieFertig, busRechnen, busModus: (m) => { busModus = m; }, linieBau: (ids) => { linieBau = ids; }, abstand: (x, z) => abstand(x, z), dienstPlan, dienstBauen, dienste, versorgung: () => versorgung, versorgungRechnen, dienstTakt, ansichtSetzen, sim: (sek, ziel) => { const ev = new Map(); let tk = 0; for (let t = 0; t < sek; t += 0.05) { simZeit += 0.05; jetztS += 0.05; if (++tk % 10 === 0) dienstTakt(0.5); verkehrTakt(0.05, ziel || 60); fahrzeugeZeichnen(); const F = fahrzeuge.filter((f) => f.pos && f.skala > 0.9 && !f.parkt); for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) { const A = F[i], Bf = F[j]; let hit = false; for (let q = 0; q <= 6 && !hit; q++) { const o = Bf.vorneL - (Bf.vorneL + Bf.hintenL) * q / 6, dx = Bf.pos.x + Bf.pos.tx * o - A.pos.x, dz = Bf.pos.z + Bf.pos.tz * o - A.pos.z, lx = dx * A.pos.tx + dz * A.pos.tz, lz = Math.abs(-dx * A.pos.tz + dz * A.pos.tx); if (lx < A.vorneL * 0.8 && lx > -A.hintenL * 0.8 && lz < (A.B + Bf.B) / 2 * 0.7) hit = true; } if (hit) { const key = A.id + "-" + Bf.id; if (!ev.has(key)) { const d = (f) => f.modus === "kante" ? f.route[f.ri].k + "/" + f.route[f.ri].dir + "/sp" + f.spur + "/off" + f.off.toFixed(2) + "/s" + f.s.toFixed(2) + (f.ausparken ? "/AUS" : "") + (f.frei ? "/FREI" : "") : "KN" + f.tr.knoten + "/t" + f.tr.t.toFixed(2) + "/von" + f.von + "->" + f.route[f.ri + 1].k; ev.set(key, [A.typ, d(A), "blk" + (A.block == null ? "-" : A.block.toFixed(2)) + "w" + A.warte.toFixed(1), Bf.typ, d(Bf), "blk" + (Bf.block == null ? "-" : Bf.block.toFixed(2)) + "w" + Bf.warte.toFixed(1), "t" + t.toFixed(1)]); } } } } return [fahrzeuge.length, ev.size, [...ev.values()].slice(0, 12)]; }, fahrtStarten: () => { try { return fahrtStarten(); } catch (e) { return "FEHLER " + e.message + e.stack; } }, folgen: (f) => folgenStart(f), baeume: () => baeume.length, stufenTest: (st) => { let i = 0; for (const h of haeuser.values()) { h.stufe = Math.min(ZONEN[h.zone].max, st || 1 + (i++ % 5)); h.teile = hausTeile(h); } haeuserNeu = true; }, meilenstein: (m) => { meilenstein = m; unterleiste(); }, zoneWahl: (z) => { zoneWahl = z; }, malen: (a, b) => malen(a, b), werteAuffrischen, hausTeile, bedarf: () => bedarf, wertAnsicht: (v) => { wertAnsicht = v; wertZeichnen(); }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
 
 /* ================================================================
    Hauptschleife
