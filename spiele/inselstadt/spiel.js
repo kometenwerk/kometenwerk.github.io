@@ -893,7 +893,7 @@ function meilensteinPruefen() {
     meilenstein++; const m = MEILEN[meilenstein]; geld += m.geld;
     const frei = m.frei.map((t) => TYP[t].em + " " + TYP[t].name).concat(Object.values(ZONEN).filter((z) => z.ab === meilenstein).map((z) => z.em + " " + z.name));
     infoZeigen(`<b>🎉 Meilenstein: ${m.name}!</b>Deine Stadt hat ${zahl(m.ab)} Einwohner.<br>+${euro(m.geld)} Belohnung${frei.length ? "<br>Neu: " + frei.join(", ") : ""}<br><small>Jetzt kannst du bis zu ${m.gebiete} Gebiete dazukaufen.</small>`, 7000);
-    if (werkzeug === "strasse" || werkzeug === "zone") unterleiste();
+    unterleiste();
   }
 }
 function wocheTakt() {
@@ -901,10 +901,16 @@ function wocheTakt() {
   if (geld < 0 && geld - k.saldo >= 0) tipp("⚠️ Dein Geld ist im Minus! Senk die Ausgaben oder erhöh die Steuern.", 5000);
   if (werkzeug === "gebiet") gebieteZeichnen(); if (!$("budget").hidden) budgetZeigen(); speichernBald();
 }
+function zufriedenheit() {
+  let n = 0, sum = 0; for (const h of wohnListe) { const v = 70 + ((h.wert || 30) - 30) * 0.3 - (h.dreck || 0) * 0.5; sum += v * leute(h); n += leute(h); }
+  const st = (steuern.w + steuern.g + steuern.b + steuern.i) / 4;
+  return Math.round(klemme((n ? sum / n : 70) - (st - 9) * 3, 0, 100));
+}
 function zeigeWerte() {
   const k = kennzahlen(), d = Math.round(k.saldo);
   $("wGeld").textContent = euro(geld); $("wGeld").style.color = geld < 0 ? "#ff8a8a" : "";
   $("wEinw").textContent = zahl(k.e); $("wJobs").textContent = zahl(k.j);
+  const z = zufriedenheit(); $("wFroh").textContent = (z >= 75 ? "😄 " : z >= 55 ? "🙂 " : z >= 35 ? "😐 " : "😟 ") + z + " %";
   const t = $("trend"); t.textContent = (d >= 0 ? "+" : "") + zahl(d) + "/Wo"; t.className = d >= 0 ? "plus" : "minus";
 }
 function datumZeigen() { const w = Math.floor(tage / 7) + 1, d = Math.floor(tage) % 7; $("datum").textContent = "Woche " + w + " · " + WOCHENTAGE[d]; }
@@ -1595,34 +1601,60 @@ const TIPPS = {
   gebiet: "🗺️ Tipp auf ein Preisschild, um das Gebiet zu kaufen.",
   abriss: "🧹 Tipp auf eine Straße, um sie abzureißen. Über Häuser und Zonen wischen löscht sie."
 };
+/* Fach über der Werkzeugleiste: Karten mit Bild, Name und Preis (wie bei Cities: Skylines) */
+const kk = (attr, wert, em, name, preis, an, zu) => `<button class="kk" type="button" ${attr}="${wert}" aria-pressed="${!!an}"${zu ? ' data-zu="1"' : ""}><span class="em">${em}</span><b>${name}</b>${preis ? `<small>${preis}</small>` : ""}</button>`;
+const chip = (attr, wert, txt, an) => `<button class="chip" type="button" ${attr}="${wert}" aria-pressed="${!!an}">${txt}</button>`;
+const rueckChip = '<button class="chip" type="button" id="rueck">↩️ Rückgängig</button>';
 function unterleiste() {
-  const u = $("unter"); let h = "";
-  const chip = (attr, wert, txt, an, aus) => `<button class="chip" type="button" ${attr}="${wert}" aria-pressed="${an}"${aus ? ' title="Noch gesperrt"' : ""}>${txt}</button>`;
+  const u = $("fach"); let kopf = "", karten = "";
   if (werkzeug === "ansehen") {
-    h = chip("data-ansicht", "verkehr", "🚦 Verkehrs-Ansicht", verkehrsAnsicht) + chip("data-ansicht", "wert", "💎 Bodenwert", wertAnsicht) + '<button class="chip" type="button" id="fahrenKnopf">🚗 Selbst fahren</button>';
+    kopf = '<span class="ftitel">👆 Ansehen</span><small style="color:var(--leise)">Haus oder Auto antippen für Infos</small>';
+    karten = kk("id", "fahrenKnopf", "🚗", "Selbst fahren", "", false) + kk("id", "budgetKarte", "💶", "Budget &amp; Steuern", "", false) + kk("id", "ansichtKarte", "🔍", "Info-Ansichten", "", false);
   } else if (werkzeug === "strasse") {
-    h += Object.keys(TYP).map((k) => { const frei = typFrei(k); return chip("data-typ", k, (frei ? TYP[k].em : "🔒") + " " + TYP[k].name + ` <small style="opacity:.7">${TYP[k].preis} €</small>`, k === strTyp, !frei); }).join("");
-    h += '<span class="trenn"></span>' + chip("data-modus", "gerade", "📏 Gerade", strModus === "gerade") + chip("data-modus", "kurve", "〰️ Kurve", strModus === "kurve") + chip("data-modus", "ampel", "🚦 Ampeln", strModus === "ampel");
-    h += '<span class="trenn"></span><button class="chip" type="button" id="rueck">↩️ Rückgängig</button>';
+    kopf = '<span class="ftitel">🛣️ Straßen</span>' + chip("data-modus", "gerade", "📏 Gerade", strModus === "gerade") + chip("data-modus", "kurve", "〰️ Kurve", strModus === "kurve") + chip("data-modus", "ampel", "🚦 Ampeln", strModus === "ampel") + '<span class="trenn"></span>' + rueckChip;
+    karten = Object.keys(TYP).map((k) => { const frei = typFrei(k), m = MEILEN.find((x) => x.frei.includes(k)); return kk("data-typ", k, TYP[k].em, TYP[k].name, frei ? TYP[k].preis + " €/Feld" : "ab " + (m ? m.name : ""), k === strTyp, !frei); }).join("");
   } else if (werkzeug === "zone") {
-    h += Object.keys(ZONEN).map(Number).map((z) => { const f = zoneFrei(z); return chip("data-zone", z, (f ? ZONEN[z].em : "🔒") + " " + ZONEN[z].name, z === zoneWahl, !f); }).join("");
-    h += '<span class="trenn"></span>' + chip("data-pinsel", "klein", "🖌️ Klein", pinsel === "klein") + chip("data-pinsel", "gross", "🖌️ Groß", pinsel === "gross") + chip("data-pinsel", "fuellen", "🪣 Füllen", pinsel === "fuellen");
-    h += '<span class="trenn"></span>' + chip("data-zone", 0, "🧽 Entfernen", zoneWahl === 0) + '<button class="chip" type="button" id="rueck">↩️</button>';
-  } else h = '<button class="chip" type="button" id="rueck">↩️ Rückgängig</button>';
-  u.innerHTML = h; u.hidden = !h; rueckKnopf();
+    kopf = '<span class="ftitel">🏘️ Zonen</span>' + chip("data-pinsel", "klein", "🖌️ Klein", pinsel === "klein") + chip("data-pinsel", "gross", "🖌️ Groß", pinsel === "gross") + chip("data-pinsel", "fuellen", "🪣 Füllen", pinsel === "fuellen") + '<span class="trenn"></span>' + rueckChip;
+    karten = Object.keys(ZONEN).map(Number).map((z) => { const f = zoneFrei(z), Z = ZONEN[z]; return kk("data-zone", z, Z.em, Z.name, f ? GRUPPEN[Z.gruppe].name : "ab " + MEILEN[Z.ab].name, z === zoneWahl, !f); }).join("") + kk("data-zone", 0, "🧽", "Zone entfernen", "", zoneWahl === 0);
+  } else if (werkzeug === "gebiet") {
+    const m = MEILEN[meilenstein], frei = m.gebiete - gekauft;
+    kopf = '<span class="ftitel">🗺️ Gebiete</span><small style="color:var(--leise)">' + (frei > 0 ? `Du kannst noch ${frei} Gebiet${frei > 1 ? "e" : ""} kaufen · nächstes kostet ${euro(GEBIET_PREIS(gekauft))}` : "Mehr Gebiete beim nächsten Meilenstein") + "</small>";
+  } else if (werkzeug === "abriss") {
+    kopf = '<span class="ftitel">🧹 Abriss</span><small style="color:var(--leise)">Straße antippen · über Häuser wischen</small><span class="trenn"></span>' + rueckChip;
+  }
+  u.innerHTML = (kopf ? `<div class="fkopf">${kopf}</div>` : "") + (karten ? `<div class="fkarten">${karten}</div>` : "");
+  u.hidden = !kopf && !karten; rueckKnopf();
 }
-$("unter").addEventListener("click", (e) => {
+$("fach").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
   if (b.id === "rueck") { rueckgaengig(); return; }
   if (b.id === "fahrenKnopf") { fahrenStarten(); return; }
-  if (b.dataset.ansicht === "wert") { wertAnsicht = !wertAnsicht; if (wertAnsicht) { verkehrsAnsicht = false; stauMessen(); } wertZeichnen(); tipp(wertAnsicht ? "💎 Grün = wertvoller Boden, Rot = wenig wert. Bäume, Alleen und Wasser machen Boden wertvoll – Industrie und Hauptstraßen senken den Wert. Mit hohem Bodenwert steigen Häuser auf." : "Bodenwert-Ansicht aus.", 5000); }
-  else if (b.dataset.ansicht) { verkehrsAnsicht = !verkehrsAnsicht; if (verkehrsAnsicht && wertAnsicht) { wertAnsicht = false; wertZeichnen(); } stauMessen(); tipp(verkehrsAnsicht ? "🚦 Grün = frei, Gelb = voll, Rot = Stau. Bau Hauptstraßen oder Umwege, wo es rot wird." : "Verkehrs-Ansicht aus.", 3500); }
-  if (b.dataset.typ) { strTyp = b.dataset.typ; merke("inselstadt-strtyp", strTyp); planNeu(); }
+  if (b.id === "budgetKarte") { budgetZeigen(); return; }
+  if (b.id === "ansichtKarte") { ansichtenAufZu(); return; }
+  if (b.dataset.typ) { if (!typFrei(b.dataset.typ)) { const m = MEILEN.find((x) => x.frei.includes(b.dataset.typ)); tipp("🔒 " + TYP[b.dataset.typ].name + " gibt es ab " + (m ? m.name + " (" + zahl(m.ab) + " Einwohner)" : "später") + ".", 3000); return; } strTyp = b.dataset.typ; merke("inselstadt-strtyp", strTyp); planNeu(); }
   if (b.dataset.modus) { strModus = b.dataset.modus; merke("inselstadt-strmodus", strModus); bauAbbrechen(); tipp(TIPPS.strasse(), 3500); }
   if (b.dataset.zone != null) { const z = +b.dataset.zone; if (z && !zoneFrei(z)) { tipp("🔒 " + ZONEN[z].name + " gibt es ab dem Meilenstein " + MEILEN[ZONEN[z].ab].name + " (" + zahl(MEILEN[ZONEN[z].ab].ab) + " Einwohner).", 3500); return; } zoneWahl = z; if (z) tipp(ZONEN[z].em + " " + ZONEN[z].name + ": " + ZONEN_TEXT[z], 4000); }
   if (b.dataset.pinsel) { pinsel = b.dataset.pinsel; tipp(TIPPS.zone(), 3500); }
   unterleiste();
 });
+/* Info-Ansichten (oben rechts) */
+const ANSICHTEN = {
+  verkehr: { em: "🚦", name: "Verkehr", legende: ["#3ddc6b", "#ffd23d", "#ff3b30", "frei", "Stau"], an: () => { verkehrsAnsicht = true; stauMessen(); }, aus: () => { verkehrsAnsicht = false; stauMessen(); } },
+  wert: { em: "💎", name: "Bodenwert", legende: ["#ff4a3d", "#ffd23d", "#2fd66b", "wenig wert", "wertvoll"], an: () => { wertAnsicht = true; werteAuffrischen(); wertZeichnen(); }, aus: () => { wertAnsicht = false; wertZeichnen(); } }
+};
+let ansicht = null;
+function ansichtSetzen(n) {
+  if (ansicht && ANSICHTEN[ansicht]) ANSICHTEN[ansicht].aus();
+  ansicht = n && n !== ansicht ? n : null;
+  if (ansicht) ANSICHTEN[ansicht].an();
+  const l = $("legende"), A = ansicht && ANSICHTEN[ansicht];
+  if (A && A.legende) { const [a, b2, c, t1, t2] = A.legende; l.innerHTML = `<b>${A.em} ${A.name}</b><small>${t1}</small><span class="farbband" style="background:linear-gradient(90deg,${a},${b2},${c})"></span><small>${t2}</small><button class="chip" type="button" id="legendeZu" style="min-height:30px;padding:3px 8px">✕</button>`; l.hidden = false; $("legendeZu").onclick = () => ansichtSetzen(null); } else l.hidden = true;
+  $("ansichtKnopf").setAttribute("aria-pressed", String(!!ansicht)); ansichtListe();
+}
+function ansichtListe() { $("ansichtListe").innerHTML = Object.entries(ANSICHTEN).map(([k, A]) => chip("data-ansicht", k, A.em + " " + A.name, ansicht === k)).join(""); }
+function ansichtenAufZu() { const p = $("ansichten"); p.hidden = !p.hidden; if (!p.hidden) { ansichtListe(); $("menue").hidden = true; } }
+$("ansichtKnopf").onclick = ansichtenAufZu;
+$("ansichten").addEventListener("click", (e) => { const b = e.target.closest("[data-ansicht]"); if (b) { ansichtSetzen(b.dataset.ansicht); } });
 function werkzeugWaehlen(w) {
   werkzeug = w; document.querySelectorAll("#werkzeug button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.w === w)));
   const bauend = w !== "ansehen";
@@ -1703,7 +1735,7 @@ renderer.domElement.addEventListener("pointerdown", (e) => {
   finger.set(e.pointerId, true);
   if (finger.size > 1) { aktion = null; if (werkzeug === "strasse") { bau.kandidat = null; planNeu(); } return; }
   if (e.pointerType === "mouse" && e.button !== 0) return;
-  $("menue").hidden = true;
+  $("menue").hidden = true; $("ansichten").hidden = true;
   const p = bodenPunkt(e); if (!p) return;
   aktion = { id: e.pointerId, sx: e.clientX, sy: e.clientY, bewegt: false, letzte: p };
   if (werkzeug === "strasse" && strModus !== "ampel") {
@@ -1802,7 +1834,7 @@ function zeitKnoepfe() { document.querySelectorAll("#zeitleiste button").forEach
 $("zeitleiste").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; tempo = +b.dataset.t; zeitKnoepfe(); if (!tempo) tipp("⏸️ Pause – du kannst trotzdem bauen.", 2000); });
 $("kopf").onclick = () => { if ($("budget").hidden) budgetZeigen(); else $("budget").hidden = true; };
 const menue = $("menue");
-$("menueKnopf").onclick = () => { menue.hidden = !menue.hidden; $("menueKnopf").setAttribute("aria-expanded", String(!menue.hidden)); };
+$("menueKnopf").onclick = () => { $("ansichten").hidden = true; menue.hidden = !menue.hidden; $("menueKnopf").setAttribute("aria-expanded", String(!menue.hidden)); };
 $("budgetKnopf").onclick = () => { menue.hidden = true; budgetZeigen(); };
 $("hauptmenueKnopf").onclick = () => { if (spielLaeuft) { clearTimeout(speicherTimer); merke(platzKey(platz), zustand()); } location.href = location.pathname; };
 function menueKnoepfe() {
@@ -1853,13 +1885,13 @@ function fahrenStarten() {
   const e = naechsteKante(steuerung.target, 400, (k) => TYP[k.typ].autos), p = spurPunkt(e.k, 1, e.s, TYP[e.k.typ].spuren[0]);
   Object.assign(spieler, { an: true, x: p.x, z: p.z, rot: Math.atan2(-p.tz, p.tx), vx: 0, vz: 0, gier: 0, lenk: 0 });
   spieler.gruppe.visible = true; steuerung.enabled = false;
-  ["unten", "oben", "menueKnopf"].forEach((id) => { $(id).hidden = true; }); $("fahrpult").hidden = false; $("tacho").hidden = false; $("info").hidden = true; $("budget").hidden = true;
+  ["unten", "oben", "menueKnopf", "ansichtKnopf", "ansichten", "legende"].forEach((id) => { $(id).hidden = true; }); $("fahrpult").hidden = false; $("tacho").hidden = false; $("info").hidden = true; $("budget").hidden = true;
   kamera.position.set(p.x - p.tx * 3, 1.8, p.z - p.tz * 3);
   tipp("🚗 Gas ▲, Bremse/Rückwärts ▼, Lenken ◀ ▶. Zu schnell in die Kurve? Dann driftest du!", 4000);
 }
 function fahrenBeenden() {
   spieler.an = false; spieler.gruppe.visible = false;
-  ["unten", "oben", "menueKnopf"].forEach((id) => { $(id).hidden = false; }); $("fahrpult").hidden = true; $("tacho").hidden = true;
+  ["unten", "oben", "menueKnopf", "ansichtKnopf"].forEach((id) => { $(id).hidden = false; }); if (ansicht) $("legende").hidden = false; $("fahrpult").hidden = true; $("tacho").hidden = true;
   steuerung.target.set(spieler.x, 0, spieler.z); kamera.position.set(spieler.x + 10, 14, spieler.z + 14); steuerung.enabled = true; steuerung.update();
 }
 $("aussteigen").onclick = fahrenBeenden;

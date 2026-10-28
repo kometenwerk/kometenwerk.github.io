@@ -19,20 +19,32 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .glas{background:var(--glas);border:1px solid var(--linie);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:16px}
 [hidden]{display:none!important}
 /* Kopf */
-#oben{position:fixed;top:max(8px,env(safe-area-inset-top));left:max(8px,env(safe-area-inset-left));right:max(62px,calc(env(safe-area-inset-right) + 62px));display:flex;flex-wrap:wrap;gap:6px;z-index:5;pointer-events:none}
+#oben{position:fixed;top:max(8px,env(safe-area-inset-top));left:max(8px,env(safe-area-inset-left));right:max(116px,calc(env(safe-area-inset-right) + 116px));display:flex;flex-wrap:wrap;gap:6px;z-index:5;pointer-events:none}
 #oben>*{pointer-events:auto}
-#kopf{display:flex;align-items:center;gap:10px;padding:6px 12px 6px 8px;border:1px solid var(--linie);text-align:left}
-#kopf img{width:26px;height:26px;flex:none}
-#werte{display:flex;flex-wrap:wrap;gap:2px 11px;font-size:.82rem;color:var(--leise);font-variant-numeric:tabular-nums}
-#werte b{color:var(--text)}
-#werte .geld b{color:#ffe08a}
+#kopf{display:flex;align-items:center;gap:14px;padding:6px 12px 6px 10px;border:1px solid var(--linie);text-align:left}
+#kopf img{width:28px;height:28px;flex:none}
+.kz{display:grid;line-height:1.15;font-variant-numeric:tabular-nums;white-space:nowrap}
+.kz small{font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;color:var(--leise)}
+.kz b{font-size:1.05rem}
+.kz.geld b{color:#ffe08a}
+#trend{font-style:normal;font-size:.72rem}
 #trend.plus{color:var(--gut)}#trend.minus{color:var(--schlecht)}
-#bedarf{display:flex;align-items:flex-end;gap:3px;height:28px;padding:0 2px}
-#bedarf i{display:block;width:7px;border-radius:2px 2px 0 0;background:var(--c);min-height:2px;transition:height .6s}
+#bedarf{display:flex;gap:4px;padding-left:4px;border-left:1px solid var(--linie)}
+#bedarf span{display:grid;justify-items:center;gap:1px}
+#bedarf .saeule{height:26px;width:9px;border-radius:3px;background:rgba(255,255,255,.08);display:flex;align-items:flex-end;overflow:hidden}
+#bedarf i{display:block;width:100%;border-radius:3px;background:var(--c);min-height:2px;transition:height .6s}
+#bedarf em{font-style:normal;font-size:.62rem;font-weight:700;color:var(--c)}
 #zeitleiste{display:flex;align-items:center;gap:2px;padding:4px}
 #zeitleiste button{border:0;background:transparent;border-radius:9px;min-width:36px;min-height:36px;font-size:.95rem}
 #zeitleiste button[aria-pressed=true]{background:var(--f);color:#14082a}
 #datum{font-size:.78rem;color:var(--leise);padding:0 8px 0 4px;font-variant-numeric:tabular-nums;white-space:nowrap}
+#ansichtKnopf{position:fixed;top:max(8px,env(safe-area-inset-top));right:calc(max(8px,env(safe-area-inset-right)) + 54px);width:46px;height:46px;border-radius:14px;z-index:6;font-size:1.2rem}
+#ansichtKnopf[aria-pressed=true]{background:var(--f);color:#14082a}
+#ansichten{position:fixed;top:calc(max(8px,env(safe-area-inset-top)) + 54px);right:max(8px,env(safe-area-inset-right));width:min(330px,calc(100vw - 16px));padding:14px;z-index:6;display:grid;gap:10px;max-height:calc(100vh - 80px);overflow:auto}
+#ansichten .liste{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px}
+#ansichten .chip{text-align:left}
+#legende{position:fixed;left:50%;top:calc(max(8px,env(safe-area-inset-top)) + 58px);transform:translateX(-50%);padding:6px 12px;z-index:4;font-size:.8rem;display:flex;gap:10px;align-items:center;white-space:nowrap}
+#legende .farbband{width:110px;height:8px;border-radius:99px}
 #menueKnopf{position:fixed;top:max(8px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right));width:46px;height:46px;border-radius:14px;z-index:6;font-size:1.2rem}
 #menue{position:fixed;top:calc(max(8px,env(safe-area-inset-top)) + 54px);right:max(8px,env(safe-area-inset-right));width:min(300px,calc(100vw - 16px));padding:14px;z-index:6;display:grid;gap:12px;max-height:calc(100vh - 80px);overflow:auto}
 h3{margin:0 0 6px;font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:var(--leise);font-weight:600}
@@ -52,17 +64,26 @@ h3{margin:0 0 6px;font-size:.75rem;letter-spacing:.14em;text-transform:uppercase
 #frage button{border:0;border-radius:11px;min-width:48px;min-height:44px;font-size:1.1rem;font-weight:700}
 #ja{background:var(--gut);color:#06210f}
 #nein{background:rgba(255,255,255,.1)}
-#unter{display:flex;gap:6px;padding:6px;overflow-x:auto;scrollbar-width:none;align-items:center}
-#unter::-webkit-scrollbar{display:none}
-#unter .trenn{width:1px;align-self:stretch;background:var(--linie);flex:none;margin:4px 2px}
-#unter .chip{flex:none}
-#werkzeug{display:flex;gap:3px;padding:5px;overflow-x:auto;scrollbar-width:none}
+#fach{display:grid;gap:6px;padding:8px;width:min(760px,100%)}
+#fach .fkopf{display:flex;gap:6px;align-items:center;overflow-x:auto;scrollbar-width:none}
+#fach .fkopf::-webkit-scrollbar,#fach .fkarten::-webkit-scrollbar{display:none}
+#fach .ftitel{font-weight:700;font-size:.9rem;margin-right:4px;white-space:nowrap}
+#fach .trenn{width:1px;align-self:stretch;background:var(--linie);flex:none;margin:4px 2px}
+#fach .chip{flex:none;min-height:36px;padding:6px 10px}
+#fach .fkarten{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.kk{flex:none;width:96px;min-height:92px;border:1px solid var(--linie);background:rgba(255,255,255,.05);border-radius:13px;display:grid;justify-items:center;align-content:center;gap:2px;padding:8px 4px;text-align:center;position:relative}
+.kk .em{font-size:1.75rem;line-height:1.1}
+.kk b{font-size:.74rem;font-weight:600;line-height:1.15}
+.kk small{font-size:.7rem;color:var(--leise);font-variant-numeric:tabular-nums}
+.kk[aria-pressed=true]{background:var(--f);border-color:var(--f);color:#14082a}
+.kk[aria-pressed=true] small{color:#2a1450}
+.kk[data-zu]{opacity:.55}
+.kk[data-zu]::after{content:"🔒";position:absolute;top:4px;right:6px;font-size:.8rem}
+#werkzeug{display:flex;gap:2px;padding:4px;overflow-x:auto;scrollbar-width:none}
 #werkzeug::-webkit-scrollbar{display:none}
-#werkzeug button{flex:none;border:0;background:transparent;display:grid;justify-items:center;gap:1px;padding:7px 8px 6px;border-radius:12px;min-width:60px;min-height:54px}
-#werkzeug button span{font-size:1.3rem;line-height:1.1}
-#werkzeug button small{font-size:.7rem;color:var(--leise)}
+#werkzeug button{flex:none;border:0;background:transparent;display:grid;place-items:center;border-radius:12px;width:50px;height:48px;font-size:1.4rem;position:relative}
 #werkzeug button[aria-pressed=true]{background:var(--f)}
-#werkzeug button[aria-pressed=true] small{color:#14082a;font-weight:600}
+#werkzeug .trenn{width:1px;background:var(--linie);margin:6px 2px;flex:none}
 /* Infokarte, Budget */
 #info{position:fixed;left:50%;top:calc(max(8px,env(safe-area-inset-top)) + 96px);transform:translateX(-50%);padding:12px 16px;z-index:5;min-width:230px;max-width:calc(100vw - 24px);font-size:.9rem}
 #info b{display:block;font-size:1rem;margin-bottom:2px}
@@ -112,7 +133,8 @@ h3{margin:0 0 6px;font-size:.75rem;letter-spacing:.14em;text-transform:uppercase
 #laden div{text-align:center;color:var(--leise)}
 #laden b{display:block;color:var(--text);font-size:1.2rem;margin-bottom:6px}
 #fehler{position:fixed;inset:0;display:none;place-items:center;padding:24px;text-align:center;z-index:10;background:#0b1020}
-@media (max-width:440px){#werkzeug button{min-width:54px;padding:7px 5px 6px}#kopf img{display:none}#datum{display:none}}
+@media (max-width:560px){#kopf img{display:none}#kopf .kz.jobs{display:none}.kz small{display:none}#kopf{gap:10px}}
+@media (max-width:440px){#datum{display:none}#werkzeug button{width:44px}.kk{width:84px;min-height:84px}.kz b{font-size:.9rem}#kopf{gap:8px;padding:5px 8px}#bedarf{gap:2px;padding-left:3px}#bedarf .saeule{width:7px}#trend{font-size:.66rem}}
 </style>
 <script type="importmap">{"imports":{"three":"../../shared/vendor/three-0.160.0/three.module.min.js","three/addons/":"../../shared/vendor/three-0.160.0/"}}</script>
 </head>
@@ -122,11 +144,17 @@ h3{margin:0 0 6px;font-size:.75rem;letter-spacing:.14em;text-transform:uppercase
 <div id="fehler"><div><b>Das klappt auf diesem Gerät leider nicht.</b><p>Dein Browser kann kein 3D (WebGL). Probier es mit einem aktuellen Chrome, Safari oder Firefox.</p></div></div>
 
 <div id="oben">
-  <button id="kopf" class="glas" type="button" title="Budget & Steuern"><img src="../../shared/marken/flaressa-zeichen.webp" alt=""><div id="werte">
-    <span class="geld">💶 <b id="wGeld">0</b> <small id="trend"></small></span><span>👥 <b id="wEinw">0</b></span><span>💼 <b id="wJobs">0</b></span>
-  </div><div id="bedarf" title="Bedarf: Wohnen, Gewerbe, Büros, Industrie"><i style="--c:var(--w)"></i><i style="--c:var(--l)"></i><i style="--c:#3fd6c9"></i><i style="--c:var(--i)"></i></div></button>
+  <button id="kopf" class="glas" type="button" title="Budget & Steuern"><img src="../../shared/marken/flaressa-zeichen.webp" alt="">
+    <div class="kz geld"><small>Geld</small><b id="wGeld">0</b><i id="trend"></i></div>
+    <div class="kz"><small>Einwohner</small><b>👥 <span id="wEinw">0</span></b></div>
+    <div class="kz jobs"><small>Jobs</small><b>💼 <span id="wJobs">0</span></b></div>
+    <div class="kz"><small>Zufrieden</small><b id="wFroh">😊 –</b></div>
+    <div id="bedarf" title="Bedarf: Wohnen, Gewerbe, Büros, Industrie"><span style="--c:var(--w)"><span class="saeule"><i></i></span><em>W</em></span><span style="--c:var(--l)"><span class="saeule"><i></i></span><em>G</em></span><span style="--c:#3fd6c9"><span class="saeule"><i></i></span><em>B</em></span><span style="--c:var(--i)"><span class="saeule"><i></i></span><em>I</em></span></div></button>
   <div id="zeitleiste" class="glas"><button type="button" data-t="0" aria-label="Pause">⏸️</button><button type="button" data-t="1" aria-label="Normal">▶️</button><button type="button" data-t="2" aria-label="Schnell">⏩</button><button type="button" data-t="4" aria-label="Sehr schnell">⏭️</button><span id="datum"></span></div>
 </div>
+<button id="ansichtKnopf" class="glas" type="button" aria-label="Info-Ansichten" aria-pressed="false" title="Info-Ansichten">🔍</button>
+<div id="ansichten" class="glas" hidden><h3>Info-Ansichten</h3><div class="liste" id="ansichtListe"></div><small style="color:var(--leise)">Zeigt die Stadt eingefärbt – nochmal antippen schaltet aus.</small></div>
+<div id="legende" class="glas" hidden></div>
 <button id="menueKnopf" class="glas" type="button" aria-label="Menü" aria-expanded="false">☰</button>
 <div id="menue" class="glas" hidden>
   <div><h3>Stadt</h3><div class="reihe"><button class="chip" type="button" id="budgetKnopf">💶 Budget &amp; Steuern</button><button class="chip" type="button" id="hauptmenueKnopf">🏠 Hauptmenü</button></div></div>
@@ -140,13 +168,15 @@ h3{margin:0 0 6px;font-size:.75rem;letter-spacing:.14em;text-transform:uppercase
 <div id="unten">
   <div id="tipp" class="glas weg"></div>
   <div id="frage" class="glas" hidden><span class="text" id="frageText"></span><button type="button" id="nein" aria-label="Abbrechen">✕</button><button type="button" id="ja" aria-label="Bauen">✓</button></div>
-  <div id="unter" class="glas" hidden></div>
+  <div id="fach" class="glas" hidden></div>
   <nav id="werkzeug" class="glas" aria-label="Werkzeuge">
-    <button type="button" data-w="ansehen" aria-pressed="true"><span>👆</span><small>Ansehen</small></button>
-    <button type="button" data-w="strasse"><span>🛣️</span><small>Straßen</small></button>
-    <button type="button" data-w="zone"><span>🏘️</span><small>Zonen</small></button>
-    <button type="button" data-w="gebiet"><span>🗺️</span><small>Gebiete</small></button>
-    <button type="button" data-w="abriss"><span>🧹</span><small>Abriss</small></button>
+    <button type="button" data-w="ansehen" aria-pressed="true" title="Ansehen" aria-label="Ansehen">👆</button>
+    <span class="trenn"></span>
+    <button type="button" data-w="strasse" title="Straßen" aria-label="Straßen">🛣️</button>
+    <button type="button" data-w="zone" title="Zonen" aria-label="Zonen">🏘️</button>
+    <span class="trenn"></span>
+    <button type="button" data-w="gebiet" title="Gebiete kaufen" aria-label="Gebiete">🗺️</button>
+    <button type="button" data-w="abriss" title="Abriss" aria-label="Abriss">🧹</button>
   </nav>
 </div>
 
