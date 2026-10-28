@@ -19,10 +19,24 @@ const zahl = (n) => Math.round(n).toLocaleString("de-DE");
 const meter = (u) => Math.round(u * 8) + " m";
 
 /* ---------- Grundwerte ---------- */
-const G = 0.12, BODEN = G + 0.02, WASSER = -0.3, ZELLE = 1.0, REIHEN = 3;
+const G = 0.12, BODEN = G + 0.02, WASSER = -0.3, ZELLE = 1.0, REIHEN = 4;
 const KACHEL = 40, KN = 5, HALB = KACHEL * KN / 2;
 const FELD = 400;   // Größe des Geländes (±200)
-const ZONEN = { 1: { name: "Wohnen", em: "🏠", farbe: 0x4fd27a }, 2: { name: "Läden", em: "🛍️", farbe: 0x4aa8ff }, 3: { name: "Industrie", em: "🏭", farbe: 0xffc23d } };
+/* Zonen wie bei Cities: Skylines – Gruppe w/g/b/i für Bedarf und Steuern */
+const ZONEN = {
+  1: { name: "Wohnen niedrig", kurz: "Wohnen", em: "🏡", farbe: 0x7fe08f, gruppe: "w", max: 5, breite: [1, 2], tiefe: 3, boden: 0x8fcf68 },
+  2: { name: "Wohnen hoch", kurz: "Wohnen", em: "🏢", farbe: 0x23a04a, gruppe: "w", max: 5, breite: [2, 4], tiefe: 4, minTiefe: 2, boden: 0x9ccf7c, ab: 2 },
+  3: { name: "Gewerbe niedrig", kurz: "Gewerbe", em: "🛍️", farbe: 0x7cc4ff, gruppe: "g", max: 3, breite: [1, 2], tiefe: 2, boden: 0xd6cfc2 },
+  4: { name: "Gewerbe hoch", kurz: "Gewerbe", em: "🏬", farbe: 0x2f6fd9, gruppe: "g", max: 3, breite: [2, 4], tiefe: 4, minTiefe: 2, boden: 0xcfc9bd, ab: 2 },
+  5: { name: "Büros", kurz: "Büros", em: "💼", farbe: 0x3fd6c9, gruppe: "b", max: 3, breite: [2, 3], tiefe: 3, minTiefe: 2, boden: 0xcdd3d5, ab: 3 },
+  6: { name: "Industrie", kurz: "Industrie", em: "🏭", farbe: 0xffc23d, gruppe: "i", max: 3, breite: [2, 4], tiefe: 4, boden: 0xb5b3ad },
+  7: { name: "Landwirtschaft", kurz: "Landwirtschaft", em: "🌾", farbe: 0xd9a63a, gruppe: "i", max: 1, breite: [3, 4], tiefe: 4, boden: 0xa98a5a, ab: 1 },
+  8: { name: "Forstwirtschaft", kurz: "Forst", em: "🪵", farbe: 0x9c6b3c, gruppe: "i", max: 1, breite: [2, 4], tiefe: 4, boden: 0x9a8a6a, ab: 1 }
+};
+const GRUPPEN = { w: { name: "Wohnen", em: "🏠", farbe: "#4fd27a" }, g: { name: "Gewerbe", em: "🛍️", farbe: "#4aa8ff" }, b: { name: "Büros", em: "💼", farbe: "#3fd6c9" }, i: { name: "Industrie", em: "🏭", farbe: "#ffc23d" } };
+const LEUTE = { 1: [0, 2, 3, 4, 5, 6], 2: [0, 6, 9, 12, 15, 20] };
+const JOBS = { 3: [0, 2, 3, 4], 4: [0, 5, 8, 11], 5: [0, 6, 10, 14], 6: [0, 4, 6, 8], 7: [0, 2], 8: [0, 3] };
+const BODENWERT_FUER = { w: [0, 0, 22, 38, 54, 70], g: [0, 0, 28, 48], b: [0, 0, 30, 50], i: [0, 0, 0, 0] };
 const TYP = {
   fuss: { name: "Fußweg", em: "🚶", halb: 0.42, fahr: 0, preis: 15, zellen: false, autos: false, tempo: 0, spuren: [] },
   klein: { name: "Straße", em: "🛣️", halb: 0.8, fahr: 0.55, preis: 60, zellen: true, autos: true, tempo: 2.1, spuren: [0.27] },
@@ -621,46 +635,106 @@ const PAL = {
   markise: [0xe8493f, 0x2f8f6f, 0x3f7fe8, 0xf2a93b, 0x8e5be8, 0xe85b9a], turm: [0x9fb7c9, 0x7fa3b8, 0xc9d6df, 0x6d8aa1, 0xb8c4cc, 0x8fb0a8],
   halle: [0xd9d4c7, 0xc4c9cc, 0xbfb3a0, 0xd0c8b8, 0xaab3b8], auto: [0xe8493f, 0x3f7fe8, 0xf2f2f2, 0x2c2f36, 0xf2c14e, 0x4fbf7a, 0x9a5be8, 0xff8a3c, 0x8a96a3, 0x1f4e8c]
 };
-const BEWOHNER = [0, 3, 8, 22], JOBS_L = [0, 2, 5, 14], JOBS_I = [0, 4, 8, 15];
 function hausTeile(h) {
-  const r = zufall(h.variante * 31 + h.stufe * 7919), W = h.w * ZELLE, D = h.d * ZELLE, T = [], vorn = D / 2 - 0.12;
-  const box = (b, lx, lz, w, hh, d, c, extra) => T.push(Object.assign({ b, lx, ly: 0, lz, sx: w, sy: hh, sz: d, c }, extra || {}));
-  box("flach", 0, 0, W * 0.97, 0.008, D * 0.97, h.zone === 1 ? 0x8fcf68 : h.zone === 2 ? 0xd6cfc2 : 0xb5b3ad, { fest: true });
-  if (h.zone === 1) {
-    if (h.stufe === 1) {
-      const n = W >= 2 ? 2 : 1;
-      for (let k = 0; k < n; k++) {
-        const w = 0.66 + r() * 0.16, d = 0.62 + r() * 0.14, hh = 0.48 + r() * 0.16, lx = n === 2 ? (k ? 0.5 : -0.5) : 0, lz = vorn - d / 2 - 0.08;
-        box("haus", lx, lz, w, hh, d, wahl(r, PAL.haus)); box("dach", lx, lz, w + 0.1, 0.28 + r() * 0.14, d + 0.1, wahl(r, PAL.dach), { ly: hh });
-        if (D >= 2 && r() < 0.8) box("garten", lx + (r() - 0.5) * 0.4, lz - d / 2 - 0.55, 0.5 + r() * 0.35, 0.5 + r() * 0.35, 0.5 + r() * 0.35, null, { rund: true });
-      }
-    } else if (h.stufe === 2) {
-      const w = Math.min(W * 0.82, 1.7), d = Math.min(D * 0.62, 1.15), hh = 0.78 + r() * 0.25, lz = vorn - d / 2 - 0.06;
-      box("haus", 0, lz, w, hh, d, wahl(r, PAL.haus));
-      if (r() < 0.6) box("dach", 0, lz, w + 0.1, 0.32 + r() * 0.12, d + 0.1, wahl(r, PAL.dach), { ly: hh }); else box("flach", 0, lz, w * 0.4, 0.12, d * 0.4, 0x9aa0a8, { ly: hh });
-      if (D >= 2) box("garten", (r() - 0.5) * W * 0.5, lz - d / 2 - 0.45, 0.6, 0.6, 0.6, null, { rund: true });
-    } else {
-      const w = W * 0.86, d = D * 0.78, hh = 1.3 + r() * 1.1 + (W >= 2 && D >= 3 ? r() * 0.9 : 0), lz = vorn - d / 2 - 0.04;
-      box("haus", 0, lz, w, hh, d, wahl(r, PAL.block)); box("flach", (r() - 0.5) * w * 0.4, lz + (r() - 0.5) * d * 0.4, 0.3, 0.16, 0.3, 0x9aa0a8, { ly: hh });
-    }
-  } else if (h.zone === 2) {
-    if (h.stufe === 3 && (W >= 2 || D >= 2)) {
-      const w = W * 0.82, d = D * 0.78, hh = 2.2 + r() * 1.8 + (W >= 2 && D >= 2 ? r() * 1.4 : 0), lz = vorn - d / 2 - 0.04, c = wahl(r, PAL.turm);
-      box("haus", 0, lz, w, hh, d, c); box("haus", 0, lz, w * 0.7, 0.4 + r() * 0.6, d * 0.7, c, { ly: hh });
-    } else {
-      const w = W * (0.82 + r() * 0.1), d = Math.min(D, h.stufe === 1 ? 1 : 3) * 0.78, hh = h.stufe === 1 ? 0.55 + r() * 0.15 : 0.95 + r() * 0.6, lz = vorn - d / 2 - 0.04;
-      box("haus", 0, lz, w, hh, d, wahl(r, PAL.laden)); box("flach", 0, vorn - 0.02, w * 0.92, 0.05, 0.2, wahl(r, PAL.markise), { ly: 0.34 });
-      if (r() < 0.5) box("flach", (r() - 0.5) * w * 0.5, lz, 0.28, 0.14, 0.3, 0xa7abb1, { ly: hh });
-    }
-  } else {
-    const w = W * 0.86, d = D * (h.stufe === 1 ? 0.6 : 0.8), hh = h.stufe === 1 ? 0.42 : 0.6 + r() * 0.25, lz = vorn - d / 2 - 0.1;
-    box("haus", 0, lz, w, hh, d, wahl(r, PAL.halle)); box("dach", 0, lz, w + 0.04, 0.16, d + 0.04, 0x8b9096, { ly: hh });
-    if (h.stufe >= 2) box("zyl", -w / 2 + 0.2, lz - d / 2 + 0.2, 0.16, 1.2 + r() * 0.5, 0.16, 0xb5523a, { schlot: true });
-    if (h.stufe >= 3) { box("zyl", w / 2 - 0.35, lz - d / 2 - 0.35, 0.5, 0.55, 0.5, 0xc8ccd0); if (W >= 2) box("zyl", -w / 2 + 0.55, lz - d / 2 + 0.2, 0.16, 1.5, 0.16, 0xb5523a, { schlot: true }); }
-  }
+  const r = zufall(h.variante * 31 + h.stufe * 7919), W = h.w * ZELLE, D = h.d * ZELLE, T = [], vorn = D / 2 - 0.1, Z = ZONEN[h.zone];
+  const box = (b, lx, lz, w, hh, d, c, ex) => T.push(Object.assign({ b, lx, ly: 0, lz, sx: w, sy: hh, sz: d, c }, ex || {}));
+  const baum = (lx, lz, g, y) => box("garten", lx, lz, g, g, g, null, { rund: true, ly: y || 0 });
+  const giebel = (lx, lz, w, d, y, c, quer, hoch) => box("dach", lx, lz, (quer ? d : w) + 0.1, hoch || 0.28 + r() * 0.1, (quer ? w : d) + 0.1, c, { ly: y, ry: quer ? Math.PI / 2 : 0 });
+  const walm = (lx, lz, w, d, y, c, hoch) => { const hh = hoch || 0.3; giebel(lx, lz, w, d, y, c, false, hh); giebel(lx, lz, w, d, y, c, true, hh); };
+  const flachdach = (lx, lz, w, d, y, c) => box("flach", lx, lz, w + 0.05, 0.035, d + 0.05, c || 0xe5e2da, { ly: y });
+  const balkone = (lx, lz, w, d, hh) => { for (let y = 0.3; y < hh - 0.15; y += 0.32) box("flach", lx, lz + d / 2 + 0.035, w * 0.84, 0.025, 0.07, 0xf2efe8, { ly: y }); };
+  const markise = (lx, w, c, z) => box("flach", lx, z == null ? vorn - 0.02 : z, w * 0.92, 0.05, 0.18, c, { ly: 0.33 });
+  const pool = (lx, lz, w, d) => box("flach", lx, lz, w, 0.014, d, 0x5fc8e8, { ly: 0.002 });
+  const schild = (lx, lz, w, c, y) => box("flach", lx, lz, w, 0.1, 0.02, c, { ly: y });
+  const parkplatz = (lx, lz, w, d, n) => { box("flach", lx, lz, w, 0.006, d, 0x55595f, { ly: 0.004 }); for (let k = 0; k < n; k++) box("flach", lx - w / 2 + (k + 0.5) * w / n, lz, 0.13, 0.1, 0.22, PAL.auto[(h.variante + k * 3) % PAL.auto.length], { ly: 0.01 }); };
+  const zyl = (lx, lz, d, hh, c, ex) => box("zyl", lx, lz, d, hh, d, c, ex);
+  const pk = (a) => a[Math.floor(r() * a.length)];
+  const HAUS = PAL.haus, DACH = PAL.dach, BLOCK = PAL.block, TURM = PAL.turm, HALLE = PAL.halle, MARK = PAL.markise;
+  box("flach", 0, 0, W * 0.97, 0.008, D * 0.97, Z.boden, { fest: true });
+  const L = {
+    1: [ // Wohnen niedrig
+      [() => { const w = 0.6, d = 0.55, hh = 0.42, lz = vorn - d / 2 - 0.1; box("haus", 0, lz, w, hh, d, 0xb98a5e); giebel(0, lz, w, d, hh, 0x5a4636); if (D >= 2) { box("flach", 0.25, lz - d / 2 - 0.45, 0.22, 0.18, 0.2, 0x8a6a4a); baum(-0.25, lz - d / 2 - 0.5, 0.55); } return "Holzhaus"; },
+       () => { const n = W >= 2 ? 2 : 1; for (let k = 0; k < n; k++) { const w = 0.62, d = 0.58, hh = 0.46, lx = n === 2 ? (k ? 0.5 : -0.5) : 0, lz = vorn - d / 2 - 0.1; box("haus", lx, lz, w, hh, d, pk(HAUS)); giebel(lx, lz, w, d, hh, pk(DACH), r() < 0.4); if (D >= 2) baum(lx, lz - d / 2 - 0.5, 0.5); } return "Siedlungshaus"; },
+       () => { const w = Math.min(W * 0.8, 0.8), d = 0.55, hh = 0.34, lz = vorn - d / 2 - 0.1; box("haus", 0, lz, w, hh, d, pk(HAUS)); flachdach(0, lz, w, d, hh); if (D >= 2) baum(0, lz - d / 2 - 0.5, 0.6); return "Kleiner Bungalow"; }],
+      [() => { const w = 0.58, d = 0.6, hh = 0.5, lz = vorn - d / 2 - 0.08, lx = -0.13; box("haus", lx, lz, w, hh, d, pk(HAUS)); giebel(lx, lz, w, d, hh, pk(DACH)); box("flach", lx + w / 2 + 0.16, vorn - 0.25, 0.3, 0.26, 0.42, 0xd9d4ca); if (D >= 2) baum(0, lz - d / 2 - 0.5, 0.6); return "Haus mit Garage"; },
+       () => { const w = Math.min(W * 0.86, 1.6), d = 0.64, hh = 0.55, lz = vorn - d / 2 - 0.08; box("haus", -w / 4, lz, w / 2, hh, d, pk(HAUS)); box("haus", w / 4, lz, w / 2, hh, d, pk(HAUS)); giebel(0, lz, w, d, hh, pk(DACH)); if (D >= 2) { baum(-w / 4, lz - d / 2 - 0.5, 0.5); baum(w / 4, lz - d / 2 - 0.55, 0.45); } return "Doppelhaus"; },
+       () => { const w = 0.66, d = 0.6, hh = 0.55, lz = vorn - d / 2 - 0.15, c = pk(HAUS); box("haus", 0, lz, w, hh, d, c); giebel(0, lz, w, d, hh, pk(DACH)); box("haus", 0.12, lz + d / 2 + 0.1, 0.28, 0.42, 0.2, c); giebel(0.12, lz + d / 2 + 0.1, 0.28, 0.2, 0.42, pk(DACH), true, 0.18); if (D >= 2) baum(-0.2, lz - d / 2 - 0.5, 0.55); return "Haus mit Erker"; }],
+      [() => { const w = Math.min(W * 0.8, 0.95), d = 0.6, hh = 0.36, lz = vorn - d / 2 - 0.1; box("haus", 0, lz, w, hh, d, pk(HAUS)); flachdach(0, lz, w, d, hh); if (D >= 2) { pool(0.15, lz - d / 2 - 0.45, 0.42, 0.3); baum(-0.3, lz - d / 2 - 0.5, 0.55); } return "Bungalow mit Pool"; },
+       () => { const w = 0.7, d = 0.62, hh = 0.82, lz = vorn - d / 2 - 0.1; box("haus", 0, lz, w, hh, d, pk(HAUS)); giebel(0, lz, w, d, hh, pk(DACH), false, 0.38); if (D >= 2) baum(0.1, lz - d / 2 - 0.5, 0.6); return "Stadthaus"; },
+       () => { const w = 0.62, d = 0.6, hh = 0.56, lz = vorn - d / 2 - 0.1; box("haus", -0.12, lz, w, hh, d, pk(HAUS)); giebel(-0.12, lz, w, d, hh, pk(DACH)); box("flach", 0.34, lz, 0.3, 0.32, 0.45, 0xbfe3ef); if (D >= 2) baum(0, lz - d / 2 - 0.5, 0.6); return "Haus mit Wintergarten"; }],
+      [() => { const lz = vorn - 0.38, c = 0xf4f2ee; box("haus", 0, lz, Math.min(W * 0.85, 0.95), 0.4, 0.6, c); flachdach(0, lz, Math.min(W * 0.85, 0.95), 0.6, 0.4, 0xd9d6cf); box("haus", -0.12, lz - 0.05, 0.55, 0.35, 0.45, c, { ly: 0.44 }); flachdach(-0.12, lz - 0.05, 0.55, 0.45, 0.79, 0xd9d6cf); if (D >= 2) { pool(0.05, lz - 0.75, 0.6, 0.3); baum(0.35, lz - 0.8, 0.5); } return "Moderne Villa"; },
+       () => { const lz = vorn - 0.32, c = pk(HAUS), dc = pk(DACH); box("haus", 0, lz, Math.min(W * 0.85, 0.9), 0.5, 0.48, c); giebel(0, lz, Math.min(W * 0.85, 0.9), 0.48, 0.5, dc); if (D >= 2) { box("haus", -0.3, lz - 0.5, 0.36, 0.5, 0.55, c); giebel(-0.3, lz - 0.5, 0.36, 0.55, 0.5, dc, true); baum(0.3, lz - 0.7, 0.6); } return "Landhaus"; }],
+      [() => { const lz = vorn - 0.4, c = 0xf6f4f0; box("haus", 0, lz, Math.min(W * 0.9, 1.6), 0.42, 0.62, c); flachdach(0, lz, Math.min(W * 0.9, 1.6), 0.62, 0.42, 0xcfcac2); box("haus", W >= 2 ? 0.3 : 0.1, lz, 0.6, 0.38, 0.5, c, { ly: 0.46 }); box("flach", 0, lz + 0.32, Math.min(W * 0.9, 1.6) * 0.8, 0.12, 0.02, 0x7fa3b8, { ly: 0.18 }); if (D >= 2) { pool(-0.1, lz - 0.85, 0.7, 0.32); baum(-W * 0.35, lz - 0.85, 0.6); baum(W * 0.35, lz - 0.9, 0.55); } return "Luxusvilla"; },
+       () => { const lz = vorn - 0.35, c = pk(HAUS), dc = pk(DACH); box("haus", -0.1, lz, 0.7, 0.62, 0.55, c); walm(-0.1, lz, 0.7, 0.55, 0.62, dc, 0.3); box("haus", 0.33, lz + 0.1, 0.24, 1.05, 0.24, c); walm(0.33, lz + 0.1, 0.24, 0.24, 1.05, dc, 0.25); if (D >= 2) { baum(-0.3, lz - 0.7, 0.6); pool(0.2, lz - 0.7, 0.4, 0.25); } return "Villa mit Turm"; }]
+    ],
+    2: [ // Wohnen hoch
+      [() => { const w = W * 0.85, d = Math.min(D * 0.6, 1.1), hh = 1.0, lz = vorn - d / 2 - 0.06; box("haus", 0, lz, w, hh, d, pk(BLOCK)); giebel(0, lz, w, d, hh, pk(DACH), false, 0.36); return "Altbau-Mietshaus"; },
+       () => { const w = W * 0.85, d = Math.min(D * 0.6, 1.0), hh = 0.95, lz = vorn - d / 2 - 0.06; box("haus", 0, lz, w, hh, d, 0xd8d4c8); flachdach(0, lz, w, d, hh); balkone(0, lz, w, d, hh); return "Plattenbau"; }],
+      [() => { const w = W * 0.85, d = Math.min(D * 0.62, 1.2), hh = 1.25, lz = vorn - d / 2 - 0.06; box("haus", 0, lz, w, hh, d, pk(BLOCK)); flachdach(0, lz, w, d, hh); balkone(0, lz, w, d, hh); baum(-W * 0.3, -D / 2 + 0.4, 0.55); return "Mehrfamilienhaus"; },
+       () => { const n = Math.max(3, Math.round(W / 0.4)), bw = W * 0.9 / n, d = Math.min(D * 0.55, 0.85), hh = 0.72, lz = vorn - d / 2 - 0.06, dc = pk(DACH); for (let k = 0; k < n; k++) { const lx = -W * 0.45 + bw * (k + 0.5); box("haus", lx, lz, bw - 0.01, hh, d, HAUS[(h.variante + k) % HAUS.length]); box("dach", lx, lz, bw + 0.005, 0.28, d + 0.08, dc, { ly: hh }); } return "Reihenhäuser"; }],
+      [() => { const w = W * 0.86, d = D * 0.72, hh = 1.6 + r() * 0.5, lz = vorn - d / 2 - 0.04; box("haus", 0, lz, w, hh, d, pk(BLOCK)); flachdach(0, lz, w, d, hh); balkone(0, lz, w, d, hh); return "Wohnblock"; },
+       () => { const c = pk(BLOCK), hh = 1.3 + r() * 0.4, d1 = 0.7, lz1 = vorn - d1 / 2 - 0.04; box("haus", 0, lz1, W * 0.86, hh, d1, c); const wd = Math.max(0.5, D - d1 - 0.3); box("haus", -W * 0.43 + 0.35, lz1 - d1 / 2 - wd / 2, 0.7, hh * 0.85, wd, c); baum(W * 0.2, lz1 - d1 / 2 - 0.6, 0.6); return "Wohnanlage"; }],
+      [() => { const s0 = Math.min(W, D) * 0.62, hh = 2.6 + r() * 1.2, lz = vorn - D * 0.42, c = pk(BLOCK); box("haus", 0, lz, s0, hh, s0, c); balkone(0, lz, s0, s0, hh); box("haus", 0, lz, s0 * 0.7, 0.3, s0 * 0.7, c, { ly: hh }); baum(-W * 0.35, vorn - 0.25, 0.45); return "Hochhaus"; },
+       () => { const s0 = Math.min(W, D) * 0.6, hh = 2.4 + r() * 1.0, lz = vorn - D * 0.42; box("haus", 0, lz, s0, hh, s0, pk(BLOCK)); flachdach(0, lz, s0, s0, hh, 0x7dbb55); baum(-s0 * 0.25, lz, 0.4, hh + 0.03); baum(s0 * 0.25, lz + 0.1, 0.35, hh + 0.03); return "Wohnturm mit Dachgarten"; }],
+      [() => { const s0 = Math.min(W, D) * 0.55, hh = 4.2 + r() * 1.8, lz = vorn - D * 0.42, c = pk(TURM); box("haus", 0, lz, s0, hh, s0, c); box("haus", 0, lz, s0 * 0.7, 0.4, s0 * 0.7, c, { ly: hh }); box("flach", s0 * 0.15, lz, 0.03, 0.8, 0.03, 0xc9ced6, { ly: hh + 0.4 }); return "Wohn-Wolkenkratzer"; },
+       () => { const c = pk(TURM); if (W >= 3) { for (const lx of [-W * 0.22, W * 0.22]) { box("haus", lx, vorn - D * 0.42, 0.85, 3.6 + r() * 0.8, 0.85, c); } box("flach", 0, vorn - D * 0.42, W * 0.3, 0.12, 0.3, 0xd9dde2, { ly: 2.0 }); return "Zwillingstürme"; } const s0 = Math.min(W, D) * 0.6; box("haus", 0, vorn - D * 0.42, s0, 3.8, s0, c); return "Wohnturm"; }]
+    ],
+    3: [ // Gewerbe niedrig
+      [() => { const lz = vorn - 0.3; box("haus", 0, lz, 0.4, 0.38, 0.35, 0xf2efe8); markise(0, 0.45, pk(MARK), lz + 0.2); return "Kiosk"; },
+       () => { const w = Math.min(W * 0.8, 0.8), d = 0.6, lz = vorn - d / 2 - 0.05; box("haus", 0, lz, w, 0.5, d, 0xe9d8bd); markise(0, w, 0x8a5a3a); schild(0, vorn + 0.01, w * 0.5, 0xf2c14e, 0.42); return "Bäckerei"; },
+       () => { const w = Math.min(W * 0.7, 0.75), d = 0.5, hh = 0.48, lz = vorn - d / 2 - 0.32; box("haus", 0, lz, w, hh, d, pk(PAL.laden)); box("flach", 0, lz + d / 2 + 0.06, w * 0.95, 0.04, 0.14, pk(MARK), { ly: 0.3 }); const sc = pk(MARK); for (const px of [-0.28, 0, 0.28]) { box("flach", px, vorn - 0.1, 0.015, 0.22, 0.015, 0xdddddd); box("dach", px, vorn - 0.1, 0.2, 0.06, 0.2, sc, { ly: 0.22 }); } return "Café"; }],
+      [() => { const lz = vorn - 0.38, w = Math.min(W * 0.9, 0.95); box("flach", 0, lz, w, 0.05, 0.6, 0xf4f4f4, { ly: 0.42 }); box("flach", 0, lz + 0.31, w, 0.06, 0.02, 0xe8493f, { ly: 0.4 }); for (const px of [-0.35, 0.35]) for (const pz of [-0.22, 0.22]) box("flach", px * Math.min(W, 1), lz + pz, 0.04, 0.42, 0.04, 0xd9d9d9); for (const px of [-0.15, 0.15]) box("flach", px, lz, 0.07, 0.15, 0.1, 0xe8493f); if (D >= 2) box("haus", 0, lz - 0.55, 0.55, 0.36, 0.32, 0xf2efe8); return "Tankstelle"; },
+       () => { const w = Math.min(W * 0.8, 0.85), d = 0.62, lz = vorn - d / 2 - 0.25; box("haus", 0, lz, w, 0.52, d, 0xc96f4a); giebel(0, lz, w, d, 0.52, 0x5d6470); zyl(w * 0.3, lz - 0.15, 0.08, 0.95, 0x8a6a5a); const sc = pk(MARK); for (const px of [-0.25, 0.25]) { box("flach", px, vorn - 0.08, 0.015, 0.2, 0.015, 0xdddddd); box("dach", px, vorn - 0.08, 0.18, 0.05, 0.18, sc, { ly: 0.2 }); } return "Restaurant"; },
+       () => { const w = Math.min(W * 0.85, 0.85), d = 0.62, lz = vorn - d / 2 - 0.05; box("haus", 0, lz, w, 0.82, d, pk(HAUS)); markise(0, w, pk(MARK)); giebel(0, lz, w, d, 0.82, pk(DACH)); return "Laden mit Wohnung"; }],
+      [() => { const w = W * 0.85, d = Math.min(D * 0.75, 0.9), hh = 1.05, lz = vorn - d / 2 - 0.04; box("haus", 0, lz, w, hh, d, pk(PAL.laden)); box("flach", 0, lz + d / 2 + 0.01, w * 0.9, 0.22, 0.02, 0x7fb8e0, { ly: 0.06 }); flachdach(0, lz, w, d, hh); return "Boutiquenhaus"; },
+       () => { const w = W * 0.85, d = Math.min(D * 0.75, 0.9), hh = 1.15, lz = vorn - d / 2 - 0.06; box("haus", 0, lz, w, hh, d, pk(BLOCK)); schild(0, lz + d / 2 + 0.01, 0.4, 0xf2c14e, hh - 0.18); box("flach", 0, lz + d / 2 + 0.1, 0.32, 0.04, 0.2, 0x2f3540, { ly: 0.3 }); return "Kleines Hotel"; },
+       () => { const n = W >= 2 ? 3 : 2, bw = W * 0.9 / n, d = Math.min(D * 0.75, 0.8), lz = vorn - d / 2 - 0.04; for (let k = 0; k < n; k++) { const lx = -W * 0.45 + bw * (k + 0.5); box("haus", lx, lz, bw - 0.02, 0.62, d, PAL.laden[(h.variante + k) % PAL.laden.length]); markise(lx, bw, MARK[(h.variante + k) % MARK.length]); } return "Ladenzeile"; }]
+    ],
+    4: [ // Gewerbe hoch
+      [() => { const d = Math.min(D * 0.5, 0.9), lz = -D / 2 + d / 2 + 0.12; box("haus", 0, lz, W * 0.9, 0.5, d, 0xeeeae2); schild(0, lz + d / 2 + 0.01, W * 0.6, pk(MARK), 0.34); parkplatz(0, vorn - (D - d - 0.3) / 2, W * 0.9, Math.max(0.4, D - d - 0.3), Math.max(2, Math.floor(W * 2))); return "Supermarkt"; },
+       () => { const w = W * 0.86, d = D * 0.7, hh = 1.2 + r() * 0.4, lz = vorn - d / 2 - 0.04; box("haus", 0, lz, w, hh, d, pk(PAL.laden)); markise(0, w, pk(MARK)); flachdach(0, lz, w, d, hh); return "Geschäftshaus"; }],
+      [() => { const w = W * 0.88, d = D * 0.75, hh = 1.2 + r() * 0.4, lz = vorn - d / 2 - 0.04; box("haus", 0, lz, w, hh, d, 0xe6dccb); box("flach", 0, lz + d / 2 + 0.01, w * 0.96, 0.16, 0.02, 0x7fb8e0, { ly: 0.25 }); schild(0, lz + d / 2 + 0.01, w * 0.5, pk(MARK), hh - 0.16); return "Kaufhaus"; },
+       () => { const w = W * 0.8, d = Math.min(D * 0.7, 1.6), hh = 1.6 + r() * 0.6, lz = vorn - d / 2 - 0.08; box("haus", 0, lz, w, hh, d, pk(BLOCK)); box("flach", 0, lz + d / 2 + 0.1, 0.42, 0.04, 0.22, 0x2f3540, { ly: 0.3 }); schild(0, lz + d / 2 + 0.01, 0.5, 0xf2c14e, hh - 0.2); return "Hotel"; }],
+      [() => { const w = W * 0.9, d = D * 0.62, lz = -D / 2 + d / 2 + 0.1; box("haus", 0, lz, w, 0.75, d, 0xe9e4da); box("flach", 0, lz, w * 0.5, 0.18, d * 0.5, 0xa9d4ea, { ly: 0.75 }); schild(0, lz + d / 2 + 0.01, w * 0.4, pk(MARK), 0.55); parkplatz(0, vorn - 0.25, w, 0.4, Math.max(3, Math.floor(W * 2))); return "Einkaufszentrum"; },
+       () => { const c = pk(TURM), lz = vorn - D * 0.45; box("haus", 0, lz, W * 0.86, 0.6, D * 0.7, 0xe6dccb); box("haus", 0, lz - 0.1, Math.min(W, D) * 0.5, 2.8 + r() * 1.2, Math.min(W, D) * 0.5, c, { ly: 0.6 }); schild(0, lz + D * 0.35 + 0.01, 0.6, 0xf2c14e, 0.45); return "Hotelturm"; }]
+    ],
+    5: [ // Büros
+      [() => { const w = W * 0.82, d = D * 0.7, hh = 1.0 + r() * 0.3, lz = vorn - d / 2 - 0.06; box("haus", 0, lz, w, hh, d, 0xc9ced3); for (let y = 0.2; y < hh; y += 0.32) box("flach", 0, lz + d / 2 + 0.005, w * 0.98, 0.1, 0.01, 0x6f93ab, { ly: y }); flachdach(0, lz, w, d, hh); return "Bürohaus"; },
+       () => { const w = W * 0.82, d = D * 0.7, hh = 1.2 + r() * 0.4, lz = vorn - d / 2 - 0.06; box("haus", 0, lz, w, hh, d, 0x8fb3c9); flachdach(0, lz, w, d, hh, 0xb9c4cc); return "Bürogebäude mit Glasfront"; }],
+      [() => { const c = pk(TURM), d = D * 0.36; box("haus", -W * 0.22, vorn - d / 2 - 0.05, W * 0.4, 1.6, d, c); box("haus", W * 0.22, -D / 2 + d / 2 + 0.1, W * 0.4, 1.9, d, c); box("flach", 0, 0, 0.3, 0.12, D * 0.5, 0xd9dde2, { ly: 1.0 }); return "Bürokomplex"; },
+       () => { const s0 = Math.min(W, D) * 0.7, hh = 2.0 + r() * 0.6, lz = vorn - D * 0.45; box("haus", 0, lz, s0, hh, s0, pk(TURM)); box("flach", 0, lz, s0 * 0.5, 0.2, s0 * 0.5, 0x9aa0a8, { ly: hh }); return "Glasbürohaus"; }],
+      [() => { const s0 = Math.min(W, D) * 0.62, hh = 4.0 + r() * 1.6, lz = vorn - D * 0.45, c = pk(TURM); box("haus", 0, lz, s0, hh, s0, c); box("haus", 0, lz, s0 * 0.72, 0.5, s0 * 0.72, c, { ly: hh }); box("flach", 0, lz, 0.03, 0.9, 0.03, 0xc9ced6, { ly: hh + 0.5 }); return "Wolkenkratzer"; },
+       () => { const c = pk(TURM), lz = vorn - D * 0.45; let y = 0, sz = Math.min(W, D) * 0.78; for (let k = 0; k < 4; k++) { const hh = 1.0 + r() * 0.9; box("haus", 0, lz, sz, hh, sz, c, { ly: y }); y += hh; sz *= 0.78; } box("flach", 0, lz, 0.03, 0.6, 0.03, 0xc9ced6, { ly: y }); return "Gestufter Glasturm"; },
+       () => { const c = pk(TURM); if (W >= 3) { for (const lx of [-W * 0.22, W * 0.22]) box("haus", lx, vorn - D * 0.45, 0.8, 3.6 + r() * 0.6, 0.8, c); box("flach", 0, vorn - D * 0.45, W * 0.32, 0.14, 0.3, 0xd9dde2, { ly: 2.4 }); return "Zwillingstürme"; } box("haus", 0, vorn - D * 0.45, Math.min(W, D) * 0.6, 3.6, Math.min(W, D) * 0.6, c); return "Büroturm"; }]
+    ],
+    6: [ // Industrie
+      [() => { const w = W * 0.86, d = D * 0.55, lz = vorn - d / 2 - 0.1; box("haus", 0, lz, w, 0.42, d, pk(HALLE)); box("dach", 0, lz, w + 0.04, 0.16, d + 0.04, 0x8b9096, { ly: 0.42 }); return "Werkstatt"; },
+       () => { const w = W * 0.86, d = D * 0.62, hh = 0.42, lz = vorn - d / 2 - 0.12, n = Math.max(2, Math.round(d / 0.3)); box("haus", 0, lz, w, hh, d, pk(HALLE)); for (let k = 0; k < n; k++) box("dach", 0, lz - d / 2 + d / n * (k + 0.5), w, 0.16, d / n, 0x9aa1a8, { ly: hh }); return "Lagerhalle"; },
+       () => { box("flach", 0, 0, W * 0.9, 0.01, D * 0.85, 0x8c8a84, { ly: 0.004 }); for (let k = 0; k < 6; k++) box("dach", (r() - 0.5) * W * 0.7, (r() - 0.5) * D * 0.6, 0.3 + r() * 0.3, 0.12 + r() * 0.15, 0.3 + r() * 0.3, pk([0x7a5a3a, 0x8a8f96, 0x6d4c3a, 0xa36a3a])); box("haus", W * 0.3, vorn - 0.25, 0.35, 0.3, 0.3, 0xb5b0a5); return "Schrottplatz"; }],
+      [() => { const w = W * 0.86, d = D * 0.75, hh = 0.65 + r() * 0.2, lz = vorn - d / 2 - 0.1; box("haus", 0, lz, w, hh, d, pk(HALLE)); box("dach", 0, lz, w + 0.04, 0.16, d + 0.04, 0x8b9096, { ly: hh }); zyl(-w / 2 + 0.2, lz - d / 2 + 0.2, 0.16, 1.3 + r() * 0.4, 0xb5523a, { schlot: true }); return "Fabrikhalle"; },
+       () => { const lz = vorn - 0.45; box("haus", -W * 0.28, lz, 0.55, 0.45, 0.55, pk(HALLE)); for (let k = 0; k < Math.min(4, W); k++) zyl(-W * 0.05 + k * 0.38, lz - 0.2, 0.34, 0.9 + r() * 0.3, 0xd8dade); return "Silos"; },
+       () => { const w = W * 0.9, d = D * 0.55, lz = -D / 2 + d / 2 + 0.1; box("haus", 0, lz, w, 0.6, d, 0xd0c8b8); for (let k = 0; k < Math.min(4, W); k++) box("flach", -w / 2 + 0.3 + k * 0.45, lz + d / 2 + 0.02, 0.3, 0.32, 0.02, 0x55595f); for (let k = 0; k < 2; k++) box("flach", -w * 0.25 + k * w * 0.5, vorn - 0.3, 0.22, 0.24, 0.55, k ? 0xe8493f : 0x3f7fe8, { ly: 0.01 }); return "Logistikzentrum"; }],
+      [() => { const w = W * 0.86, d = D * 0.78, hh = 0.75, lz = vorn - d / 2 - 0.1; box("haus", 0, lz, w, hh, d, pk(HALLE)); box("dach", 0, lz, w + 0.04, 0.16, d + 0.04, 0x8b9096, { ly: hh }); zyl(-w / 2 + 0.2, lz - d / 2 + 0.2, 0.16, 1.5, 0xb5523a, { schlot: true }); zyl(w / 2 - 0.35, lz - d / 2 - 0.3, 0.5, 0.55, 0xc8ccd0); return "Fabrik"; },
+       () => { const w = W * 0.86, d = D * 0.78, hh = 0.75, lz = vorn - d / 2 - 0.1; box("haus", -w / 4, lz, w / 2 - 0.05, hh, d, pk(HALLE)); box("haus", w / 4, lz, w / 2 - 0.05, hh * 0.8, d, pk(HALLE)); box("flach", 0, lz, w * 0.9, 0.06, 0.12, 0x6d737a, { ly: hh * 0.7 }); zyl(-w / 2 + 0.25, lz - d / 2 + 0.25, 0.18, 1.8, 0xb5523a, { schlot: true }); zyl(w / 2 - 0.25, lz - d / 2 + 0.25, 0.18, 1.6, 0xb5523a, { schlot: true }); return "Großfabrik"; },
+       () => { const lz = vorn - D * 0.4; box("haus", -W * 0.3, vorn - 0.3, 0.6, 0.5, 0.4, pk(HALLE)); for (let k = 0; k < 3; k++) zyl(-W * 0.1 + k * 0.5, lz - 0.2, 0.42, 0.7, 0xe9ecef); box("flach", 0.2, lz + 0.15, W * 0.6, 0.05, 0.05, 0x9aa0a8, { ly: 0.5 }); zyl(W * 0.38, lz + 0.3, 0.14, 1.6, 0xb5523a, { schlot: true }); return "Chemiewerk"; }]
+    ],
+    7: [[ // Landwirtschaft (nur eine Stufe, wie bei Cities: Skylines)
+      () => { const n = Math.max(4, Math.round(D / 0.22)); for (let k = 0; k < n; k++) box("flach", 0, -D / 2 + 0.1 + (D - 0.4) / n * (k + 0.5), W * 0.88, 0.03, (D - 0.4) / n * 0.8, k % 2 ? 0xe2c26a : 0xd4b257, { ly: 0.004 }); box("haus", W * 0.35, vorn - 0.2, 0.42, 0.38, 0.3, 0xa8432f); giebel(W * 0.35, vorn - 0.2, 0.42, 0.3, 0.38, 0x5a4636); return "Getreidefeld"; },
+      () => { const n = Math.max(4, Math.round(D / 0.2)); for (let k = 0; k < n; k++) box("flach", 0, -D / 2 + 0.1 + (D - 0.4) / n * (k + 0.5), W * 0.88, 0.045, (D - 0.4) / n * 0.55, 0x4f9a3a, { ly: 0.004 }); box("flach", W * 0.35, vorn - 0.2, 0.35, 0.25, 0.25, 0x9a7a5a); return "Gemüsefeld"; },
+      () => { box("haus", -W * 0.25, vorn - 0.35, 0.6, 0.5, 0.45, 0xa8432f); giebel(-W * 0.25, vorn - 0.35, 0.6, 0.45, 0.5, 0x5a4636, false, 0.32); zyl(W * 0.05, vorn - 0.35, 0.3, 1.0, 0xd8dade); box("haus", W * 0.3, vorn - 0.3, 0.4, 0.4, 0.35, 0xf2efe8); giebel(W * 0.3, vorn - 0.3, 0.4, 0.35, 0.4, 0xa8432f); for (let k = 0; k < 5; k++) box("flach", (r() - 0.5) * W * 0.7, -D * 0.25 + (r() - 0.5) * D * 0.3, 0.12, 0.08, 0.06, k % 2 ? 0xf4f4f4 : 0x2c2f36, { ly: 0.01 }); return "Bauernhof"; },
+      () => { const n = Math.max(2, Math.min(4, W)); for (let k = 0; k < n; k++) box("flach", -W * 0.45 + W * 0.9 / n * (k + 0.5), -0.1, W * 0.9 / n - 0.08, 0.28, D * 0.7, 0xcfe8ef); return "Gewächshäuser"; }
+    ]],
+    8: [[ // Forstwirtschaft
+      () => { const w = W * 0.6, lz = vorn - 0.4; box("haus", -W * 0.15, lz, w, 0.5, 0.6, 0x9c7a55); box("dach", -W * 0.15, lz, w + 0.06, 0.18, 0.66, 0x5a4636, { ly: 0.5 }); for (let k = 0; k < 3; k++) box("flach", W * 0.3, -D * 0.2 + k * 0.28 - 0.3, 0.5, 0.18, 0.2, 0x8b5a2b); return "Sägewerk"; },
+      () => { for (let k = 0; k < 8; k++) box("flach", (r() - 0.5) * W * 0.75, (r() - 0.5) * D * 0.7, 0.5, 0.16 + r() * 0.1, 0.2, 0x8b5a2b, { ry: r() < 0.5 ? 0 : Math.PI / 2 }); box("flach", W * 0.38, vorn - 0.3, 0.05, 1.1, 0.05, 0xf2c14e); box("flach", W * 0.2, vorn - 0.3, 0.45, 0.05, 0.05, 0xf2c14e, { ly: 1.05 }); return "Holzlager"; },
+      () => { for (let a = -W * 0.4; a < W * 0.45; a += 0.35) for (let b = -D * 0.4; b < D * 0.35; b += 0.35) baum(a, b, 0.35 + r() * 0.15); box("flach", W * 0.35, vorn - 0.2, 0.3, 0.25, 0.25, 0x9a7a5a); return "Baumschule"; }
+    ]]
+  };
+  const stufen = L[h.zone], liste = stufen[Math.min(h.stufe, stufen.length) - 1];
+  h.name = liste[h.variante % liste.length]();
   return T;
 }
-function hausWeg(h) { if (!h) return; for (const id of h.zellen) { const z = zellen.get(id); if (z) z.haus = null; } haeuser.delete(h.id); haeuserNeu = zellenNeu = true; }
+function hausWeg(h) { if (!h) return; for (const id of h.zellen) { const z = zellen.get(id); if (z) z.haus = null; } haeuser.delete(h.id); haeuserNeu = zellenNeu = true; if (ZONEN[h.zone].gruppe === "i") dreckZeichnen(); }
 function neuesHaus(d, alt) {
   const h = Object.assign({ id: d.id || hId++, geboren: alt ? -100 : jetztS, simGeboren: alt ? -100 : simZeit, ab: 0, zug: null }, d); hId = Math.max(hId, h.id + 1);
   let x = 0, z = 0, sx = 0, sz = 0; h.zellen.forEach((id) => { const c = zellen.get(id); c.haus = h.id; x += c.x; z += c.z; sx += Math.sin(c.rot); sz += Math.cos(c.rot); });
@@ -669,8 +743,69 @@ function neuesHaus(d, alt) {
   const rr = Math.max(h.w, h.d) * 0.62 + 0.2; baeumeFaellen({ x0: h.x - rr, x1: h.x + rr, z0: h.z - rr, z1: h.z + rr }, (bx, bz) => Math.hypot(bx - h.x, bz - h.z) < rr);
   return h;
 }
-const leute = (h) => h.zone === 1 ? BEWOHNER[h.stufe] * h.zellen.length : 0;
-const jobs = (h) => h.zone === 2 ? JOBS_L[h.stufe] * h.zellen.length : h.zone === 3 ? JOBS_I[h.stufe] * h.zellen.length : 0;
+const leute = (h) => LEUTE[h.zone] ? LEUTE[h.zone][Math.min(h.stufe, 5)] * h.zellen.length : 0;
+const jobs = (h) => { const t = JOBS[h.zone]; return t ? t[Math.min(h.stufe, t.length - 1)] * h.zellen.length : 0; };
+const gruppe = (h) => ZONEN[h.zone].gruppe;
+const zoneFrei = (z) => meilenstein >= (ZONEN[z].ab || 0);
+/* Bodenwert (0–100): Bäume, Alleen, Wasser und Läden heben ihn – Hauptstraßen und Dreck senken ihn */
+function dreckBei(x, z, ohne) {
+  let d = 0;
+  for (const q of industrieListe) { if (q === ohne) continue; const r = q.zone === 6 ? 5 + q.stufe : q.zone === 7 ? 3 : 4, e = Math.hypot(q.x - x, q.z - z); if (e < r) d += (1 - e / r) * (q.zone === 6 ? 45 : 18); }
+  return Math.min(100, d);
+}
+function bodenwert(x, z, ohne) {
+  let w = 24, b = 0;
+  baeumeIn(x - 3, z - 3, x + 3, z + 3, (t) => { if (!t.weg && Math.hypot(t.x - x, t.z - z) < 3) b++; });
+  w += Math.min(22, b * 1.6);
+  const a = abstand(x, z); if (a < 9) w += 24 * (1 - Math.max(0, a - 3) / 6);
+  if (naechsteKante({ x, z }, 3.2, (k) => k.typ === "allee")) w += 12;
+  if (naechsteKante({ x, z }, 2.6, (k) => k.typ === "haupt" && !k.aussen)) w -= 10;
+  let laeden = 0; for (const q of ladenListe) if (Math.hypot(q.x - x, q.z - z) < 6) laeden++;
+  w += Math.min(14, laeden * 4);
+  const dreck = dreckBei(x, z, ohne);
+  return { wert: klemme(Math.round(w - dreck * 0.9), 0, 100), dreck: Math.round(dreck) };
+}
+function werteAuffrischen() { listenAuffrischen(); for (const h of haeuser.values()) { const r = bodenwert(h.x, h.z, h); h.wert = r.wert; h.dreck = r.dreck; } }
+/* Dreck-Flecken um Industrie */
+const dreckTex = (() => { const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d"), v = g.createRadialGradient(32, 32, 2, 32, 32, 32); v.addColorStop(0, "rgba(255,255,255,1)"); v.addColorStop(0.6, "rgba(255,255,255,.6)"); v.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = v; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+const dreckMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(2, 2).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: dreckTex, transparent: true, opacity: 0.5, depthWrite: false, color: 0xffffff }), 800);
+dreckMesh.count = 0; dreckMesh.frustumCulled = false; dreckMesh.renderOrder = 1; dreckMesh.setColorAt(0, new THREE.Color()); szene.add(dreckMesh);
+function dreckZeichnen() {
+  let i = 0;
+  for (const h of haeuser.values()) {
+    if (gruppe(h) !== "i" || i >= 800) continue;
+    const r = h.zone === 6 ? 5 + h.stufe : h.zone === 7 ? 3 : 4;
+    _o.position.set(h.x, G + 0.006, h.z); _o.rotation.set(0, h.variante % 6, 0); _o.scale.set(r, 1, r); _o.updateMatrix(); dreckMesh.setMatrixAt(i, _o.matrix);
+    dreckMesh.setColorAt(i, _farbe.setHex(h.zone === 6 ? 0x6b5233 : h.zone === 7 ? 0x8a6a3a : 0x6d5a3a)); i++;
+  }
+  dreckMesh.count = i; dreckMesh.instanceMatrix.needsUpdate = true; if (dreckMesh.instanceColor) dreckMesh.instanceColor.needsUpdate = true;
+}
+/* ⬆️ beim Aufstieg */
+const hochTex = (() => { const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d"); g.fillStyle = "#2fbf5a"; g.beginPath(); g.arc(32, 32, 28, 0, 7); g.fill(); g.fillStyle = "#fff"; g.beginPath(); g.moveTo(32, 12); g.lineTo(50, 34); g.lineTo(39, 34); g.lineTo(39, 52); g.lineTo(25, 52); g.lineTo(25, 34); g.lineTo(14, 34); g.closePath(); g.fill(); return new THREE.CanvasTexture(c); })();
+const hochSprites = [], hochListe = [];
+for (let i = 0; i < 16; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: hochTex, transparent: true, depthTest: false })); sp.visible = false; sp.renderOrder = 9; sp.scale.setScalar(0.9); szene.add(sp); hochSprites.push(sp); }
+function hochZeigen(h, y) { hochListe.push({ x: h.x, z: h.z, y, t: jetztS }); if (hochListe.length > 16) hochListe.shift(); }
+function hochZeichnen() {
+  for (let i = 0; i < 16; i++) {
+    const sp = hochSprites[i], q = hochListe[i];
+    if (!q || jetztS - q.t > 2.4) { sp.visible = false; continue; }
+    const f = (jetztS - q.t) / 2.4; sp.visible = true; sp.position.set(q.x, BODEN + q.y + 0.4 + f * 1.2, q.z); sp.material.opacity = f < 0.75 ? 1 : (1 - f) * 4;
+  }
+}
+/* Bodenwert-Ansicht */
+const wertMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.92, 0.92).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.8, depthWrite: false, toneMapped: false }), 40000);
+wertMesh.count = 0; wertMesh.frustumCulled = false; wertMesh.renderOrder = 3; wertMesh.setColorAt(0, new THREE.Color()); wertMesh.visible = false; szene.add(wertMesh);
+let wertAnsicht = false, wertZeit = -9;
+function wertFarbe(v) { const rot = farbe(0xff4a3d), gelb = farbe(0xffd23d), gruen = farbe(0x2fd66b); return v < 50 ? rot.lerp(gelb, v / 50) : gelb.lerp(gruen, (v - 50) / 50); }
+function wertZeichnen() {
+  wertMesh.visible = wertAnsicht; if (!wertAnsicht) return; wertZeit = jetztS; listenAuffrischen();
+  let i = 0;
+  for (const z of zellen.values()) {
+    const h = z.haus && haeuser.get(z.haus), v = h ? (h.wert ?? 0) : bodenwert(z.x, z.z).wert;
+    _o.position.set(z.x, h ? BODEN + 0.02 : G + 0.04, z.z); _o.rotation.set(0, z.rot, 0); _o.scale.set(1, 1, 1); _o.updateMatrix(); wertMesh.setMatrixAt(i, _o.matrix); wertMesh.setColorAt(i, wertFarbe(v)); i++;
+  }
+  wertMesh.count = i; wertMesh.instanceMatrix.needsUpdate = true; if (wertMesh.instanceColor) wertMesh.instanceColor.needsUpdate = true;
+}
 /* Zufahrt eines Hauses (Punkt auf der nächsten befahrbaren Straße) */
 function zufahrt(h) {
   if (h.zug && h.zugV === netzVersion) return h.zug;
@@ -688,7 +823,7 @@ function haeuserZeichnen() {
     for (const t of h.teile) {
       const m = B[t.b]; if (n[t.b] >= m.instanceMatrix.count) continue;
       const wx = h.x + t.lx * cs + t.lz * sn, wz = h.z - t.lx * sn + t.lz * cs;
-      if (t.rund) { const f = p >= 1 ? 1 : (p > 0 ? federn(p) : 0); _o.position.set(wx, BODEN, wz); _o.scale.set(t.sx * f + 1e-4, t.sy * f + 1e-4, t.sz * f + 1e-4); }
+      if (t.rund) { const f = p >= 1 ? 1 : (p > 0 ? federn(p) : 0); _o.position.set(wx, BODEN + (t.ly || 0) * e, wz); _o.scale.set(t.sx * f + 1e-4, t.sy * f + 1e-4, t.sz * f + 1e-4); }
       else if (t.fest) { _o.position.set(wx, G + 0.012, wz); _o.scale.set(t.sx, t.sy, t.sz); }
       else { _o.position.set(wx, BODEN + t.ly * e, wz); _o.scale.set(t.sx, Math.max(t.sy * e, 1e-4), t.sz); }
       _o.rotation.set(0, h.rot + (t.ry || 0), 0); _o.updateMatrix(); m.setMatrixAt(n[t.b], _o.matrix);
@@ -718,31 +853,32 @@ function alleeZeichnen() {
 /* ================================================================
    Wirtschaft: Bedarf, Steuern, Budget, Meilensteine
    ================================================================ */
-let steuern = { 1: 9, 2: 9, 3: 9 }, meilenstein = 0, tempo = 1, simZeit = 0, tage = 0, letzteWoche = null;
-let bedarf = { 1: 60, 2: 20, 3: 40 };
+let steuern = { w: 9, g: 9, b: 9, i: 9 }, meilenstein = 0, tempo = 1, simZeit = 0, tage = 0, letzteWoche = null;
+let bedarf = { w: 60, g: 20, b: 0, i: 40 };
 function kennzahlen() {
-  let e = 0, jl = 0, ji = 0; for (const h of haeuser.values()) { if (h.zone === 1) e += leute(h); else if (h.zone === 2) jl += jobs(h); else ji += jobs(h); }
-  const ein = { 1: e * 2.0 * steuern[1] / 9, 2: jl * 2.6 * steuern[2] / 9, 3: ji * 2.4 * steuern[3] / 9 };
+  let e = 0, jl = 0, jb = 0, ji = 0; for (const h of haeuser.values()) { const g = gruppe(h); if (g === "w") e += leute(h); else if (g === "g") jl += jobs(h); else if (g === "b") jb += jobs(h); else ji += jobs(h); }
+  const ein = { w: e * 2.0 * steuern.w / 9, g: jl * 2.6 * steuern.g / 9, b: jb * 3.2 * steuern.b / 9, i: ji * 2.4 * steuern.i / 9 };
   let strassen = 0; for (const k of kanten.values()) strassen += k.len * TYP[k.typ].preis * 0.012;
-  const einnahmen = ein[1] + ein[2] + ein[3];
-  return { e, jl, ji, j: jl + ji, ein, einnahmen, strassen, ausgaben: strassen, saldo: einnahmen - strassen };
+  const einnahmen = ein.w + ein.g + ein.b + ein.i;
+  return { e, jl, jb, ji, j: jl + jb + ji, ein, einnahmen, strassen, ausgaben: strassen, saldo: einnahmen - strassen };
 }
 function bedarfBerechnen() {
   const k = kennzahlen(), arbeiter = k.e * 0.55;
   let w = 22 + (k.j - arbeiter) * 0.9 + (k.e < 40 ? 45 : 0);
-  let l = (k.e * 0.24 - k.jl) * 1.5 + 8;
-  let i = (arbeiter * 0.42 - k.ji) * 1.2 + (k.e < 60 ? 25 : 0) + k.jl * 0.15;
+  let l = (k.e * 0.22 - k.jl) * 1.5 + 8;
+  let b = zoneFrei(5) ? (k.e * 0.14 - k.jb) * 1.3 + 10 : -100;
+  let i = (arbeiter * (zoneFrei(5) ? 0.34 : 0.42) - k.ji) * 1.2 + (k.e < 60 ? 25 : 0) + k.jl * 0.15;
   const s = (z, v) => (v - (steuern[z] - 9) * 4.5) * (1 - (steuern[z] - 9) * 0.05);
-  bedarf = { 1: klemme(s(1, w), -100, 100), 2: klemme(s(2, l), -100, 100), 3: klemme(s(3, i), -100, 100) };
-  const balken = document.querySelectorAll("#bedarf i"); [1, 2, 3].forEach((z, n) => { balken[n].style.height = Math.max(2, bedarf[z] / 100 * 26) + "px"; });
+  bedarf = { w: klemme(s("w", w), -100, 100), g: klemme(s("g", l), -100, 100), b: klemme(s("b", b), -100, 100), i: klemme(s("i", i), -100, 100) };
+  const balken = document.querySelectorAll("#bedarf i"); ["w", "g", "b", "i"].forEach((z, n) => { if (balken[n]) balken[n].style.height = Math.max(2, bedarf[z] / 100 * 26) + "px"; });
 }
 function meilensteinPruefen() {
   const e = kennzahlen().e;
   while (meilenstein < MEILEN.length - 1 && e >= MEILEN[meilenstein + 1].ab) {
     meilenstein++; const m = MEILEN[meilenstein]; geld += m.geld;
-    const frei = m.frei.map((t) => TYP[t].em + " " + TYP[t].name);
+    const frei = m.frei.map((t) => TYP[t].em + " " + TYP[t].name).concat(Object.values(ZONEN).filter((z) => z.ab === meilenstein).map((z) => z.em + " " + z.name));
     infoZeigen(`<b>🎉 Meilenstein: ${m.name}!</b>Deine Stadt hat ${zahl(m.ab)} Einwohner.<br>+${euro(m.geld)} Belohnung${frei.length ? "<br>Neu: " + frei.join(", ") : ""}<br><small>Jetzt kannst du bis zu ${m.gebiete} Gebiete dazukaufen.</small>`, 7000);
-    if (werkzeug === "strasse") unterleiste();
+    if (werkzeug === "strasse" || werkzeug === "zone") unterleiste();
   }
 }
 function wocheTakt() {
@@ -760,13 +896,14 @@ function datumZeigen() { const w = Math.floor(tage / 7) + 1, d = Math.floor(tage
 function budgetZeigen() {
   const k = kennzahlen(), el = $("budget"), m = MEILEN[meilenstein], n = MEILEN[meilenstein + 1];
   const zeile = (a, b, cls) => `<div class="zeile ${cls || ""}"><span>${a}</span><span>${b}</span></div>`;
-  const regler = (z) => `<div class="steuer" style="--c:#${ZONEN[z].farbe.toString(16).padStart(6, "0")}"><span>${ZONEN[z].em} ${ZONEN[z].name}</span><input type="range" min="1" max="29" value="${steuern[z]}" data-steuer="${z}" aria-label="Steuer ${ZONEN[z].name}"><b>${steuern[z]} %</b></div>`;
+  const regler = (z) => `<div class="steuer" style="--c:${GRUPPEN[z].farbe}"><span>${GRUPPEN[z].em} ${GRUPPEN[z].name}</span><input type="range" min="1" max="29" value="${steuern[z]}" data-steuer="${z}" aria-label="Steuer ${GRUPPEN[z].name}"><b>${steuern[z]} %</b></div>`;
+  const GR = ["w", "g", "b", "i"];
   const fort = n ? Math.min(100, (k.e - m.ab) / (n.ab - m.ab) * 100) : 100;
   el.innerHTML = `<h2>💶 Budget &amp; Steuern<button type="button" id="budgetZu" aria-label="Schließen">✕</button></h2>
-    <div><h3>Pro Woche</h3>${zeile("🏠 Steuern Wohnen", "<span class='plus'>+" + euro(k.ein[1]) + "</span>")}${zeile("🛍️ Steuern Läden", "<span class='plus'>+" + euro(k.ein[2]) + "</span>")}${zeile("🏭 Steuern Industrie", "<span class='plus'>+" + euro(k.ein[3]) + "</span>")}${zeile("🛣️ Unterhalt Straßen", "<span class='minus'>−" + euro(k.strassen) + "</span>")}${zeile("Ergebnis", "<span class='" + (k.saldo >= 0 ? "plus" : "minus") + "'>" + (k.saldo >= 0 ? "+" : "−") + euro(Math.abs(k.saldo)) + "</span>", "summe")}</div>
-    <div><h3>Steuern</h3><div style="display:grid;gap:10px">${regler(1)}${regler(2)}${regler(3)}</div><small style="color:var(--leise);display:block;margin-top:8px">Hohe Steuern bringen mehr Geld, aber weniger Zuzug. 9 % ist ausgeglichen.</small></div>
-    <div><h3>Bedarf</h3>${[1, 2, 3].map((z) => zeile(ZONEN[z].em + " " + ZONEN[z].name, bedarf[z] > 40 ? "hoch" : bedarf[z] > 10 ? "mittel" : bedarf[z] > 0 ? "wenig" : "keiner")).join("")}</div>
-    <div><h3>Meilenstein: ${m.name}</h3>${n ? `<div class="leiste"><i style="width:${fort}%"></i></div><small style="color:var(--leise)">Nächster: <b>${n.name}</b> bei ${zahl(n.ab)} Einwohnern (jetzt ${zahl(k.e)})${n.frei.length ? " – schaltet " + n.frei.map((t) => TYP[t].name).join(", ") + " frei" : ""}</small>` : "<small>Höchster Meilenstein erreicht!</small>"}</div>`;
+    <div><h3>Pro Woche</h3>${GR.map((z) => zeile(GRUPPEN[z].em + " Steuern " + GRUPPEN[z].name, "<span class='plus'>+" + euro(k.ein[z]) + "</span>")).join("")}${zeile("🛣️ Unterhalt Straßen", "<span class='minus'>−" + euro(k.strassen) + "</span>")}${zeile("Ergebnis", "<span class='" + (k.saldo >= 0 ? "plus" : "minus") + "'>" + (k.saldo >= 0 ? "+" : "−") + euro(Math.abs(k.saldo)) + "</span>", "summe")}</div>
+    <div><h3>Steuern</h3><div style="display:grid;gap:10px">${GR.map(regler).join("")}</div><small style="color:var(--leise);display:block;margin-top:8px">Hohe Steuern bringen mehr Geld, aber weniger Zuzug. 9 % ist ausgeglichen.</small></div>
+    <div><h3>Bedarf</h3>${GR.map((z) => zeile(GRUPPEN[z].em + " " + GRUPPEN[z].name, z === "b" && !zoneFrei(5) ? "🔒 ab " + MEILEN[ZONEN[5].ab].name : bedarf[z] > 40 ? "hoch" : bedarf[z] > 10 ? "mittel" : bedarf[z] > 0 ? "wenig" : "keiner")).join("")}</div>
+    <div><h3>Meilenstein: ${m.name}</h3>${n ? `<div class="leiste"><i style="width:${fort}%"></i></div><small style="color:var(--leise)">Nächster: <b>${n.name}</b> bei ${zahl(n.ab)} Einwohnern (jetzt ${zahl(k.e)})${(() => { const f = n.frei.map((t) => TYP[t].name).concat(Object.values(ZONEN).filter((z) => z.ab === meilenstein + 1).map((z) => z.name)); return f.length ? " – schaltet " + f.join(", ") + " frei" : ""; })()}</small>` : "<small>Höchster Meilenstein erreicht!</small>"}</div>`;
   el.hidden = false;
   $("budgetZu").onclick = () => { el.hidden = true; };
 }
@@ -776,21 +913,35 @@ $("budget").addEventListener("change", () => budgetZeigen());
 /* Wachstum nach Bedarf */
 const zk = (g, s, i, r) => zellIndex.get(g + "|" + s + "|" + i + "|" + r);
 function freiGleich(id, zone) { const z = id && zellen.get(id); return z && !z.haus && z.zone === zone ? z : null; }
+let werteZeit = -99;
 function wachsTakt() {
   bedarfBerechnen();
-  const kand = { 1: [], 2: [], 3: [] };
-  for (const z of zellen.values()) if (z.zone && !z.haus && z.r === 0) kand[z.zone].push(z);
-  for (const zone of [1, 2, 3]) {
-    const L = kand[zone], p = bedarf[zone] > 0 ? 0.08 + bedarf[zone] / 100 * 0.75 : 0.03;
-    if (!L.length || Math.random() > p) continue;
-    const a = L[Math.floor(Math.random() * L.length)], spalten = [a], nb = freiGleich(zk(a.g, a.seite, a.i + 1, 0), zone);
-    if (nb && Math.random() < (zone === 1 ? 0.3 : zone === 2 ? 0.5 : 0.75)) spalten.push(nb);
-    let tiefe = REIHEN; for (const s of spalten) { let t = 1; while (t < REIHEN && freiGleich(zk(s.g, s.seite, s.i, t), zone)) t++; tiefe = Math.min(tiefe, t); }
-    const ids = []; for (const s of spalten) for (let t = 0; t < tiefe; t++) ids.push(zk(s.g, s.seite, s.i, t));
-    neuesHaus({ zone, stufe: 1, w: spalten.length, d: tiefe, variante: (Math.random() * 1e6) | 0, zellen: ids });
+  if (simZeit - werteZeit > 4) { werteZeit = simZeit; werteAuffrischen(); }
+  const kand = {};
+  for (const z of zellen.values()) if (z.zone && !z.haus && z.r === 0 && zoneFrei(z.zone)) (kand[z.zone] = kand[z.zone] || []).push(z);
+  for (const zone of Object.keys(kand).map(Number)) {
+    const Z = ZONEN[zone], L = kand[zone], bd = bedarf[Z.gruppe], p = (bd > 0 ? 0.08 + bd / 100 * 0.75 : 0.03) * (zone >= 7 ? 0.7 : 1);
+    if (Math.random() > p) continue;
+    for (let versuch = 0; versuch < 5; versuch++) {
+      const a = L[Math.floor(Math.random() * L.length)], ziel = Z.breite[0] + Math.floor(Math.random() * (Z.breite[1] - Z.breite[0] + 1));
+      const spalten = [a]; for (let i = a.i + 1; spalten.length < ziel; i++) { const nb = freiGleich(zk(a.g, a.seite, i, 0), zone); if (!nb) break; spalten.push(nb); }
+      for (let i = a.i - 1; spalten.length < Math.min(2, Z.breite[0]); i--) { const nb = freiGleich(zk(a.g, a.seite, i, 0), zone); if (!nb) break; spalten.unshift(nb); }
+      if (spalten.length < Math.min(2, Z.breite[0])) continue;
+      let tiefe = Z.tiefe; for (const s of spalten) { let t = 1; while (t < tiefe && freiGleich(zk(s.g, s.seite, s.i, t), zone)) t++; tiefe = Math.min(tiefe, t); }
+      if (tiefe < (Z.minTiefe || 1)) continue;
+      const ids = []; for (const s of spalten) for (let t = 0; t < tiefe; t++) ids.push(zk(s.g, s.seite, s.i, t));
+      const h = neuesHaus({ zone, stufe: 1, w: spalten.length, d: tiefe, variante: (Math.random() * 1e6) | 0, zellen: ids });
+      const r = bodenwert(h.x, h.z, h); h.wert = r.wert; h.dreck = r.dreck;
+      if (gruppe(h) === "i") dreckZeichnen();
+      break;
+    }
   }
-  const liste = [...haeuser.values()].filter((h) => h.stufe < 3 && simZeit - (h.simGeboren || 0) > 25 && bedarf[h.zone] > 8 && (h.stufe < 2 || h.d >= 2 || h.zone === 3));
-  if (liste.length && Math.random() < 0.45) { const h = liste[Math.floor(Math.random() * liste.length)]; h.stufe++; h.geboren = jetztS; h.simGeboren = simZeit; h.ab = 0.35; h.teile = hausTeile(h); haeuserNeu = true; }
+  const liste = [...haeuser.values()].filter((h) => { const Z = ZONEN[h.zone]; return h.stufe < Z.max && simZeit - (h.simGeboren || 0) > 25 && bedarf[Z.gruppe] > 5 && (h.wert || 0) >= (BODENWERT_FUER[Z.gruppe][h.stufe + 1] || 0); });
+  if (liste.length && Math.random() < 0.45) {
+    const h = liste[Math.floor(Math.random() * liste.length)]; h.stufe++; h.geboren = jetztS; h.simGeboren = simZeit; h.ab = 0.35; h.teile = hausTeile(h); haeuserNeu = true;
+    let y = 0; for (const t of h.teile) y = Math.max(y, (t.ly || 0) + t.sy); hochZeigen(h, y);
+    if (gruppe(h) === "i") dreckZeichnen();
+  }
   zeigeWerte(); meilensteinPruefen(); speichernBald();
 }
 
@@ -874,7 +1025,7 @@ function wegSuchen(start, ziel) {
 let wohnListe = [], arbeitListe = [], ladenListe = [], industrieListe = [], listenZeit = -1;
 function listenAuffrischen() {
   wohnListe = []; arbeitListe = []; ladenListe = []; industrieListe = [];
-  for (const h of haeuser.values()) { if (h.zone === 1) wohnListe.push(h); else { arbeitListe.push(h); if (h.zone === 2) ladenListe.push(h); else industrieListe.push(h); } }
+  for (const h of haeuser.values()) { const g = gruppe(h); if (g === "w") wohnListe.push(h); else { arbeitListe.push(h); if (g === "g") ladenListe.push(h); else if (g === "i") industrieListe.push(h); } }
   listenZeit = simZeit;
 }
 const gewichtet = (liste, f) => { let s = 0; for (const x of liste) s += f(x); let r = rv() * s; for (const x of liste) { r -= f(x); if (r <= 0) return x; } return liste[liste.length - 1]; };
@@ -900,8 +1051,8 @@ function aussenBauen() {
   return false;
 }
 const pkwTyp = () => rv() < 0.04 ? "bus" : wahl(rv, PKW_TYPEN);
-function hausName(h) { return h.zone === 1 ? ["Einfamilienhaus", "Mehrfamilienhaus", "Wohnblock"][h.stufe - 1] : h.zone === 2 ? ["Laden", "Geschäftshaus", "Büroturm"][h.stufe - 1] : ["Werkstatt", "Fabrikhalle", "Fabrik"][h.stufe - 1]; }
-function auflieger(nachZone) { if (karte === "wald" && rv() < 0.4) return "holz"; if (karte !== "insel" && rv() < 0.2) return "getreide"; return nachZone === 2 ? (rv() < 0.5 ? "kuehl" : "container") : wahl(rv, ["container", "container", "tank"]); }
+function hausName(h) { return h.name || ZONEN[h.zone].name; }
+function auflieger(von, nach) { const q = von || nach; if (q && q.zone === 7) return "getreide"; if (q && q.zone === 8) return "holz"; if (karte === "wald" && rv() < 0.15) return "holz"; return nach && gruppe(nach) === "g" ? (rv() < 0.5 ? "kuehl" : "container") : wahl(rv, ["container", "container", "tank"]); }
 function fahrtStarten() {
   if (simZeit - listenZeit > 2) listenAuffrischen();
   if (!wohnListe.length && !arbeitListe.length) return false;
@@ -910,13 +1061,13 @@ function fahrtStarten() {
     // Verkehr von und nach außen: Pendler, Besucher, Lieferungen
     const ziel = rv() < 0.4 && industrieListe.length ? gewichtet(industrieListe, jobs) : arbeitListe.length && rv() < 0.6 ? gewichtet(arbeitListe, jobs) : wohnListe.length ? gewichtet(wohnListe, leute) : null;
     if (!ziel) return false;
-    typ = ziel.zone === 3 ? (rv() < 0.6 ? "lkw" : "liefer") : pkwTyp(); if (typ === "lkw") anh = auflieger(ziel.zone);
+    typ = gruppe(ziel) === "i" ? (rv() < 0.6 ? "lkw" : "liefer") : pkwTyp(); if (typ === "lkw") anh = auflieger(ziel, null);
     const za = zufahrtAussen(), zb = zufahrt(ziel); if (!za || !zb) return false;
     const rein = rv() < 0.55;
     return fahrzeugAusWeg(rein ? wegSuchen(za, zb) : wegSuchen(zb, za), typ, anh, rein ? "außerhalb der Stadt" : hausName(ziel), rein ? hausName(ziel) : "außerhalb der Stadt", rein ? "aussen" : "haus");
   }
   if (!wohnListe.length || !arbeitListe.length) return false;
-  if (r < 0.38 && industrieListe.length && ladenListe.length) { von = gewichtet(industrieListe, jobs); nach = gewichtet(ladenListe, jobs); typ = rv() < 0.55 ? "lkw" : "liefer"; if (typ === "lkw") anh = auflieger(2); }
+  if (r < 0.38 && industrieListe.length && ladenListe.length) { von = gewichtet(industrieListe, jobs); nach = gewichtet(ladenListe, jobs); typ = rv() < 0.55 ? "lkw" : "liefer"; if (typ === "lkw") anh = auflieger(von, nach); }
   else { von = gewichtet(wohnListe, leute); nach = rv() < 0.25 && ladenListe.length ? gewichtet(ladenListe, jobs) : gewichtet(arbeitListe, jobs); typ = pkwTyp(); if (rv() < 0.5) [von, nach] = [nach, von]; }
   const za = zufahrt(von), zb = zufahrt(nach); if (!za || !zb) return false;
   const weg = wegSuchen(za, zb); if (!weg) { von.keinWeg = true; return false; }
@@ -1160,22 +1311,29 @@ function stauMessen() {
   } else stauMesh.visible = false;
 }
 /* Fußgänger */
-const menschen = becken(new THREE.CapsuleGeometry(0.045, 0.12, 2, 6).translate(0, 0.1, 0), M.mensch, 120, true);
+const menschen = becken(new THREE.CapsuleGeometry(0.032, 0.075, 2, 6).translate(0, 0.075, 0), M.mensch, 120, true);
+const koepfe = becken(new THREE.SphereGeometry(0.027, 8, 6).translate(0, 0.165, 0), M.mensch, 120, false);
+const HAUT = [0xf6d2b8, 0xeac09a, 0xd9a47a, 0xb97d55, 0x8d5a3b, 0x5e3b26];
+const KLEIDUNG = [0xe85b4a, 0x4a7fe8, 0xf2c14e, 0x4fbf7a, 0xf2f2f2, 0x9a5be8, 0x2c2f36, 0xff8a3c, 0x3fb0c9, 0x8a96a3];
 let leuteListe = [];
 function fussgaengerTakt(dt, einwohner) {
-  const ks = [...kanten.values()].filter((k) => !k.aussen); if (!ks.length) { menschen.count = 0; return; }
+  const ks = [...kanten.values()].filter((k) => !k.aussen); if (!ks.length) { menschen.count = koepfe.count = 0; return; }
   const ziel = Math.min(STUFEN[stufe].leute, Math.round(einwohner / 9 + ks.filter((k) => k.typ === "fuss").length * 2));
   leuteListe = leuteListe.filter((p) => kanten.has(p.k));
-  while (leuteListe.length < ziel) { const k = wahl(rv, ks); leuteListe.push({ k: k.id, dir: rv() < 0.5 ? 1 : -1, s: rv() * k.len, v: 0.3 + rv() * 0.25, seite: rv() < 0.5 ? 1 : -1, c: wahl(rv, [0xe85b4a, 0x4a7fe8, 0xf2c14e, 0x4fbf7a, 0xf2f2f2, 0x9a5be8, 0x2c2f36]) }); }
+  while (leuteListe.length < ziel) { const k = wahl(rv, ks), kind = rv() < 0.12; leuteListe.push({ k: k.id, dir: rv() < 0.5 ? 1 : -1, s: rv() * k.len, v: (kind ? 0.38 : 0.28) + rv() * 0.2, seite: rv() < 0.5 ? 1 : -1, c: wahl(rv, KLEIDUNG), haut: wahl(rv, HAUT), g: kind ? 0.68 : 0.9 + rv() * 0.2, ph: rv() * 6, pause: 0 }); }
   if (leuteListe.length > ziel) leuteListe.length = ziel;
+  const lauf = dt * tempo;
   leuteListe.forEach((p, i) => {
-    let k = kanten.get(p.k); p.s += p.v * dt * tempo;
+    let k = kanten.get(p.k);
+    if (p.pause > 0) p.pause -= lauf; else { p.s += p.v * lauf; p.ph += lauf * p.v * 22; if (rv() < lauf * 0.02) p.pause = 1 + rv() * 3; }
     if (p.s > k.len) { p.s -= k.len; const nid = p.dir > 0 ? k.b : k.a, n = knoten.get(nid), w = [...n.kanten].filter((id) => id !== k.id && !kanten.get(id).aussen), nk = kanten.get(w.length ? wahl(rv, w) : k.id); p.k = nk.id; p.dir = nk.a === nid ? 1 : -1; k = nk; }
     const off = k.typ === "fuss" ? 0.17 * p.seite : (TYP[k.typ].halb - 0.14) * p.seite, q = spurPunkt(k, p.dir, Math.min(p.s, k.len), off);
-    _o.position.set(q.x, G + 0.014 + Math.abs(Math.sin(jetztS * 9 * p.v + i)) * 0.012, q.z); _o.rotation.set(0, Math.atan2(-q.tz, q.tx), 0); _o.scale.set(1, 1, 1); _o.updateMatrix();
+    const geht = p.pause <= 0 && tempo > 0, hub = geht ? Math.abs(Math.sin(p.ph)) * 0.014 : 0, wipp = geht ? Math.sin(p.ph) * 0.09 : 0;
+    _o.position.set(q.x, G + 0.012 + hub, q.z); _o.rotation.set(wipp, Math.atan2(-q.tz, q.tx) - Math.PI / 2, 0); _o.rotation.order = "YXZ"; _o.scale.setScalar(p.g); _o.updateMatrix();
     menschen.setMatrixAt(i, _o.matrix); menschen.setColorAt(i, _farbe.setHex(p.c));
+    koepfe.setMatrixAt(i, _o.matrix); koepfe.setColorAt(i, _farbe.setHex(p.haut)); _o.rotation.order = "XYZ";
   });
-  menschen.count = leuteListe.length; menschen.instanceMatrix.needsUpdate = true; if (menschen.instanceColor) menschen.instanceColor.needsUpdate = true;
+  menschen.count = koepfe.count = leuteListe.length; menschen.instanceMatrix.needsUpdate = koepfe.instanceMatrix.needsUpdate = true; if (menschen.instanceColor) menschen.instanceColor.needsUpdate = true; if (koepfe.instanceColor) koepfe.instanceColor.needsUpdate = true;
 }
 
 /* Laternen */
@@ -1216,7 +1374,7 @@ const platzKey = (n) => "inselstadt-v3-" + n;
 function zustand() {
   const r = (v) => Math.round(v * 1000) / 1000, k = kennzahlen();
   return {
-    v: 3, karte, geld: Math.round(geld), besitz: [...besitz], gekauft, steuern, meilenstein, tage: Math.round(tage * 100) / 100, ids: { n: nId, k: kId, z: zId, g: gId, h: hId },
+    v: 3, zonenV: 2, karte, geld: Math.round(geld), besitz: [...besitz], gekauft, steuern, meilenstein, tage: Math.round(tage * 100) / 100, ids: { n: nId, k: kId, z: zId, g: gId, h: hId },
     meta: { einwohner: k.e, gespeichert: Date.now() },
     knoten: [...knoten.values()].map((n) => [n.id, r(n.x), r(n.z), n.manuell ? (n.ampel ? 1 : 0) : -1, n.aussen ? 1 : 0]),
     kanten: [...kanten.values()].map((k) => [k.id, k.a, k.b, r(k.c.x), r(k.c.z), k.typ, k.aussen ? 1 : 0]),
@@ -1230,11 +1388,18 @@ function speichernBald() { if (!spielLaeuft) return; clearTimeout(speicherTimer)
 function allesLeeren() {
   for (const k of kanten.values()) { szene.remove(k.mesh); k.mesh.geometry.dispose(); }
   for (const n of knoten.values()) if (n.mesh) { szene.remove(n.mesh); n.mesh.geometry.dispose(); }
-  aussenKnoten = null; kanten.clear(); knoten.clear(); zellen.clear(); zellIndex.clear(); raster.clear(); haeuser.clear(); fahrzeuge = []; leuteListe = [];
+  aussenKnoten = null; hochListe.length = 0; dreckMesh.count = 0; kanten.clear(); knoten.clear(); zellen.clear(); zellIndex.clear(); raster.clear(); haeuser.clear(); fahrzeuge = []; leuteListe = [];
   for (const b of baeume) if (b.weg) { b.weg = false; baumSetzen(b); }
 }
 function zustandRein(d) {
-  geld = d.geld; besitz = new Set(d.besitz); gekauft = d.gekauft || 0; if (d.steuern) steuern = d.steuern; meilenstein = d.meilenstein || 0; tage = d.tage || 0;
+  geld = d.geld; besitz = new Set(d.besitz); gekauft = d.gekauft || 0; meilenstein = d.meilenstein || 0; tage = d.tage || 0;
+  if (d.steuern) steuern = d.steuern.w != null ? Object.assign({ w: 9, g: 9, b: 9, i: 9 }, d.steuern) : { w: d.steuern[1] || 9, g: d.steuern[2] || 9, b: 9, i: d.steuern[3] || 9 };
+  if (!d.zonenV) {
+    // alte Spielstände: 3 Zonen → neue Zonen wie bei Cities: Skylines
+    const um = { 1: 1, 2: 3, 3: 6 }, zz = new Map();
+    d.haeuser = d.haeuser.map(([id, zone, stufe, w, dd, variante, ids]) => { let nz = um[zone] || 1, ns = stufe; if (zone === 1 && stufe >= 3) nz = 2; if (zone === 2 && stufe >= 3) { nz = 4; ns = 2; } ns = Math.min(ns, ZONEN[nz].max); ids.forEach((c) => zz.set(c, nz)); return [id, nz, ns, w, dd, variante, ids]; });
+    d.zellen = d.zellen.map((c) => { const n = c.slice(); n[4] = zz.get(c[0]) || um[c[4]] || 0; return n; });
+  }
   d.knoten.forEach(([id, x, z, am, au]) => { const n = neuerKnoten({ x, z }, id); if (am != null && am >= 0) { n.manuell = true; n.ampel = am === 1; } if (au) { n.aussen = true; aussenKnoten = id; } });
   d.kanten.forEach(([id, a, b, cx, cz, typ, au]) => { if (knoten.has(a) && knoten.has(b)) { const k = neueKante(a, b, { x: cx, z: cz }, TYP[typ] ? typ : "klein", id); if (au) k.aussen = true; } });
   for (const n of [...knoten.values()]) if (!n.kanten.size) knotenWeg(n);
@@ -1242,7 +1407,7 @@ function zustandRein(d) {
   d.haeuser.forEach(([id, zone, stufe, w, dd, variante, ids]) => { if (ids.every((z) => zellen.has(z) && !zellen.get(z).haus)) neuesHaus({ id, zone, stufe, w, d: dd, variante, zellen: ids }, true); });
   d.baeume.forEach((i) => { const b = baeume[i]; if (b) { b.weg = true; baumSetzen(b); } });
   nId = Math.max(nId, d.ids.n); kId = Math.max(kId, d.ids.k); zId = Math.max(zId, d.ids.z); gId = Math.max(gId, d.ids.g); hId = Math.max(hId, d.ids.h);
-  haeuserNeu = zellenNeu = true; netzGeaendert(); gebieteZeichnen(); bedarfBerechnen(); zeigeWerte(); datumZeigen();
+  haeuserNeu = zellenNeu = true; netzGeaendert(); gebieteZeichnen(); werteAuffrischen(); dreckZeichnen(); bedarfBerechnen(); zeigeWerte(); datumZeigen();
 }
 const rueck = [];
 function merkeRueck() { rueck.push(JSON.stringify(zustand())); if (rueck.length > 8) rueck.shift(); rueckKnopf(); }
@@ -1296,6 +1461,16 @@ function infoZeigen(html, ms) { const el = $("info"); el.innerHTML = html; el.hi
 
 let strTyp = lade("inselstadt-strtyp", "klein"), strModus = lade("inselstadt-strmodus", "gerade"), zoneWahl = 1, pinsel = "klein";
 if (!TYP[strTyp]) strTyp = "klein"; if (!["gerade", "kurve", "ampel"].includes(strModus)) strModus = "gerade";
+const ZONEN_TEXT = {
+  1: "Einfamilienhäuser und Villen – wird bei hohem Bodenwert immer schöner (5 Stufen).",
+  2: "Mehrfamilienhäuser bis Wolkenkratzer – viele Einwohner auf wenig Platz.",
+  3: "Kioske, Cafés, Bäckereien – kleine Läden für die Nachbarschaft.",
+  4: "Supermärkte, Kaufhäuser, Hotels – braucht viele Kunden.",
+  5: "Bürohäuser und Glastürme – Arbeitsplätze ganz ohne Dreck.",
+  6: "Fabriken und Lagerhallen – viele Jobs, aber Dreck senkt den Bodenwert.",
+  7: "Felder, Bauernhöfe und Gewächshäuser – Lkw bringen Getreide in die Stadt.",
+  8: "Sägewerke und Holzlager – Lkw fahren Holz zu den Läden."
+};
 const TIPPS = {
   ansehen: "👆 Ein Finger: verschieben · ✌️ Zwei Finger: drehen & zoomen · Haus antippen: Infos",
   strasse: () => strModus === "ampel" ? "🚦 Tipp auf eine Kreuzung, um die Ampel ein- oder auszuschalten." : strModus === "gerade" ? "🛣️ Tipp auf den Anfang, dann aufs Ende. Dann ✓ zum Bauen." : "〰️ Tipp auf den Anfang, dann den Kurvenpunkt, dann das Ende. Dann ✓.",
@@ -1307,13 +1482,13 @@ function unterleiste() {
   const u = $("unter"); let h = "";
   const chip = (attr, wert, txt, an, aus) => `<button class="chip" type="button" ${attr}="${wert}" aria-pressed="${an}"${aus ? ' title="Noch gesperrt"' : ""}>${txt}</button>`;
   if (werkzeug === "ansehen") {
-    h = chip("data-ansicht", "verkehr", "🚦 Verkehrs-Ansicht", verkehrsAnsicht) + '<button class="chip" type="button" id="fahrenKnopf">🚗 Selbst fahren</button>';
+    h = chip("data-ansicht", "verkehr", "🚦 Verkehrs-Ansicht", verkehrsAnsicht) + chip("data-ansicht", "wert", "💎 Bodenwert", wertAnsicht) + '<button class="chip" type="button" id="fahrenKnopf">🚗 Selbst fahren</button>';
   } else if (werkzeug === "strasse") {
     h += Object.keys(TYP).map((k) => { const frei = typFrei(k); return chip("data-typ", k, (frei ? TYP[k].em : "🔒") + " " + TYP[k].name + ` <small style="opacity:.7">${TYP[k].preis} €</small>`, k === strTyp, !frei); }).join("");
     h += '<span class="trenn"></span>' + chip("data-modus", "gerade", "📏 Gerade", strModus === "gerade") + chip("data-modus", "kurve", "〰️ Kurve", strModus === "kurve") + chip("data-modus", "ampel", "🚦 Ampeln", strModus === "ampel");
     h += '<span class="trenn"></span><button class="chip" type="button" id="rueck">↩️ Rückgängig</button>';
   } else if (werkzeug === "zone") {
-    h += [1, 2, 3].map((z) => chip("data-zone", z, ZONEN[z].em + " " + ZONEN[z].name, z === zoneWahl)).join("");
+    h += Object.keys(ZONEN).map(Number).map((z) => { const f = zoneFrei(z); return chip("data-zone", z, (f ? ZONEN[z].em : "🔒") + " " + ZONEN[z].name, z === zoneWahl, !f); }).join("");
     h += '<span class="trenn"></span>' + chip("data-pinsel", "klein", "🖌️ Klein", pinsel === "klein") + chip("data-pinsel", "gross", "🖌️ Groß", pinsel === "gross") + chip("data-pinsel", "fuellen", "🪣 Füllen", pinsel === "fuellen");
     h += '<span class="trenn"></span>' + chip("data-zone", 0, "🧽 Entfernen", zoneWahl === 0) + '<button class="chip" type="button" id="rueck">↩️</button>';
   } else h = '<button class="chip" type="button" id="rueck">↩️ Rückgängig</button>';
@@ -1323,10 +1498,11 @@ $("unter").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
   if (b.id === "rueck") { rueckgaengig(); return; }
   if (b.id === "fahrenKnopf") { fahrenStarten(); return; }
-  if (b.dataset.ansicht) { verkehrsAnsicht = !verkehrsAnsicht; stauMessen(); tipp(verkehrsAnsicht ? "🚦 Grün = frei, Gelb = voll, Rot = Stau. Bau Hauptstraßen oder Umwege, wo es rot wird." : "Verkehrs-Ansicht aus.", 3500); }
+  if (b.dataset.ansicht === "wert") { wertAnsicht = !wertAnsicht; if (wertAnsicht) { verkehrsAnsicht = false; stauMessen(); } wertZeichnen(); tipp(wertAnsicht ? "💎 Grün = wertvoller Boden, Rot = wenig wert. Bäume, Alleen und Wasser machen Boden wertvoll – Industrie und Hauptstraßen senken den Wert. Mit hohem Bodenwert steigen Häuser auf." : "Bodenwert-Ansicht aus.", 5000); }
+  else if (b.dataset.ansicht) { verkehrsAnsicht = !verkehrsAnsicht; if (verkehrsAnsicht && wertAnsicht) { wertAnsicht = false; wertZeichnen(); } stauMessen(); tipp(verkehrsAnsicht ? "🚦 Grün = frei, Gelb = voll, Rot = Stau. Bau Hauptstraßen oder Umwege, wo es rot wird." : "Verkehrs-Ansicht aus.", 3500); }
   if (b.dataset.typ) { strTyp = b.dataset.typ; merke("inselstadt-strtyp", strTyp); planNeu(); }
   if (b.dataset.modus) { strModus = b.dataset.modus; merke("inselstadt-strmodus", strModus); bauAbbrechen(); tipp(TIPPS.strasse(), 3500); }
-  if (b.dataset.zone != null) zoneWahl = +b.dataset.zone;
+  if (b.dataset.zone != null) { const z = +b.dataset.zone; if (z && !zoneFrei(z)) { tipp("🔒 " + ZONEN[z].name + " gibt es ab dem Meilenstein " + MEILEN[ZONEN[z].ab].name + " (" + zahl(MEILEN[ZONEN[z].ab].ab) + " Einwohner).", 3500); return; } zoneWahl = z; if (z) tipp(ZONEN[z].em + " " + ZONEN[z].name + ": " + ZONEN_TEXT[z], 4000); }
   if (b.dataset.pinsel) { pinsel = b.dataset.pinsel; tipp(TIPPS.zone(), 3500); }
   unterleiste();
 });
@@ -1448,16 +1624,18 @@ renderer.domElement.addEventListener("pointercancel", (e) => { finger.delete(e.p
 renderer.domElement.addEventListener("contextmenu", (e) => e.preventDefault());
 
 function malen(a, b) {
+  if (zoneWahl && !zoneFrei(zoneWahl)) return;
   const r = pinsel === "gross" ? 1.7 : 0.75, n = Math.max(1, Math.ceil(abst(a, b) / 0.4)); let geaendert = false;
   for (let i = 0; i <= n; i++) {
     const p = lerp(a, b, i / n);
     for (const z of zellenNahe(p.x, p.z, r)) { if (z.zone === zoneWahl) continue; if (z.haus) hausWeg(haeuser.get(z.haus)); z.zone = zoneWahl; geaendert = true; }
   }
-  if (geaendert) { zellenNeu = true; zeigeWerte(); speichernBald(); }
+  if (geaendert) { zellenNeu = true; dreckZeichnen(); zeigeWerte(); speichernBald(); }
 }
 function fuellen(p) {
   const nah = zellenNahe(p.x, p.z, 1.5).sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z))[0];
   if (!nah) { tipp("Tipp direkt auf die Felder neben einer Straße.", 2000); return; }
+  if (zoneWahl && !zoneFrei(zoneWahl)) return;
   for (const z of zellen.values()) if (z.g === nah.g && z.seite === nah.seite && z.zone !== zoneWahl) { if (z.haus) hausWeg(haeuser.get(z.haus)); z.zone = zoneWahl; }
   zellenNeu = true; zeigeWerte(); speichernBald();
 }
@@ -1477,10 +1655,13 @@ function hausInfo(p) {
   const z = zellenNahe(p.x, p.z, 0.8).find((c) => c.haus);
   if (!z) { $("info").hidden = true; return; }
   const h = haeuser.get(z.haus);
-  const art = h.zone === 1 ? ["Einfamilienhaus", "Mehrfamilienhaus", "Wohnblock"][h.stufe - 1] : h.zone === 2 ? ["Kleiner Laden", "Geschäftshaus", "Büroturm"][h.stufe - 1] : ["Werkstatt", "Fabrikhalle", "Fabrik"][h.stufe - 1];
-  const wert = h.zone === 1 ? "👥 " + leute(h) + " Bewohner" : "💼 " + jobs(h) + " Arbeitsplätze";
+  const Z = ZONEN[h.zone], g = Z.gruppe; listenAuffrischen(); const bw = bodenwert(h.x, h.z, h); h.wert = bw.wert; h.dreck = bw.dreck;
+  const wert = g === "w" ? "👥 " + leute(h) + " Bewohner" : "💼 " + jobs(h) + " Arbeitsplätze";
+  const noetig = BODENWERT_FUER[g][h.stufe + 1] || 0;
+  const naechst = h.stufe >= Z.max ? (Z.max === 1 ? "Spezial-Industrie hat nur eine Stufe" : "⭐ Höchste Stufe erreicht") : h.wert < noetig ? "⬆️ Für Stufe " + (h.stufe + 1) + " braucht es Bodenwert " + noetig + " (Bäume, Alleen, Wasser, weniger Dreck)" : "⬆️ Steigt auf Stufe " + (h.stufe + 1) + ", wenn Bedarf da ist";
+  const sterne = "★".repeat(h.stufe) + "☆".repeat(Z.max - h.stufe);
   const warn = !zufahrt(h) ? "<br>⚠️ Keine Straße mit Autoverkehr in der Nähe" : h.keinWeg ? "<br>⚠️ Kein Weg zu den anderen Zonen – verbinde die Straßen" : "";
-  infoZeigen(`<b>${ZONEN[h.zone].em} ${art}</b>${wert}<br><small>Stufe ${h.stufe} von 3 · ${h.w}×${h.d} Felder${h.stufe < 3 ? " · wird größer, wenn Bedarf da ist" : ""}</small>${warn}`);
+  infoZeigen(`<b>${Z.em} ${hausName(h)}</b><small>${Z.name} · ${sterne} Stufe ${h.stufe}/${Z.max} · ${h.w}×${h.d} Felder</small><br>${wert}<br>💎 Bodenwert ${h.wert}${h.dreck > 4 ? " · 🟤 Dreck " + h.dreck : ""}<br><small>${naechst}</small>${warn}`, 7000);
 }
 function gebietAntippen(e) {
   strahl.setFromCamera(ndc(e), kamera);
@@ -1714,7 +1895,7 @@ function starten(n, daten, neueKarte) {
     setTimeout(() => $("laden").classList.add("weg"), 200);
   }, 60);
 }
-window.inselstadt = { folgen: (f) => folgenStart(f), baeume: () => baeume.length, stufenTest: () => { let i = 0; for (const h of haeuser.values()) { h.stufe = 1 + (i++ % 3); if (h.stufe === 3 && h.zone === 1 && h.d < 2) h.stufe = 2; h.teile = hausTeile(h); } haeuserNeu = true; }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
+window.inselstadt = { folgen: (f) => folgenStart(f), baeume: () => baeume.length, stufenTest: (st) => { let i = 0; for (const h of haeuser.values()) { h.stufe = Math.min(ZONEN[h.zone].max, st || 1 + (i++ % 5)); h.teile = hausTeile(h); } haeuserNeu = true; }, meilenstein: (m) => { meilenstein = m; unterleiste(); }, zoneWahl: (z) => { zoneWahl = z; }, malen: (a, b) => malen(a, b), werteAuffrischen, hausTeile, bedarf: () => bedarf, wertAnsicht: (v) => { wertAnsicht = v; wertZeichnen(); }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
 
 /* ================================================================
    Hauptschleife
@@ -1738,7 +1919,7 @@ function schleife() {
   stauTakt += dt; if (stauTakt > 1) { stauTakt = 0; stauMessen(); }
   if (zellenNeu) zellenZeichnen();
   if (haeuserNeu) haeuserZeichnen();
-  rauchZeichnen(); fahrzeugeZeichnen(); ampelnZeichnen(); fussgaengerTakt(dt, kz.e);
+  rauchZeichnen(); fahrzeugeZeichnen(); ampelnZeichnen(); fussgaengerTakt(dt, kz.e); hochZeichnen(); if (wertAnsicht && jetztS - wertZeit > 2) wertZeichnen();
   boote.forEach((b) => { b.w += b.v * dt; b.g.position.set(b.mx + Math.cos(b.w) * b.rad, WASSER + 0.02 + Math.sin(t * 1.6 + b.ph) * 0.05, b.mz + Math.sin(b.w) * b.rad); b.g.rotation.set(Math.sin(t * 1.3 + b.ph) * 0.05, -b.w + (b.v > 0 ? -Math.PI / 2 : Math.PI / 2), 0); });
   if (leuchtturm) leuchtturm.userData.strahl.rotation.y = t * 0.8;
   if (spieler.an) fahrenTakt(dt);
