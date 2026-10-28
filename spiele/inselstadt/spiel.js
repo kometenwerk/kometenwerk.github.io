@@ -528,6 +528,7 @@ function kantenMesh(k) {
     else if (!k.einbahn) striche(pos, col, k, 0, SF.strich, 0.5, 0.6);
   }
   if (k.busspur) for (const sei of [1, -1]) band(pos, col, k.pts, 0.2, Y(0.0205), farbe(0x8a3a3a), sei * 0.64);
+  if (k.schienen) { const o = TYP[k.typ].spuren[TYP[k.typ].spuren.length - 1], c = farbe(0xb9bfc7); for (const sei of [1, -1]) for (const d of [0.085, -0.085]) band(pos, col, k.pts, 0.012, Y(0.027), c, sei * o + d); }
   if (k.ebene > 0) { const c = farbe(0xb9b4a8), unten = (p) => G - 0.1 + ebeneY(k, p.s), oben = (p) => G + 0.09 + ebeneY(k, p.s); for (const sei of [1, -1]) wand(pos, col, k.pts, sei * T.halb, unten, oben, c); band(pos, col, k.pts, T.halb, unten, farbe(0x8c877c)); }
   if (k.einbahn) { const w = farbe(0xffffff); for (let s2 = 1.6; s2 < k.len - 1.4; s2 += 2.4) { const S = k.einbahn > 0 ? s2 : k.len - s2, p = punktBei(k, S), tx = p.tx * k.einbahn, tz = p.tz * k.einbahn, y = G + 0.025 + ebeneY(k, S); for (const off of TYP[k.typ].spuren.length > 1 ? [0.22, 0.64, -0.22, -0.64] : [0.21, -0.21]) { const cx = p.x - tz * off, cz = p.z + tx * off; pos.push(cx + tx * 0.22, y, cz + tz * 0.22, cx - tx * 0.05 - tz * 0.1, y, cz - tz * 0.05 + tx * 0.1, cx - tx * 0.05 + tz * 0.1, y, cz - tz * 0.05 - tx * 0.1); for (let v = 0; v < 3; v++) col.push(w.r, w.g, w.b); pos.push(cx - tx * 0.05 - tz * 0.035, y, cz - tz * 0.05 + tx * 0.035, cx - tx * 0.25 - tz * 0.035, y, cz - tz * 0.25 + tx * 0.035, cx - tx * 0.05 + tz * 0.035, y, cz - tz * 0.05 - tx * 0.035, cx - tx * 0.05 + tz * 0.035, y, cz - tz * 0.05 - tx * 0.035, cx - tx * 0.25 - tz * 0.035, y, cz - tz * 0.25 + tx * 0.035, cx - tx * 0.25 + tz * 0.035, y, cz - tz * 0.25 - tx * 0.035); for (let v = 0; v < 6; v++) col.push(w.r, w.g, w.b); } } }
   const m = new THREE.Mesh(geoAus(pos, col), M.strasse); m.receiveShadow = true; return m;
@@ -558,7 +559,7 @@ function kanteTeilen(k, t) {
   const a = knoten.get(k.a), b = knoten.get(k.b), m = bez(a, k.c, b, t), n = neuerKnoten(m);
   const c1 = lerp(a, k.c, t), c2 = lerp(k.c, b, t), aId = k.a, bId = k.b, typ = k.typ, ax = { x: a.x, z: a.z }, bx = { x: b.x, z: b.z };
   kanteWeg(k); if (!knoten.has(aId)) neuerKnoten(ax, aId); if (!knoten.has(bId)) neuerKnoten(bx, bId);
-  const opt = { aussen: k.aussen, einbahn: k.einbahn, ring: k.ring, kreisel: k.kreisel, busspur: k.busspur }, e1 = neueKante(aId, n.id, c1, typ, null, opt), e2 = neueKante(n.id, bId, c2, typ, null, opt); return n;
+  const opt = { aussen: k.aussen, einbahn: k.einbahn, ring: k.ring, kreisel: k.kreisel, busspur: k.busspur, schienen: k.schienen }, e1 = neueKante(aId, n.id, c1, typ, null, opt), e2 = neueKante(n.id, bId, c2, typ, null, opt); return n;
 }
 const fangRadius = () => Math.min(3, Math.max(1.1, kameraAbstand() / 32));
 function naechsterKnoten(p, r) { let best = null, bd = r; for (const n of knoten.values()) { const d = abst(n, p); if (d < bd) { bd = d; best = n; } } return best; }
@@ -1191,7 +1192,8 @@ function dienstBauen(plan) {
   const D = DIENSTE[plan.typ], cs = Math.cos(plan.rot), sn = Math.sin(plan.rot);
   for (const c of zellenNahe(plan.x, plan.z, Math.max(plan.W, plan.D))) { const dx = c.x - plan.x, dz = c.z - plan.z, lx = dx * cs - dz * sn, lz = dx * sn + dz * cs; if (Math.abs(lx) < plan.W / 2 + 0.35 && Math.abs(lz) < plan.D / 2 + 0.35) { if (c.haus) hausWeg(haeuser.get(c.haus)); zelleWeg(c); } }
   geld -= D.preis; const d = neuerDienst({ typ: plan.typ, x: plan.x, z: plan.z, rot: plan.rot });
-  if (d.typ === "bahnhof") { for (const c of [...zellen.values()]) if (aufGleis(c.x, c.z)) { if (c.haus) hausWeg(haeuser.get(c.haus)); zelleWeg(c); } const g = gleisVon(d); baeumeFaellen({ x0: Math.min(g.p0.x, g.p0.x + g.dx * 240) - 1, x1: Math.max(g.p0.x, g.p0.x + g.dx * 240) + 1, z0: Math.min(g.p0.z, g.p0.z + g.dz * 240) - 1, z1: Math.max(g.p0.z, g.p0.z + g.dz * 240) + 1 }, (bx, bz) => aufGleis(bx, bz)); bahnGleiseZeichnen(); }
+  if (plan.gk != null) { d.gk = plan.gk; d.gs = plan.gs; }
+  if (d.typ === "bahnhof" && plan.gk == null) { for (const c of [...zellen.values()]) if (aufGleis(c.x, c.z)) { if (c.haus) hausWeg(haeuser.get(c.haus)); zelleWeg(c); } const g = gleisVon(d); baeumeFaellen({ x0: Math.min(g.p0.x, g.p0.x + g.dx * 240) - 1, x1: Math.max(g.p0.x, g.p0.x + g.dx * 240) + 1, z0: Math.min(g.p0.z, g.p0.z + g.dz * 240) - 1, z1: Math.max(g.p0.z, g.p0.z + g.dz * 240) + 1 }, (bx, bz) => aufGleis(bx, bz)); bahnGleiseZeichnen(); }
   zellenNeu = true; dreckZeichnen(); zeigeWerte(); speichernBald(); return d;
 }
 /* Netz: welche Straßen hängen zusammen? (Strom und Rohre laufen unter den Straßen) */
@@ -1369,7 +1371,7 @@ const geistRing = new THREE.Mesh(new THREE.RingGeometry(0.985, 1, 72).rotateX(-M
 const geistFlaeche = new THREE.Mesh(new THREE.CircleGeometry(1, 64).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.1, depthWrite: false })); geistFlaeche.visible = false; szene.add(geistFlaeche);
 let dienstWahl = "windrad", dienstKat = "strom", dienstPlanAktuell = null;
 function dienstVorschau(p) {
-  const plan = dienstPlan(p, dienstWahl), D = DIENSTE[dienstWahl]; dienstPlanAktuell = plan;
+  const plan = dienstWahl === "bahnhof" ? bahnhofPlan(p) : dienstPlan(p, dienstWahl), D = DIENSTE[dienstWahl]; dienstPlanAktuell = plan;
   geist.visible = true; geist.position.set(plan.x, G + 0.01, plan.z); geist.rotation.set(0, plan.rot, 0); geist.scale.set(plan.W, 0.5, plan.D); geist.material.color.setHex(plan.ok ? 0x7dffb0 : 0xff5a5a);
   const strasse = STRASSEN_DIENST.has(D.kat), rad = strasse ? 0 : D.radius || 0; geistRing.visible = geistFlaeche.visible = rad > 0;
   reichZeichnen(strasse && plan.zug ? D.kat : null, strasse && plan.zug ? reichweite(plan.zug, D.radius * REICH_FAKTOR) : null);
@@ -1453,11 +1455,12 @@ function halteNeuAnkern() {
 }
 function linieWeg(L) { linien.delete(L.id); for (const f of fahrzeuge) if (f.linie === L.id) fahrzeugWeg(f); fahrzeuge = fahrzeuge.filter((f) => !f.weg); linienNeu = true; }
 const haltPunkt = (h) => ({ k: h.k, S: klemme(h.s, 0.6, kanten.get(h.k).len - 0.6) });
-function linieErreichbar(ids) { for (let i = 0; i < ids.length; i++) { const a = halte.get(ids[i]), b = halte.get(ids[(i + 1) % ids.length]); if (!a || !b || !kanten.has(a.k) || !kanten.has(b.k)) return false; if (!wegSuchen(haltPunkt(a), haltPunkt(b))) return false; } return true; }
+function linieErreichbar(ids, tram) { for (let i = 0; i < ids.length; i++) { const a = halte.get(ids[i]), b = halte.get(ids[(i + 1) % ids.length]); if (!a || !b || !kanten.has(a.k) || !kanten.has(b.k)) return false; if (tram && (!kanten.get(a.k).schienen || !kanten.get(b.k).schienen)) return false; if (!wegSuchen(haltPunkt(a), haltPunkt(b), tram)) return false; } return true; }
 let ticketPreis = 1.5, nvWoche = { fahrten: 0, einnahmen: 0 }, nvLetzte = { fahrten: 0, einnahmen: 0 };
 const ticketFak = () => klemme(1.6 - ticketPreis * 0.4, 0.3, 1.4);
 function depotFuer(L, nahe) { let best = null, bd = 1e9; for (const d of dienste.values()) { if (DIENSTE[d.typ].depot !== (L.art === "tram" ? "tram" : "bus")) continue; const e = Math.hypot(d.x - nahe.x, d.z - nahe.z); if (e < bd) { bd = e; best = d; } } return best; }
-function umlaufZeit(L) { let len = 0; for (let i = 0; i < L.halte.length; i++) { const a = halte.get(L.halte[i]), b = halte.get(L.halte[(i + 1) % L.halte.length]); if (!a || !b || !kanten.has(a.k) || !kanten.has(b.k)) continue; const w = wegSuchen(haltPunkt(a), haltPunkt(b)); if (w) for (const st of w.route) len += kanten.get(st.k).len; } return len / 1.7 + L.halte.length * 3.5; }
+function umlaufZeit(L) { let len = 0; for (let i = 0; i < L.halte.length; i++) { const a = halte.get(L.halte[i]), b = halte.get(L.halte[(i + 1) % L.halte.length]); if (!a || !b || !kanten.has(a.k) || !kanten.has(b.k)) continue; const w = wegSuchen(haltPunkt(a), haltPunkt(b), L.art === "tram"); if (w) for (const st of w.route) len += kanten.get(st.k).len; } return len / 1.7 + L.halte.length * 3.5; }
+const tramW = (L) => L && L.art === "tram";
 function busseFuer(L) { if (L.umlaufV !== netzVersion) { L.umlauf = umlaufZeit(L); L.umlaufV = netzVersion; } return klemme(Math.ceil(L.umlauf / (L.takt || 40)), 1, 24); }
 function busStarten(L, i) {
   const a = halte.get(L.halte[i % L.halte.length]); if (!a) return null;
@@ -1479,7 +1482,7 @@ function busWeiter(f) {
   const L = linien.get(f.linie); if (!L) { fahrzeugWeg(f); return; }
   const a = halte.get(L.halte[f.ziel % L.halte.length]);
   const n = (f.ziel + 1) % L.halte.length, b = halte.get(L.halte[n]); if (!a || !b) { fahrzeugWeg(f); return; }
-  const kk = kanten.get(f.route[f.ri].k), weg = kk && wegSuchen({ k: kk.id, S: f.route[f.ri].dir > 0 ? f.s : kk.len - f.s }, haltPunkt(b));
+  const kk = kanten.get(f.route[f.ri].k), weg = kk && wegSuchen({ k: kk.id, S: f.route[f.ri].dir > 0 ? f.s : kk.len - f.s }, haltPunkt(b), L.art === "tram" && kk.schienen);
   if (!weg) { f.halt = 3; return; }
   Object.assign(f, { route: weg.route, ri: 0, s: weg.s0, sZiel: weg.s1, ziel: n, frei: false, ausparken: true, kurveFuer: -1, warte: 0, parkt: 0, nachText: "🚏 Haltestelle " + (n + 1) });
   spurWaehlen(f);
@@ -1501,6 +1504,7 @@ function busRechnen() {
   let l = 0, j = 0, alle = 0;
   for (const h of haeuser.values()) {
     let nah = null; for (const s of halte.values()) if (s.inLinie && Math.hypot(s.x - h.x, s.z - h.z) < (s.tram ? HALT_RADIUS + 2.5 : HALT_RADIUS)) { nah = s; break; }
+    if (!nah) for (const L of zuglinien.values()) for (const id of L.st) { const d = dienste.get(id); if (d && Math.hypot(d.x - h.x, d.z - h.z) < 10) { nah = { umgebung: 0 }; break; } }
     h.bus = !!nah; alle += leute(h); if (nah) { l += leute(h); j += jobs(h); nah.umgebung += leute(h) + jobs(h); }
   }
   let tramPlus = 0; for (const L of linien.values()) if (L.art === "tram") tramPlus += L.busse;
@@ -1527,12 +1531,12 @@ function gleiseZeichnen() {
   gleiseMesh.geometry.dispose(); gleiseMesh.geometry = pos.length ? geoAus(pos, col) : new THREE.BufferGeometry();
 }
 function linienZeichnen() {
-  linienNeu = false; gleiseZeichnen(); const pos = [], col = []; let n = 0;
+  linienNeu = false; const pos = [], col = []; let n = 0;
   for (const L of linien.values()) {
     const c = farbe(L.farbe), off = 0.06 + (n++ % 4) * 0.05;
     for (let i = 0; i < L.halte.length; i++) {
       const a = halte.get(L.halte[i]), b = halte.get(L.halte[(i + 1) % L.halte.length]); if (!a || !b || !kanten.has(a.k) || !kanten.has(b.k)) continue;
-      const w = wegSuchen(haltPunkt(a), haltPunkt(b)); if (!w) continue;
+      const w = wegSuchen(haltPunkt(a), haltPunkt(b), L.art === "tram"); if (!w) continue;
       w.route.forEach((st, ri) => {
         const k = kanten.get(st.k); if (!k) return;
         const s0 = ri === 0 ? w.s0 : 0, s1 = ri === w.route.length - 1 ? w.s1 : k.len, pts = [];
@@ -1559,7 +1563,7 @@ function busTippen(p) {
     const L = linien.get(linieWahl), h = halteBei(p, 1.6); if (!L) { busModus = "halt"; return; } if (!h) { tipp("Tipp auf eine Haltestelle: dazu oder weg.", 2000); return; }
     merkeRueck();
     if (L.halte.includes(h.id)) { if (L.halte.length <= 2) { tipp("Eine Linie braucht mindestens 2 Haltestellen.", 2000); return; } L.halte = L.halte.filter((x) => x !== h.id); tipp("➖ Haltestelle aus Linie " + L.nr + " entfernt.", 1800); }
-    else { let best = 0, bk = 1e9; for (let i = 0; i < L.halte.length; i++) { const a = halte.get(L.halte[i]), b = halte.get(L.halte[(i + 1) % L.halte.length]); const k = Math.hypot(a.x - h.x, a.z - h.z) + Math.hypot(b.x - h.x, b.z - h.z) - Math.hypot(a.x - b.x, a.z - b.z); if (k < bk) { bk = k; best = i + 1; } } L.halte.splice(best, 0, h.id); if (!linieErreichbar(L.halte)) { L.halte.splice(best, 1); tipp("⚠️ Diese Haltestelle ist nicht mit der Linie verbunden.", 2500); return; } tipp("➕ Haltestelle zu Linie " + L.nr + " hinzugefügt.", 1800); }
+    else { let best = 0, bk = 1e9; for (let i = 0; i < L.halte.length; i++) { const a = halte.get(L.halte[i]), b = halte.get(L.halte[(i + 1) % L.halte.length]); const k = Math.hypot(a.x - h.x, a.z - h.z) + Math.hypot(b.x - h.x, b.z - h.z) - Math.hypot(a.x - b.x, a.z - b.z); if (k < bk) { bk = k; best = i + 1; } } L.halte.splice(best, 0, h.id); if (!linieErreichbar(L.halte, L.art === "tram")) { L.halte.splice(best, 1); tipp("⚠️ Diese Haltestelle ist nicht mit der Linie verbunden.", 2500); return; } tipp("➕ Haltestelle zu Linie " + L.nr + " hinzugefügt.", 1800); }
     L.umlaufV = -1; for (const f of fahrzeuge) if (f.linie === L.id) f.ziel = Math.min(f.ziel, L.halte.length - 1); busRechnen(); linienNeu = true; speichernBald(); unterleiste();
   } else if (busModus === "linie" || busModus === "tram") {
     const h = halteBei(p, 1.6); if (!h) { tipp("Tipp auf eine Haltestelle 🚏.", 2000); return; }
@@ -1582,10 +1586,10 @@ function linienVorschau() {
 }
 function linieFertig() {
   if (linieBau.length < 2) return;
-  if (!linieErreichbar(linieBau)) { tipp("⚠️ Zwischen den Haltestellen gibt es keinen Weg. Verbinde die Straßen.", 3500); return; }
+  if (!linieErreichbar(linieBau, busModus === "tram")) { tipp(busModus === "tram" ? "⚠️ Straßenbahnen brauchen 🚋 Schienen auf allen Straßen dazwischen (🛣️ → 🚋 Schienen)." : "⚠️ Zwischen den Haltestellen gibt es keinen Weg. Verbinde die Straßen.", 4500); return; }
   merkeRueck();
   const nr = Math.max(0, ...[...linien.values()].map((L) => L.nr)) + 1, tram = busModus === "tram", L = { id: linieId++, nr, takt: 40, art: tram ? "tram" : "bus", farbe: LINIEN_FARBEN[(nr - 1) % LINIEN_FARBEN.length], halte: linieBau.slice(), busse: Math.max(1, Math.round(linieBau.length / (tram ? 3 : 2))) };
-  if (tram) { let lang = 0; for (let i = 0; i < L.halte.length; i++) { const w = wegSuchen(haltPunkt(halte.get(L.halte[i])), haltPunkt(halte.get(L.halte[(i + 1) % L.halte.length]))); if (w) for (const st of w.route) lang += kanten.get(st.k).len; } const preis = Math.round(lang * 120); if (geld < preis) { tipp("Die Schienen kosten " + euro(preis) + " – zu wenig Geld.", 3000); return; } geld -= preis; }
+
   linien.set(L.id, L); linieBau = []; linieWahl = L.id; frageZu(); busModus = "halt"; busRechnen(); linienNeu = true; speichernBald(); unterleiste();
   const dep = depotFuer(L, halte.get(L.halte[0]));
   tipp(dep ? (tram ? "🚋 Straßenbahn " : "🚌 Linie ") + nr + " fährt! Mit + und − änderst du den Takt." : "⚠️ Linie " + nr + " ist fertig – bau noch ein " + (tram ? "Straßenbahn-Depot" : "Busdepot") + ", dann fahren die Fahrzeuge los.", 4500);
@@ -1612,7 +1616,7 @@ function bedarfBerechnen() {
   let bil = 0, bn = 0; for (const h of wohnListe) { bil += (h.bildung || 0) * leute(h); bn += leute(h); } bil = bn ? bil / bn : 0;
   let b = zoneFrei(5) ? (k.e * (0.12 + bil * 0.06) - k.jb) * 1.3 + 10 : -100;
   let i = (arbeiter * (zoneFrei(5) ? 0.36 - bil * 0.06 : 0.42) - k.ji) * 1.2 + (k.e < 60 ? 25 : 0) + k.jl * 0.15;
-  const nb = anzahlTyp("bahnhof"), nh = anzahlTyp("hafen"); w += 8 * nb; l += 10 * nb + 4 * nh; i += 14 * nh;
+  const nb = [...dienste.values()].filter((d) => d.typ === "bahnhof" && (d.gk == null || simZeit - (d.zugDa ?? -999) < 150)).length, nh = anzahlTyp("hafen"); w += 8 * nb; l += 10 * nb + 4 * nh; i += 14 * nh;
   const s = (z, v) => (v - (steuern[z] - 9) * 4.5) * (1 - (steuern[z] - 9) * 0.05);
   bedarf = { w: klemme(s("w", w), -100, 100), g: klemme(s("g", l), -100, 100), b: klemme(s("b", b), -100, 100), i: klemme(s("i", i), -100, 100) };
   const balken = document.querySelectorAll("#bedarf i"); ["w", "g", "b", "i"].forEach((z, n) => { if (balken[n]) balken[n].style.height = Math.max(2, bedarf[z] / 100 * 26) + "px"; });
@@ -1794,12 +1798,12 @@ const fzMesh = {}; for (const k in FZ) fzMesh[k] = becken(FZ[k].geo, AUTO_MAT, F
 const vorne = (d) => ({ x: Math.sin(d.rot), z: Math.cos(d.rot) });
 function gleisVon(d) { const f = vorne(d), D = d.d * ZELLE, p0 = { x: d.x - f.x * D * 0.05, z: d.z - f.z * D * 0.05 }; return { p0, dx: -f.x, dz: -f.z }; }
 function wasserRichtung(d) { let best = null, bw = 1e9; for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2, dx = Math.cos(a), dz = Math.sin(a); let w = 0; for (const r of [4, 7, 11]) w += abstand(d.x + dx * r, d.z + dz * r); if (w < bw) { bw = w; best = { dx, dz }; } } return best; }
-function aufGleis(x, z) { for (const d of dienste.values()) { if (d.typ !== "bahnhof") continue; const g = gleisVon(d), vx = x - g.p0.x, vz = z - g.p0.z, u = vx * g.dx + vz * g.dz; if (u > 0 && Math.abs(-vx * g.dz + vz * g.dx) < 0.7) return true; } return false; }
+function aufGleis(x, z) { for (const d of dienste.values()) { if (d.typ !== "bahnhof" || d.gk != null) continue; const g = gleisVon(d), vx = x - g.p0.x, vz = z - g.p0.z, u = vx * g.dx + vz * g.dz; if (u > 0 && Math.abs(-vx * g.dz + vz * g.dx) < 0.7) return true; } return false; }
 const gleisBahnMesh = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85 })); gleisBahnMesh.receiveShadow = true; szene.add(gleisBahnMesh);
 function bahnGleiseZeichnen() {
   const pos = [], col = [], schotter = farbe(0x8a8378), schwelle = farbe(0x5a4636), schiene = farbe(0xc9ced6);
   for (const d of dienste.values()) {
-    if (d.typ !== "bahnhof") continue;
+    if (d.typ !== "bahnhof" || d.gk != null) continue;
     const g = gleisVon(d), pts = []; for (let u = 0; u <= 240; u += 2) pts.push({ x: g.p0.x + g.dx * u, z: g.p0.z + g.dz * u, tx: g.dx, tz: g.dz });
     band(pos, col, pts, 0.24, G + 0.016, schotter);
     for (let u = 0.2; u < 240; u += 0.32) { const a = { x: g.p0.x + g.dx * u, z: g.p0.z + g.dz * u, tx: g.dx, tz: g.dz }, b = { x: a.x + g.dx * 0.07, z: a.z + g.dz * 0.07, tx: g.dx, tz: g.dz }; band(pos, col, [a, b], 0.17, G + 0.022, schwelle); }
@@ -1811,11 +1815,11 @@ const ZUG_LOK = kastenGeo({ L: 1.3, B: 0.3, sill: 0.08, belt: 0.24, roof: 0.44, 
 const ZUG_WAGEN = kastenGeo({ L: 1.3, B: 0.3, sill: 0.08, belt: 0.2, roof: 0.44, nase: 0.42, hf: 0.645, wf: 0.645, glasBis: -0.65, band: true, extra: (t) => { t.push(kiste(0, 0.17, 0, 1.24, 0.03, 0.305, 0xe8493f)); } });
 const SCHIFF = mergeGeometries([profil([[-1.3, -0.12], [1.0, -0.12], [1.45, 0.2], [-1.35, 0.2]], 0.62, 0x22324a, 0.03), kiste(0, 0.21, 0, 2.6, 0.02, 0.6, 0x8a2f2f), kiste(-1.05, 0.42, 0, 0.35, 0.42, 0.56, 0xf4f4f4), kiste(-1.05, 0.66, 0, 0.36, 0.05, 0.58, 0x2a3644),
   ...[0, 1, 2, 3, 4, 5, 6, 7].map((i) => kiste(-0.62 + (i % 4) * 0.42, 0.31 + Math.floor(i / 4) * 0.16, 0, 0.38, 0.15, 0.5, CONTAINER[i % CONTAINER.length]))]);
-const lokMesh = becken(ZUG_LOK, AUTO_MAT, 20, true), wagenMesh = becken(ZUG_WAGEN, AUTO_MAT, 80, true), schiffMesh = becken(SCHIFF, AUTO_MAT, 20, true);
+const lokMesh = becken(ZUG_LOK, AUTO_MAT, 40, true), wagenMesh = becken(ZUG_WAGEN, AUTO_MAT, 240, true), schiffMesh = becken(SCHIFF, AUTO_MAT, 20, true);
 function bahnHafenZeichnen(dt) {
-  let li = 0, wi = 0, si = 0;
+  let [li, wi] = zuegeZeichnen(), si = 0;
   for (const d of dienste.values()) {
-    if (d.typ === "bahnhof") {
+    if (d.typ === "bahnhof" && d.gk == null) {
       d.bt = ((d.bt ?? d.id * 7.3) + dt) % 60; const t = d.bt;
       const u = t < 22 ? 0.6 + 240 * Math.pow(1 - t / 22, 2) : t < 30 ? 0.6 : t < 50 ? 0.6 + 240 * Math.pow((t - 30) / 20, 2) : -1;
       d.zugDa = t >= 22 && t < 30; if (u < 0) continue;
@@ -1836,6 +1840,197 @@ function bahnHafenZeichnen(dt) {
   for (const [m, n] of [[lokMesh, li], [wagenMesh, wi], [schiffMesh, si]]) { m.count = n; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
 }
 const anzahlTyp = (t) => { let n = 0; for (const d of dienste.values()) if (d.typ === t) n++; return n; };
+/* ================================================================
+   Eisenbahn: Gleise selbst legen, Bahnhöfe, Züge, Bahnübergänge
+   ================================================================ */
+const gKnoten = new Map(), gKanten = new Map(); let gnId = 1, gkId = 1, gleisVersion = 0;
+const GLEIS_PREIS = 120, zuglinien = new Map(); let zlId = 1;
+function neuerGKnoten(p, id) { const n = { id: id || gnId++, x: p.x, z: p.z, kanten: new Set(), aussen: false }; gnId = Math.max(gnId, n.id + 1); gKnoten.set(n.id, n); return n; }
+function gleisMesh(k) {
+  const pos = [], col = [], Y = (d) => (p) => G + d + ebeneY(k, p.s);
+  if (k.ebene >= 0) {
+    band(pos, col, k.pts, 0.3, Y(0.016), farbe(0x8a8378));
+    for (let s = 0.2; s < k.len; s += 0.32) { const a = Object.assign({ s }, punktBei(k, s)), s2 = Math.min(k.len, s + 0.07), b = Object.assign({ s: s2 }, punktBei(k, s2)); band(pos, col, [a, b], 0.18, Y(0.022), farbe(0x5a4636)); }
+    band(pos, col, k.pts, 0.013, Y(0.034), farbe(0xc9ced6), 0.1); band(pos, col, k.pts, 0.013, Y(0.034), farbe(0xc9ced6), -0.1);
+    if (k.ebene > 0) { const c = farbe(0xb9b4a8), unten = (p) => G - 0.1 + ebeneY(k, p.s), oben = (p) => G + 0.08 + ebeneY(k, p.s); for (const sei of [1, -1]) wand(pos, col, k.pts, sei * 0.34, unten, oben, c); band(pos, col, k.pts, 0.34, unten, farbe(0x8c877c)); }
+  } else {
+    const teil = k.pts.filter((p) => ebeneY(k, p.s) > -0.05); if (teil.length > 1) { band(pos, col, k.pts.filter((p) => p.s < k.len / 2 && ebeneY(k, p.s) > -0.05), 0.3, Y(0.016), farbe(0x8a8378)); band(pos, col, k.pts.filter((p) => p.s > k.len / 2 && ebeneY(k, p.s) > -0.05), 0.3, Y(0.016), farbe(0x8a8378)); }
+  }
+  const m = new THREE.Mesh(geoAus(pos, col), M.strasse); m.receiveShadow = true; return m;
+}
+function neueGKante(aId, bId, c, id, opt) {
+  const a = gKnoten.get(aId), b = gKnoten.get(bId), { pts, len } = abtasten(a, c, b);
+  const k = Object.assign({ id: id || gkId++, a: aId, b: bId, c: { x: c.x, z: c.z }, pts, len, h: huelle(pts, 0.4), gleis: true, ebene: 0 }, opt || {}); gkId = Math.max(gkId, k.id + 1);
+  k.mesh = gleisMesh(k); szene.add(k.mesh); gKanten.set(k.id, k); a.kanten.add(k.id); b.kanten.add(k.id); return k;
+}
+function gKanteWeg(k) { szene.remove(k.mesh); k.mesh.geometry.dispose(); gKanten.delete(k.id); for (const nid of [k.a, k.b]) { const n = gKnoten.get(nid); if (!n) continue; n.kanten.delete(k.id); if (!n.kanten.size) gKnoten.delete(nid); } }
+function gKanteTeilen(k, t) {
+  const a = gKnoten.get(k.a), b = gKnoten.get(k.b), m = bez(a, k.c, b, t), n = neuerGKnoten(m), c1 = lerp(a, k.c, t), c2 = lerp(k.c, b, t), aId = k.a, bId = k.b, ax = { x: a.x, z: a.z }, bx = { x: b.x, z: b.z }, opt = { aussen: k.aussen };
+  gKanteWeg(k); if (!gKnoten.has(aId)) neuerGKnoten(ax, aId); if (!gKnoten.has(bId)) neuerGKnoten(bx, bId);
+  neueGKante(aId, n.id, c1, null, opt); neueGKante(n.id, bId, c2, null, opt); return n;
+}
+function naechstesGleis(p, r, filter) { let best = null; for (const k of gKanten.values()) { if ((filter && !filter(k)) || !nahHuelle(k.h, p, r)) continue; const e = abstandZuLinie(p, k.pts, true); if (e.d < r && (!best || e.d < best.d)) best = { k, ...e }; } return best; }
+function naechsterGKnoten(p, r) { let best = null, bd = r; for (const n of gKnoten.values()) { const d = abst(n, p); if (d < bd) { bd = d; best = n; } } return best; }
+function gleisFangen(p) { const r = fangRadius(), n = naechsterGKnoten(p, r); if (n) return { art: "gknoten", id: n.id, x: n.x, z: n.z }; const e = naechstesGleis(p, r * 0.8, (k) => !k.ebene); if (e) return { art: "gkante", id: e.k.id, x: e.x, z: e.z }; return { art: "frei", x: p.x, z: p.z }; }
+function gKnotenFuer(p) { const n = naechsterGKnoten(p, 0.6); if (n) return n; const e = naechstesGleis(p, 0.6, (k) => !k.ebene); if (e) { const a = gKnoten.get(e.k.a), b = gKnoten.get(e.k.b); if (abst(a, e) < 1.0) return a; if (abst(b, e) < 1.0) return b; return gKanteTeilen(e.k, e.t); } return neuerGKnoten(p); }
+function gleisKreuzungen(pts, ausserNah) {
+  const h = huelle(pts), liste = [];
+  for (const k of gKanten.values()) { if (k.ebene || k.h.x1 < h.x0 || k.h.x0 > h.x1 || k.h.z1 < h.z0 || k.h.z0 > h.z1) continue; for (let i = 0; i < pts.length - 1; i++) for (let j = 0; j < k.pts.length - 1; j++) { const s = schnitt(pts[i], pts[i + 1], k.pts[j], k.pts[j + 1]); if (s && !ausserNah.some((q) => abst(q, s) < 1.0)) liste.push({ t: pts[i].t + (pts[i + 1].t - pts[i].t) * s.ua, x: s.x, z: s.z }); } }
+  liste.sort((a, b) => a.t - b.t); return liste.filter((q, i) => !liste.slice(0, i).some((o) => abst(o, q) < 1.5));
+}
+function gleisPlanen(A, C, Bp, ebene) {
+  const { pts, len } = abtasten(A, C, Bp), plan = { A, C, B: Bp, pts, laenge: len, kosten: Math.round(len * GLEIS_PREIS * (ebene > 0 ? 3 : ebene < 0 ? 4 : 1)), ok: true, grund: "", ebene, kreuz: [], gleis: true };
+  const nein = (g) => { plan.ok = false; plan.grund = plan.grund || g; }, kk = { ebene, len }, ey = (q) => ebeneY(kk, q.s);
+  if (len < 2) nein("Zu kurz"); if (len > 120) nein("Zu lang – setz einen Zwischenpunkt"); if (ebene && len < 7) nein("Brücken und Tunnel brauchen mindestens 7 Felder");
+  for (const q of pts) { if (!aufLand(q.x, q.z, ebene && Math.abs(ey(q)) > 0.3 ? -99 : ebene ? 1.5 : 3.0)) { nein(ebene ? "Die Enden müssen auf festem Land liegen" : "Zu nah am Wasser – bau eine 🌉 Brücke"); break; } if (!imBesitz(q.x, q.z)) { nein("Außerhalb deiner Gebiete"); break; } }
+  for (let i = 3; i < pts.length - 3 && plan.ok; i++) { const a = pts[i - 3], b = pts[i + 3]; if (a.tx * b.tx + a.tz * b.tz < 0.8) nein("Kurve zu eng für Züge – mach sie weiter"); }
+  if (plan.ok && !ebene) { plan.kreuz = gleisKreuzungen(pts, [A, Bp]); for (const q of pts) { const n = naechsterKnoten(q, 1.6); if (n && [...n.kanten].length > 2) { nein("Gleise dürfen nicht über eine Straßenkreuzung"); break; } } }
+  if (plan.ok && plan.kosten > geld) nein("Nicht genug Geld");
+  return plan;
+}
+function gleisBauen(plan) {
+  const n0 = gKnotenFuer(plan.A), n2 = gKnotenFuer(plan.B), neu = []; if (n0 === n2) return [];
+  const { pts } = abtasten(n0, plan.C, n2), C = plan.C;
+  const kr = plan.ebene ? [] : gleisKreuzungen(pts, [n0, n2]).map((q) => ({ t: q.t, n: gKnotenFuer(q) })).filter((q) => q.n !== n0 && q.n !== n2);
+  const ts = [0].concat(kr.map((q) => q.t), [1]), ns = [n0].concat(kr.map((q) => q.n), [n2]);
+  for (let j = 0; j < ns.length - 1; j++) { const ta = ts[j], tb = ts[j + 1], c = { x: (1 - ta) * (1 - tb) * n0.x + ((1 - ta) * tb + ta * (1 - tb)) * C.x + ta * tb * n2.x, z: (1 - ta) * (1 - tb) * n0.z + ((1 - ta) * tb + ta * (1 - tb)) * C.z + ta * tb * n2.z }; if (ns[j] === ns[j + 1] || abst(ns[j], ns[j + 1]) < 0.6) continue; neu.push(neueGKante(ns[j].id, ns[j + 1].id, c, null, plan.ebene ? { ebene: plan.ebene } : (plan.aussen ? { aussen: true } : null))); }
+  for (const k of neu) { const unter = (x, z) => k.ebene < 0 && ebeneY(k, abstandZuLinie({ x, z }, k.pts, true).s) < -0.3; for (const z of zellenIn(k.h)) if (abstandZuLinie(z, k.pts) < 0.85 && !unter(z.x, z.z)) zelleWeg(z); baeumeFaellen(k.h, (x, z) => abstandZuLinie({ x, z }, k.pts) < 0.5 && !unter(x, z)); }
+  if (neu.length && plan.kosten) { geld -= plan.kosten; zeigeWerte(); }
+  gleisGeaendert(); return neu;
+}
+function gleisGeaendert() { gleisVersion++; uebergaengeBerechnen(); brueckenZeichnen(); zellenNeu = true; speichernBald(); }
+function aussenGleisBauen() {
+  if ([...gKanten.values()].some((k) => k.aussen)) return;
+  const n = knoten.get(aussenKnoten); if (!n) return; const l = Math.hypot(n.x, n.z) || 1, dx = n.x / l, dz = n.z / l, px = -dz, pz = dx;
+  let seite = 7; if (karte !== "insel" && abstand(dx * 60 + px * 7, dz * 60 + pz * 7) < 4) seite = -7;
+  const punkte = [19, 60, 100, 140, 180, 214];
+  for (let i = 0; i < punkte.length - 1; i++) { const A = { x: dx * punkte[i] + px * seite, z: dz * punkte[i] + pz * seite }, B = { x: dx * punkte[i + 1] + px * seite, z: dz * punkte[i + 1] + pz * seite }; gleisBauen({ A, B, C: lerp(A, B, 0.5), kosten: 0, ebene: 0, aussen: true }); }
+  for (const k of gKanten.values()) k.aussen = true;
+}
+const randGleis = () => { let best = null, bd = -1; for (const n of gKnoten.values()) { const d = Math.hypot(n.x, n.z); if (d > bd) { bd = d; best = n; } } return best && bd > 150 ? best : null; };
+/* Wegsuche auf den Gleisen → Linienzug zum Fahren */
+function gleisWeg(start, ziel) {
+  const ks = gKanten.get(start.k), kz = gKanten.get(ziel.k); if (!ks || !kz) return null;
+  const stueck = (k, s0, s1) => { const out = [], d = s1 >= s0 ? 1 : -1; for (let s = s0; d > 0 ? s <= s1 : s >= s1; s += 0.4 * d) { const p = punktBei(k, s); out.push({ x: p.x, z: p.z, y: ebeneY(k, s) }); } const p = punktBei(k, s1); out.push({ x: p.x, z: p.z, y: ebeneY(k, s1) }); return out; };
+  if (ks === kz) return stueck(ks, start.S, ziel.S);
+  const g = new Map(), von = new Map(), offen = [[0, ks.a, null], [0, ks.b, null]]; g.set(ks.a, start.S); g.set(ks.b, ks.len - start.S); offen[0][0] = start.S; offen[1][0] = ks.len - start.S;
+  let schritt = 0;
+  while (offen.length && schritt++ < 5000) { offen.sort((a, b) => a[0] - b[0]); const [w, id] = offen.shift(); if (w > (g.get(id) ?? 1e9)) continue; const n = gKnoten.get(id); if (!n) continue; for (const kid of n.kanten) { const k = gKanten.get(kid); if (k === ks) continue; const nach = k.a === id ? k.b : k.a, w2 = w + k.len; if (w2 < (g.get(nach) ?? 1e9)) { g.set(nach, w2); von.set(nach, { k, von: id }); offen.push([w2, nach]); } } }
+  const ende = [[kz.a, ziel.S], [kz.b, kz.len - ziel.S]].filter(([nid]) => g.has(nid)).sort((a, b) => (g.get(a[0]) + a[1]) - (g.get(b[0]) + b[1]))[0]; if (!ende) return null;
+  const kette = []; let nid = ende[0]; while (von.has(nid)) { const v = von.get(nid); kette.unshift({ k: v.k, von: v.von, nach: nid }); nid = v.von; }
+  if (nid !== ks.a && nid !== ks.b) return null;
+  let pts = stueck(ks, start.S, nid === ks.a ? 0 : ks.len);
+  for (const st of kette) pts = pts.concat(stueck(st.k, st.k.a === st.von ? 0 : st.k.len, st.k.a === st.von ? st.k.len : 0).slice(1));
+  pts = pts.concat(stueck(kz, ende[0] === kz.a ? 0 : kz.len, ziel.S).slice(1));
+  return pts;
+}
+function pfadVorbereiten(pts) { let d = 0; pts[0].d = 0; for (let i = 1; i < pts.length; i++) { d += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z); pts[i].d = d; } return { pts, len: d }; }
+function pfadPunkt(P, u) { const pts = P.pts; u = klemme(u, 0, P.len); let lo = 0, hi = pts.length - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (pts[m].d <= u) lo = m; else hi = m; } const a = pts[lo], b = pts[hi], t = (u - a.d) / Math.max(1e-6, b.d - a.d), dx = b.x - a.x, dz = b.z - a.z, l = Math.hypot(dx, dz) || 1; return { x: a.x + dx * t, z: a.z + dz * t, y: a.y + (b.y - a.y) * t, tx: dx / l, tz: dz / l }; }
+/* Bahnhöfe auf Gleisen */
+function bahnhofPlan(p) {
+  const D = DIENSTE.bahnhof, W = D.w * ZELLE, Dd = D.d * ZELLE, e = naechstesGleis(p, 4, (k) => !k.ebene);
+  if (!e) return { ok: false, grund: "Muss direkt an einem Gleis stehen", x: p.x, z: p.z, rot: 0, W, D: Dd, typ: "bahnhof" };
+  const q = punktBei(e.k, e.s), nx = -q.tz, nz = q.tx, seite = ((p.x - q.x) * nx + (p.z - q.z) * nz) >= 0 ? 1 : -1, ab = 0.38 + Dd / 2 + 0.05;
+  const x = q.x + nx * seite * ab, z = q.z + nz * seite * ab, fx = nx * seite, fz = nz * seite, rot = Math.atan2(fx, fz), cs = Math.cos(rot), sn = Math.sin(rot);
+  const plan = { ok: true, typ: "bahnhof", x, z, rot, W, D: Dd, preis: D.preis, haeuser: 0, gk: e.k.id, gs: e.s };
+  const fail = (g) => { plan.ok = false; plan.grund = g; return plan; };
+  if (!dienstFrei("bahnhof")) return fail("🔒 Gibt es ab " + MEILEN[D.ab].name);
+  if (e.s < W / 2 + 0.2 || e.s > e.k.len - W / 2 - 0.2) return fail("Das Gleis ist hier zu kurz – mehr Platz zur Weiche");
+  for (let a = -0.5; a <= 0.501; a += 0.25) for (let b = -0.5; b <= 0.501; b += 0.25) { const lx = a * W * 0.94, lz = b * Dd * 0.94, wx = x + lx * cs + lz * sn, wz = z - lx * sn + lz * cs; if (!aufLand(wx, wz, 0.3)) return fail("Hier ist Wasser"); if (!imBesitz(wx, wz)) return fail("Außerhalb deiner Gebiete"); if (strassenFrei({ x: wx, z: wz }) < 0.02 || inDienst(wx, wz, 0.02)) return fail("Zu nah an einer Straße oder einem Gebäude"); }
+  if (!naechsteKante({ x: x + fx * (Dd / 2 + 0.7), z: z + fz * (Dd / 2 + 0.7) }, 2.2, autoKante)) return fail("Braucht vorne eine Straße für die Fahrgäste");
+  if (geld < D.preis) return fail("Zu wenig Geld (" + euro(D.preis) + ")");
+  return plan;
+}
+const neueBahnhoefe = () => [...dienste.values()].filter((d) => d.typ === "bahnhof" && d.gk != null && gKanten.has(d.gk));
+const bahnhofPunkt = (d) => ({ k: d.gk, S: d.gs });
+function bahnhofAnkern() { for (const d of dienste.values()) { if (d.typ !== "bahnhof" || d.gk == null || gKanten.has(d.gk)) continue; const e = naechstesGleis(d, 2.5, (k) => !k.ebene); if (e) { d.gk = e.k.id; d.gs = e.s; } else d.gk = -1; } }
+/* Züge */
+let zuege = [], zugNr = 1, fernZeit = 0, gueterZeit = 0;
+function zugStarten(art, pts, ziel, opt) {
+  if (!pts || pts.length < 2) return null; const P = pfadVorbereiten(pts); if (P.len < 2) return null;
+  const z = Object.assign({ id: zugNr++, art, P, u: Math.min(P.len, 1.36 * 4), v: 0, ziel, halt: 0, warte: 0, wagen: art === "gueter" ? 6 : 4, farbe: art === "gueter" ? 0x3a3f47 : 0xf2f2f2 }, opt || {});
+  if (art === "fern" || art === "gueter") z.u = Math.min(P.len, 1.36 * (z.wagen + 1));
+  zuege.push(z); return z;
+}
+function zugTakt(dt) {
+  if (dt <= 0) return;
+  const bh = neueBahnhoefe(), rand = randGleis(), randK = rand && [...rand.kanten][0], randPunkt = randK != null ? { k: randK, S: gKanten.get(randK).a === rand.id ? 0.2 : gKanten.get(randK).len - 0.2 } : null;
+  fernZeit -= dt; gueterZeit -= dt;
+  if (randPunkt && bh.length && fernZeit <= 0 && zuege.filter((z) => z.art === "fern").length < Math.min(4, bh.length * 2)) { fernZeit = 30; const d = wahl(Math.random, bh), w = gleisWeg(randPunkt, bahnhofPunkt(d)); if (w) zugStarten("fern", w, d, { zurueck: true }); }
+  if (randPunkt && bh.length && gueterZeit <= 0 && (industrieListe.length || anzahlTyp("hafen")) && zuege.filter((z) => z.art === "gueter").length < 2) { gueterZeit = 55; const d = wahl(Math.random, bh), w = gleisWeg(randPunkt, bahnhofPunkt(d)); if (w) zugStarten("gueter", w, d, { zurueck: true }); }
+  for (const L of zuglinien.values()) { const da = zuege.filter((z) => z.linie === L.id).length; if (da < 2 && L.st.length >= 2 && (!L.letzterStart || simZeit - L.letzterStart > 20)) { const i = da % L.st.length, a = dienste.get(L.st[i]), b = dienste.get(L.st[(i + 1) % L.st.length]); if (a && b && a.gk != null && b.gk != null) { const w = gleisWeg(bahnhofPunkt(a), bahnhofPunkt(b)); if (w) { zugStarten("linie", w, b, { linie: L.id, i: (i + 1) % L.st.length, farbe: L.farbe }); L.letzterStart = simZeit; } } } }
+  for (const z of zuege) {
+    if (z.weg) continue;
+    if (z.halt > 0) { z.halt -= dt; if (z.halt <= 0) zugWeiter(z, randPunkt); continue; }
+    const rest = z.P.len - z.u; let vmax = Math.min(4.2, Math.sqrt(2 * 1.4 * Math.max(0, rest)) + 0.05);
+    const kopf = pfadPunkt(z.P, z.u);
+    for (const o of zuege) { if (o === z || o.weg || !o.pos) continue; for (const q of o.pos) { const dx = q.x - kopf.x, dz = q.z - kopf.z, vor = dx * kopf.tx + dz * kopf.tz; if (vor > 0 && vor < 3.4 && Math.abs(-dx * kopf.tz + dz * kopf.tx) < 0.5) vmax = Math.min(vmax, Math.max(0, (vor - 1.6) * 1.5)); } }
+    const a = vmax > z.v ? 1.1 : -2.2; z.v = klemme(z.v + a * dt, 0, Math.max(vmax, 0)); if (vmax < z.v) z.v = vmax; z.u += z.v * dt;
+    z.warte = z.v < 0.05 && rest > 0.3 ? z.warte + dt : 0; if (z.warte > 15) z.weg = true;
+    if (rest < 0.05) { z.u = z.P.len; z.v = 0; z.halt = z.ziel === "rand" ? 0.01 : 6; if (z.ziel && z.ziel !== "rand") z.ziel.zugDa = simZeit; }
+  }
+  zuege = zuege.filter((z) => !z.weg);
+}
+function zugWeiter(z, randPunkt) {
+  if (z.ziel === "rand") { z.weg = true; return; }
+  const hier = z.ziel; if (!dienste.has(hier.id) || hier.gk == null || !gKanten.has(hier.gk)) { z.weg = true; return; }
+  if (z.linie) { const L = zuglinien.get(z.linie); if (!L) { z.weg = true; return; } const n = (z.i + 1) % L.st.length, b = dienste.get(L.st[n]); const w = b && b.gk != null && gleisWeg(bahnhofPunkt(hier), bahnhofPunkt(b)); if (!w) { z.weg = true; return; } z.P = pfadVorbereiten(w); z.u = Math.min(z.P.len, 0.3); z.i = n; z.ziel = b; return; }
+  if (z.zurueck && randPunkt) { const w = gleisWeg(bahnhofPunkt(hier), randPunkt); if (!w) { z.weg = true; return; } z.P = pfadVorbereiten(w); z.u = 0.3; z.ziel = "rand"; return; }
+  z.weg = true;
+}
+function zuegeZeichnen() {
+  let li = 0, wi = 0;
+  for (const z of zuege) {
+    z.pos = [];
+    for (let i = 0; i < z.wagen; i++) {
+      const p = pfadPunkt(z.P, z.u - 0.65 - i * 1.36); z.pos.push(p);
+      if (z.u - 0.65 - i * 1.36 < -0.2 && z.ziel !== "rand") continue;
+      _o.position.set(p.x, G + 0.035 + p.y, p.z); _o.rotation.set(0, Math.atan2(-p.tz, p.tx), 0); _o.scale.setScalar(1); _o.updateMatrix();
+      const m = i === 0 ? lokMesh : wagenMesh, n = i === 0 ? li++ : wi++; if (n >= m.instanceMatrix.count) continue; m.setMatrixAt(n, _o.matrix); m.setColorAt(n, _farbe.setHex(i === 0 ? (z.art === "gueter" ? 0xd9302f : 0xf2f2f2) : z.art === "gueter" ? CONTAINER[(z.id + i) % CONTAINER.length] : z.farbe));
+    }
+  }
+  return [li, wi];
+}
+/* Bahnübergänge mit Schranken */
+let uebergaenge = [], uebergangNachKante = new Map();
+function uebergaengeBerechnen() {
+  uebergaenge = []; uebergangNachKante = new Map();
+  for (const g of gKanten.values()) { if (g.ebene) continue; for (const k of kanten.values()) { if (k.ebene || !nahHuelle(k.h, { x: (g.h.x0 + g.h.x1) / 2, z: (g.h.z0 + g.h.z1) / 2 }, Math.max(g.h.x1 - g.h.x0, g.h.z1 - g.h.z0) / 2 + 2)) continue;
+    for (let i = 0; i < g.pts.length - 1; i++) for (let j = 0; j < k.pts.length - 1; j++) { const s = schnitt(g.pts[i], g.pts[i + 1], k.pts[j], k.pts[j + 1]); if (!s) continue; const S = k.pts[j].s + (k.pts[j + 1].s - k.pts[j].s) * (1 - (1 - 0)) ; const e = abstandZuLinie(s, k.pts, true), q = punktBei(k, e.s), gq = g.pts[i]; const u = { k: k.id, S: e.s, x: s.x, z: s.z, tx: q.tx, tz: q.tz, gx: gq.tx, gz: gq.tz, halb: TYP[k.typ].halb, zu: false, w: 1.4 }; uebergaenge.push(u); if (!uebergangNachKante.has(k.id)) uebergangNachKante.set(k.id, []); uebergangNachKante.get(k.id).push(u); void S; } } }
+}
+const schranken = becken(G_BOX_UNTEN, M.flach, 800, true);
+function schrankenZeichnen(dt) {
+  let i = 0; const ax = new THREE.Vector3();
+  for (const u of uebergaenge) {
+    let nah = false; for (const z of zuege) if (z.pos) for (const p of z.pos) if (Math.hypot(p.x - u.x, p.z - u.z) < 4.2) { nah = true; break; }
+    u.zu = nah; u.w += ((nah ? 0 : 1.45) - u.w) * Math.min(1, dt * 2.5);
+    const nx = -u.tz, nz = u.tx;
+    for (const sei of [1, -1]) {
+      if (i + 2 > 800) break;
+      const px = u.x - nx * sei * (u.halb + 0.08) - u.gx * sei * 0.55, pz = u.z - nz * sei * (u.halb + 0.08) - u.gz * sei * 0.55;
+      _o.position.set(px, G, pz); _o.rotation.set(0, 0, 0); _o.scale.set(0.06, 0.32, 0.06); _o.updateMatrix(); schranken.setMatrixAt(i, _o.matrix); schranken.setColorAt(i++, _farbe.setHex(0xf2f2f2));
+      ax.set(u.tx, 0, u.tz); _q.setFromAxisAngle(ax, sei * (Math.PI / 2 - u.w)); _m.compose(_v.set(px, G + 0.26, pz), _q, _s.set(0.035, u.halb * 0.98, 0.035)); schranken.setMatrixAt(i, _m); schranken.setColorAt(i++, _farbe.setHex(0xe8493f));
+    }
+  }
+  schranken.count = i; schranken.instanceMatrix.needsUpdate = true; if (schranken.instanceColor) schranken.instanceColor.needsUpdate = true;
+}
+/* Werkzeug: Gleise */
+let gleisModus = "gerade", zuglinieBau = [], zuglinieWahl = null;
+function gleisTippen(p) {
+  if (gleisModus === "entfernen") { const e = naechstesGleis(p, Math.max(0.9, fangRadius() * 0.6)); if (!e) { tipp("Tipp genau auf ein Gleis.", 1800); return; } if (e.k.aussen) { tipp("Der Bahnanschluss nach außen bleibt.", 2200); return; } merkeRueck(); geld += e.k.len * GLEIS_PREIS * 0.3; gKanteWeg(e.k); bahnhofAnkern(); gleisGeaendert(); zeigeWerte(); tipp("Gleis abgerissen.", 1600); return; }
+  if (gleisModus === "bahnhof") { dienstVorschau(p); return; }
+  if (gleisModus === "zuglinie") {
+    const d = [...dienste.values()].find((x) => x.typ === "bahnhof" && x.gk != null && Math.hypot(x.x - p.x, x.z - p.z) < 2.6); if (!d) { tipp("Tipp auf einen Bahnhof 🚆, der an deinen Gleisen steht.", 2200); return; }
+    if (zuglinieBau.length >= 2 && d.id === zuglinieBau[0]) { zuglinieFertig(); return; } if (zuglinieBau[zuglinieBau.length - 1] === d.id) return;
+    zuglinieBau.push(d.id); frage("🚆 Zuglinie: " + zuglinieBau.length + " Bahnhöfe" + (zuglinieBau.length >= 2 ? " – ✓ zum Fertigstellen" : " – tipp den nächsten"), zuglinieBau.length >= 2, zuglinieFertig);
+  }
+}
+function zuglinieFertig() {
+  if (zuglinieBau.length < 2) return;
+  for (let i = 0; i < zuglinieBau.length; i++) { const a = dienste.get(zuglinieBau[i]), b = dienste.get(zuglinieBau[(i + 1) % zuglinieBau.length]); if (!gleisWeg(bahnhofPunkt(a), bahnhofPunkt(b))) { tipp("⚠️ Zwischen diesen Bahnhöfen gibt es kein Gleis.", 3000); return; } }
+  merkeRueck(); const nr = Math.max(0, ...[...zuglinien.values()].map((L) => L.nr)) + 1, L = { id: zlId++, nr, farbe: LINIEN_FARBEN[(nr + 3) % LINIEN_FARBEN.length], st: zuglinieBau.slice() };
+  zuglinien.set(L.id, L); zuglinieBau = []; zuglinieWahl = L.id; frageZu(); gleisModus = "gerade"; busRechnen(); speichernBald(); unterleiste(); tipp("🚆 Zuglinie " + nr + " fährt!", 2500);
+}
 let fahrzeuge = [], fzId = 1;
 const rv = zufall(4711);
 function knotenR(n) {
@@ -1854,7 +2049,7 @@ function abbiegen(k, dir, naechster) {
   if (d < -0.6) return "wenden"; if (d > 0.82) return "gerade"; return c > 0 ? "rechts" : "links";
 }
 /* Wegsuche (A*) im Straßennetz */
-function wegSuchen(start, ziel) {
+function wegSuchen(start, ziel, nurSchienen) {
   const ks = kanten.get(start.k), kz = kanten.get(ziel.k); if (!ks || !kz) return null;
   if (ks === kz) { const dir = ziel.S >= start.S ? 1 : -1; if (!ks.einbahn || ks.einbahn === dir) return { route: [{ k: ks.id, dir }], s0: dir > 0 ? start.S : ks.len - start.S, s1: dir > 0 ? ziel.S : ks.len - ziel.S }; }
   const kosten = (k) => k.len / TYP[k.typ].tempo * (1 + k.stau * 2.5);
@@ -1874,6 +2069,7 @@ function wegSuchen(start, ziel) {
       const k = kanten.get(kid); if (!TYP[k.typ].autos || k === kz) continue;
       const nach = k.a === id ? k.b : k.a, dir = k.a === id ? 1 : -1, w = wert + kosten(k);
       if (k.einbahn && k.einbahn !== dir) continue;
+      if (nurSchienen && !k.schienen) continue;
       if (w < (g.get(nach) ?? 1e9)) { g.set(nach, w); von.set(nach, { k: k.id, dir, vor: id }); push(nach, w, w + h(knoten.get(nach))); }
     }
   }
@@ -2113,6 +2309,7 @@ function verkehrTakt(dt, ziel) {
       if (nx && !f.frei) { if (rest < 0.9 && darfEinfahren(f, kk, st, nx)) { f.frei = true; const n = endKnoten(kk, st.dir); f.von = kk.id; f.trT = 0; f.reserviert = n.id; n.drin.add(f); } if (!f.frei && rest - f.vorneL - 0.05 < luecke) { luecke = rest - f.vorneL - 0.05; dv = f.v; } }
       if (spieler.an) { const p = spurPunkt(kk, st.dir, f.s, f.off), dx = spieler.x - p.x, dz = spieler.z - p.z, vorne = dx * p.tx + dz * p.tz, seit = Math.abs(-dx * p.tz + dz * p.tx); if (vorne > 0 && vorne < 2.4 && seit < 0.4 && vorne - 0.6 < luecke) { luecke = vorne - 0.6; dv = f.v; } }
       if (f.block != null && f.block < luecke) { luecke = f.block; dv = f.v; }
+      const ues = uebergangNachKante.get(kk.id); if (ues) for (const u of ues) { if (!u.zu && u.w > 0.6) continue; const sc = st.dir > 0 ? u.S : kk.len - u.S, g2 = sc - f.s - f.vorneL - 0.32; if (g2 > -0.05 && g2 < luecke) { luecke = Math.max(0, g2); dv = f.v; } }
       if (f.ausparken && Math.abs(f.off - spurAbstand(kk.typ, f.spur)) > 0.08) vmax = Math.min(vmax, 0.9);
       // Fahren wie echte Fahrer (Abstandsregel): sanft anfahren, früh und weich bremsen, Abstand halten
       const vm = Math.max(0.05, vmax), bq = f.brems * 0.45, sStern = 0.1 + Math.max(0, f.v * f.zeitluecke + f.v * dv / (2 * Math.sqrt(f.beschl * bq)));
@@ -2302,6 +2499,10 @@ function brueckenZeichnen() {
     if (k.ebene > 0) for (let s = 2.5; s < k.len - 1; s += 2.6) { const p = punktBei(k, s), ey = ebeneY(k, s); if (ey < 0.3) continue; const wasser = abstand(p.x, p.z) < 0.3, y0 = wasser ? -2.5 : G; box(p.x, y0, p.z, Math.atan2(-p.tz, p.tx), 0.28, G - 0.1 + ey - y0, TYP[k.typ].halb * 1.4); }
     if (k.ebene < 0) for (const S of [0, 1]) { const s2 = S ? k.len - tunnelR(k) - 0.2 : tunnelR(k) + 0.2, p = punktBei(k, s2), rot = Math.atan2(-p.tz, p.tx), H = TYP[k.typ].halb + 0.1; for (const sei of [1, -1]) box(p.x - p.tz * H * sei, G, p.z + p.tx * H * sei, rot, 0.62, 0.42, 0.2); box(p.x, G + 0.32, p.z, rot, 0.62, 0.14, H * 2 + 0.2); tunnelMund.push({ x: p.x, z: p.z, rot, b: TYP[k.typ].fahr * 2 + 0.2 }); }
   }
+  for (const k of gKanten.values()) {
+    if (k.ebene > 0) for (let s = 2.5; s < k.len - 1; s += 2.6) { const p = punktBei(k, s), ey = ebeneY(k, s); if (ey < 0.3) continue; const wasser = abstand(p.x, p.z) < 0.3, y0 = wasser ? -2.5 : G; box(p.x, y0, p.z, Math.atan2(-p.tz, p.tx), 0.26, G - 0.1 + ey - y0, 0.5); }
+    if (k.ebene < 0) for (const S of [0, 1]) { const s2 = S ? k.len - tunnelR(k) - 0.2 : tunnelR(k) + 0.2, p = punktBei(k, s2), rot = Math.atan2(-p.tz, p.tx), H = 0.42; for (const sei of [1, -1]) box(p.x - p.tz * H * sei, G, p.z + p.tx * H * sei, rot, 0.62, 0.48, 0.2); box(p.x, G + 0.38, p.z, rot, 0.62, 0.14, H * 2 + 0.2); tunnelMund.push({ x: p.x, z: p.z, rot, b: 0.66 }); }
+  }
   for (const k of kanten.values()) for (let s = 1; s < k.len && i < 1500; s += 3) { if (k.ebene) break; const p = punktBei(k, s); if (abstand(p.x, p.z) > 0.3) continue; _o.position.set(p.x, -2.5, p.z); _o.rotation.set(0, Math.atan2(-p.tz, p.tx), 0); _o.scale.set(0.35, 2.6, TYP[k.typ].halb * 1.6); _o.updateMatrix(); pfeiler.setColorAt(i, _farbe.setHex(0xffffff)); pfeiler.setMatrixAt(i++, _o.matrix); }
   let ti = 0; for (const m of tunnelMund) { if (ti >= 200) break; _o.position.set(m.x, G + 0.005, m.z); _o.rotation.set(0, m.rot, 0); _o.scale.set(0.66, 0.32, m.b); _o.updateMatrix(); tunnelMesh.setMatrixAt(ti++, _o.matrix); } tunnelMesh.count = ti; tunnelMesh.instanceMatrix.needsUpdate = true;
   pfeiler.count = i; pfeiler.instanceMatrix.needsUpdate = true; if (pfeiler.instanceColor) pfeiler.instanceColor.needsUpdate = true;
@@ -2310,7 +2511,7 @@ function netzGeaendert() {
   netzVersion++; brueckenZeichnen();
   fahrzeuge.forEach((f) => { if (f.route.some((st) => !kanten.has(st.k))) fahrzeugWeg(f); }); fahrzeuge = fahrzeuge.filter((f) => !f.weg);
   for (const n of knoten.values()) n.drin = new Set([...n.drin].filter((f) => !f.weg));
-  netzVerkehrVorbereiten(); laternenBauen(); alleeZeichnen(); kreiselZeichnen(); halteNeuAnkern(); zellenNeu = true; speichernBald();
+  netzVerkehrVorbereiten(); laternenBauen(); alleeZeichnen(); kreiselZeichnen(); halteNeuAnkern(); uebergaengeBerechnen(); zellenNeu = true; speichernBald();
 }
 
 /* ================================================================
@@ -2324,10 +2525,11 @@ function zustand() {
     v: 3, zonenV: 2, karte, geld: Math.round(geld), besitz: [...besitz], gekauft, steuern, meilenstein, tage: Math.round(tage * 100) / 100, ids: { n: nId, k: kId, z: zId, g: gId, h: hId, d: dId, hs: haltId, l: linieId },
     meta: { einwohner: k.e, gespeichert: Date.now() },
     knoten: [...knoten.values()].map((n) => [n.id, r(n.x), r(n.z), n.manuell ? (n.ampel ? 1 : 0) : -1, n.aussen ? 1 : 0]),
-    kanten: [...kanten.values()].map((k) => [k.id, k.a, k.b, r(k.c.x), r(k.c.z), k.typ, k.aussen ? 1 : 0, k.einbahn || 0, k.ebene || 0, k.ring ? 1 : 0, k.busspur ? 1 : 0]), kreisel,
+    kanten: [...kanten.values()].map((k) => [k.id, k.a, k.b, r(k.c.x), r(k.c.z), k.typ, k.aussen ? 1 : 0, k.einbahn || 0, k.ebene || 0, k.ring ? 1 : 0, k.busspur ? 1 : 0, k.schienen ? 1 : 0]), kreisel,
     zellen: [...zellen.values()].map((z) => [z.id, r(z.x), r(z.z), r(z.rot), z.zone, z.g, z.seite, z.i, z.r]),
     haeuser: [...haeuser.values()].map((h) => [h.id, h.zone, h.stufe, h.w, h.d, h.variante, h.zellen]),
-    dienste: [...dienste.values()].map((d) => [d.id, d.typ, r(d.x), r(d.z), r(d.rot), d.ausbau || 0]), dienstV: 2, budgetBereich,
+    dienste: [...dienste.values()].map((d) => [d.id, d.typ, r(d.x), r(d.z), r(d.rot), d.ausbau || 0, d.gk ?? null, d.gs != null ? r(d.gs) : null]),
+    gknoten: [...gKnoten.values()].map((n) => [n.id, r(n.x), r(n.z)]), gkanten: [...gKanten.values()].map((k) => [k.id, k.a, k.b, r(k.c.x), r(k.c.z), k.ebene || 0, k.aussen ? 1 : 0]), zuglinien: [...zuglinien.values()].map((L) => [L.id, L.nr, L.farbe, L.st]), dienstV: 2, budgetBereich,
     halte: [...halte.values()].map((h) => [h.id, h.k, r(h.s)]), linien: [...linien.values()].map((L) => [L.id, L.nr, L.farbe, L.halte, L.busse, L.art, L.modell || "mix", L.takt || 40]), ticketPreis,
     baeume: baeume.filter((b) => b.weg).map((b) => b.idx)
   };
@@ -2337,7 +2539,7 @@ function speichernBald() { if (!spielLaeuft) return; clearTimeout(speicherTimer)
 function allesLeeren() {
   for (const k of kanten.values()) { szene.remove(k.mesh); k.mesh.geometry.dispose(); }
   for (const n of knoten.values()) if (n.mesh) { szene.remove(n.mesh); n.mesh.geometry.dispose(); }
-  aussenKnoten = null; kreisel.length = 0; hochListe.length = 0; dienste.clear(); bahnGleiseZeichnen(); warteListe = []; halte.clear(); linien.clear(); linieBau = []; linieWahl = null; dreckMesh.count = 0; kanten.clear(); knoten.clear(); zellen.clear(); zellIndex.clear(); raster.clear(); haeuser.clear(); fahrzeuge = []; leuteListe = [];
+  aussenKnoten = null; kreisel.length = 0; for (const k of gKanten.values()) { szene.remove(k.mesh); k.mesh.geometry.dispose(); } gKanten.clear(); gKnoten.clear(); zuege = []; zuglinien.clear(); uebergaenge = []; uebergangNachKante = new Map(); hochListe.length = 0; dienste.clear(); bahnGleiseZeichnen(); warteListe = []; halte.clear(); linien.clear(); linieBau = []; linieWahl = null; dreckMesh.count = 0; kanten.clear(); knoten.clear(); zellen.clear(); zellIndex.clear(); raster.clear(); haeuser.clear(); fahrzeuge = []; leuteListe = [];
   for (const b of baeume) if (b.weg) { b.weg = false; baumSetzen(b); }
 }
 function zustandRein(d) {
@@ -2350,20 +2552,25 @@ function zustandRein(d) {
     d.zellen = d.zellen.map((c) => { const n = c.slice(); n[4] = zz.get(c[0]) || um[c[4]] || 0; return n; });
   }
   d.knoten.forEach(([id, x, z, am, au]) => { const n = neuerKnoten({ x, z }, id); if (am != null && am >= 0) { n.manuell = true; n.ampel = am === 1; } if (au) { n.aussen = true; aussenKnoten = id; } });
-  d.kanten.forEach(([id, a, b, cx, cz, typ, au, eb, ebe, ri, bs]) => { if (knoten.has(a) && knoten.has(b)) neueKante(a, b, { x: cx, z: cz }, TYP[typ] ? typ : "klein", id, { aussen: !!au, einbahn: eb || 0, ebene: ebe || 0, ring: !!ri, busspur: !!bs }); });
+  d.kanten.forEach(([id, a, b, cx, cz, typ, au, eb, ebe, ri, bs, sch]) => { if (knoten.has(a) && knoten.has(b)) neueKante(a, b, { x: cx, z: cz }, TYP[typ] ? typ : "klein", id, { aussen: !!au, einbahn: eb || 0, ebene: ebe || 0, ring: !!ri, busspur: !!bs, schienen: !!sch }); });
   kreisel.length = 0; (d.kreisel || []).forEach((q) => kreisel.push(q));
   for (const k of kanten.values()) if (k.ring) { let bi = 0, bd = 1e9; kreisel.forEach((q, i) => { const e = Math.hypot(k.c.x - q.x, k.c.z - q.z); if (e < bd) { bd = e; bi = i; } }); k.kreisel = bi; }
   for (const n of [...knoten.values()]) if (!n.kanten.size) knotenWeg(n);
   d.zellen.forEach(([id, x, z, rot, zone, g, seite, i, r]) => neueZelle({ id, x, z, rot, zone, g, seite, i, r }));
   d.haeuser.forEach(([id, zone, stufe, w, dd, variante, ids]) => { if (ids.every((z) => zellen.has(z) && !zellen.get(z).haus)) neuesHaus({ id, zone, stufe, w, d: dd, variante, zellen: ids }, true); });
   d.baeume.forEach((i) => { const b = baeume[i]; if (b) { b.weg = true; baumSetzen(b); } });
-  (d.dienste || []).forEach(([id, typ, x, z, rot, aus]) => { if (DIENSTE[typ]) neuerDienst({ id, typ, x, z, rot, ausbau: aus || 0 }, true); });
+  (d.gknoten || []).forEach(([id, x, z]) => neuerGKnoten({ x, z }, id));
+  (d.gkanten || []).forEach(([id, a, b, cx, cz, eb, au]) => { if (gKnoten.has(a) && gKnoten.has(b)) neueGKante(a, b, { x: cx, z: cz }, id, { ebene: eb || 0, aussen: !!au }); });
+  (d.dienste || []).forEach(([id, typ, x, z, rot, aus, gk, gs]) => { if (DIENSTE[typ]) { const dd = neuerDienst({ id, typ, x, z, rot, ausbau: aus || 0 }, true); if (gk != null) { dd.gk = gk; dd.gs = gs; } } });
+  (d.zuglinien || []).forEach(([id, nr, f, st]) => { zuglinien.set(id, { id, nr, farbe: f, st }); zlId = Math.max(zlId, id + 1); });
+  uebergaengeBerechnen();
   if (d.budgetBereich) Object.assign(budgetBereich, d.budgetBereich); else for (const k in budgetBereich) budgetBereich[k] = 100; bahnGleiseZeichnen();
   if (d.ids.d) dId = Math.max(dId, d.ids.d);
   (d.halte || []).forEach(([id, k, s2]) => { if (kanten.has(k)) neueHalte({ id, k, s: s2 }, true); });
   if (d.ticketPreis != null) ticketPreis = d.ticketPreis;
   (d.linien || []).forEach(([id, nr, f, hs, busse, art, modell, takt]) => { const L = { id, nr, farbe: f, halte: hs.filter((x) => halte.has(x)), busse, art: art || "bus", modell: modell || "mix", takt: takt || 40 }; if (L.halte.length >= 2) linien.set(id, L); linieId = Math.max(linieId, id + 1); });
   haltId = Math.max(haltId, d.ids.hs || 1); linieId = Math.max(linieId, d.ids.l || 1); linienNeu = true;
+  for (const L of linien.values()) if (L.art === "tram" && !linieErreichbar(L.halte, true)) { for (let i = 0; i < L.halte.length; i++) { const a = halte.get(L.halte[i]), b = halte.get(L.halte[(i + 1) % L.halte.length]); const w = a && b && wegSuchen(haltPunkt(a), haltPunkt(b)); if (w) for (const st of w.route) { const k = kanten.get(st.k); if (k && !k.schienen) { k.schienen = true; kanteNeuZeichnen(k); } } } }
   if (linien.size && ![...dienste.values()].some((x) => DIENSTE[x.typ].depot)) warteListe.push({ t: simZeit + 1, fn: () => infoZeigen("<b>🅿️ Neu: Depots!</b>Busse und Straßenbahnen starten jetzt im Depot.<br>Bau ein Busdepot (🚌 → Karten), sonst fahren deine Linien nicht.", 10000) });
   if (!d.dienstV && d.haeuser.length > 8) { geld += 20000; warteListe.push({ t: simZeit + 0.5, fn: () => infoZeigen("<b>🏛️ Neu: Dienste!</b>Deine Häuser brauchen jetzt Strom, Wasser, Abwasser und Müllabfuhr – sonst ziehen die Leute weg.<br>Du bekommst <b>20.000 €</b> Zuschuss, um sie zu bauen.<br><small>Unten: 🏛️ Dienste und 🌳 Parks</small>", 12000) }); }
   nId = Math.max(nId, d.ids.n); kId = Math.max(kId, d.ids.k); zId = Math.max(zId, d.ids.z); gId = Math.max(gId, d.ids.g); hId = Math.max(hId, d.ids.h);
@@ -2420,14 +2627,21 @@ let infoTimer = 0;
 function infoZeigen(html, ms) { const el = $("info"); el.innerHTML = html; el.hidden = false; clearTimeout(infoTimer); infoTimer = setTimeout(() => { el.hidden = true; }, ms || 5000); }
 
 let strTyp = lade("inselstadt-strtyp", "klein"), strModus = lade("inselstadt-strmodus", "gerade"), zoneWahl = 1, pinsel = "klein";
-if (!TYP[strTyp]) strTyp = "klein"; if (!["gerade", "kurve", "ampel", "bruecke", "tunnel", "einbahn", "kreisel", "busspur"].includes(strModus)) strModus = "gerade";
+if (!TYP[strTyp]) strTyp = "klein"; if (!["gerade", "kurve", "ampel", "bruecke", "tunnel", "einbahn", "kreisel", "busspur", "schienen"].includes(strModus)) strModus = "gerade";
+function schienenUmschalten(p) {
+  const e = naechsteKante(p, Math.max(0.9, fangRadius() * 0.6), (k) => TYP[k.typ].autos); if (!e) { tipp("Tipp genau auf eine Straße.", 1800); return; }
+  const k = e.k, preis = Math.round(k.len * 120); if (!k.schienen && geld < preis) { tipp("Schienen kosten hier " + euro(preis) + ".", 2000); return; }
+  merkeRueck(); k.schienen = !k.schienen; if (k.schienen) geld -= preis; else geld += preis * 0.3; kanteNeuZeichnen(k); netzGeaendert(); zeigeWerte();
+  tipp(k.schienen ? "🚋 Schienen verlegt (" + euro(preis) + "). Straßenbahnen fahren nur auf Straßen mit Schienen." : "Schienen entfernt.", 2600);
+}
 function busspurUmschalten(p) {
   const e = naechsteKante(p, Math.max(0.9, fangRadius() * 0.6), (k) => TYP[k.typ].autos); if (!e) { tipp("Tipp genau auf eine Hauptstraße.", 1800); return; }
   if (e.k.typ !== "haupt") { tipp("🚌 Busspuren gibt es nur auf Hauptstraßen (zwei Spuren pro Richtung).", 2600); return; }
   merkeRueck(); e.k.busspur = !e.k.busspur; kanteNeuZeichnen(e.k); netzGeaendert(); tipp(e.k.busspur ? "🚌 Busspur: Die rechte Spur ist nur für Busse, Taxis und Einsatzfahrzeuge." : "Busspur entfernt.", 2600);
 }
-const zweiPunkte = () => ["gerade", "bruecke", "tunnel"].includes(strModus), tippModus = () => ["ampel", "einbahn", "kreisel", "busspur"].includes(strModus);
-const ebeneModus = () => strModus === "bruecke" ? 1 : strModus === "tunnel" ? -1 : 0;
+const modus = () => werkzeug === "gleis" ? gleisModus : strModus, istBau = () => werkzeug === "strasse" || werkzeug === "gleis";
+const zweiPunkte = () => ["gerade", "bruecke", "tunnel"].includes(modus()), tippModus = () => ["ampel", "einbahn", "kreisel", "busspur", "schienen", "entfernen", "zuglinie", "bahnhof"].includes(modus());
+const ebeneModus = () => modus() === "bruecke" ? 1 : modus() === "tunnel" ? -1 : 0;
 const ZONEN_TEXT = {
   1: "Einfamilienhäuser und Villen – wird bei hohem Bodenwert immer schöner (5 Stufen).",
   2: "Mehrfamilienhäuser bis Wolkenkratzer – viele Einwohner auf wenig Platz.",
@@ -2440,7 +2654,8 @@ const ZONEN_TEXT = {
 };
 const TIPPS = {
   ansehen: "👆 Ein Finger: verschieben · ✌️ Zwei Finger: drehen & zoomen · Haus antippen: Infos",
-  strasse: () => strModus === "busspur" ? "🚌 Tipp auf eine Hauptstraße, um eine Busspur ein- oder auszuschalten." : strModus === "ampel" ? "🚦 Tipp auf eine Kreuzung, um die Ampel ein- oder auszuschalten." : strModus === "einbahn" ? "➡️ Tipp auf eine Straße: Einbahnstraße in eine Richtung, nochmal tippen dreht sie um, beim dritten Mal wieder normal." : strModus === "kreisel" ? "⭕ Tipp auf eine Kreuzung mit 3 oder mehr Straßen, um einen Kreisverkehr zu bauen." : strModus === "bruecke" ? "🌉 Brücke: Anfang und Ende antippen. Sie führt über Wasser und über andere Straßen." : strModus === "tunnel" ? "🚇 Tunnel: Anfang und Ende antippen. Er führt unter allem hindurch." : strModus === "gerade" ? "🛣️ Tipp auf den Anfang, dann aufs Ende. Dann ✓ zum Bauen." : "〰️ Tipp auf den Anfang, dann den Kurvenpunkt, dann das Ende. Dann ✓.",
+  strasse: () => strModus === "schienen" ? "🚋 Tipp auf eine Straße, um Straßenbahn-Schienen zu verlegen (120 €/Feld)." : strModus === "busspur" ? "🚌 Tipp auf eine Hauptstraße, um eine Busspur ein- oder auszuschalten." : strModus === "ampel" ? "🚦 Tipp auf eine Kreuzung, um die Ampel ein- oder auszuschalten." : strModus === "einbahn" ? "➡️ Tipp auf eine Straße: Einbahnstraße in eine Richtung, nochmal tippen dreht sie um, beim dritten Mal wieder normal." : strModus === "kreisel" ? "⭕ Tipp auf eine Kreuzung mit 3 oder mehr Straßen, um einen Kreisverkehr zu bauen." : strModus === "bruecke" ? "🌉 Brücke: Anfang und Ende antippen. Sie führt über Wasser und über andere Straßen." : strModus === "tunnel" ? "🚇 Tunnel: Anfang und Ende antippen. Er führt unter allem hindurch." : strModus === "gerade" ? "🛣️ Tipp auf den Anfang, dann aufs Ende. Dann ✓ zum Bauen." : "〰️ Tipp auf den Anfang, dann den Kurvenpunkt, dann das Ende. Dann ✓.",
+  gleis: () => gleisModus === "entfernen" ? "🧹 Tipp auf ein Gleis, um es abzureißen." : gleisModus === "zuglinie" ? "🚆 Tipp die Bahnhöfe der Reihe nach an. Dann ✓." : gleisModus === "bahnhof" ? "🚆 Tipp direkt neben ein Gleis. Vorne muss eine Straße sein." : gleisModus === "bruecke" ? "🌉 Gleis-Brücke: Anfang und Ende antippen." : gleisModus === "tunnel" ? "🚇 Gleis-Tunnel: Anfang und Ende antippen." : "🛤️ Tipp auf den Anfang, dann aufs Ende (" + GLEIS_PREIS + " €/Feld). Fang am besten am Bahnanschluss am Kartenrand an.",
   dienst: "🏛️ Wähl ein Gebäude und tipp neben eine Straße. Dann ✓ zum Bauen.",
   park: "🌳 Wähl einen Park und tipp neben eine Straße. Dann ✓ zum Bauen.",
   verkehr: () => busModus === "bearbeiten" ? "✏️ Tipp auf eine Haltestelle: ist sie in der Linie, fliegt sie raus – sonst kommt sie dazu." : busModus === "bau" ? "Tipp neben eine Straße, um zu bauen." : busModus === "tram" ? "🚋 Tipp die Haltestellen der Reihe nach an. Die Straßenbahn bekommt Schienen auf der Straße. Dann ✓." : busModus === "halt" ? "🚏 Tipp auf eine Straße, um eine Haltestelle zu bauen (" + HALT_PREIS + " €)." : busModus === "linie" ? "🚌 Tipp die Haltestellen der Reihe nach an. Dann ✓." : "🧹 Tipp auf eine Haltestelle, um sie zu entfernen.",
@@ -2458,7 +2673,7 @@ function unterleiste() {
     kopf = '<span class="ftitel">👆 Ansehen</span><small style="color:var(--leise)">Haus oder Auto antippen für Infos</small>';
     karten = kk("id", "fahrenKnopf", "🚗", "Selbst fahren", "", false) + kk("id", "budgetKarte", "💶", "Budget &amp; Steuern", "", false) + kk("id", "ansichtKarte", "🔍", "Info-Ansichten", "", false);
   } else if (werkzeug === "strasse") {
-    kopf = '<span class="ftitel">🛣️ Straßen</span>' + chip("data-modus", "gerade", "📏 Gerade", strModus === "gerade") + chip("data-modus", "kurve", "〰️ Kurve", strModus === "kurve") + chip("data-modus", "bruecke", "🌉 Brücke", strModus === "bruecke") + chip("data-modus", "tunnel", "🚇 Tunnel", strModus === "tunnel") + chip("data-modus", "einbahn", "➡️ Einbahn", strModus === "einbahn") + chip("data-modus", "kreisel", "⭕ Kreisverkehr", strModus === "kreisel") + chip("data-modus", "busspur", "🚌 Busspur", strModus === "busspur") + chip("data-modus", "ampel", "🚦 Ampeln", strModus === "ampel") + '<span class="trenn"></span>' + rueckChip;
+    kopf = '<span class="ftitel">🛣️ Straßen</span>' + chip("data-modus", "gerade", "📏 Gerade", strModus === "gerade") + chip("data-modus", "kurve", "〰️ Kurve", strModus === "kurve") + chip("data-modus", "bruecke", "🌉 Brücke", strModus === "bruecke") + chip("data-modus", "tunnel", "🚇 Tunnel", strModus === "tunnel") + chip("data-modus", "einbahn", "➡️ Einbahn", strModus === "einbahn") + chip("data-modus", "kreisel", "⭕ Kreisverkehr", strModus === "kreisel") + chip("data-modus", "busspur", "🚌 Busspur", strModus === "busspur") + chip("data-modus", "schienen", "🚋 Schienen", strModus === "schienen") + chip("data-modus", "ampel", "🚦 Ampeln", strModus === "ampel") + '<span class="trenn"></span>' + rueckChip;
     karten = Object.keys(TYP).map((k) => { const frei = typFrei(k), m = MEILEN.find((x) => x.frei.includes(k)); return kk("data-typ", k, TYP[k].em, TYP[k].name, frei ? TYP[k].preis + " €/Feld" : "ab " + (m ? m.name : ""), k === strTyp, !frei); }).join("");
   } else if (werkzeug === "zone") {
     kopf = '<span class="ftitel">🏘️ Zonen</span>' + chip("data-pinsel", "klein", "🖌️ Klein", pinsel === "klein") + chip("data-pinsel", "gross", "🖌️ Groß", pinsel === "gross") + chip("data-pinsel", "fuellen", "🪣 Füllen", pinsel === "fuellen") + '<span class="trenn"></span>' + rueckChip;
@@ -2467,6 +2682,13 @@ function unterleiste() {
     if (werkzeug === "dienst") kopf = '<span class="ftitel">🏛️ Dienste</span>' + Object.keys(DIENST_KAT).filter((k) => !PARK_KATS.includes(k) && k !== "verkehr").map((k) => chip("data-dkat", k, DIENST_KAT[k].em + " " + DIENST_KAT[k].name, dienstKat === k)).join("");
     else kopf = '<span class="ftitel">🌳 Parks & Freizeit</span>' + PARK_KATS.map((k) => chip("data-dkat", k, DIENST_KAT[k].em + " " + DIENST_KAT[k].name, dienstKat === k)).join("");
     karten = Object.keys(DIENSTE).filter((k) => DIENSTE[k].kat === dienstKat).map((k) => { const D = DIENSTE[k], f = dienstFrei(k); return kk("data-dienst", k, D.em, D.name, f ? euro(D.preis) : "ab " + MEILEN[D.ab].name, k === dienstWahl, !f); }).join("");
+  } else if (werkzeug === "gleis") {
+    kopf = '<span class="ftitel">🛤️ Gleise</span>' + chip("data-gmodus", "gerade", "📏 Gerade", gleisModus === "gerade") + chip("data-gmodus", "kurve", "〰️ Kurve", gleisModus === "kurve") + chip("data-gmodus", "bruecke", "🌉 Brücke", gleisModus === "bruecke") + chip("data-gmodus", "tunnel", "🚇 Tunnel", gleisModus === "tunnel") + chip("data-gmodus", "entfernen", "🧹 Entfernen", gleisModus === "entfernen") + chip("data-gmodus", "zuglinie", "🚆 Neue Zuglinie", gleisModus === "zuglinie") + '<span class="trenn"></span>' + rueckChip;
+    const ZL = zuglinieWahl && zuglinien.get(zuglinieWahl);
+    if (ZL) kopf += `<span class="trenn"></span><span class="ftitel" style="color:#${ZL.farbe.toString(16).padStart(6, "0")}">Zuglinie ${ZL.nr}</span><span style="white-space:nowrap;color:var(--leise)">${ZL.st.length} Bahnhöfe</span><button class="chip gefahr" type="button" id="zuglinieLoeschen">🗑️</button>`;
+    const D = DIENSTE.bahnhof, fr = dienstFrei("bahnhof");
+    karten = kk("data-gmodus", "bahnhof", D.em, D.name, fr ? euro(D.preis) : "ab " + MEILEN[D.ab].name, gleisModus === "bahnhof", !fr) + [...zuglinien.values()].map((L) => kk("data-zlinie", L.id, `<span style="display:inline-block;width:26px;height:26px;border-radius:50%;background:#${L.farbe.toString(16).padStart(6, "0")};color:#fff;font-size:.9rem;line-height:26px;font-weight:700">${L.nr}</span>`, "Zuglinie " + L.nr, L.st.length + " Bahnhöfe", L.id === zuglinieWahl)).join("");
+    karten += `<small style="color:var(--leise);padding:8px;max-width:260px">Züge kommen über den Bahnanschluss am Kartenrand. Verbinde ihn mit deinen Bahnhöfen.</small>`;
   } else if (werkzeug === "verkehr") {
     const L = linieWahl && linien.get(linieWahl);
     kopf = '<span class="ftitel">🚌 Nahverkehr</span>' + chip("data-bmodus", "halt", "🚏 Haltestelle", busModus === "halt") + chip("data-bmodus", "linie", "🚌 Neue Buslinie", busModus === "linie") + chip("data-bmodus", "tram", (meilenstein >= 3 ? "🚋" : "🔒") + " Neue Straßenbahn", busModus === "tram") + chip("data-bmodus", "weg", "🧹 Entfernen", busModus === "weg") + '<span class="trenn"></span>' + rueckChip;
@@ -2493,6 +2715,9 @@ $("fach").addEventListener("click", (e) => {
   if (b.dataset.modus) { strModus = b.dataset.modus; merke("inselstadt-strmodus", strModus); bauAbbrechen(); tipp(TIPPS.strasse(), 3500); }
   if (b.dataset.zone != null) { const z = +b.dataset.zone; if (z && !zoneFrei(z)) { tipp("🔒 " + ZONEN[z].name + " gibt es ab dem Meilenstein " + MEILEN[ZONEN[z].ab].name + " (" + zahl(MEILEN[ZONEN[z].ab].ab) + " Einwohner).", 3500); return; } zoneWahl = z; if (z) tipp(ZONEN[z].em + " " + ZONEN[z].name + ": " + ZONEN_TEXT[z], 4000); }
   if (b.dataset.pinsel) { pinsel = b.dataset.pinsel; tipp(TIPPS.zone(), 3500); }
+  if (b.dataset.gmodus) { if (b.dataset.gmodus === "bahnhof" && !dienstFrei("bahnhof")) { tipp("🔒 Bahnhöfe gibt es ab " + MEILEN[DIENSTE.bahnhof.ab].name + ".", 2500); return; } gleisModus = b.dataset.gmodus; zuglinieBau = []; bauAbbrechen(); vorschauWeg(); if (gleisModus === "bahnhof") dienstWahl = "bahnhof"; tipp(TIPPS.gleis(), 3500); }
+  if (b.dataset.zlinie) zuglinieWahl = +b.dataset.zlinie === zuglinieWahl ? null : +b.dataset.zlinie;
+  if (b.id === "zuglinieLoeschen") { const L = zuglinien.get(zuglinieWahl); if (L) { merkeRueck(); zuglinien.delete(L.id); zuege = zuege.filter((z) => z.linie !== L.id); zuglinieWahl = null; busRechnen(); speichernBald(); } }
   if (b.dataset.bmodus === "tram" && meilenstein < 3) { tipp("🔒 Straßenbahnen gibt es ab " + MEILEN[3].name + " (" + zahl(MEILEN[3].ab) + " Einwohner).", 3000); return; }
   if (b.dataset.bmodus) { busModus = b.dataset.bmodus; vorschauWeg(); linieBau = []; frageZu(); linienNeu = true; tipp(TIPPS.verkehr(), 3500); }
   if (b.dataset.linie) { linieWahl = +b.dataset.linie === linieWahl ? null : +b.dataset.linie; }
@@ -2545,7 +2770,7 @@ function werkzeugWaehlen(w) {
   werkzeug = w; document.querySelectorAll("#werkzeug button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.w === w)));
   const bauend = w !== "ansehen";
   steuerung.touches.ONE = bauend ? -1 : THREE.TOUCH.PAN; steuerung.mouseButtons.LEFT = bauend ? -1 : THREE.MOUSE.PAN;
-  bauAbbrechen(); frageZu(); vorschauWeg(); linieBau = []; linienNeu = true; linienMesh.visible = w === "verkehr" || ansicht === "bus"; $("info").hidden = true; zellenNeu = true; if (w === "park") { if (!PARK_KATS.includes(dienstKat)) dienstKat = "park"; } else if (w === "dienst" && (PARK_KATS.includes(dienstKat) || dienstKat === "verkehr")) dienstKat = "strom"; if (DIENSTE[dienstWahl].kat !== dienstKat) dienstWahl = Object.keys(DIENSTE).find((k) => DIENSTE[k].kat === dienstKat); unterleiste(); gebieteZeichnen();
+  bauAbbrechen(); frageZu(); vorschauWeg(); linieBau = []; zuglinieBau = []; if (w === "gleis") { aussenGleisBauen(); if (gleisModus === "bahnhof") dienstWahl = "bahnhof"; } linienNeu = true; linienMesh.visible = w === "verkehr" || ansicht === "bus"; $("info").hidden = true; zellenNeu = true; if (w === "park") { if (!PARK_KATS.includes(dienstKat)) dienstKat = "park"; } else if (w === "dienst" && (PARK_KATS.includes(dienstKat) || dienstKat === "verkehr")) dienstKat = "strom"; if (DIENSTE[dienstWahl].kat !== dienstKat) dienstWahl = Object.keys(DIENSTE).find((k) => DIENSTE[k].kat === dienstKat); unterleiste(); gebieteZeichnen();
   const t = TIPPS[w]; tipp(typeof t === "function" ? t() : t, 4500);
 }
 $("werkzeug").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) werkzeugWaehlen(b.dataset.w); });
@@ -2553,7 +2778,7 @@ let frageJa = null;
 function frage(text, ok, beiJa) { $("frage").hidden = false; $("frageText").textContent = text; $("frageText").classList.toggle("falsch", !ok); $("ja").disabled = !ok || !beiJa; frageJa = ok ? beiJa : null; }
 function frageZu() { $("frage").hidden = true; frageJa = null; }
 $("ja").onclick = () => { if (frageJa) frageJa(); };
-$("nein").onclick = () => { frageZu(); bauAbbrechen(); vorschauWeg(); linieBau = []; linienNeu = true; };
+$("nein").onclick = () => { frageZu(); bauAbbrechen(); vorschauWeg(); linieBau = []; zuglinieBau = []; linienNeu = true; };
 
 /* Straßenbau per Antippen */
 const bau = { punkte: [], kandidat: null, plan: null };
@@ -2561,7 +2786,7 @@ const vorschau = new THREE.Mesh(new THREE.BufferGeometry(), M.vorschau); vorscha
 const markerGeo = new THREE.RingGeometry(0.55, 0.85, 28).rotateX(-Math.PI / 2);
 const marker = [0, 1, 2].map(() => { const m = new THREE.Mesh(markerGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthWrite: false, toneMapped: false })); m.visible = false; m.renderOrder = 4; szene.add(m); return m; });
 const hilfslinie = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 0.4, gapSize: 0.3, transparent: true, opacity: 0.7 })); hilfslinie.visible = false; szene.add(hilfslinie);
-function bauAbbrechen() { bau.punkte = []; bau.kandidat = null; bau.plan = null; vorschau.visible = false; marker.forEach((m) => { m.visible = false; }); hilfslinie.visible = false; if (werkzeug === "strasse") frageZu(); }
+function bauAbbrechen() { bau.punkte = []; bau.kandidat = null; bau.plan = null; vorschau.visible = false; marker.forEach((m) => { m.visible = false; }); hilfslinie.visible = false; if (istBau()) frageZu(); }
 function winkelFang(start, p) {
   const dx = p.x - start.x, dz = p.z - start.z, L = Math.hypot(dx, dz); if (L < 0.6) return { art: "frei", x: p.x, z: p.z };
   let a = Math.atan2(dz, dx); const refs = [0];
@@ -2573,29 +2798,36 @@ function winkelFang(start, p) {
   const Ls = Math.max(1, Math.round(L)); return { art: "frei", x: start.x + Math.cos(a) * Ls, z: start.z + Math.sin(a) * Ls };
 }
 function kandidatAus(p) {
-  const n = bau.punkte.length, f = fangen(p);
-  if (strModus === "kurve" && n === 1) return winkelFang(bau.punkte[0], p);
+  const n = bau.punkte.length, f = werkzeug === "gleis" ? gleisFangen(p) : fangen(p);
+  if (modus() === "kurve" && n === 1) return winkelFang(bau.punkte[0], p);
   if (f.art !== "frei" || n === 0) return f;
   if (zweiPunkte()) return winkelFang(bau.punkte[0], p);
   return f;
 }
 function planNeu() {
-  if (werkzeug !== "strasse" || tippModus()) return;
+  if (!istBau() || tippModus()) return;
   const P = bau.punkte.slice(); if (bau.kandidat) P.push(bau.kandidat);
   const noetig = zweiPunkte() ? 2 : 3;
-  marker.forEach((m, i) => { const q = P[i]; m.visible = !!q && i < noetig; if (q) { m.position.set(q.x, G + 0.06, q.z); m.material.color.setHex(strModus === "kurve" && i === 1 ? 0xffd34d : (q.art && q.art !== "frei" ? 0x7dffb0 : 0xffffff)); } });
-  hilfslinie.visible = strModus === "kurve" && P.length >= 2;
+  marker.forEach((m, i) => { const q = P[i]; m.visible = !!q && i < noetig; if (q) { m.position.set(q.x, G + 0.06, q.z); m.material.color.setHex(modus() === "kurve" && i === 1 ? 0xffd34d : (q.art && q.art !== "frei" ? 0x7dffb0 : 0xffffff)); } });
+  hilfslinie.visible = modus() === "kurve" && P.length >= 2;
   if (hilfslinie.visible) { hilfslinie.geometry.dispose(); hilfslinie.geometry = new THREE.BufferGeometry().setFromPoints(P.map((q) => new THREE.Vector3(q.x, G + 0.07, q.z))); hilfslinie.computeLineDistances(); }
-  if (P.length < 2) { vorschau.visible = false; bau.plan = null; if (!P.length) frageZu(); else frage("Jetzt " + (strModus === "kurve" ? "den Kurvenpunkt" : "das Ende") + " antippen", false, null); return; }
+  if (P.length < 2) { vorschau.visible = false; bau.plan = null; if (!P.length) frageZu(); else frage("Jetzt " + (modus() === "kurve" ? "den Kurvenpunkt" : "das Ende") + " antippen", false, null); return; }
   const A = P[0]; let C, Bp;
   if (zweiPunkte() || P.length === 2) { Bp = P[1]; C = lerp(A, Bp, 0.5); } else { C = { x: P[1].x, z: P[1].z }; Bp = P[2]; }
-  const plan = planen(A, C, Bp, strTyp, ebeneModus()); bau.plan = P.length >= noetig ? plan : null;
-  const pos = [], col = [], f = plan.ok ? farbe(0x7fb8ff) : farbe(0xff5a5a);
-  band(pos, col, plan.pts, TYP[strTyp].halb, G + 0.04, f);
-  for (const k of plan.kreuz) scheibe(pos, col, k.x, k.z, TYP[strTyp].halb * 0.7, G + 0.045, farbe(0xffffff));
+  const gl = werkzeug === "gleis", plan = gl ? gleisPlanen(A, C, Bp, ebeneModus()) : planen(A, C, Bp, strTyp, ebeneModus()); bau.plan = P.length >= noetig ? plan : null;
+  const pos = [], col = [], f = plan.ok ? farbe(0x7fb8ff) : farbe(0xff5a5a), hw = gl ? 0.32 : TYP[strTyp].halb;
+  band(pos, col, plan.pts, hw, G + 0.04, f);
+  for (const k of plan.kreuz) scheibe(pos, col, k.x, k.z, hw * 0.7, G + 0.045, farbe(0xffffff));
   vorschau.geometry.dispose(); vorschau.geometry = geoAus(pos, col); vorschau.visible = true;
   if (!bau.plan) { frage("Jetzt das Ende antippen", false, null); return; }
+  if (gl) { frage((plan.ebene > 0 ? "🌉 " : plan.ebene < 0 ? "🚇 " : "") + "🛤️ Gleis " + meter(plan.laenge) + " · " + euro(plan.kosten) + (plan.ok ? "" : " – " + plan.grund), plan.ok, gleisBestaetigen); return; }
   frage((plan.ebene > 0 ? "🌉 " : plan.ebene < 0 ? "🚇 " : "") + TYP[strTyp].em + " " + meter(plan.laenge) + " · " + euro(plan.kosten) + (plan.baeume ? " (" + plan.baeume + " 🌳)" : "") + (plan.ok ? "" : " – " + plan.grund), plan.ok, strasseBestaetigen);
+}
+function gleisBestaetigen() {
+  const plan = bau.plan; if (!plan || !plan.ok) return;
+  merkeRueck(); const neu = gleisBauen(plan); if (!neu.length) { rueck.pop(); rueckKnopf(); tipp("Hier liegt schon ein Gleis.", 2000); bauAbbrechen(); return; }
+  bahnhofAnkern(); const endK = naechsterGKnoten(plan.B, 0.7); bau.punkte = endK ? [{ art: "gknoten", id: endK.id, x: endK.x, z: endK.z }] : []; bau.kandidat = null; bau.plan = null;
+  planNeu(); tipp("✅ Gleis gebaut! Tipp weiter – oder ✕ zum Beenden. Bahnhöfe stellst du direkt neben ein Gleis.", 3000);
 }
 function strasseBestaetigen() {
   const plan = bau.plan; if (!plan || !plan.ok) return;
@@ -2664,7 +2896,7 @@ renderer.domElement.addEventListener("pointerdown", (e) => {
   $("menue").hidden = true; $("ansichten").hidden = true;
   const p = bodenPunkt(e); if (!p) return;
   aktion = { id: e.pointerId, sx: e.clientX, sy: e.clientY, bewegt: false, letzte: p };
-  if (werkzeug === "strasse" && !tippModus()) {
+  if (istBau() && !tippModus()) {
     const noetig = zweiPunkte() ? 2 : 3;
     if (bau.punkte.length >= noetig) bau.punkte.pop();
     bau.kandidat = kandidatAus(p); planNeu();
@@ -2674,13 +2906,13 @@ renderer.domElement.addEventListener("pointerdown", (e) => {
 renderer.domElement.addEventListener("pointermove", (e) => {
   if (!spielLaeuft || spieler.an) return;
   if (!aktion) {
-    if (werkzeug === "strasse" && !tippModus() && e.pointerType === "mouse" && finger.size === 0 && bau.punkte.length && !bau.plan) { const p = bodenPunkt(e); if (p) { bau.kandidat = kandidatAus(p); planNeu(); } }
+    if (istBau() && !tippModus() && e.pointerType === "mouse" && finger.size === 0 && bau.punkte.length && !bau.plan) { const p = bodenPunkt(e); if (p) { bau.kandidat = kandidatAus(p); planNeu(); } }
     return;
   }
   if (aktion.id !== e.pointerId) return;
   if (Math.hypot(e.clientX - aktion.sx, e.clientY - aktion.sy) > 8) aktion.bewegt = true;
   const p = bodenPunkt(e); if (!p) return;
-  if (werkzeug === "strasse" && !tippModus()) { bau.kandidat = kandidatAus(p); planNeu(); }
+  if (istBau() && !tippModus()) { bau.kandidat = kandidatAus(p); planNeu(); }
   else if (werkzeug === "zone" && pinsel !== "fuellen") malen(aktion.letzte, p);
   else if (werkzeug === "abriss") abreissenStrich(aktion.letzte, p);
   aktion.letzte = p;
@@ -2689,7 +2921,8 @@ function loslassen(e) {
   finger.delete(e.pointerId);
   if (!aktion || aktion.id !== e.pointerId) return;
   const a = aktion; aktion = null;
-  if (werkzeug === "strasse") { if (tippModus()) { if (!a.bewegt) (strModus === "ampel" ? ampelUmschalten : strModus === "einbahn" ? einbahnUmschalten : strModus === "busspur" ? busspurUmschalten : kreiselBauen)(a.letzte); } else { if (bau.kandidat) { bau.punkte.push(bau.kandidat); bau.kandidat = null; } planNeu(); } }
+  if (werkzeug === "gleis" && tippModus()) { if (!a.bewegt) gleisTippen(a.letzte); }
+  else if (istBau()) { if (tippModus()) { if (!a.bewegt) (strModus === "ampel" ? ampelUmschalten : strModus === "einbahn" ? einbahnUmschalten : strModus === "busspur" ? busspurUmschalten : strModus === "schienen" ? schienenUmschalten : kreiselBauen)(a.letzte); } else { if (bau.kandidat) { bau.punkte.push(bau.kandidat); bau.kandidat = null; } planNeu(); } }
   else if (werkzeug === "abriss" && !a.bewegt) abreissenStrasse(a.letzte);
   else if (werkzeug === "ansehen" && !a.bewegt) { const f = fahrzeugBei(a.letzte), d = inDienst(a.letzte.x, a.letzte.z, 0.1), hs = halteBei(a.letzte, 0.7); if (f) fahrzeugInfo(f); else if (hs) haltInfo(hs); else if (d) dienstInfo(d); else hausInfo(a.letzte); }
   else if ((werkzeug === "dienst" || werkzeug === "park") && !a.bewegt) dienstVorschau(a.letzte);
@@ -2976,7 +3209,7 @@ function starten(n, daten, neueKarte) {
     weltBauen(daten ? (daten.karte || "insel") : neueKarte);
     if (daten) zustandRein(daten);
     else { geld = KARTEN[karte].geld; netzGeaendert(); gebieteZeichnen(); bedarfBerechnen(); zeigeWerte(); datumZeigen(); }
-    if (!aussenKnoten) aussenBauen();
+    if (!aussenKnoten) aussenBauen(); aussenGleisBauen();
     spielLaeuft = true; document.body.classList.add("laeuft"); if (matchMedia("(pointer:coarse)").matches) vollbildQuer(); speichernBald(); unterleiste(); zeitKnoepfe(); menueKnoepfe();
     if (!daten) { $("info").hidden = true; infoZeigen(`<b>${KARTEN[karte].em} Willkommen in deiner neuen Stadt!</b>1. 🛣️ Straßen: Anfang antippen, Ende antippen, ✓<br>2. 🏘️ Zonen: Felder neben der Straße anmalen<br>3. Zuschauen: Häuser wachsen, Autos fahren, Steuern bringen Geld<br><small>Tipp oben auf dein Geld für Budget &amp; Steuern.</small>`, 12000); werkzeugWaehlen("strasse"); }
     else tipp("Willkommen zurück!", 2500);
@@ -2984,7 +3217,7 @@ function starten(n, daten, neueKarte) {
     setTimeout(() => $("laden").classList.add("weg"), 200);
   }, 60);
 }
-window.inselstadt = { modellTest: () => { const ks = Object.keys(FZ); let n = 0; for (const k of kanten.values()) { if (!autoKante(k) || k.aussen || k.len < 8) continue; for (let s = 1.5; s < k.len - 1.5 && n < ks.length; s += 2.2) { const f = fahrzeugAusWeg({ route: [{ k: k.id, dir: 1 }], s0: s, s1: k.len - 0.5 }, ks[n], mitAuflieger(ks[n]) ? "container" : null, "Test", "Test", "aussen"); if (f) { f.farbe = PAL.auto[n % PAL.auto.length]; f.v = 0; n++; } } } return n; }, allesBesitzen: () => { for (let i = 0; i < KN; i++) for (let j = 0; j < KN; j++) besitz.add(i + "," + j); gebieteZeichnen(); }, kameraAuf: (x, z, d) => { steuerung.target.set(x, 0, z); kamera.position.set(x + d * 0.55, d * 0.75, z + d * 0.65); steuerung.update(); }, dbgF: (id) => { const f = fahrzeuge.find((x) => x.id === id); if (!f || f.modus !== "kante") return null; const st = f.route[f.ri], k = kanten.get(st.k), nx = f.route[f.ri + 1]; if (!nx) return "letzte"; const n = endKnoten(k, st.dir), k2 = kanten.get(nx.k), s2 = anfang(k2, nx.dir); return { rest: +(ende(k, st.dir) - f.s).toFixed(2), frei: f.frei, darf: darfEinfahren(f, k, st, nx), k2: k2.id + (k2.ring ? "R" : ""), platz: fahrzeuge.filter((g) => g !== f && g.modus === "kante" && g.route[g.ri].k === k2.id && g.route[g.ri].dir === nx.dir && g.s < s2 + g.hintenL + f.vorneL + 0.35).map((g) => g.id + ":" + g.s.toFixed(2) + ":w" + g.warte.toFixed(0)), drin: [...n.drin].map((g) => g.id + (g.tr ? "t" + g.tr.t.toFixed(2) : "res") + " von" + g.von), naht: n.naht.map((g) => g.id), luecke: f.block }; }, kreiselBauen, einbahnUmschalten, strModus: (m) => { strModus = m; }, halte, linien, neueHalte, busTippen, linieFertig, busRechnen, busModus: (m) => { busModus = m; }, linieBau: (ids) => { linieBau = ids; }, abstand: (x, z) => abstand(x, z), dienstPlan, dienstBauen, dienste, versorgung: () => versorgung, versorgungRechnen, dienstTakt, ansichtSetzen, sim: (sek, ziel) => { const ev = new Map(); let tk = 0; for (let t = 0; t < sek; t += 0.05) { simZeit += 0.05; jetztS += 0.05; if (++tk % 10 === 0) dienstTakt(0.5); verkehrTakt(0.05, ziel || 60); fahrzeugeZeichnen(); const F = fahrzeuge.filter((f) => f.pos && f.skala > 0.9 && !f.parkt); for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) { const A = F[i], Bf = F[j]; let hit = false; for (let q = 0; q <= 6 && !hit; q++) { const o = Bf.vorneL - (Bf.vorneL + Bf.hintenL) * q / 6, dx = Bf.pos.x + Bf.pos.tx * o - A.pos.x, dz = Bf.pos.z + Bf.pos.tz * o - A.pos.z, lx = dx * A.pos.tx + dz * A.pos.tz, lz = Math.abs(-dx * A.pos.tz + dz * A.pos.tx); if (lx < A.vorneL * 0.8 && lx > -A.hintenL * 0.8 && lz < (A.B + Bf.B) / 2 * 0.7) hit = true; } if (hit) { const key = A.id + "-" + Bf.id; if (!ev.has(key)) { const d = (f) => f.modus === "kante" ? f.route[f.ri].k + "/" + f.route[f.ri].dir + "/sp" + f.spur + "/off" + f.off.toFixed(2) + "/s" + f.s.toFixed(2) + (f.ausparken ? "/AUS" : "") + (f.frei ? "/FREI" : "") : "KN" + f.tr.knoten + "/t" + f.tr.t.toFixed(2) + "/von" + f.von + "->" + f.route[f.ri + 1].k; ev.set(key, [A.typ, d(A), "blk" + (A.block == null ? "-" : A.block.toFixed(2)) + "w" + A.warte.toFixed(1), Bf.typ, d(Bf), "blk" + (Bf.block == null ? "-" : Bf.block.toFixed(2)) + "w" + Bf.warte.toFixed(1), "t" + t.toFixed(1)]); } } } } return [fahrzeuge.length, ev.size, [...ev.values()].slice(0, 12)]; }, fahrtStarten: () => { try { return fahrtStarten(); } catch (e) { return "FEHLER " + e.message + e.stack; } }, folgen: (f) => folgenStart(f), baeume: () => baeume.length, stufenTest: (st) => { let i = 0; for (const h of haeuser.values()) { h.stufe = Math.min(ZONEN[h.zone].max, st || 1 + (i++ % 5)); h.teile = hausTeile(h); } haeuserNeu = true; }, meilenstein: (m) => { meilenstein = m; unterleiste(); }, zoneWahl: (z) => { zoneWahl = z; }, malen: (a, b) => malen(a, b), werteAuffrischen, hausTeile, bedarf: () => bedarf, wertAnsicht: (v) => { wertAnsicht = v; wertZeichnen(); }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
+window.inselstadt = { gleisPlanen, gleisBauen, bahnhofPlan, gKanten, gKnoten, zuege: () => zuege, zuglinien, uebergaenge: () => uebergaenge, gleisModus: (m) => { gleisModus = m; }, zuglinieBau: (ids) => { zuglinieBau = ids; }, zuglinieFertig, schienenUmschalten, aussenGleisBauen, zugTakt, modellTest: () => { const ks = Object.keys(FZ); let n = 0; for (const k of kanten.values()) { if (!autoKante(k) || k.aussen || k.len < 8) continue; for (let s = 1.5; s < k.len - 1.5 && n < ks.length; s += 2.2) { const f = fahrzeugAusWeg({ route: [{ k: k.id, dir: 1 }], s0: s, s1: k.len - 0.5 }, ks[n], mitAuflieger(ks[n]) ? "container" : null, "Test", "Test", "aussen"); if (f) { f.farbe = PAL.auto[n % PAL.auto.length]; f.v = 0; n++; } } } return n; }, allesBesitzen: () => { for (let i = 0; i < KN; i++) for (let j = 0; j < KN; j++) besitz.add(i + "," + j); gebieteZeichnen(); }, kameraAuf: (x, z, d) => { steuerung.target.set(x, 0, z); kamera.position.set(x + d * 0.55, d * 0.75, z + d * 0.65); steuerung.update(); }, dbgF: (id) => { const f = fahrzeuge.find((x) => x.id === id); if (!f || f.modus !== "kante") return null; const st = f.route[f.ri], k = kanten.get(st.k), nx = f.route[f.ri + 1]; if (!nx) return "letzte"; const n = endKnoten(k, st.dir), k2 = kanten.get(nx.k), s2 = anfang(k2, nx.dir); return { rest: +(ende(k, st.dir) - f.s).toFixed(2), frei: f.frei, darf: darfEinfahren(f, k, st, nx), k2: k2.id + (k2.ring ? "R" : ""), platz: fahrzeuge.filter((g) => g !== f && g.modus === "kante" && g.route[g.ri].k === k2.id && g.route[g.ri].dir === nx.dir && g.s < s2 + g.hintenL + f.vorneL + 0.35).map((g) => g.id + ":" + g.s.toFixed(2) + ":w" + g.warte.toFixed(0)), drin: [...n.drin].map((g) => g.id + (g.tr ? "t" + g.tr.t.toFixed(2) : "res") + " von" + g.von), naht: n.naht.map((g) => g.id), luecke: f.block }; }, kreiselBauen, einbahnUmschalten, strModus: (m) => { strModus = m; }, halte, linien, neueHalte, busTippen, linieFertig, busRechnen, busModus: (m) => { busModus = m; }, linieBau: (ids) => { linieBau = ids; }, abstand: (x, z) => abstand(x, z), dienstPlan, dienstBauen, dienste, versorgung: () => versorgung, versorgungRechnen, dienstTakt, ansichtSetzen, sim: (sek, ziel) => { const ev = new Map(); let tk = 0; for (let t = 0; t < sek; t += 0.05) { simZeit += 0.05; jetztS += 0.05; if (++tk % 10 === 0) dienstTakt(0.5); verkehrTakt(0.05, ziel || 60); fahrzeugeZeichnen(); const F = fahrzeuge.filter((f) => f.pos && f.skala > 0.9 && !f.parkt); for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) { const A = F[i], Bf = F[j]; let hit = false; for (let q = 0; q <= 6 && !hit; q++) { const o = Bf.vorneL - (Bf.vorneL + Bf.hintenL) * q / 6, dx = Bf.pos.x + Bf.pos.tx * o - A.pos.x, dz = Bf.pos.z + Bf.pos.tz * o - A.pos.z, lx = dx * A.pos.tx + dz * A.pos.tz, lz = Math.abs(-dx * A.pos.tz + dz * A.pos.tx); if (lx < A.vorneL * 0.8 && lx > -A.hintenL * 0.8 && lz < (A.B + Bf.B) / 2 * 0.7) hit = true; } if (hit) { const key = A.id + "-" + Bf.id; if (!ev.has(key)) { const d = (f) => f.modus === "kante" ? f.route[f.ri].k + "/" + f.route[f.ri].dir + "/sp" + f.spur + "/off" + f.off.toFixed(2) + "/s" + f.s.toFixed(2) + (f.ausparken ? "/AUS" : "") + (f.frei ? "/FREI" : "") : "KN" + f.tr.knoten + "/t" + f.tr.t.toFixed(2) + "/von" + f.von + "->" + f.route[f.ri + 1].k; ev.set(key, [A.typ, d(A), "blk" + (A.block == null ? "-" : A.block.toFixed(2)) + "w" + A.warte.toFixed(1), Bf.typ, d(Bf), "blk" + (Bf.block == null ? "-" : Bf.block.toFixed(2)) + "w" + Bf.warte.toFixed(1), "t" + t.toFixed(1)]); } } } } return [fahrzeuge.length, ev.size, [...ev.values()].slice(0, 12)]; }, fahrtStarten: () => { try { return fahrtStarten(); } catch (e) { return "FEHLER " + e.message + e.stack; } }, folgen: (f) => folgenStart(f), baeume: () => baeume.length, stufenTest: (st) => { let i = 0; for (const h of haeuser.values()) { h.stufe = Math.min(ZONEN[h.zone].max, st || 1 + (i++ % 5)); h.teile = hausTeile(h); } haeuserNeu = true; }, meilenstein: (m) => { meilenstein = m; unterleiste(); }, zoneWahl: (z) => { zoneWahl = z; }, malen: (a, b) => malen(a, b), werteAuffrischen, hausTeile, bedarf: () => bedarf, wertAnsicht: (v) => { wertAnsicht = v; wertZeichnen(); }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
 
 /* ================================================================
    Hauptschleife
@@ -3008,7 +3241,7 @@ function schleife() {
   stauTakt += dt; if (stauTakt > 1) { stauTakt = 0; stauMessen(); }
   if (zellenNeu) zellenZeichnen();
   if (haeuserNeu) haeuserZeichnen();
-  rauchZeichnen(); fahrzeugeZeichnen(); ampelnZeichnen(); fussgaengerTakt(dt, kz.e); hochZeichnen(); warnZeichnen(); drehZeichnen(); if (linienNeu) linienZeichnen(); bahnHafenZeichnen(dt * (tempo || 0)); if (ansicht && ansicht !== "verkehr" && jetztS - wertZeit > 2) wertZeichnen();
+  rauchZeichnen(); fahrzeugeZeichnen(); ampelnZeichnen(); fussgaengerTakt(dt, kz.e); hochZeichnen(); warnZeichnen(); drehZeichnen(); if (linienNeu) linienZeichnen(); zugTakt(dt * (tempo || 0)); bahnHafenZeichnen(dt * (tempo || 0)); schrankenZeichnen(dt); if (ansicht && ansicht !== "verkehr" && jetztS - wertZeit > 2) wertZeichnen();
   boote.forEach((b) => { b.w += b.v * dt; b.g.position.set(b.mx + Math.cos(b.w) * b.rad, WASSER + 0.02 + Math.sin(t * 1.6 + b.ph) * 0.05, b.mz + Math.sin(b.w) * b.rad); b.g.rotation.set(Math.sin(t * 1.3 + b.ph) * 0.05, -b.w + (b.v > 0 ? -Math.PI / 2 : Math.PI / 2), 0); });
   if (leuchtturm) leuchtturm.userData.strahl.rotation.y = t * 0.8;
   if (spieler.an) fahrenTakt(dt);
