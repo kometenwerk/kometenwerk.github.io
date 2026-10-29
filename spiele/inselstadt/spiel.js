@@ -799,11 +799,13 @@ function zellenZeichnen() {
 /* ================================================================
    Häuser
    ================================================================ */
+const LAMPEN_MAT = new THREE.MeshBasicMaterial({ color: 0x4a443a, toneMapped: false });
 const B = {
   haus: becken(G_BOX_UNTEN, M.haus, 7000, true), flach: becken(G_BOX_UNTEN, M.flach, 32000, true), dach: becken(G_DACH, M.dach, 6000, true),
   walm: becken(G_WALM, M.dach, 3000, true), pult: becken(G_PULT, M.dach, 3000, true), mansard: becken(G_MANSARD, M.dach, 1500, true), zelt: becken(G_ZELT, M.dach, 1500, true),
   altbau: becken(G_BOX_UNTEN, mitFenstern(new THREE.MeshStandardMaterial({ roughness: 0.8 }), "altbau"), 3000, true), buero: becken(G_BOX_UNTEN, mitFenstern(new THREE.MeshStandardMaterial({ roughness: 0.6 }), "buero"), 3000, true),
   glas: becken(G_BOX_UNTEN, mitFenstern(new THREE.MeshStandardMaterial({ roughness: 0.3, metalness: 0.15 }), "glas"), 3000, true), laden: becken(G_BOX_UNTEN, mitFenstern(new THREE.MeshStandardMaterial({ roughness: 0.6 }), "laden"), 2500, true),
+  lampe: becken(G_BOX_UNTEN, LAMPEN_MAT, 5000, false),
   fachwerk: becken(G_BOX_UNTEN, mitFenstern(new THREE.MeshStandardMaterial({ roughness: 0.85 }), "fachwerk"), 1500, true), holz: becken(G_BOX_UNTEN, mitFenstern(new THREE.MeshStandardMaterial({ roughness: 0.85 }), "holz"), 1500, true),
   zyl: becken(G_ZYL, M.flach, 3000, true), garten: becken(G_LAUBBAUM, M.baum, 4000, true), rauch: becken(new THREE.IcosahedronGeometry(0.5, 0), M.rauch, 800, false)
 };
@@ -883,7 +885,7 @@ function baukasten(T, r, W, D, vorn, variante, DS) {
   function dachgarten(lx, lz, w, d, top) { add("flach", lx, lz, w * 0.9, 0.02, d * 0.9, 0x6fae4a, { ly: top }); if (DS >= 1) { const n = Math.max(1, Math.round(w * d * 3)); for (let i = 0; i < Math.min(n, 6); i++) baum(lx + (r() - 0.5) * w * 0.7, lz + (r() - 0.5) * d * 0.7, 0.22 + r() * 0.15, top + 0.02); } }
   /* --- Fassadenteile --- */
   function eingang(x, front, art, c, ly) {
-    ly = ly || 0;
+    ly = ly || 0; if (DS >= 1) add("lampe", x + (art === "glas" ? 0.13 : 0.08), front + 0.016, 0.035, 0.045, 0.018, 0xffffff, { ly: ly + 0.2 });
     if (art === "glas") { add("flach", x, front + 0.006, 0.2, 0.25, 0.012, 0x2a3a48, { ly: ly + 0.01 }); klein("flach", x, front + 0.07, 0.34, 0.025, 0.14, 0xd8dade, { ly: ly + 0.3 }); }
     else if (art === "portal") { klein("flach", x, front + 0.006, 0.2, 0.3, 0.012, hell(c, 0.5), { ly }); add("flach", x, front + 0.01, 0.12, 0.25, 0.012, 0x5a3a24, { ly }); fein("flach", x, front + 0.03, 0.2, 0.02, 0.06, 0xb9b4a8, { ly }); }
     else { add("flach", x, front + 0.006, 0.1, 0.2, 0.012, pk([0x6b4a2f, 0x3d5a80, 0x2f6b4a, 0x8a2f2f, 0xf2efe8, 0x3a3d42]), { ly }); klein("flach", x, front + 0.05, 0.18, 0.02, 0.09, hell(c, 0.3), { ly: ly + 0.24 }); fein("flach", x, front + 0.04, 0.16, 0.02, 0.07, 0xb9b4a8, { ly }); }
@@ -908,17 +910,19 @@ function baukasten(T, r, W, D, vorn, variante, DS) {
   function bau(o) {
     const lx = o.lx || 0, lz = o.lz, w = o.w, d = o.d, n = o.n || 1, ly = o.ly || 0, c = o.c, art = o.art || "haus";
     const hh = o.hh || geschossH(n), top = ly + hh, front = lz + d / 2;
-    if (o.laden) { add("laden", lx, lz, w, SO + E, d, o.lc == null ? c : o.lc, { ly }); if (n > 1 || hh > SO + E + 0.05) add(art, lx, lz, w, hh - SO - E, d, c, { ly: ly + SO + E }); markise(lx, front, w * 0.92, o.laden, ly); schild(lx, front, Math.min(w * 0.55, 0.6), o.sc == null ? 0xf2f0ea : o.sc, ly + SO + E - 0.04); }
+    if (o.laden) { add("laden", lx, lz, w, SO + E, d, o.lc == null ? c : o.lc, { ly }); if (n > 1 || hh > SO + E + 0.05) add(art, lx, lz, w, hh - SO - E, d, c, { ly: ly + SO + E }); markise(lx, front, w * 0.92, o.laden, ly); schild(lx, front, Math.min(w * 0.55, 0.6), o.sc == null ? 0xf2f0ea : o.sc, ly + SO + E - 0.04); if (DS >= 1) add("lampe", lx, front + 0.02, Math.min(w * 0.5, 0.55), 0.01, 0.008, 0xffffff, { ly: ly + SO + E + 0.04 }); }
     else add(art, lx, lz, w, hh, d, c, { ly });
     if (o.gesims) gesims(lx, lz, w, d, top, o.gc == null ? hell(c, 0.5) : o.gc);
     if (o.baender) baender(lx, front, w, n, ly, o.gc == null ? hell(c, 0.5) : o.gc);
     if (o.eingang !== false && ly < 0.01 && !o.laden) eingang(lx + (o.ex || 0), front, o.eingang || (art === "glas" || art === "buero" ? "glas" : art === "altbau" ? "portal" : "tuer"), c);
     if (o.laden && o.eingang !== false && DS >= 1) add("flach", lx + w * 0.36, front + 0.008, 0.12, 0.23, 0.012, 0x2f3540, { ly: ly + 0.01 });
     if (o.balkon) balkone(lx, front, w, n, ly, o.balkon, o.bc, o.laden ? 1 : 1);
+    else if (DS >= 2 && n >= 2 && (art === "haus" || art === "altbau" || art === "fachwerk") && r() < 0.6) { const k = Math.max(1, Math.round(w / 0.3)); for (let i = 0; i < k; i++) if (r() < 0.6) { const x = lx - w / 2 + w / k * (i + 0.5); add("flach", x, front + 0.02, 0.1, 0.025, 0.035, 0x8b5a2b, { ly: ly + SO + E + 0.04 }); add("flach", x, front + 0.02, 0.09, 0.02, 0.03, pk([0xe8493f, 0xe85b9a, 0xf2c14e, 0x9a5be8]), { ly: ly + SO + E + 0.065 }); } }
     if (o.laubengang) laubengang(lx, front, w, n, ly, o.bc);
     if (o.erker && n >= 3 && DS >= 1) { const ew = Math.min(0.34, w * 0.3), ex = o.erkerX || 0; add(art, lx + ex, front + 0.07, ew, (n - 1) * E - 0.04, 0.14, c, { ly: ly + SO + E }); if (o.erkerDach === "zelt") dach("zelt", lx + ex, front + 0.07, ew, 0.14, ly + SO + n * E - 0.04, o.dc, { h: 0.22, ue: 0.03 }); else add("flach", lx + ex, front + 0.07, ew + 0.03, 0.03, 0.17, hell(c, 0.5), { ly: ly + SO + n * E - 0.04 }); }
     let H = 0;
     if (o.dach) H = dach(o.dach, lx, lz, w, d, top, o.dc, { quer: o.quer, h: o.dachH, attika: o.attika, steil: o.steil, dreh: o.dreh });
+    if (DS >= 2 && (o.dach === "sattel" || o.dach === "walm") && !o.quer) for (const sz of [1, -1]) add("flach", lx, lz + sz * (d / 2 + 0.035), w + 0.06, 0.018, 0.022, 0x8a8f96, { ly: top - 0.012 });
     if (o.gauben && (o.dach === "sattel" || o.dach === "mansard" || o.dach === "walm") && !o.quer && DS >= 1) gauben(lx, lz, w, d, top, H, o.gauben, o.gaubeC == null ? hell(c, 0.2) : o.gaubeC, o.dc);
     if (o.kamin && H > 0.05 && DS >= 1) add("flach", lx + w * 0.26 * (o.kamin < 0 ? -1 : 1), lz - d * 0.1, 0.07, H * 0.85 + 0.12, 0.07, o.kc == null ? 0x8a4a3a : o.kc, { ly: top });
     if (o.solar && DS >= 1) solar(lx, lz, w, d, top, H, o.dach, o.quer);
@@ -927,6 +931,16 @@ function baukasten(T, r, W, D, vorn, variante, DS) {
     return top + H;
   }
   /* Grundstücke */
+  function gartenDetails() {
+    if (DS < 1) return; const hinten = -D / 2 + 0.3, w2 = (Math.random, r());
+    add("flach", W / 2 - 0.12, vorn - 0.03, 0.03, 0.09, 0.03, 0x3a3d42); add("flach", W / 2 - 0.12, vorn - 0.03, 0.05, 0.04, 0.035, pk([0xe8493f, 0xf2c14e, 0x3d5a80, 0x2f6b4a]), { ly: 0.09 });
+    for (let k = 0; k < 2; k++) add("flach", -W / 2 + 0.1 + k * 0.06, vorn - 0.08, 0.045, 0.07, 0.045, k ? 0x3a6b3a : 0x3a3d42);
+    if (D < 1.9) return;
+    if (w2 < 0.3) { zyl(W * 0.25, hinten + 0.1, 0.28, 0.06, 0x2c2f36, { ly: 0.06 }); zyl(W * 0.25, hinten + 0.1, 0.3, 0.012, 0x3f7fe8, { ly: 0.115 }); }
+    else if (w2 < 0.55) { add("flach", -W * 0.28, hinten + 0.08, 0.26, 0.2, 0.2, pk([0x8b5a2b, 0x6b4a2f, 0x9a7a55])); dach("sattel", -W * 0.28, hinten + 0.08, 0.26, 0.2, 0.2, 0x5a4636, { h: 0.08, ue: 0.03 }); }
+    else if (w2 < 0.8 && DS >= 2) { for (const sx of [-1, 1]) add("flach", sx * 0.25, hinten + 0.15, 0.015, 0.2, 0.015, 0x9aa0a8); add("flach", 0, hinten + 0.15, 0.5, 0.004, 0.004, 0xd8d8d8, { ly: 0.18 }); for (let k = 0; k < 4; k++) add("flach", -0.15 + k * 0.1, hinten + 0.15, 0.05, 0.06, 0.004, pk([0xffffff, 0xe85b9a, 0x3f7fe8, 0xf2c14e]), { ly: 0.12 }); }
+    else { add("flach", W * 0.2, hinten + 0.1, 0.24, 0.012, 0.18, 0xc9b79c, { ly: 0.003 }); add("flach", W * 0.2, hinten + 0.1, 0.1, 0.07, 0.1, 0xf2f0ea, { ly: 0.015 }); }
+  }
   function garten(viel) {
     const hinten = -D / 2 + 0.35;
     if (D >= 1.9) for (let i = 0; i < (viel || 2); i++) baum((r() - 0.5) * W * 0.75, hinten + r() * 0.3, 0.42 + r() * 0.25);
@@ -950,11 +964,11 @@ function baukasten(T, r, W, D, vorn, variante, DS) {
   function lkw(x, z) { add("flach", x, z, 0.16, 0.18, 0.62, pk([0xf4f4f4, 0xe8493f, 0x3f7fe8]), { ly: 0.01 }); add("flach", x, z + 0.37, 0.16, 0.15, 0.12, 0x2f3540, { ly: 0.01 }); }
   const VORNE = (d, ab) => vorn - d / 2 - (ab == null ? 0.12 : ab);
 
-  return { E, SO, add, klein, fein, pk, zw, zi, baum, zyl, flaeche, auto, attika, dach, gauben, solar, technik, dachgarten, eingang, balkone, laubengang, markise, schild, gesims, baender, bau, garten, einfahrt, weg, zaun, terrasse, pool, parkplatz, vorplatz, fahrraeder, bank, container, lkw, VORNE };
+  return { gartenDetails, E, SO, add, klein, fein, pk, zw, zi, baum, zyl, flaeche, auto, attika, dach, gauben, solar, technik, dachgarten, eingang, balkone, laubengang, markise, schild, gesims, baender, bau, garten, einfahrt, weg, zaun, terrasse, pool, parkplatz, vorplatz, fahrraeder, bank, container, lkw, VORNE };
 }
 function hausTeile(h) {
   const r = zufall(h.variante * 31 + h.stufe * 7919), W = h.w * ZELLE, D = h.d * ZELLE, T = [], vorn = D / 2 - 0.06, Z = ZONEN[h.zone], DS = detailStufe();
-  const { E, SO, add, klein, fein, pk, zw, zi, baum, zyl, flaeche, auto, attika, dach, gauben, solar, technik, dachgarten, eingang, balkone, laubengang, markise, schild, gesims, baender, bau, garten, einfahrt, weg, zaun, terrasse, pool, parkplatz, vorplatz, fahrraeder, bank, container, lkw, VORNE } = baukasten(T, r, W, D, vorn, h.variante, DS);
+  const { gartenDetails, E, SO, add, klein, fein, pk, zw, zi, baum, zyl, flaeche, auto, attika, dach, gauben, solar, technik, dachgarten, eingang, balkone, laubengang, markise, schild, gesims, baender, bau, garten, einfahrt, weg, zaun, terrasse, pool, parkplatz, vorplatz, fahrraeder, bank, container, lkw, VORNE } = baukasten(T, r, W, D, vorn, h.variante, DS);
   const L = {
     1: [ // Wohnen niedrig – 5 Stufen
       [() => { const w = Math.min(W * 0.62, 0.62), d = 0.56, lz = VORNE(d, 0.22); bau({ lz, w, d, n: 1, c: pk(STIL.putz), dach: "sattel", dc: pk(STIL.ziegel), kamin: 1 }); weg(0, lz + d / 2); einfahrt(w / 2 + 0.14, lz, r() < 0.7); garten(2); zaun(h.variante % 3); return "Siedlungshaus"; },
@@ -992,27 +1006,27 @@ function hausTeile(h) {
        () => { const lz = VORNE(0.7, 0.2), c = pk(STIL.putz), dc = pk(STIL.ziegel.concat(STIL.schiefer)), w = Math.min(W * 0.7, 1.2); bau({ lz, w, d: 0.7, n: 2, c, dach: "walm", dc, gauben: 2, kamin: 1, solar: false }); if (W >= 1.9) { add("flach", -W * 0.38, vorn - 0.3, 0.32, 0.3, 0.44, hell(c, 0.1)); dach("walm", -W * 0.38, vorn - 0.3, 0.32, 0.44, 0.3, dc, { h: 0.14 }); } if (D >= 1.9) { pool(0.15, lz - 0.85, 0.5, 0.28); flaeche(-0.3, -D / 2 + 0.35, 0.5, 0.36, 0xc26a4a); } garten(4); zaun(0); return "Anwesen"; }]
     ],
     2: [ // Wohnen hoch – 5 Stufen
-      [() => { const w = W * 0.92, d = Math.min(D * 0.6, 1.0), lz = VORNE(d, 0.02), c = pk(STIL.altbau); bau({ lz, w, d, n: zi(3, 4), art: "altbau", c, dach: "mansard", dc: pk(STIL.schiefer), gauben: Math.max(1, Math.round(w / 0.4)), gesims: true, balkon: "franz" }); garten(2); return "Altbau-Mietshaus"; },
-       () => { const w = W * 0.92, d = Math.min(D * 0.62, 1.0), lz = VORNE(d, 0.02), c = pk(STIL.altbau); bau({ lz, w, d, n: 4, art: "altbau", c, dach: "sattel", dc: pk(STIL.ziegel), gauben: 2, gesims: true, baender: true, erker: true, erkerX: -w * 0.2 }); garten(2); return "Gründerzeithaus"; },
-       () => { const w = W * 0.9, d = Math.min(D * 0.6, 0.95), lz = VORNE(d, 0.06), c = pk(STIL.klinker); bau({ lz, w, d, n: 3, c, dach: "sattel", dc: pk(STIL.schiefer), balkon: "kragen", bc: 0xf2f0ea }); garten(2); return "Klinker-Mehrfamilienhaus"; },
+      [() => { const w = W * 0.995, d = Math.min(D * 0.6, 1.0), lz = VORNE(d, 0.02), c = pk(STIL.altbau); bau({ lz, w, d, n: zi(3, 4), art: "altbau", c, dach: "mansard", dc: pk(STIL.schiefer), gauben: Math.max(1, Math.round(w / 0.4)), gesims: true, balkon: "franz" }); garten(2); return "Altbau-Mietshaus"; },
+       () => { const w = W * 0.995, d = Math.min(D * 0.62, 1.0), lz = VORNE(d, 0.02), c = pk(STIL.altbau); bau({ lz, w, d, n: 4, art: "altbau", c, dach: "sattel", dc: pk(STIL.ziegel), gauben: 2, gesims: true, baender: true, erker: true, erkerX: -w * 0.2 }); garten(2); return "Gründerzeithaus"; },
+       () => { const w = W * 0.995, d = Math.min(D * 0.6, 0.95), lz = VORNE(d, 0.06), c = pk(STIL.klinker); bau({ lz, w, d, n: 3, c, dach: "sattel", dc: pk(STIL.schiefer), balkon: "kragen", bc: 0xf2f0ea }); garten(2); return "Klinker-Mehrfamilienhaus"; },
        () => { const n = Math.max(3, Math.round(W / 0.42)), bw = W * 0.94 / n, d = Math.min(D * 0.55, 0.8), lz = VORNE(d, 0.14), dc = pk(STIL.ziegel); for (let k = 0; k < n; k++) { const lx = -W * 0.47 + bw * (k + 0.5); bau({ lx, lz, w: bw - 0.008, d, n: 2, c: STIL.putz[(h.variante + k) % STIL.putz.length], dach: "sattel", dc, ue: 0.0 }); } garten(3); return "Reihenhäuser"; },
-       () => { const w = W * 0.9, d = Math.min(D * 0.58, 0.9), lz = VORNE(d, 0.1); bau({ lz, w, d, n: 4, c: pk([0xd8d4c8, 0xe2dccd, 0xcfd4d6]), dach: "flach", balkon: "loggia" }); garten(2); fahrraeder(-W * 0.3, vorn - 0.05, 4); return "Plattenbau"; },
+       () => { const w = W * 0.995, d = Math.min(D * 0.58, 0.9), lz = VORNE(d, 0.1); bau({ lz, w, d, n: 4, c: pk([0xd8d4c8, 0xe2dccd, 0xcfd4d6]), dach: "flach", balkon: "loggia" }); garten(2); fahrraeder(-W * 0.3, vorn - 0.05, 4); return "Plattenbau"; },
        () => { const w = Math.min(W * 0.5, 0.55), d = Math.min(D * 0.62, 0.9), lz = VORNE(d, 0.04); bau({ lx: -W * 0.2, lz, w, d, n: 3, art: "altbau", c: pk(STIL.altbau), dach: "pult", dc: 0x4a4e55, gesims: true }); bau({ lx: W * 0.24, lz, w: Math.min(W * 0.4, 0.5), d, n: 3, c: pk(STIL.putz), dach: "sattel", dc: pk(STIL.ziegel) }); garten(2); return "Stadthäuser"; }],
-      [() => { const w = W * 0.9, d = Math.min(D * 0.62, 1.1), lz = VORNE(d, 0.08); bau({ lz, w, d, n: 5, c: pk(STIL.putz), dach: "flach", balkon: "kragen", technik: 0.5 }); garten(2); fahrraeder(W * 0.25, vorn - 0.05, 5); return "Mehrfamilienhaus"; },
-       () => { const w = W * 0.9, d = Math.min(D * 0.55, 0.8), lz = VORNE(d, 0.16); bau({ lz, w, d, n: 4, c: pk([0xe8dcc8, 0xd6d8da, 0xefe9df]), dach: "flach", laubengang: true, bc: pk([0x3f7fe8, 0x2f8f6f, 0xe8493f]) }); garten(2); return "Laubenganghaus"; },
-       () => { const w = W * 0.92, d = Math.min(D * 0.62, 1.0), lz = VORNE(d, 0.02), c = pk(STIL.altbau), dc = pk(STIL.schiefer); bau({ lz, w, d, n: 5, art: "altbau", c, dach: "mansard", dc, gauben: 2, gesims: true, erker: true, erkerX: w * 0.25, erkerDach: "zelt", balkon: "franz" }); garten(2); return "Jugendstilhaus"; },
+      [() => { const w = W * 0.995, d = Math.min(D * 0.62, 1.1), lz = VORNE(d, 0.08); bau({ lz, w, d, n: 5, c: pk(STIL.putz), dach: "flach", balkon: "kragen", technik: 0.5 }); garten(2); fahrraeder(W * 0.25, vorn - 0.05, 5); return "Mehrfamilienhaus"; },
+       () => { const w = W * 0.995, d = Math.min(D * 0.55, 0.8), lz = VORNE(d, 0.16); bau({ lz, w, d, n: 4, c: pk([0xe8dcc8, 0xd6d8da, 0xefe9df]), dach: "flach", laubengang: true, bc: pk([0x3f7fe8, 0x2f8f6f, 0xe8493f]) }); garten(2); return "Laubenganghaus"; },
+       () => { const w = W * 0.995, d = Math.min(D * 0.62, 1.0), lz = VORNE(d, 0.02), c = pk(STIL.altbau), dc = pk(STIL.schiefer); bau({ lz, w, d, n: 5, art: "altbau", c, dach: "mansard", dc, gauben: 2, gesims: true, erker: true, erkerX: w * 0.25, erkerDach: "zelt", balkon: "franz" }); garten(2); return "Jugendstilhaus"; },
        () => { const w = W * 0.88, d = Math.min(D * 0.62, 1.0), lz = VORNE(d, 0.08); bau({ lz, w, d, n: 5, c: pk(STIL.modern), dach: "flach", garten: true, balkon: "kragen", bc: 0xbfe3ef }); garten(2); return "Wohnhaus mit Dachgarten"; },
        () => { const n = Math.max(3, Math.round(W / 0.45)), bw = W * 0.94 / n, d = Math.min(D * 0.6, 0.85), lz = VORNE(d, 0.12); for (let k = 0; k < n; k++) bau({ lx: -W * 0.47 + bw * (k + 0.5), lz, w: bw - 0.01, d, n: 3, c: [0xf4f4f2, 0x4a4e55, 0xc9b79c, 0xe8e8e6][(h.variante + k) % 4], dach: "flach", attika: true }); garten(3); return "Townhouses"; },
-       () => { const c = pk(STIL.altbau), dc = pk(STIL.schiefer), d1 = Math.min(D * 0.45, 0.75), lz = VORNE(d1, 0.02); bau({ lz, w: W * 0.92, d: d1, n: 5, art: "altbau", c, dach: "mansard", dc, gesims: true, balkon: "franz", laden: pk(STIL.ziegel.concat([0x2f8f6f, 0x3d5a80])) }); if (D >= 1.9) bau({ lx: -W * 0.46 + 0.3, lz: lz - d1 / 2 - (D * 0.4) / 2, w: 0.55, d: D * 0.4, n: 5, art: "altbau", c, dach: "mansard", dc, quer: true, eingang: false }); return "Eckhaus mit Läden"; }],
-      [() => { const w = W * 0.9, d = Math.min(D * 0.7, 1.4), lz = VORNE(d, 0.06); bau({ lz, w, d, n: zi(6, 8), c: pk(STIL.putz.concat(STIL.modern)), dach: "flach", balkon: "kragen", technik: 1 }); garten(2); fahrraeder(-W * 0.3, vorn - 0.05, 6); return "Wohnblock"; },
+       () => { const c = pk(STIL.altbau), dc = pk(STIL.schiefer), d1 = Math.min(D * 0.45, 0.75), lz = VORNE(d1, 0.02); bau({ lz, w: W * 0.995, d: d1, n: 5, art: "altbau", c, dach: "mansard", dc, gesims: true, balkon: "franz", laden: pk(STIL.ziegel.concat([0x2f8f6f, 0x3d5a80])) }); if (D >= 1.9) bau({ lx: -W * 0.46 + 0.3, lz: lz - d1 / 2 - (D * 0.4) / 2, w: 0.55, d: D * 0.4, n: 5, art: "altbau", c, dach: "mansard", dc, quer: true, eingang: false }); return "Eckhaus mit Läden"; }],
+      [() => { const w = W * 0.995, d = Math.min(D * 0.7, 1.4), lz = VORNE(d, 0.06); bau({ lz, w, d, n: zi(6, 8), c: pk(STIL.putz.concat(STIL.modern)), dach: "flach", balkon: "kragen", technik: 1 }); garten(2); fahrraeder(-W * 0.3, vorn - 0.05, 6); return "Wohnblock"; },
        () => { const c = pk(STIL.putz), n = zi(5, 6), d1 = 0.62, lz1 = VORNE(d1, 0.04), wd = Math.max(0.5, D - d1 - 0.3); bau({ lz: lz1, w: W * 0.9, d: d1, n, c, dach: "flach", balkon: "kragen" }); bau({ lx: -W * 0.45 + 0.32, lz: lz1 - d1 / 2 - wd / 2, w: 0.62, d: wd, n, c, dach: "flach", eingang: false }); baum(W * 0.15, lz1 - d1 / 2 - 0.5, 0.55); return "Wohnanlage"; },
        () => { const c = pk(STIL.modern), d0 = Math.min(D * 0.8, 1.6), lz0 = VORNE(d0, 0.04), n = 3; let y = 0; for (let k = 0; k < n; k++) { const d = d0 * (1 - k * 0.28), lz = lz0 - (d0 - d) / 2; y = bau({ lz, w: W * 0.9, d, n: 2, c, ly: y, dach: "flach", eingang: k === 0 ? "glas" : false }); klein("flach", 0, lz + d / 2 - 0.08, W * 0.86, 0.025, 0.12, 0x6fae4a, { ly: y }); y -= 0.03; } return "Terrassenhaus"; },
-       () => { const w = W * 0.9, d = Math.min(D * 0.66, 1.3), lz = VORNE(d, 0.06); bau({ lz, w, d, n: 6, c: pk(STIL.klinker), dach: "flach", balkon: "kragen", bc: 0xf2f0ea, baender: true, gc: 0xe9e4da }); garten(2); return "Klinkerblock"; },
+       () => { const w = W * 0.995, d = Math.min(D * 0.66, 1.3), lz = VORNE(d, 0.06); bau({ lz, w, d, n: 6, c: pk(STIL.klinker), dach: "flach", balkon: "kragen", bc: 0xf2f0ea, baender: true, gc: 0xe9e4da }); garten(2); return "Klinkerblock"; },
        () => { const s0 = Math.min(W, D) * 0.62, lz = VORNE(s0, 0.12); bau({ lz, w: s0, d: s0, n: zi(8, 10), c: pk(STIL.putz), dach: "flach", balkon: "kragen", technik: 1 }); garten(3); return "Punkthaus"; },
-       () => { const c = pk(STIL.altbau), n = 5, d1 = Math.min(0.6, D * 0.35), lz = VORNE(d1, 0.02); bau({ lz, w: W * 0.92, d: d1, n, art: "altbau", c, dach: "sattel", dc: pk(STIL.ziegel), gesims: true }); if (D >= 1.9) for (const s of [-1, 1]) bau({ lx: s * (W * 0.46 - 0.28), lz: lz - d1 / 2 - (D * 0.5) / 2, w: 0.55, d: D * 0.5, n, art: "altbau", c, dach: "sattel", dc: pk(STIL.ziegel), quer: true, eingang: false }); baum(0, -D * 0.15, 0.6); return "Wohnhof"; }],
+       () => { const c = pk(STIL.altbau), n = 5, d1 = Math.min(0.6, D * 0.35), lz = VORNE(d1, 0.02); bau({ lz, w: W * 0.995, d: d1, n, art: "altbau", c, dach: "sattel", dc: pk(STIL.ziegel), gesims: true }); if (D >= 1.9) for (const s of [-1, 1]) bau({ lx: s * (W * 0.46 - 0.28), lz: lz - d1 / 2 - (D * 0.5) / 2, w: 0.55, d: D * 0.5, n, art: "altbau", c, dach: "sattel", dc: pk(STIL.ziegel), quer: true, eingang: false }); baum(0, -D * 0.15, 0.6); return "Wohnhof"; }],
       [() => { const s0 = Math.min(W, D) * 0.64, lz = VORNE(s0, 0.12), c = pk(STIL.putz.concat(STIL.modern)); bau({ lz, w: s0, d: s0, n: zi(14, 18), c, dach: "flach", balkon: "kragen", technik: 2 }); garten(2); return "Hochhaus"; },
        () => { const s0 = Math.min(W, D) * 0.6, lz = VORNE(s0, 0.12); bau({ lz, w: s0, d: s0, n: zi(12, 15), c: pk(STIL.modern), dach: "flach", garten: true, balkon: "kragen", bc: 0xbfe3ef }); garten(2); return "Wohnturm mit Dachgarten"; },
-       () => { const w = W * 0.9, d = Math.min(D * 0.45, 0.8), lz = VORNE(d, 0.1); bau({ lz, w, d, n: zi(11, 13), c: pk([0xe8e4dc, 0xd8d4c8, 0xcfd4d6]), dach: "flach", balkon: "loggia", bc: pk([0xe8493f, 0x3f7fe8, 0xf2c14e, 0x2f8f6f]), technik: 1 }); garten(2); return "Scheibenhochhaus"; },
+       () => { const w = W * 0.995, d = Math.min(D * 0.45, 0.8), lz = VORNE(d, 0.1); bau({ lz, w, d, n: zi(11, 13), c: pk([0xe8e4dc, 0xd8d4c8, 0xcfd4d6]), dach: "flach", balkon: "loggia", bc: pk([0xe8493f, 0x3f7fe8, 0xf2c14e, 0x2f8f6f]), technik: 1 }); garten(2); return "Scheibenhochhaus"; },
        () => { const lz0 = VORNE(D * 0.8, 0.04), c = pk(STIL.modern); bau({ lz: lz0, w: W * 0.9, d: D * 0.8, n: 2, c, laden: pk(STIL.ziegel.concat([0x3d5a80])), dach: "flach" }); const s0 = Math.min(W, D) * 0.55; bau({ lz: lz0 - 0.1, w: s0, d: s0, n: zi(12, 16), c: pk(STIL.putz), ly: geschossH(2), dach: "flach", balkon: "kragen", technik: 1, eingang: false }); return "Turm mit Sockel"; },
        () => { const c = pk(STIL.modern), lz = VORNE(Math.min(W, D) * 0.72, 0.1); let y = 0, s = Math.min(W, D) * 0.72; for (let k = 0; k < 3; k++) { y = bau({ lz, w: s, d: s, n: zi(4, 6), c, ly: y, dach: "flach", balkon: "kragen", eingang: k ? false : "glas", garten: k < 2 }); s *= 0.78; } return "Stufenhochhaus"; },
        () => { const s0 = Math.min(W, D) * 0.62, lz = VORNE(s0, 0.12); bau({ lz, w: s0, d: s0, n: zi(10, 13), art: "holz", c: pk([0xb08a5a, 0x9a7a55, 0xc9a77a]), dach: "flach", garten: true, balkon: "kragen", bc: 0xe8ecef }); garten(3); return "Holzhochhaus"; }],
@@ -1021,7 +1035,7 @@ function hausTeile(h) {
        () => { const c = pk(STIL.modern), s0 = Math.min(W, D) * 0.52, lz = VORNE(s0, 0.2); let y = 0; for (let k = 0; k < 9; k++) { add("haus", 0, lz, s0, 3 * ETAGE, s0, c, { ly: y, ry: k * 0.09 }); fein("flach", 0, lz, s0 + 0.08, 0.03, s0 + 0.08, 0xe9e7e2, { ly: y, ry: k * 0.09 }); y += 3 * ETAGE; } dach("flach", 0, lz, s0, s0, y, null, {}); eingang(0, lz + s0 / 2, "glas", c); return "Gedrehter Turm"; },
        () => { const s0 = Math.min(W, D) * 0.58, lz = VORNE(s0, 0.14), c = pk(STIL.altbau); const y = bau({ lz, w: s0, d: s0, n: zi(20, 26), art: "altbau", c, dach: "flach", gesims: true, baender: true, attika: false, eingang: "portal" }); bau({ lz, w: s0 * 0.7, d: s0 * 0.7, n: 2, art: "altbau", c, ly: y, dach: "zelt", dc: 0x5f8f7a, dachH: 0.7, eingang: false }); return "Luxusturm mit Krone"; },
        () => { const c = pk(STIL.modern), lz = VORNE(Math.min(W, D) * 0.66, 0.12); let y = 0, s = Math.min(W, D) * 0.66; for (let k = 0; k < 4; k++) { y = bau({ lz, w: s, d: s, n: zi(6, 8), c, ly: y, dach: "flach", balkon: "kragen", bc: 0xbfe3ef, garten: true, eingang: k ? false : "glas" }); s *= 0.84; } return "Wolkenkratzer mit Terrassen"; },
-       () => { const c = pk(STIL.glas); bau({ lz: VORNE(D * 0.8, 0.04), w: W * 0.92, d: D * 0.8, n: 2, art: "glas", c: pk(STIL.modern), dach: "flach", eingang: "glas" }); const s = Math.min(0.62, W * 0.26); [[-W * 0.28, 0.1], [0.05, -D * 0.2], [W * 0.3, 0.05]].forEach(([lx, lz], i) => bau({ lx, lz, w: s, d: s, n: [18, 26, 14][i], art: i === 1 ? "glas" : "haus", c: i === 1 ? c : pk(STIL.modern), ly: geschossH(2), dach: "flach", balkon: i === 1 ? null : "kragen", technik: 1, eingang: false })); return "Turmensemble"; }]
+       () => { const c = pk(STIL.glas); bau({ lz: VORNE(D * 0.8, 0.04), w: W * 0.995, d: D * 0.8, n: 2, art: "glas", c: pk(STIL.modern), dach: "flach", eingang: "glas" }); const s = Math.min(0.62, W * 0.26); [[-W * 0.28, 0.1], [0.05, -D * 0.2], [W * 0.3, 0.05]].forEach(([lx, lz], i) => bau({ lx, lz, w: s, d: s, n: [18, 26, 14][i], art: i === 1 ? "glas" : "haus", c: i === 1 ? c : pk(STIL.modern), ly: geschossH(2), dach: "flach", balkon: i === 1 ? null : "kragen", technik: 1, eingang: false })); return "Turmensemble"; }]
     ],
     3: [ // Gewerbe niedrig – 3 Stufen
       [() => { const lz = vorn - 0.28; add("laden", 0, lz, 0.42, SOCKEL + ETAGE, 0.34, 0xf2efe8); dach("flach", 0, lz, 0.42, 0.34, SOCKEL + ETAGE, 0xe8493f, { attika: false }); markise(0, lz + 0.17, 0.45, pk(PAL.markise)); vorplatz(); bank(-0.3, vorn - 0.05); return "Kiosk"; },
@@ -1044,8 +1058,8 @@ function hausTeile(h) {
        () => { const lz = VORNE(0.5, 0.42); bau({ lz, w: Math.min(W * 0.7, 0.75), d: 0.5, n: 1, c: 0xf2efe8, laden: 0xe8493f, sc: 0xf2c14e, dach: "flach", technik: 0.6 }); flaeche(0, vorn - 0.18, W * 0.95, 0.34, 0x6d7178); auto(-0.25, vorn - 0.18, true, 1); return "Burger-Restaurant"; }],
       [() => { const w = W * 0.88, d = Math.min(D * 0.75, 0.9), lz = VORNE(d, 0.04); bau({ lz, w, d, n: 3, c: pk(STIL.laden), laden: pk(PAL.markise), dach: "flach", balkon: "franz" }); vorplatz(); return "Boutiquenhaus"; },
        () => { const w = W * 0.86, d = Math.min(D * 0.75, 0.9), lz = VORNE(d, 0.08), c = pk(STIL.altbau); bau({ lz, w, d, n: 3, art: "altbau", c, dach: "mansard", dc: pk(STIL.schiefer), gauben: 2, gesims: true, balkon: "franz", eingang: "portal" }); schild(0, lz + d / 2, 0.4, 0xf2c14e, geschossH(3) - 0.16); klein("flach", 0, lz + d / 2 + 0.1, 0.32, 0.04, 0.2, 0x2f3540, { ly: 0.3 }); return "Kleines Hotel"; },
-       () => { const n = W >= 2 ? 3 : 2, bw = W * 0.92 / n, d = Math.min(D * 0.75, 0.8), lz = VORNE(d, 0.04); for (let k = 0; k < n; k++) bau({ lx: -W * 0.46 + bw * (k + 0.5), lz, w: bw - 0.01, d, n: 1, c: STIL.laden[(h.variante + k) % STIL.laden.length], laden: PAL.markise[(h.variante + k) % PAL.markise.length], dach: "flach" }); vorplatz(); return "Ladenzeile"; },
-       () => { const w = W * 0.9, d = Math.min(D * 0.7, 0.95), lz = VORNE(d, 0.02), c = pk(STIL.altbau); bau({ lz, w, d, n: 3, art: "altbau", c, dach: "sattel", dc: pk(STIL.ziegel), gesims: true, eingang: false, laden: 0x3a3d42 }); if (DS >= 1) for (let k = 0; k < Math.floor(w / 0.3); k++) add("flach", -w / 2 + 0.15 + k * 0.3, lz + d / 2 + 0.1, 0.05, SOCKEL + ETAGE, 0.05, hell(c, 0.4)); klein("flach", 0, lz + d / 2 + 0.1, w, 0.04, 0.22, hell(c, 0.3), { ly: SOCKEL + ETAGE }); return "Geschäftshaus mit Arkaden"; },
+       () => { const n = W >= 2 ? 3 : 2, bw = W * 0.995 / n, d = Math.min(D * 0.75, 0.8), lz = VORNE(d, 0.04); for (let k = 0; k < n; k++) bau({ lx: -W * 0.46 + bw * (k + 0.5), lz, w: bw - 0.01, d, n: 1, c: STIL.laden[(h.variante + k) % STIL.laden.length], laden: PAL.markise[(h.variante + k) % PAL.markise.length], dach: "flach" }); vorplatz(); return "Ladenzeile"; },
+       () => { const w = W * 0.995, d = Math.min(D * 0.7, 0.95), lz = VORNE(d, 0.02), c = pk(STIL.altbau); bau({ lz, w, d, n: 3, art: "altbau", c, dach: "sattel", dc: pk(STIL.ziegel), gesims: true, eingang: false, laden: 0x3a3d42 }); if (DS >= 1) for (let k = 0; k < Math.floor(w / 0.3); k++) add("flach", -w / 2 + 0.15 + k * 0.3, lz + d / 2 + 0.1, 0.05, SOCKEL + ETAGE, 0.05, hell(c, 0.4)); klein("flach", 0, lz + d / 2 + 0.1, w, 0.04, 0.22, hell(c, 0.3), { ly: SOCKEL + ETAGE }); return "Geschäftshaus mit Arkaden"; },
        () => { const w = W * 0.84, d = Math.min(D * 0.7, 0.9), lz = VORNE(d, 0.1); bau({ lz, w, d, n: 2, art: "glas", c: pk(STIL.glas), dach: "flach", eingang: "glas" }); vorplatz(0xe8e4dc); return "Galerie"; },
        () => { const w = W * 0.86, d = Math.min(D * 0.72, 0.95), lz = VORNE(d, 0.06); bau({ lz, w, d, n: 3, art: "buero", c: pk(STIL.buero), dach: "flach", technik: 0.5 }); vorplatz(); schild(0, lz + d / 2, 0.3, 0x2f8f6f, geschossH(1) - 0.06); return "Ärztehaus"; },
        () => { const w = W * 0.88, d = Math.min(D * 0.7, 0.9), lz = VORNE(d, 0.3); bau({ lz, w, d, n: 2, c: pk(STIL.putz), laden: pk(PAL.markise), dach: "sattel", dc: pk(STIL.ziegel), quer: true }); vorplatz(0xd8cbb0); for (const px of [-0.3, 0, 0.3]) { klein("flach", px, vorn - 0.12, 0.13, 0.012, 0.13, 0xf2f0ea, { ly: 0.1 }); klein("flach", px, vorn - 0.12, 0.015, 0.1, 0.015, 0x5d6470); } return "Bistro am Platz"; }]
@@ -1118,6 +1132,7 @@ function hausTeile(h) {
   };
   const stufen = L[h.zone], liste = stufen[Math.min(h.stufe, stufen.length) - 1];
   h.name = liste[h.variante % liste.length]();
+  if (h.zone === 1) gartenDetails();
   if (h.zone === 1 && !(T.plaetze && T.plaetze.length)) { add("flach", 0, vorn - 0.06, Math.min(W * 0.8, 0.62), 0.006, 0.17, 0xa7a49c, { ly: 0.002 }); auto(0, vorn - 0.06, true, 0); if (!T.park) T.park = { lx: 0, lz: vorn - 0.06 }; }
   if (!T.park) {
     if ([2, 4, 5].includes(h.zone) && W >= 1.5) { const x = W / 2 - 0.17; add("flach", x, vorn - 0.04, 0.2, 0.012, 0.16, 0x3a3e46, { ly: 0.004 }); klein("flach", x, vorn - 0.1, 0.24, 0.03, 0.06, 0xd8dade, { ly: 0.2 }); klein("flach", x, vorn + 0.02, 0.2, 0.004, 0.02, 0xf2c14e, { ly: 0.017 }); T.park = { lx: x, lz: vorn - 0.12, tief: true }; T.plaetze = T.plaetze || []; const n = h.zone === 2 ? 4 + h.stufe * 2 : 4 + h.stufe; for (let i = 0; i < n; i++) T.plaetze.push({ lx: x, lz: vorn - 0.12, rot: Math.PI / 2, tief: true }); }
@@ -1132,12 +1147,54 @@ function neuesHaus(d, alt) {
   const h = Object.assign({ id: d.id || hId++, geboren: alt ? -100 : jetztS, simGeboren: alt ? -100 : simZeit, ab: 0, zug: null }, d); hId = Math.max(hId, h.id + 1);
   let x = 0, z = 0, sx = 0, sz = 0; h.zellen.forEach((id) => { const c = zellen.get(id); c.haus = h.id; x += c.x; z += c.z; sx += Math.sin(c.rot); sz += Math.cos(c.rot); });
   h.x = x / h.zellen.length; h.z = z / h.zellen.length; h.rot = Math.atan2(sx, sz);
-  h.teile = hausTeile(h); h.box = null; h.hoehe = hoeheVon(h); haeuser.set(h.id, h); haeuserNeu = zellenNeu = true; parkenNeu(h);
+  h.teile = hausTeile(h); h.box = null; h.hoehe = hoeheVon(h); haeuser.set(h.id, h); if (h.bau) { h.bauT = bauTeile(h, 0, h.bau.art); h.bau.ph = 0; } haeuserNeu = zellenNeu = true; parkenNeu(h);
   const rr = Math.max(h.w, h.d) * 0.62 + 0.2; baeumeFaellen({ x0: h.x - rr, x1: h.x + rr, z0: h.z - rr, z1: h.z + rr }, (bx, bz) => Math.hypot(bx - h.x, bz - h.z) < rr);
   return h;
 }
-const leute = (h) => h.verlassen ? 0 : LEUTE[h.zone] ? LEUTE[h.zone][Math.min(h.stufe, 5)] * h.zellen.length : 0;
-const jobs = (h) => { if (h.verlassen) return 0; const t = JOBS[h.zone]; return t ? t[Math.min(h.stufe, t.length - 1)] * h.zellen.length : 0; };
+/* Baustellen: Grube → Rohbau mit Gerüst und Kran → fertiges Haus; beim Aufstieg ein Gerüst */
+function bauTeile(h, ph, art) {
+  const b = boxVon(h) || { x0: -0.4, x1: 0.4, z0: -0.4, z1: 0.4 }, w = b.x1 - b.x0, d = b.z1 - b.z0, mx = (b.x0 + b.x1) / 2, mz = (b.z0 + b.z1) / 2, H = Math.max(0.4, h.hoehe || 1);
+  const T = art === "aufstieg" ? h.teile.slice() : [], a = (bb, lx, lz, sx, sy, sz, c, ly) => T.push({ b: bb, lx, lz, sx, sy, sz, c, ly: ly || 0 });
+  const geruest = (hoch, rundum) => {
+    const seiten = rundum ? [[0, 1], [0, -1], [1, 0], [-1, 0]] : [[0, 1]];
+    for (const [sx, sz] of seiten) {
+      const lang = sx ? d : w, cx = mx + sx * (w / 2 + 0.05), cz = mz + sz * (d / 2 + 0.05), n = Math.max(2, Math.round(lang / 0.35));
+      for (let i = 0; i <= n; i++) { const t = -lang / 2 + lang * i / n; a("flach", cx + (sx ? 0 : t), cz + (sz ? 0 : t), 0.012, hoch + 0.1, 0.012, 0x9aa0a8); }
+      for (let y = ETAGE; y < hoch + 0.05; y += ETAGE) a("flach", cx, cz, sx ? 0.07 : lang, 0.01, sx ? lang : 0.07, 0xb08a5a, y);
+      if (rundum && sz === 1) a("flach", cx, cz + 0.01, lang * 0.98, hoch * 0.9, 0.004, 0x5f8f6a, 0.05);
+    }
+  };
+  if (art === "aufstieg") { geruest(H, true); return T; }
+  a("flach", mx, mz, w + 0.3, 0.004, d + 0.3, 0x8a7458, 0.002);
+  for (const [sx, sz] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) { const lang = (sx ? d : w) + 0.34; a("flach", mx + sx * (w / 2 + 0.17), mz + sz * (d / 2 + 0.17), sx ? 0.012 : lang, 0.12, sx ? lang : 0.012, 0xe8e8e8); a("flach", mx + sx * (w / 2 + 0.17), mz + sz * (d / 2 + 0.172), sx ? 0.014 : lang, 0.03, sx ? lang : 0.014, 0xe8742a, 0.06); }
+  a("flach", mx + w / 2 - 0.12, mz - d / 2 + 0.1, 0.22, 0.1, 0.1, 0x3d6fb0);
+  if (ph === 0) {
+    a("flach", mx, mz, w * 0.9, 0.006, d * 0.9, 0x5a4632, 0.004);
+    const bx = mx - w * 0.2, bz = mz + d * 0.1; a("flach", bx, bz, 0.14, 0.04, 0.1, 0x2c2f36); a("flach", bx, bz, 0.12, 0.08, 0.09, 0xf2b630, 0.04); a("flach", bx - 0.03, bz, 0.05, 0.06, 0.06, 0x3a4a5a, 0.12); a("flach", bx + 0.13, bz, 0.16, 0.025, 0.025, 0xf2b630, 0.12);
+    a("flach", mx + w * 0.25, mz - d * 0.15, 0.18, 0.05, 0.12, 0x8a6a4a, 0.004);
+    return T;
+  }
+  const hoch = ph === 1 ? H * 0.5 : H * 0.95;
+  a("haus", mx, mz, w, 0.05, d, 0xa8a49c);
+  if (ph === 1) {
+    for (let y = ETAGE; y < hoch; y += ETAGE) a("flach", mx, mz, w, 0.03, d, 0xb8b4ac, y);
+    for (const sx of [-1, 0, 1]) for (const sz of [-1, 1]) a("flach", mx + sx * (w / 2 - 0.03), mz + sz * (d / 2 - 0.03), 0.04, hoch, 0.04, 0xb8b4ac);
+  } else a("haus", mx, mz, w * 0.98, hoch, d * 0.98, 0xb3aea4);
+  geruest(hoch, ph === 2);
+  if (H > 0.9) { const kx = mx - w / 2 - 0.25, kz = mz, kh = H + 0.5, arm = Math.max(w, d) * 0.9 + 0.3; a("flach", kx, kz, 0.06, kh, 0.06, 0xf2b630); a("flach", kx + arm / 2 - 0.15, kz, arm, 0.04, 0.05, 0xf2b630, kh); a("flach", kx - 0.25, kz, 0.14, 0.08, 0.1, 0x6d7178, kh - 0.04); a("flach", kx + arm * 0.55, kz, 0.004, kh - hoch - 0.1, 0.004, 0x2c2f36, hoch + 0.1); a("flach", kx, kz, 0.2, 0.04, 0.2, 0x8c8f94); }
+  return T;
+}
+function bauTakt() {
+  for (const h of haeuser.values()) {
+    if (!h.bau) continue; const q = (simZeit - h.bau.start) / h.bau.dauer;
+    if (q >= 1) { const neu = h.bau.art === "neu"; h.bau = null; h.bauT = null; if (neu) { h.geboren = jetztS; h.ab = 0.6; parkenNeu(h); } haeuserNeu = true; continue; }
+    const ph = h.bau.art === "neu" ? Math.min(2, Math.floor(q * 3)) : 0;
+    if (ph !== h.bau.ph) { h.bau.ph = ph; h.bauT = bauTeile(h, ph, h.bau.art); haeuserNeu = true; }
+  }
+}
+const imBau = (h) => h.bau && h.bau.art === "neu";
+const leute = (h) => h.verlassen || imBau(h) ? 0 : LEUTE[h.zone] ? LEUTE[h.zone][Math.min(h.stufe, 5)] * h.zellen.length : 0;
+const jobs = (h) => { if (h.verlassen || imBau(h)) return 0; const t = JOBS[h.zone]; return t ? t[Math.min(h.stufe, t.length - 1)] * h.zellen.length : 0; };
 const gruppe = (h) => ZONEN[h.zone].gruppe;
 const zoneFrei = (z) => meilenstein >= (ZONEN[z].ab || 0);
 /* Bodenwert (0–100): Bäume, Alleen, Wasser und Läden heben ihn – Hauptstraßen und Dreck senken ihn */
@@ -1227,7 +1284,7 @@ function haeuserZeichnen() {
   for (const h of [...haeuser.values(), ...dienste.values(), ...halte.values()]) {
     const p = Math.min(1, Math.max(0, (jetztS - h.geboren) / 0.7)); if (p < 1) anim = true;
     const e = h.ab + (1 - h.ab) * (1 - Math.pow(1 - p, 3)), cs = Math.cos(h.rot), sn = Math.sin(h.rot);
-    for (const t of h.teile) {
+    for (const t of h.bauT || h.teile) {
       const m = B[t.b]; if (n[t.b] >= m.instanceMatrix.count) continue;
       const wx = h.x + t.lx * cs + t.lz * sn, wz = h.z - t.lx * sn + t.lz * cs;
       if (t.tor) { torListe.push({ d: h, t, x: wx, z: wz, rot: h.rot }); continue; }
@@ -2114,7 +2171,7 @@ function freiGleich(id, zone) { const z = id && zellen.get(id); return z && !z.h
 let werteZeit = -99;
 const stufeBildungOk = (h) => gruppe(h) !== "w" || ((h.stufe + 1 < 3 || (h.bildung || 0) >= 1) && (h.stufe + 1 < 5 || (h.bildung || 0) >= 2));
 function wachsTakt() {
-  bedarfBerechnen(); dienstTakt(0.5);
+  bauTakt(); bedarfBerechnen(); dienstTakt(0.5);
   if (simZeit - werteZeit > 4) { werteZeit = simZeit; werteAuffrischen(); }
   const kand = {};
   for (const z of zellen.values()) if (z.zone && !z.haus && z.r === 0 && zoneFrei(z.zone)) (kand[z.zone] = kand[z.zone] || []).push(z);
@@ -2129,7 +2186,7 @@ function wachsTakt() {
       let tiefe = Z.tiefe; for (const s of spalten) { let t = 1; while (t < tiefe && freiGleich(zk(s.g, s.seite, s.i, t), zone)) t++; tiefe = Math.min(tiefe, t); }
       if (tiefe < (Z.minTiefe || 1)) continue;
       const ids = []; for (const s of spalten) for (let t = 0; t < tiefe; t++) ids.push(zk(s.g, s.seite, s.i, t));
-      const h = neuesHaus({ zone, stufe: 1, w: spalten.length, d: tiefe, variante: (Math.random() * 1e6) | 0, zellen: ids });
+      const h = neuesHaus({ zone, stufe: 1, w: spalten.length, d: tiefe, variante: (Math.random() * 1e6) | 0, zellen: ids, bau: { start: simZeit, dauer: 16 + Math.random() * 8, art: "neu", ph: -1 } });
       const r = bodenwert(h.x, h.z, h); h.wert = r.wert; h.dreck = r.dreck;
       if (gruppe(h) === "i") dreckZeichnen();
       break;
@@ -2138,7 +2195,7 @@ function wachsTakt() {
   const liste = [...haeuser.values()].filter((h) => { const Z = ZONEN[h.zone]; return !h.verlassen && !(h.problem && h.problem !== "krimi" && h.problem !== "krank") && stufeBildungOk(h) && h.stufe < Z.max && simZeit - (h.simGeboren || 0) > 25 && bedarf[Z.gruppe] > 5 && (h.wert || 0) >= (BODENWERT_FUER[Z.gruppe][h.stufe + 1] || 0); });
   if (liste.length && Math.random() < 0.18) {
     const h = liste[Math.floor(Math.random() * liste.length)]; h.stufe++; h.geboren = jetztS; h.simGeboren = simZeit; h.ab = 0.35; h.teile = hausTeile(h); h.box = null; haeuserNeu = true; parkenNeu(h);
-    h.hoehe = hoeheVon(h); hochZeigen(h, h.hoehe);
+    h.hoehe = hoeheVon(h); h.bau = { start: simZeit, dauer: 9, art: "aufstieg", ph: 0 }; h.bauT = bauTeile(h, 0, "aufstieg"); hochZeigen(h, h.hoehe);
     if (gruppe(h) === "i") dreckZeichnen();
   }
   zeigeWerte(); meilensteinPruefen(); speichernBald();
@@ -2586,7 +2643,7 @@ function parkenNeu(b) {
   const alt = (b.slots || []).filter((q) => q.auto).map((q) => q.auto);
   b.slots = (b.teile.plaetze || []).map((p, i) => { const w = hausPunkt(b, p); return { b, i, x: w.x, z: w.z, rot: b.rot + p.rot, ly: p.ly || 0, tief: !!p.tief, auto: null, res: null }; });
   for (const a of alt) { const q = b.slots.find((x) => !x.auto && !x.res); if (q) { q.auto = a; a.wo = q; if (a.heim === b.id) a.heimSlot = q; } else autoHeimholen(a.id); }
-  if (!b.dienst && haeuser.has(b.id) && gruppe(b) === "w") {
+  if (!b.dienst && !imBau(b) && haeuser.has(b.id) && gruppe(b) === "w") {
     const soll = Math.min(b.slots.length, b.zone === 1 ? b.slots.length : Math.ceil(leute(b) / 5)); let ist = 0; for (const a of autos.values()) if (a.heim === b.id) ist++;
     for (const q of b.slots) { if (ist >= soll) break; if (q.auto || q.res) continue; const a = { id: autoId++, typ: wahl(Math.random, PARK_TYPEN), farbe: wahl(Math.random, PAL.auto), heim: b.id, wo: q, heimSlot: q, bis: Infinity }; q.auto = a; autos.set(a.id, a); ist++; }
   }
@@ -3238,7 +3295,7 @@ function licht(z) {
   sonnenRichtung.set(Math.cos(w) * 0.85, hoehe, 0.5).normalize();
   const abend = 1 - glatt(0.04, 0.42, hoehe), nacht = glatt(0.1, -0.12, hoehe);
   for (const k in _c) _c[k].copy(F.tag[k]).lerp(F.abend[k], abend).lerp(F.nacht[k], nacht);
-  U.uNacht.value = nacht;
+  U.uNacht.value = nacht; LAMPEN_MAT.color.setRGB(0.29 + nacht * 0.71, 0.27 + nacht * 0.6, 0.23 + nacht * 0.35);
   const mond = hoehe < -0.02; _r.copy(sonnenRichtung); if (mond) { _r.negate(); _r.y = Math.max(_r.y, 0.35); }
   sonne.color.copy(_c.sonne);
   sonne.intensity = mond ? 0.42 * glatt(-0.02, -0.2, hoehe) : 2.7 * glatt(-0.02, 0.18, hoehe) * (1 - abend * 0.35);
@@ -3792,7 +3849,7 @@ function hausInfo(p) {
   if (!z) { $("info").hidden = true; return; }
   const h = haeuser.get(z.haus);
   const Z = ZONEN[h.zone], g = Z.gruppe; listenAuffrischen(); const bw = bodenwert(h.x, h.z, h); h.wert = bw.wert; h.dreck = bw.dreck;
-  const wert = g === "w" ? "👥 " + leute(h) + " Bewohner" : "💼 " + jobs(h) + " Arbeitsplätze";
+  const wert = imBau(h) ? "🏗️ Baustelle – fertig in " + Math.max(1, Math.ceil(h.bau.start + h.bau.dauer - simZeit)) + " s" : g === "w" ? "👥 " + leute(h) + " Bewohner" : "💼 " + jobs(h) + " Arbeitsplätze";
   const noetig = BODENWERT_FUER[g][h.stufe + 1] || 0;
   const naechst = !stufeBildungOk(h) ? "🎓 Für Stufe " + (h.stufe + 1) + " braucht es " + (h.stufe + 1 >= 5 ? "ein Gymnasium" : "eine Grundschule") + " in der Nähe" : h.stufe >= Z.max ? (Z.max === 1 ? "Spezial-Industrie hat nur eine Stufe" : "⭐ Höchste Stufe erreicht") : h.wert < noetig ? "⬆️ Für Stufe " + (h.stufe + 1) + " braucht es Bodenwert " + noetig + " (Bäume, Alleen, Wasser, weniger Dreck)" : "⬆️ Steigt auf Stufe " + (h.stufe + 1) + ", wenn Bedarf da ist";
   const sterne = "★".repeat(h.stufe) + "☆".repeat(Z.max - h.stufe);
