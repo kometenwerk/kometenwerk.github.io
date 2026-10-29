@@ -1,0 +1,76 @@
+{
+  "info": "Thorstens Sprüche für das Video-Studio. Ändern oder ergänzen und auf GitHub speichern – der Ablauf „Thorstens Stimme“ spricht neue Sätze automatisch ein (shared/thorsten/ton). Die id muss eindeutig sein; die gruppe sagt dem Studio, wann der Satz passt.",
+  "stimme": { "modell": "de_DE-mls-medium", "sprecher": 162, "tempo": 0.9 },
+  "saetze": [
+    { "id": "intro-1", "gruppe": "intro", "text": "Hey Leute, Thorsten hier, eure Lieblings-KI! Heute wird im Krawallzoo gekracht. Los geht's!" },
+    { "id": "intro-2", "gruppe": "intro", "text": "Servus und willkommen! Ich bin Thorsten, der KI-Youtuber von Omnivia. Und heute zocke ich Krawallzoo!" },
+    { "id": "intro-3", "gruppe": "intro", "text": "Hallo zusammen! Hier ist Thorsten, eine KI mit viel zu viel Energie. Ab in den Krawallzoo!" },
+    { "id": "short-1", "gruppe": "short_intro", "text": "Thorsten hier. Schaut euch das an!" },
+    { "id": "short-2", "gruppe": "short_intro", "text": "Krawallzoo, eine Runde, volle Action. Los!" },
+    { "id": "short-3", "gruppe": "short_intro", "text": "Achtung, jetzt wird's wild!" },
+
+    { "id": "los-1", "gruppe": "los", "text": "Und los!" },
+    { "id": "los-2", "gruppe": "los", "text": "Drei, zwei, eins, Krawall!" },
+    { "id": "los-3", "gruppe": "los", "text": "Okay, Konzentration. Jetzt geht's los!" },
+    { "id": "los-4", "gruppe": "los", "text": "Neue Runde, neues Glück!" },
+
+    { "id": "treffer-1", "gruppe": "ko_treffer", "text": "Jaaa! Erwischt!" },
+    { "id": "treffer-2", "gruppe": "ko_treffer", "text": "Den hab ich umgehauen!" },
+    { "id": "treffer-3", "gruppe": "ko_treffer", "text": "Boom! Der ist raus!" },
+    { "id": "treffer-4", "gruppe": "ko_treffer", "text": "Einer weniger, weiter so!" },
+    { "id": "treffer-5", "gruppe": "ko_treffer", "text": "Sauber! Das war mein Moment!" },
+    { "id": "treffer-6", "gruppe": "ko_treffer", "text": "Haha, damit hat er nicht gerechnet!" },
+
+    { "id": "raus-1", "gruppe": "ko_raus", "text": "Neeein! Mein Tier ist raus!" },
+    { "id": "raus-2", "gruppe": "ko_raus", "text": "Autsch. Das hat wehgetan." },
+    { "id": "raus-3", "gruppe": "ko_raus", "text": "Okay, das war nicht mein bester Moment." },
+    { "id": "raus-4", "gruppe": "ko_raus", "text": "Wer hat mich da bitte erwischt?" },
+    { "id": "raus-5", "gruppe": "ko_raus", "text": "Uff. Kurze Pause für mein Fell." },
+
+    { "id": "andere-1", "gruppe": "ko_andere", "text": "Und da kippt der Nächste um!" },
+    { "id": "andere-2", "gruppe": "ko_andere", "text": "Oh, das war ein Volltreffer!" },
+    { "id": "andere-3", "gruppe": "ko_andere", "text": "Uiuiui, das ging schnell." },
+    { "id": "andere-4", "gruppe": "ko_andere", "text": "Hier wird ordentlich aufgeräumt!" },
+    { "id": "andere-5", "gruppe": "ko_andere", "text": "Gut, dass das nicht ich war." },
+
+    { "id": "super-ich-1", "gruppe": "super_ich", "text": "Spezialattacke, jetzt!" },
+    { "id": "super-ich-2", "gruppe": "super_ich", "text": "Zeit für meine Geheimwaffe!" },
+    { "id": "super-ich-3", "gruppe": "super_ich", "text": "Und jetzt die ganze Power!" },
+    { "id": "super-ich-4", "gruppe": "super_ich", "text": "Achtung, aus dem Weg!" },
+    { "id": "super-andere-1", "gruppe": "super_andere", "text": "Vorsicht, Spezialattacke!" },
+    { "id": "super-andere-2", "gruppe": "super_andere", "text": "Woah, was war das denn?" },
+    { "id": "super-andere-3", "gruppe": "super_andere", "text": "Ohhh, die sah gefährlich aus!" },
+
+    { "id": "item-herz", "gruppe": "item_herz", "text": "Ein Herz! Das kommt gerade richtig." },
+    { "id": "item-blitz", "gruppe": "item_blitz", "text": "Turbo! Jetzt wird's schnell." },
+    { "id": "item-kristall", "gruppe": "item_kristall", "text": "Power-Kristall! Gleich gibt's Ärger." },
+    { "id": "item-schild", "gruppe": "item_schild", "text": "Schild an. Kommt doch her!" },
+
+    { "id": "nebel-1", "gruppe": "nebel", "text": "Der Nebel kommt! Ab in die Mitte!" },
+    { "id": "nebel-2", "gruppe": "nebel", "text": "Es wird eng. Jetzt bloß nicht im Nebel stehen!" },
+    { "id": "runde-1", "gruppe": "runde", "text": "Nächste Runde! Jetzt aber richtig." },
+    { "id": "runde-2", "gruppe": "runde", "text": "Weiter geht's, Runde zwei!" },
+    { "id": "entscheidung-1", "gruppe": "entscheidung", "text": "Entscheidungsrunde! Jetzt zählt jeder Treffer!" },
+
+    { "id": "sieg-1", "gruppe": "sieg", "text": "Jaaa! Gewonnen! Was für eine Runde!" },
+    { "id": "sieg-2", "gruppe": "sieg", "text": "Sieg! Ich wusste es. Okay, ich hab's gehofft." },
+    { "id": "sieg-3", "gruppe": "sieg", "text": "Wir haben gewonnen! Tanzpause!" },
+    { "id": "sieg-4", "gruppe": "sieg", "text": "Und das, liebe Leute, nennt man Krawall!" },
+    { "id": "platz-1", "gruppe": "platz", "text": "Nicht ganz der Sieg, aber ein richtig guter Platz!" },
+    { "id": "platz-2", "gruppe": "platz", "text": "Knapp vorbei. Nächstes Mal schnappe ich mir den ersten Platz!" },
+    { "id": "verloren-1", "gruppe": "niederlage", "text": "Verloren. Aber hey, das Fell wächst nach!" },
+    { "id": "verloren-2", "gruppe": "niederlage", "text": "Das war nix. Revanche, sofort!" },
+    { "id": "verloren-3", "gruppe": "niederlage", "text": "Okay, die anderen waren heute besser. Respekt!" },
+
+    { "id": "fuell-1", "gruppe": "fuell", "text": "Wer gewinnt das hier wohl? Schreibt mir euren Tipp in die Kommentare!" },
+    { "id": "fuell-2", "gruppe": "fuell", "text": "Welches Tier ist euer Liebling? Ich bin gespannt!" },
+    { "id": "fuell-3", "gruppe": "fuell", "text": "Übrigens: Krawallzoo könnt ihr kostenlos im Browser spielen." },
+    { "id": "fuell-4", "gruppe": "fuell", "text": "Ich bin eine KI, aber nervös bin ich trotzdem." },
+    { "id": "fuell-5", "gruppe": "fuell", "text": "Puh, hier ist ganz schön was los." },
+    { "id": "fuell-6", "gruppe": "fuell", "text": "Achtet mal auf die Power-ups, die fallen einfach vom Himmel!" },
+
+    { "id": "outro-1", "gruppe": "outro", "text": "Das war's für heute! Spielt Krawallzoo selbst, auf kometenwerk punkt github punkt io. Bleibt krawallig, tschüss!" },
+    { "id": "outro-2", "gruppe": "outro", "text": "Danke fürs Zuschauen! Wenn's euch gefallen hat, lasst gern ein Like da. Bleibt krawallig!" },
+    { "id": "outro-short", "gruppe": "short_outro", "text": "Bleibt krawallig!" }
+  ]
+}

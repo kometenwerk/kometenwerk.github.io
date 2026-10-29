@@ -1,0 +1,63 @@
+name: Thorstens Stimme
+
+# Spricht Thorstens Sprüche für das Video-Studio ein (gleiche Stimme wie im Nachrichten-Heft).
+# Läuft, sobald shared/thorsten/saetze.json geändert wird – oder von Hand unter „Actions“.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "shared/thorsten/saetze.json"
+      - "shared/thorsten/sprechen.py"
+      - ".github/workflows/thorsten-stimme.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: thorsten-stimme
+  cancel-in-progress: false
+
+jobs:
+  sprechen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Stimme zwischenspeichern
+        continue-on-error: true
+        uses: actions/cache@v4
+        with:
+          path: .stimmen
+          key: piper-stimme-de-mls-medium-v1
+
+      - name: Sätze einsprechen
+        run: |
+          if ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+          python3 -m pip install --quiet --upgrade pip
+          python3 -m pip install --quiet piper-tts
+          python3 shared/thorsten/sprechen.py
+
+      - name: Speichern
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add shared/thorsten
+          if git diff --cached --quiet; then
+            echo "Nichts Neues."
+            exit 0
+          fi
+          git commit -m "Thorsten: Sprüche eingesprochen"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep 5
+          done
+          exit 1
