@@ -2854,21 +2854,24 @@ function gleisWeg2(start, ziele, zugId) {
     }
   }
   if (!best) return null;
-  const pts = [], seg = [], add = (k, s0, s1, nach) => { const st = gleisStueck(k, s0, s1), i0 = pts.length ? pts.length - 1 : 0; pts.push(...(pts.length ? st.slice(1) : st)); seg.push({ k: k.id, i0, i1: pts.length - 1, nach }); };
+  const pts = [], seg = [], add = (k, s0, s1, nach) => { const st = gleisStueck(k, s0, s1), i0 = pts.length ? pts.length - 1 : 0; pts.push(...(pts.length ? st.slice(1) : st)); seg.push({ k: k.id, i0, i1: pts.length - 1, nach, s0, s1 }); };
   if (best.direkt) add(ks, start.S, best.zielS, null);
   else { const kette = []; let c = best.ende; while (c != null) { kette.unshift(c); c = von.get(c); } kette.forEach((c2, i) => { const kid = Math.floor(c2 / 2), dir = c2 % 2 ? 1 : -1, k = gKanten.get(kid); add(k, i === 0 ? start.S : dir > 0 ? 0 : k.len, dir > 0 ? k.len : 0, dir > 0 ? k.b : k.a); }); add(best.zielK, best.zielDir > 0 ? 0 : best.zielK.len, best.zielS, null); }
   pts.seg = seg; pts.endPunkt = { k: best.zielK.id, S: best.zielS }; return pts;
 }
-function zugPfad(z, pts, u) { z.P = pfadVorbereiten(pts); z.u = Math.min(z.P.len, u); z.seg = (pts.seg || []).map((q) => ({ k: q.k, u0: pts[q.i0].d, u1: pts[q.i1].d, nach: q.nach })); z.endPunkt = pts.endPunkt || null; }
+function zugPfad(z, pts, u) { z.P = pfadVorbereiten(pts); z.u = Math.min(z.P.len, u); z.seg = (pts.seg || []).map((q) => ({ k: q.k, u0: pts[q.i0].d, u1: pts[q.i1].d, nach: q.nach, s0: q.s0, s1: q.s1 })); z.warte = 0; z.endPunkt = pts.endPunkt || null; }
+// Ausweichstelle: Doppelgleis (Einbahn) oder Bahnsteig in einem Bahnhof mit mehreren Gleisen
+function ausweich(k) { if (!k) return false; if (k.einbahn) return true; if (k.bahnsteig != null && k.station) { const d = dienste.get(k.station); return !!(d && STATIONEN[d.typ] && STATIONEN[d.typ].gleise.length > 1); } return false; }
+function richtungGegen(a, b, kid) { const sa = a.seg.find((x) => x.k === kid), sb = b.seg.find((x) => x.k === kid); return sa && sb && Math.sign(sa.s1 - sa.s0) !== Math.sign(sb.s1 - sb.s0); }
 function zugBlock(z, vmax, lebt) {
   if (!z.seg) return vmax; const L = z.wagen * 1.36 + 0.5, brems = z.v * z.v / 4.4 + 1.4;
   for (const q of z.seg) if (q.u1 < z.u - L && gRes.get(q.k) === z.id) gRes.delete(q.k);
   for (let i = 0; i < z.seg.length; i++) {
     const q = z.seg[i]; if (q.u1 < z.u - L) continue; if (q.u0 > z.u + brems) break; if (gRes.get(q.k) === z.id) continue;
-    const kette = [i]; for (let j = i; j < z.seg.length - 1; j++) { const n = gKnoten.get(z.seg[j].nach), kj = gKanten.get(z.seg[j].k); if (!n || n.kanten.size >= 3 || (kj && kj.bahnsteig != null)) break; kette.push(j + 1); }
-    const frei = kette.every((j) => { const o = gRes.get(z.seg[j].k); return o == null || o === z.id || !lebt.has(o); });
-    if (frei) for (const j of kette) gRes.set(z.seg[j].k, z.id);
-    else return Math.min(vmax, q.u0 <= z.u ? vmax : Math.sqrt(2 * 2.2 * Math.max(0, q.u0 - 0.4 - z.u)));
+    const kette = [i]; if (!ausweich(gKanten.get(q.k))) for (let j = i; j < z.seg.length - 1; j++) { const kj = gKanten.get(z.seg[j].k); if (kj && kj.bahnsteig != null) break; kette.push(j + 1); if (ausweich(gKanten.get(z.seg[j + 1].k))) break; }
+    const besetzt = kette.map((j) => gRes.get(z.seg[j].k)).find((o) => o != null && o !== z.id && lebt.has(o));
+    if (besetzt == null) { for (const j of kette) gRes.set(z.seg[j].k, z.id); z.grund = null; }
+    else { const o = zuege.find((x) => x.id === besetzt); z.grund = o && o.seg && o.seg.some((x) => x.k === q.k) && richtungGegen(z, o, q.k) ? "Wartet auf Gegenzug" : "Wartet, bis die Strecke frei ist"; return Math.min(vmax, q.u0 <= z.u ? vmax : Math.sqrt(2 * 2.2 * Math.max(0, q.u0 - 0.4 - z.u))); }
   }
   return vmax;
 }
@@ -2919,9 +2922,9 @@ function zugTakt(dt) {
   const bh = neueBahnhoefe(), rand = randGleis(), randK = rand && [...rand.kanten][0], randPunkt = randK != null ? { k: randK, S: gKanten.get(randK).a === rand.id ? 0.2 : gKanten.get(randK).len - 0.2 } : null;
   fernZeit -= dt; gueterZeit -= dt;
   const hbf = bh.filter((d) => d.typ === "hauptbahnhof"), fernZiele = hbf.length ? hbf : bh.filter((d) => d.typ !== "haltepunkt"), gb = [...dienste.values()].filter((d) => d.typ === "gueterbahnhof"), gueterZiele = gb.length ? gb : bh;
-  if (randPunkt && fernZiele.length && fernZeit <= 0 && zuege.filter((z) => z.art === "fern").length < Math.min(4, fernZiele.length * 2)) { fernZeit = 30; const d = wahl(Math.random, fernZiele), w = gleisWeg2(randPunkt, stationZiele(d), -1); if (w) zugStarten("fern", w, d, { zurueck: true }); }
-  if (randPunkt && gueterZiele.length && gueterZeit <= 0 && (industrieListe.length || anzahlTyp("hafen") || gb.length) && zuege.filter((z) => z.art === "gueter").length < 2 + gb.length) { gueterZeit = 55; const d = wahl(Math.random, gueterZiele), w = gleisWeg2(randPunkt, stationZiele(d), -1); if (w) zugStarten("gueter", w, d, { zurueck: true }); }
-  for (const L of zuglinien.values()) { const da = zuege.filter((z) => z.linie === L.id).length, soll = L.zuege || 2; if (da < soll && L.st.length >= 2 && (!L.letzterStart || simZeit - L.letzterStart > 12)) { const i = (da * Math.max(1, Math.floor(L.st.length / soll))) % L.st.length, a = dienste.get(L.st[i]), b = dienste.get(L.st[(i + 1) % L.st.length]); if (a && b) { const w = stationWeg(a, b, -1); if (w) { zugStarten("linie", w, b, { linie: L.id, i: (i + 1) % L.st.length, farbe: L.farbe, modell: L.modell || "regio" }); L.letzterStart = simZeit; } } } else if (da > soll) { const z = zuege.find((q) => q.linie === L.id && q.halt > 0); if (z) z.weg = true; } }
+  if (randPunkt && fernZiele.length && fernZeit <= 0 && zuege.filter((z) => z.art === "fern").length < Math.min(4, fernZiele.length * 2)) { fernZeit = 30; const d = wahl(Math.random, fernZiele), w = gleisWeg2(randPunkt, stationZiele(d), -1); if (w) zugStarten("fern", w, d, { zurueck: true, vorher: "rand" }); }
+  if (randPunkt && gueterZiele.length && gueterZeit <= 0 && (industrieListe.length || anzahlTyp("hafen") || gb.length) && zuege.filter((z) => z.art === "gueter").length < 2 + gb.length) { gueterZeit = 55; const d = wahl(Math.random, gueterZiele), w = gleisWeg2(randPunkt, stationZiele(d), -1); if (w) zugStarten("gueter", w, d, { zurueck: true, vorher: "rand" }); }
+  for (const L of zuglinien.values()) { const da = zuege.filter((z) => z.linie === L.id).length, soll = Math.min(L.zuege || 2, zugKapazitaet(L)); if (da < soll && L.st.length >= 2 && (!L.letzterStart || simZeit - L.letzterStart > 12)) { const i = (da * Math.max(1, Math.floor(L.st.length / soll))) % L.st.length, a = dienste.get(L.st[i]), b = dienste.get(L.st[(i + 1) % L.st.length]); if (a && b) { const w = stationWeg(a, b, -1); if (w) { zugStarten("linie", w, b, { linie: L.id, i: (i + 1) % L.st.length, farbe: L.farbe, modell: L.modell || "regio", vorher: a }); L.letzterStart = simZeit; } } } else if (da > soll) { const z = zuege.find((q) => q.linie === L.id && q.halt > 0); if (z) z.weg = true; } }
   const lebt = new Set(zuege.filter((z) => !z.weg).map((z) => z.id));
   for (const z of zuege) {
     if (z.weg) continue;
@@ -2930,11 +2933,23 @@ function zugTakt(dt) {
     const kopf = pfadPunkt(z.P, z.u);
     for (const o of zuege) { if (o === z || o.weg || !o.pos) continue; for (const q of o.pos) { const dx = q.x - kopf.x, dz = q.z - kopf.z, vor = dx * kopf.tx + dz * kopf.tz; if (vor > 0 && vor < 3.4 && Math.abs(-dx * kopf.tz + dz * kopf.tx) < 0.5) vmax = Math.min(vmax, Math.max(0, (vor - 1.6) * 1.5)); } }
     const a = vmax > z.v ? 1.1 : -2.2; z.v = klemme(z.v + a * dt, 0, Math.max(vmax, 0)); if (vmax < z.v) z.v = vmax; z.u += z.v * dt;
-    z.warte = z.v < 0.05 && rest > 0.3 ? z.warte + dt : 0; if (z.warte > 15) z.weg = true;
+    z.warte = z.v < 0.05 && rest > 0.3 ? z.warte + dt : 0; if (z.warte > 12) zugAusweichen(z, randPunkt); if (z.warte > 60) z.weg = true;
     if (rest < 0.05) { z.u = z.P.len; z.v = 0; z.halt = z.ziel === "rand" ? 0.01 : 6; if (z.ziel && z.ziel !== "rand") { z.ziel.zugDa = simZeit; if (z.linie) zugFahrgaeste(z); } }
   }
   for (const z of zuege) if (z.weg) for (const [k, v] of [...gRes]) if (v === z.id) gRes.delete(k);
   zuege = zuege.filter((z) => !z.weg);
+}
+function zugStelle(z, u) { for (const q of z.seg || []) if (u >= q.u0 - 1e-6 && u <= q.u1 + 1e-6) { const t = q.u1 > q.u0 ? (u - q.u0) / (q.u1 - q.u0) : 0; return { k: q.k, S: q.s0 + (q.s1 - q.s0) * t }; } return null; }
+function zugAusweichen(z, randPunkt) {
+  z.warte = 0; const kopf = zugStelle(z, z.u); if (!kopf) return;
+  const ziele = z.ziel === "rand" ? (randPunkt ? [randPunkt] : []) : stationZiele(z.ziel), w = ziele.length && gleisWeg2(kopf, ziele, z.id);
+  if (w && w.seg && w.seg[0] && !(gRes.has(w.seg[0].k) && gRes.get(w.seg[0].k) !== z.id) && w.seg.map((q) => q.k).join() !== z.seg.filter((q) => q.u1 >= z.u).map((q) => q.k).join()) { zugPfad(z, w, 0.01); z.grund = "Fährt einen anderen Weg"; return; }
+  const ende = zugStelle(z, Math.max(0, z.u - z.wagen * 1.36 - 0.3)), zurueck = z.vorher === "rand" ? (randPunkt ? [randPunkt] : []) : stationZiele(z.vorher); if (!ende || !zurueck.length) return;
+  const w2 = gleisWeg2(ende, zurueck, z.id); if (!w2) return;
+  for (const [k, v] of [...gRes]) if (v === z.id) gRes.delete(k);
+  const alt = z.ziel; zugPfad(z, w2, 0.01); z.grund = "Fährt zurück und lässt den Gegenzug durch";
+  if (z.linie) { const L = zuglinien.get(z.linie); if (L) z.i = (z.i - 1 + L.st.length) % L.st.length; }
+  z.ziel = z.vorher === "rand" ? "rand" : z.vorher; z.vorher = alt;
 }
 function zugFahrgaeste(z) {
   const L = zuglinien.get(z.linie); if (!L) return; const kap = z.wagen * 80, d = z.ziel, um = d ? [...haeuser.values()].reduce((s2, h) => s2 + (Math.hypot(h.x - d.x, h.z - d.z) < 10 ? leute(h) + jobs(h) : 0), 0) : 0;
@@ -2944,7 +2959,7 @@ function zugFahrgaeste(z) {
 function zugWeiter(z, randPunkt) {
   if (z.ziel === "rand") { z.weg = true; return; }
   const hier = z.ziel; if (!dienste.has(hier.id) || hier.gk == null || !gKanten.has(hier.gk)) { z.weg = true; return; }
-  const von = z.endPunkt || bahnhofPunkt(hier);
+  const von = z.endPunkt || bahnhofPunkt(hier); z.vorher = hier;
   if (z.linie) { const L = zuglinien.get(z.linie); if (!L) { z.weg = true; return; } const n = (z.i + 1) % L.st.length, b = dienste.get(L.st[n]); const w = b && gleisWeg2(von, stationZiele(b), z.id); if (!w) { z.halt = 2; z.warteWeg = (z.warteWeg || 0) + 1; if (z.warteWeg > 8) z.weg = true; return; } z.warteWeg = 0; zugPfad(z, w, 0.01); z.i = n; z.ziel = b; return; }
   if (z.zurueck && randPunkt) { const w = gleisWeg2(von, [randPunkt], z.id); if (!w) { z.weg = true; return; } zugPfad(z, w, 0.01); z.ziel = "rand"; return; }
   z.weg = true;
@@ -4032,6 +4047,13 @@ const hex6 = (c) => "#" + c.toString(16).padStart(6, "0"), lfNr = (L) => `<span 
 function lfZeigen(art, id) { lfOffen = art ? { art, id } : null; lfRendern(); }
 function lfLinie() { if (!lfOffen) return null; return lfOffen.art === "zug" ? zuglinien.get(lfOffen.id) : lfOffen.art === "bus" ? linien.get(lfOffen.id) : null; }
 function lfKosten(L, zug) { return zug ? (L.zuege || 2) * 300 : (L.busse || 1) * (L.art === "tram" ? 2 : 1) * BUS_UNTERHALT; }
+function zugKapazitaet(L) {
+  if (L.kapV === gleisVersion + ":" + L.st.join()) return L.kap; let eingleisig = false, ausweichen = 0;
+  for (let i = 0; i < L.st.length; i++) { const a = dienste.get(L.st[i]), b = dienste.get(L.st[(i + 1) % L.st.length]); if (a && STATIONEN[a.typ] && STATIONEN[a.typ].gleise.length > 1) ausweichen++; const w = a && b && stationWeg(a, b, -1); if (w && w.seg && w.seg.some((q) => { const k = gKanten.get(q.k); return k && !k.einbahn && !k.station; })) eingleisig = true; }
+  L.kapV = gleisVersion + ":" + L.st.join(); L.kap = eingleisig ? ausweichen + 1 : 99; return L.kap;
+}
+const zuViele = (L) => (L.zuege || 2) > zugKapazitaet(L);
+function zugStatusHtml(L) { const Z = zuege.filter((z) => z.linie === L.id); if (!Z.length) return `<span>🚆 Noch kein Zug unterwegs</span><b></b>`; return Z.map((z, i) => `<span>🚆 Zug ${i + 1}</span><b style="text-align:right;font-weight:500">${z.grund ? "🔴 " + z.grund : z.halt > 0 ? "🟢 Hält am Bahnhof" : "🟢 Fährt"}</b>`).join(""); }
 function lfWerteHtml(L, zug) {
   const ein = Math.round(L.letzteEinnahmen || 0), kost = lfKosten(L, zug), bil = ein - kost;
   return `<span>👥 Fahrgäste pro Woche</span><b>${zahl(L.letzteWoche || 0)}</b><span>📊 Auslastung</span><b>${Math.round((L.auslastung || 0) * 100)} %</b><span>💶 Einnahmen pro Woche</span><b class="plus">${euro(ein)}</b><span>🔧 Kosten pro Woche</span><b class="minus">${euro(kost)}</b><span>⚖️ Bilanz</span><b class="${bil >= 0 ? "plus" : "minus"}">${bil >= 0 ? "+" : ""}${euro(bil)}</b>`;
@@ -4053,13 +4075,15 @@ function lfRendern() {
     <div class="lffarben">${LINIEN_FARBEN.map((c) => `<button type="button" data-lffarbe="${c}" class="${c === L.farbe ? "an" : ""}" style="background:${hex6(c)}" aria-label="Farbe"></button>`).join("")}</div>
     ${L.keinDepot ? `<small style="color:#ff9b9b">⚠️ Kein ${tram ? "Straßenbahn-Depot" : "Busdepot"} – es fahren keine Fahrzeuge!</small>` : ""}
     <div class="lfwerte" id="lfWerte">${lfWerteHtml(L, zug)}</div>
+    ${zug && zuViele(L) ? `<small style="color:#ffcf6b">⚠️ Zu viele Züge für ein Gleis – es fahren nur ${zugKapazitaet(L)}. Bau ein Doppelgleis oder einen Bahnhof mit zwei Gleisen dazwischen.</small>` : ""}
+    ${zug ? `<div class="lfwerte" id="lfZuege2">${zugStatusHtml(L)}</div>` : ""}
     ${zug ? `<div class="lfregler"><label><span>🚆 Züge auf der Linie</span><b id="lfFzT">${fz}</b></label><input type="range" id="lfZuege" min="1" max="8" step="1" value="${fz}"></div>` : `<div class="lfregler"><label><span>⏱️ Takt: alle</span><b id="lfTaktT">${takt} s</b></label><input type="range" id="lfTakt" min="10" max="180" step="5" value="${takt}"><label><span>${tram ? "🚋" : "🚌"} Fahrzeuge</span><b id="lfFzT">${fz}</b></label><input type="range" id="lfFz" min="1" max="24" step="1" value="${fz}"><small style="color:var(--leise)">Eine Runde dauert etwa ${Math.round(um)} s.</small></div>`}
     ${modelle ? `<label class="lfregler"><span style="color:var(--leise)">Modell</span><select id="lfModell" class="chip" style="width:100%">${modelle}</select></label>` : ""}
     <div><b>${zug ? "🚉 Bahnhöfe" : "🚏 Haltestellen"} (${stops.length})</b><ol class="lfhalte">${stops.map((n, i) => `<li>${n}${stops.length > 2 ? `<button type="button" data-lfhweg="${i}" title="Aus der Linie nehmen">✕</button>` : ""}</li>`).join("")}</ol></div>
     <div class="lfknoepfe">${zug ? "" : `<button class="chip" type="button" data-lfbearb>✏️ Haltestellen ändern</button>`}<button class="chip" type="button" data-lfliste>📋 Alle Linien</button><button class="chip gefahr" type="button" data-lfweg>🗑️ Löschen</button></div>`;
   el.hidden = false;
 }
-setInterval(() => { if (!lfOffen) return; const el = $("lfWerte"), L = lfLinie(); if (el && L) el.innerHTML = lfWerteHtml(L, lfOffen.art === "zug"); else if (lfOffen.art === "liste" && !$("linienfenster").matches(":hover")) lfRendern(); }, 2000);
+setInterval(() => { if (!lfOffen) return; const el = $("lfWerte"), L = lfLinie(); if (lfOffen.art === "zug" && L && $("lfZuege2")) $("lfZuege2").innerHTML = zugStatusHtml(L); if (el && L) el.innerHTML = lfWerteHtml(L, lfOffen.art === "zug"); else if (lfOffen.art === "liste" && !$("linienfenster").matches(":hover")) lfRendern(); }, 2000);
 $("linienfenster").addEventListener("input", (e) => {
   const L = lfLinie(); if (!L) return; const zug = lfOffen.art === "zug";
   if (e.target.id === "lfName") { L.name = e.target.value.trim().slice(0, 28) || null; speichernBald(); return; }
@@ -4342,6 +4366,7 @@ function loslassen(e) {
   if (werkzeug === "gleis" && tippModus()) { if (!a.bewegt) gleisTippen(a.letzte); }
   else if (istBau()) { if (tippModus()) { if (!a.bewegt) (strModus === "ampel" ? ampelUmschalten : strModus === "einbahn" ? einbahnUmschalten : strModus === "busspur" ? busspurUmschalten : strModus === "schienen" ? schienenUmschalten : strModus === "ersetzen" ? ersetzenTippen : strModus === "parken" ? parkenTippen : kreiselBauen)(a.letzte); } else { if (bau.kandidat) { bau.punkte.push(bau.kandidat); bau.kandidat = null; } planNeu(); } }
   else if (werkzeug === "abriss" && !a.bewegt) abreissenStrasse(a.letzte);
+  else if (werkzeug === "ansehen" && !a.bewegt && zugBei(a.letzte)) zugInfoZeigen(zugBei(a.letzte));
   else if (werkzeug === "ansehen" && !a.bewegt) { const f = fahrzeugBei(a.letzte), d = inDienst(a.letzte.x, a.letzte.z, 0.1), hs = halteBei(a.letzte, 0.7); if (f) fahrzeugInfo(f); else if (hs) haltInfo(hs); else if (d) dienstInfo(d); else hausInfo(a.letzte); }
   else if ((werkzeug === "dienst" || werkzeug === "park") && !a.bewegt) dienstVorschau(a.letzte);
   else if (werkzeug === "verkehr" && !a.bewegt) busTippen(a.letzte);
@@ -4575,6 +4600,8 @@ function fahrenTakt(dt) {
    Auto antippen und folgen (wie bei Cities: Skylines)
    ================================================================ */
 let folgen = null;
+function zugBei(p) { const r = Math.max(0.6, fangRadius() * 0.5); for (const z of zuege) for (const q of z.pos || []) if (q.y > -0.3 && Math.hypot(q.x - p.x, q.z - p.z) < r) return z; return null; }
+function zugInfoZeigen(z) { const L = z.linie && zuglinien.get(z.linie), art = z.art === "fern" ? "🚄 ICE" : z.art === "gueter" ? "🚛 Güterzug" : (ZUG_MODELLE[z.modell] || "🚆 Zug"), ziel = z.ziel === "rand" ? "Fährt aus der Stadt" : z.ziel && dienste.has(z.ziel.id) ? "Nach: " + (z.ziel.name || DIENSTE[z.ziel.typ].name) : ""; infoZeigen(`<b>${art}${L ? " · " + (L.name || "Zuglinie " + L.nr) : ""}</b>${ziel}<br>${z.grund ? "🔴 " + z.grund : z.halt > 0 ? "🟢 Hält am Bahnhof" : "🟢 Fährt · " + Math.round(z.v * 30) + " km/h"}`, 5000); }
 function fahrzeugBei(p) { let best = null, bd = Math.max(0.5, fangRadius() * 0.45); for (const f of fahrzeuge) { if (!f.pos) continue; const d = Math.hypot(f.pos.x - p.x, f.pos.z - p.z); if (d < bd) { bd = d; best = f; } } return best; }
 function fahrzeugInfo(f) {
   const ladung = f.anh ? "<br>📦 Ladung: " + AUFLIEGER[f.anh].name : f.typ === "liefer" ? "<br>📦 Lieferung" : "";
