@@ -118,45 +118,87 @@ const himmel = new THREE.Mesh(new THREE.SphereGeometry(1000, 32, 16), new THREE.
 himmel.frustumCulled = false; himmel.renderOrder = -1; szene.add(himmel);
 
 /* ---------- Materialien ---------- */
-function mitFenstern(mat) {
+/* Fassaden: Fenster passen genau auf jede Wand (pro Haus ausgerichtet), je nach Baustil anders */
+const ETAGE = 0.36, SOCKEL = 0.08;
+const FASSADE = {
+  haus: { px: 0.3, code: `
+      win = bx(fx, 0.29, 0.71) * bx(fy, 0.22, 0.74); rah = bx(fx, 0.25, 0.75) * bx(fy, 0.18, 0.78) - win;
+      bank = bx(fx, 0.23, 0.77) * bx(fy, 0.13, 0.18); kreuz = win * step(abs(fx - 0.5), 0.022);` },
+  altbau: { px: 0.34, code: `
+      win = bx(fx, 0.32, 0.68) * bx(fy, 0.15, 0.79); rah = bx(fx, 0.28, 0.72) * bx(fy, 0.12, 0.82) - win;
+      bank = bx(fx, 0.26, 0.74) * bx(fy, 0.08, 0.12) + bx(fx, 0.27, 0.73) * bx(fy, 0.84, 0.92);
+      kreuz = win * max(step(abs(fx - 0.5), 0.02), step(abs(fy - 0.62), 0.02));
+      band = (step(fy, 0.035) + step(0.965, fy)) * step(1.0, fi);
+      rust = (1.0 - step(1.0, fl)) * step(fract(yy / 0.055), 0.14) * (1.0 - win - rah);` },
+  buero: { px: 0.3, code: `
+      win = bx(fy, 0.3, 0.88); kreuz = win * step(fract(hk / 0.15), 0.07); rah = bx(fy, 0.26, 0.92) - win; bank = 0.0;` },
+  glas: { px: 0.3, code: `
+      win = 1.0 - step(fy, 0.07); kreuz = win * step(fract(hk / 0.16), 0.045); rah = 0.0; bank = step(fy, 0.07) * 0.6; glas = 1.0;` },
+  laden: { px: 0.55, code: `
+      if (fi < 0.5) { win = bx(fx, 0.04, 0.96) * bx(fy, 0.08, 0.76); rah = bx(fx, 0.02, 0.98) * bx(fy, 0.05, 0.79) - win; kreuz = win * step(abs(fx - 0.5), 0.012); bank = step(0.82, fy) * 0.0; schaufenster = 1.0; }
+      else { win = bx(fx, 0.3, 0.7) * bx(fy, 0.22, 0.74); rah = bx(fx, 0.26, 0.74) * bx(fy, 0.18, 0.78) - win; bank = 0.0; kreuz = win * step(abs(fx - 0.5), 0.022); }` },
+  fachwerk: { px: 0.3, code: `
+      win = bx(fx, 0.34, 0.66) * bx(fy, 0.3, 0.7); rah = bx(fx, 0.31, 0.69) * bx(fy, 0.27, 0.73) - win; bank = 0.0; kreuz = win * max(step(abs(fx - 0.5), 0.03), step(abs(fy - 0.5), 0.03));
+      float pf = max(step(fx, 0.07), step(0.93, fx)) + max(step(fy, 0.08), step(0.92, fy));
+      float sk = (1.0 - bx(fx, 0.28, 0.72) * bx(fy, 0.22, 0.78)) * step(0.45, id) * max(step(abs(fx - fy), 0.06), step(abs(fx - 1.0 + fy), 0.06));
+      balken = clamp(pf + sk, 0.0, 1.0) * (1.0 - win - rah);` },
+  holz: { px: 0.32, code: `
+      win = bx(fx, 0.3, 0.7) * bx(fy, 0.2, 0.74); rah = bx(fx, 0.25, 0.75) * bx(fy, 0.15, 0.79) - win; bank = 0.0; kreuz = win * max(step(abs(fx - 0.5), 0.025), step(abs(fy - 0.47), 0.025));
+      bretter = step(fract(hk / 0.045), 0.12) * (1.0 - win - rah);` }
+};
+function mitFenstern(mat, art) {
+  art = art || "haus"; const F = FASSADE[art];
   mat.onBeforeCompile = (s) => {
     s.uniforms.uNacht = U.uNacht; s.uniforms.uDetail = U.uDetail;
-    s.vertexShader = "varying vec3 vWP; varying vec3 vWN;\n" + s.vertexShader.replace("#include <begin_vertex>", `#include <begin_vertex>
+    s.vertexShader = "varying vec3 vWP; varying vec3 vWN; varying vec2 vIX; varying float vIY; varying float vBr; varying float vH;\n" + s.vertexShader.replace("#include <begin_vertex>", `#include <begin_vertex>
       #ifdef USE_INSTANCING
         vWP = (instanceMatrix * vec4(transformed, 1.0)).xyz; vWN = normalize(mat3(instanceMatrix) * objectNormal);
+        vIX = instanceMatrix[3].xz; vIY = instanceMatrix[3].y; vH = length(instanceMatrix[1].xyz);
+        { vec3 ax = instanceMatrix[0].xyz, az = instanceMatrix[2].xyz; vec2 tg = vec2(-vWN.z, vWN.x); vBr = abs(dot(normalize(ax.xz + vec2(1e-6)), normalize(tg + vec2(1e-6)))) > 0.5 ? length(ax) : length(az); }
       #else
-        vWP = transformed; vWN = objectNormal;
+        vWP = transformed; vWN = objectNormal; vIX = vec2(0.0); vIY = 0.0; vBr = 1.0; vH = 1.0;
       #endif`);
-    s.fragmentShader = "uniform float uNacht; uniform float uDetail; varying vec3 vWP; varying vec3 vWN;\n" + s.fragmentShader.replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
+    s.fragmentShader = "uniform float uNacht; uniform float uDetail; varying vec3 vWP; varying vec3 vWN; varying vec2 vIX; varying float vIY; varying float vBr; varying float vH;\nfloat bx(float v, float a, float b) { return step(a, v) * step(v, b); }\n" + s.fragmentShader.replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
       {
         float seite = 1.0 - step(0.5, abs(vWN.y));
-        vec2 nx = normalize(vWN.xz + vec2(1e-5));
-        float hk = dot(vWP.xz, vec2(-nx.y, nx.x));
-        vec2 zelle = vec2(hk / 0.3, (vWP.y - ${BODEN.toFixed(3)} - 0.08) / 0.36);
-        vec2 f = fract(zelle);
-        float stock = step(0.0, zelle.y);
-        float fenster = step(0.22, f.x) * step(f.x, 0.78) * step(0.24, f.y) * step(f.y, 0.76) * stock * seite;
-        float rahmen = step(0.18, f.x) * step(f.x, 0.82) * step(0.19, f.y) * step(f.y, 0.8) * stock * seite * (1.0 - fenster);
-        float kreuz = fenster * max(step(abs(f.x - 0.5), 0.02), step(abs(f.y - 0.55), 0.02)) * uDetail;
+        vec2 nx = normalize(vWN.xz + vec2(1e-5)), tg = vec2(-nx.y, nx.x);
+        float hk = dot(vWP.xz - vIX, tg) + vBr * 0.5, yy = vWP.y - vIY;
+        float nF = max(1.0, floor((vH - 0.05) / ${ETAGE.toFixed(3)}));
+        float fl = (yy - ${SOCKEL.toFixed(3)}) / ${ETAGE.toFixed(3)}, fi = floor(fl), fy = fract(fl);
+        float nX = max(1.0, floor(vBr / ${F.px.toFixed(3)} + 0.5)), cx = clamp(hk, 0.0, vBr) / vBr * nX, fx = fract(cx), ci = floor(cx);
+        float id = fract(sin(dot(vec3(ci, fi, vIX.x * 1.37 + vIX.y * 2.11 + vIY), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+        float stock = step(0.0, fl) * step(fi, nF - 1.0) * seite * step(0.04, hk) * step(hk, vBr - 0.04);
+        float win = 0.0, rah = 0.0, bank = 0.0, kreuz = 0.0, band = 0.0, rust = 0.0, balken = 0.0, bretter = 0.0, glas = 0.0, schaufenster = 0.0;
+        ${F.code}
+        win *= stock; rah *= stock; bank *= stock; kreuz *= uDetail; band *= seite; rust *= seite; balken *= stock; bretter *= seite;
         vec3 c0 = diffuseColor.rgb;
         float n = fract(sin(dot(floor(vWP * 70.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
-        float ziegel = step(c0.g * 1.15, c0.r) * step(c0.b * 1.25, c0.r) * seite;
-        vec2 zq = vec2((hk + step(1.0, mod(floor(vWP.y / 0.034), 2.0)) * 0.04) / 0.08, vWP.y / 0.034);
+        diffuseColor.rgb *= mix(1.0, 0.95 + 0.08 * n, uDetail);
+        float ziegel = step(c0.g * 1.15, c0.r) * step(c0.b * 1.25, c0.r) * seite * (1.0 - glas);
+        vec2 zq = vec2((hk + step(1.0, mod(floor(yy / 0.034), 2.0)) * 0.04) / 0.08, yy / 0.034);
         float fuge = max(step(fract(zq.x), 0.08), step(fract(zq.y), 0.14));
         float zb = fract(sin(dot(floor(zq), vec2(7.13, 3.71))) * 43758.5);
-        diffuseColor.rgb *= mix(1.0, 0.95 + 0.08 * n, uDetail);
-        diffuseColor.rgb = mix(diffuseColor.rgb, mix(c0 * (0.82 + 0.26 * zb), vec3(0.8, 0.78, 0.74), fuge), ziegel * uDetail * (1.0 - fenster - rahmen) * 0.9);
-        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.94, 0.93, 0.9), (rahmen * 0.8 + kreuz) * uDetail);
-        float sockel = (1.0 - step(0.07, vWP.y - ${BODEN.toFixed(3)})) * seite * uDetail;
-        diffuseColor.rgb *= 1.0 - sockel * 0.25;
-        float h = fract(sin(dot(floor(zelle) + floor(vWP.xz * 0.37) * 3.1, vec2(12.9898, 78.233))) * 43758.5453);
-        float an = step(0.6, h) * uNacht;
-        vec3 glas = mix(vec3(0.16, 0.22, 0.3), mix(vec3(0.18, 0.25, 0.34), vec3(0.5, 0.63, 0.76), smoothstep(0.24, 0.76, f.y)), uDetail * 0.55);
-        diffuseColor.rgb = mix(diffuseColor.rgb, glas, fenster * (1.0 - kreuz) * 0.78 * (1.0 - an));
-        totalEmissiveRadiance += fenster * (1.0 - kreuz) * an * mix(vec3(1.0, 0.66, 0.32), vec3(0.75, 0.85, 1.0), step(0.93, h)) * (0.75 + 0.35 * fract(h * 7.0));
+        diffuseColor.rgb = mix(diffuseColor.rgb, mix(c0 * (0.82 + 0.26 * zb), vec3(0.8, 0.78, 0.74), fuge), ziegel * uDetail * (1.0 - win - rah) * 0.9);
+        vec3 hell = mix(c0, vec3(0.97, 0.96, 0.93), 0.55);
+        diffuseColor.rgb = mix(diffuseColor.rgb, hell, clamp(band * 0.7 + bank * 0.85, 0.0, 1.0) * uDetail);
+        diffuseColor.rgb *= 1.0 - rust * 0.18 * uDetail - bretter * 0.22 * uDetail;
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.33, 0.22, 0.14), balken);
+        float sockel = (1.0 - step(${SOCKEL.toFixed(3)}, yy)) * seite * uDetail * (1.0 - glas);
+        diffuseColor.rgb *= 1.0 - sockel * 0.28;
+        vec3 rahmenFarbe = glas > 0.5 ? c0 * 0.55 : schaufenster > 0.5 ? vec3(0.2, 0.22, 0.25) : vec3(0.95, 0.94, 0.91);
+        diffuseColor.rgb = mix(diffuseColor.rgb, rahmenFarbe, clamp(rah * 0.85 + kreuz, 0.0, 1.0));
+        float an = step(0.58, id) * uNacht;
+        vec3 V = normalize(cameraPosition - vWP); float fres = pow(1.0 - max(dot(normalize(vWN), V), 0.0), 3.0);
+        vec3 himmelRefl = mix(vec3(0.42, 0.55, 0.68), vec3(0.78, 0.88, 0.97), clamp(fy * 0.7 + fres, 0.0, 1.0));
+        vec3 gl = glas > 0.5 ? mix(c0 * 0.62, himmelRefl, 0.38 + 0.3 * fres) : mix(vec3(0.14, 0.19, 0.26), himmelRefl * 0.8, (0.25 + 0.45 * fres) * uDetail);
+        if (schaufenster > 0.5) gl = mix(gl, vec3(0.55, 0.5, 0.42), 0.35);
+        float w = win * (1.0 - kreuz);
+        diffuseColor.rgb = mix(diffuseColor.rgb, gl, w * (1.0 - an * 0.85));
+        roughnessFactor = mix(roughnessFactor, 0.16, w); metalnessFactor = mix(metalnessFactor, 0.1, w);
+        totalEmissiveRadiance += w * an * mix(vec3(1.0, 0.66, 0.32), vec3(0.75, 0.85, 1.0), step(0.93, id) + glas * 0.6) * (0.7 + 0.35 * fract(id * 7.0)) + w * schaufenster * uNacht * vec3(1.0, 0.8, 0.5) * 0.9;
       }`);
   };
-  mat.customProgramCacheKey = () => "fenster3";
+  mat.customProgramCacheKey = () => "fassade-" + art;
   return mat;
 }
 function mitMuster(mat, art) {
@@ -206,7 +248,7 @@ const M = {
   strasse: mitMuster(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 }), "strasse"),
   flach: new THREE.MeshStandardMaterial({ roughness: 0.92 }),
   haus: mitFenstern(new THREE.MeshStandardMaterial({ roughness: 0.78, metalness: 0.02 })),
-  dach: mitMuster(new THREE.MeshStandardMaterial({ roughness: 0.85, flatShading: true }), "dach"),
+  dach: mitMuster(new THREE.MeshStandardMaterial({ roughness: 0.85, flatShading: true, side: THREE.DoubleSide }), "dach"),
   baum: mitWind(new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9 })),
   auto: new THREE.MeshStandardMaterial({ roughness: 0.42, metalness: 0.3 }),
   leuchte: new THREE.MeshBasicMaterial({ toneMapped: false }),
@@ -224,8 +266,22 @@ const G_DACH = (function () {
   const p = [-.5, 0, .5, .5, 0, .5, .5, 1, 0, -.5, 0, .5, .5, 1, 0, -.5, 1, 0, .5, 0, -.5, -.5, 0, -.5, -.5, 1, 0, .5, 0, -.5, -.5, 1, 0, .5, 1, 0, -.5, 0, -.5, -.5, 0, .5, -.5, 1, 0, .5, 0, .5, .5, 0, -.5, .5, 1, 0];
   const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(p, 3)); g.computeVertexNormals(); return g;
 })();
+function dreiecke(p) { const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(p, 3)); g.computeVertexNormals(); return g; }
+const quad = (a, b, c, d) => [...a, ...b, ...c, ...a, ...c, ...d];
+const G_WALM = dreiecke([...quad([-.5, 0, .5], [.5, 0, .5], [.2, 1, 0], [-.2, 1, 0]), ...quad([.5, 0, -.5], [-.5, 0, -.5], [-.2, 1, 0], [.2, 1, 0]), .5, 0, .5, .5, 0, -.5, .2, 1, 0, -.5, 0, -.5, -.5, 0, .5, -.2, 1, 0]);
+const G_ZELT = dreiecke([-.5, 0, .5, .5, 0, .5, 0, 1, 0, .5, 0, .5, .5, 0, -.5, 0, 1, 0, .5, 0, -.5, -.5, 0, -.5, 0, 1, 0, -.5, 0, -.5, -.5, 0, .5, 0, 1, 0]);
+const G_PULT = dreiecke([...quad([-.5, 0, .5], [.5, 0, .5], [.5, 1, -.5], [-.5, 1, -.5]), ...quad([.5, 0, -.5], [-.5, 0, -.5], [-.5, 1, -.5], [.5, 1, -.5]), .5, 0, .5, .5, 0, -.5, .5, 1, -.5, -.5, 0, -.5, -.5, 0, .5, -.5, 1, -.5]);
+const G_MANSARD = (function () {
+  const pr = [[.5, 0], [.4, .68], [.16, 1], [-.16, 1], [-.4, .68], [-.5, 0]], p = [];
+  for (let i = 0; i < pr.length - 1; i++) { const [z0, y0] = pr[i], [z1, y1] = pr[i + 1]; p.push(...quad([-.5, y0, z0], [.5, y0, z0], [.5, y1, z1], [-.5, y1, z1])); }
+  for (const x of [-.5, .5]) for (let i = 0; i < pr.length - 1; i++) p.push(x, 0, 0, x, pr[i][1], pr[i][0], x, pr[i + 1][1], pr[i + 1][0]);
+  return dreiecke(p);
+})();
 function bunt(g, hex) { g = g.index ? g.toNonIndexed() : g; g.deleteAttribute("uv"); const c = farbe(hex), a = new Float32Array(g.attributes.position.count * 3); for (let i = 0; i < a.length; i += 3) { a[i] = c.r; a[i + 1] = c.g; a[i + 2] = c.b; } g.setAttribute("color", new THREE.BufferAttribute(a, 3)); return g; }
 const G_LAUBBAUM = mergeGeometries([bunt(new THREE.CylinderGeometry(0.05, 0.07, 0.4, 5).translate(0, 0.2, 0), 0x7a5232), bunt(new THREE.IcosahedronGeometry(0.34, 0).scale(1, 1.1, 1).translate(0, 0.62, 0), 0x5fae4a)]);
+const G_BIRKE = mergeGeometries([bunt(new THREE.CylinderGeometry(0.03, 0.045, 0.62, 5).translate(0, 0.31, 0), 0xe8e4dc), bunt(new THREE.IcosahedronGeometry(0.26, 0).scale(0.85, 1.35, 0.85).translate(0, 0.78, 0), 0x8cc65a)]);
+const G_PAPPEL = mergeGeometries([bunt(new THREE.CylinderGeometry(0.04, 0.06, 0.35, 5).translate(0, 0.17, 0), 0x6e4a2c), bunt(new THREE.IcosahedronGeometry(0.22, 1).scale(0.75, 2.6, 0.75).translate(0, 0.85, 0), 0x4f9a3f)]);
+const G_KUGELBAUM = mergeGeometries([bunt(new THREE.CylinderGeometry(0.045, 0.06, 0.42, 5).translate(0, 0.21, 0), 0x7a5232), bunt(new THREE.IcosahedronGeometry(0.33, 1).translate(0, 0.66, 0), 0x3f8f3a)]);
 const G_NADELBAUM = mergeGeometries([bunt(new THREE.CylinderGeometry(0.045, 0.06, 0.3, 5).translate(0, 0.15, 0), 0x6e4a2c), bunt(new THREE.ConeGeometry(0.3, 0.7, 6).translate(0, 0.6, 0), 0x3f8a4e), bunt(new THREE.ConeGeometry(0.21, 0.5, 6).translate(0, 0.95, 0), 0x47995a)]);
 const glanzTextur = (function () {
   const c = document.createElement("canvas"); c.width = c.height = 64; const x = c.getContext("2d");
@@ -335,9 +391,9 @@ function wasserTextur() {
   wasserMat.uniforms.uAbst.value = t;
 }
 function baeumeBauen() {
-  const listen = { laub: [], nadel: [] };
+  const listen = { laub: [], nadel: [], birke: [], pappel: [], kugel: [] };
   const neu = (x, z, r) => {
-    const art = r() < (karte === "wald" ? 0.5 : 0.34) ? "nadel" : "laub", b = { x, z, s: 0.7 + r() * 0.75, ry: r() * 6.28, art, weg: false, c: new THREE.Color(0.82 + r() * 0.18, 0.85 + r() * 0.15, 0.8 + r() * 0.2) };
+    let art = r() < (karte === "wald" ? 0.5 : 0.34) ? "nadel" : "laub"; if (art === "laub") { const q = Math.abs(Math.sin(x * 12.9898 + z * 78.233) * 43758.5453) % 1; art = q < 0.14 ? "birke" : q < 0.24 ? "pappel" : q < 0.38 ? "kugel" : "laub"; } const b = { x, z, s: 0.7 + r() * 0.75, ry: r() * 6.28, art, weg: false, c: new THREE.Color(0.82 + r() * 0.18, 0.85 + r() * 0.15, 0.8 + r() * 0.2) };
     b.idx = baeume.length; b.i = listen[art].length; listen[art].push(b); baeume.push(b);
     const k = Math.floor(x / 4) + "," + Math.floor(z / 4); if (!baumRaster.has(k)) baumRaster.set(k, []); baumRaster.get(k).push(b);
   };
@@ -367,8 +423,8 @@ function baeumeBauen() {
       const x = gx + r() * 4, z = gz + r() * 4; if (!aufLand(x, z, 3) || r() > (Math.max(Math.abs(gx), Math.abs(gz)) < HALB ? 0.62 : 0.38)) continue; neu(x, z, r);
     }
   }
-  for (const art of ["laub", "nadel"]) {
-    const m = new THREE.InstancedMesh(art === "laub" ? G_LAUBBAUM : G_NADELBAUM, M.baum, Math.max(1, listen[art].length));
+  for (const art of Object.keys(listen)) {
+    const m = new THREE.InstancedMesh({ laub: G_LAUBBAUM, nadel: G_NADELBAUM, birke: G_BIRKE, pappel: G_PAPPEL, kugel: G_KUGELBAUM }[art], M.baum, Math.max(1, listen[art].length));
     m.castShadow = stufe === "hoch"; m.receiveShadow = true; m.frustumCulled = false; baumMesh[art] = m; szene.add(m);
     listen[art].forEach((b) => { baumSetzen(b); m.setColorAt(b.i, b.c); });
   }
@@ -703,7 +759,11 @@ function zellenZeichnen() {
    Häuser
    ================================================================ */
 const B = {
-  haus: becken(G_BOX_UNTEN, M.haus, 9000, true), flach: becken(G_BOX_UNTEN, M.flach, 14000, true), dach: becken(G_DACH, M.dach, 6000, true),
+  haus: becken(G_BOX_UNTEN, M.haus, 7000, true), flach: becken(G_BOX_UNTEN, M.flach, 32000, true), dach: becken(G_DACH, M.dach, 6000, true),
+  walm: becken(G_WALM, M.dach, 3000, true), pult: becken(G_PULT, M.dach, 3000, true), mansard: becken(G_MANSARD, M.dach, 1500, true), zelt: becken(G_ZELT, M.dach, 1500, true),
+  altbau: becken(G_BOX_UNTEN, mitFenstern(new THREE.MeshStandardMaterial({ roughness: 0.8 }), "altbau"), 3000, true), buero: becken(G_BOX_UNTEN, mitFenstern(new THREE.MeshStandardMaterial({ roughness: 0.6 }), "buero"), 3000, true),
+  glas: becken(G_BOX_UNTEN, mitFenstern(new THREE.MeshStandardMaterial({ roughness: 0.3, metalness: 0.15 }), "glas"), 3000, true), laden: becken(G_BOX_UNTEN, mitFenstern(new THREE.MeshStandardMaterial({ roughness: 0.6 }), "laden"), 2500, true),
+  fachwerk: becken(G_BOX_UNTEN, mitFenstern(new THREE.MeshStandardMaterial({ roughness: 0.85 }), "fachwerk"), 1500, true), holz: becken(G_BOX_UNTEN, mitFenstern(new THREE.MeshStandardMaterial({ roughness: 0.85 }), "holz"), 1500, true),
   zyl: becken(G_ZYL, M.flach, 3000, true), garten: becken(G_LAUBBAUM, M.baum, 4000, true), rauch: becken(new THREE.IcosahedronGeometry(0.5, 0), M.rauch, 800, false)
 };
 const alleeBaeume = becken(G_LAUBBAUM, M.baum, 6000, true);
@@ -714,149 +774,309 @@ const PAL = {
   markise: [0xe8493f, 0x2f8f6f, 0x3f7fe8, 0xf2a93b, 0x8e5be8, 0xe85b9a], turm: [0x9fb7c9, 0x7fa3b8, 0xc9d6df, 0x6d8aa1, 0xb8c4cc, 0x8fb0a8],
   halle: [0xd9d4c7, 0xc4c9cc, 0xbfb3a0, 0xd0c8b8, 0xaab3b8], auto: [0xe8493f, 0x3f7fe8, 0xf2f2f2, 0x2c2f36, 0xf2c14e, 0x4fbf7a, 0x9a5be8, 0xff8a3c, 0x8a96a3, 0x1f4e8c]
 };
+/* ================================================================
+   Gebäude-Baukasten: echte Dachformen, Fenster, Balkone, Eingänge,
+   Schaufenster, Dachaufbauten – alles selbst gebaut, über 140 Gebäude
+   ================================================================ */
+const STIL = {
+  putz: [0xf3e9d8, 0xf6d7b0, 0xe9c4a8, 0xdfe7ec, 0xf2f0e9, 0xf5e1a4, 0xd9e6cf, 0xeadbe8, 0xfbfaf6, 0xe8d9c4],
+  klinker: [0xa9533b, 0x9a4632, 0xb8653f, 0x8c3f2f, 0xa0573f],
+  altbau: [0xe8dcc8, 0xf0e2c4, 0xdccfb8, 0xe6c9a8, 0xc9d2d6, 0xf2e6d0, 0xd8c3a5, 0xb9c7cf, 0xe4d2bf],
+  modern: [0xf4f4f2, 0xe8e8e6, 0xd6d8da, 0x4a4e55, 0xc9b79c, 0x9aa0a6, 0xefe9df],
+  holz: [0x8a2f24, 0x2f3a40, 0x4a5a3a, 0xd9c7a0, 0x6b4a2f, 0x3d5a80, 0xe8d9b5],
+  ziegel: [0xb2513a, 0x9a4230, 0xa8673f, 0x8f3f30, 0xb86a48],
+  schiefer: [0x3f4650, 0x4d5560, 0x5d6470, 0x2f343b],
+  glas: [0x8fb3c9, 0x7fa3b8, 0x9fc0d2, 0x6d8aa1, 0x86a8a0, 0xa9b8c4, 0x5f7f99, 0x7f9aa8],
+  buero: [0xd6d8da, 0xc9ced3, 0xe2ddd3, 0xb8bec4, 0xeeeae2],
+  halle: [0xd9d4c7, 0xc4c9cc, 0xbfb3a0, 0xd0c8b8, 0xaab3b8, 0x9fb0a0],
+  laden: [0xf2efe8, 0xe6dccb, 0xdfe7ee, 0xf3e3d0, 0xe0e0d8, 0xf6e7c8]
+};
+const _hc = new THREE.Color(), _hw = new THREE.Color(0xffffff), _hs = new THREE.Color(0x000000);
+const hell = (c, f) => _hc.setHex(c == null ? 0xdddddd : c).lerp(_hw, f == null ? 0.4 : f).getHex();
+const dunkel = (c, f) => _hc.setHex(c == null ? 0x888888 : c).lerp(_hs, f == null ? 0.35 : f).getHex();
+const detailStufe = () => stufe === "niedrig" ? 0 : stufe === "mittel" ? 1 : 2;
+const geschossH = (n) => SOCKEL + n * ETAGE + 0.03;
+
 function hausTeile(h) {
-  const r = zufall(h.variante * 31 + h.stufe * 7919), W = h.w * ZELLE, D = h.d * ZELLE, T = [], vorn = D / 2 - 0.1, Z = ZONEN[h.zone];
-  const box = (b, lx, lz, w, hh, d, c, ex) => T.push(Object.assign({ b, lx, ly: 0, lz, sx: w, sy: hh, sz: d, c }, ex || {}));
-  const baum = (lx, lz, g, y) => box("garten", lx, lz, g, g, g, null, { rund: true, ly: y || 0 });
-  const giebel = (lx, lz, w, d, y, c, quer, hoch) => box("dach", lx, lz, (quer ? d : w) + 0.1, hoch || 0.28 + r() * 0.1, (quer ? w : d) + 0.1, c, { ly: y, ry: quer ? Math.PI / 2 : 0 });
-  const walm = (lx, lz, w, d, y, c, hoch) => { const hh = hoch || 0.3; giebel(lx, lz, w, d, y, c, false, hh); giebel(lx, lz, w, d, y, c, true, hh); };
-  const flachdach = (lx, lz, w, d, y, c) => box("flach", lx, lz, w + 0.05, 0.035, d + 0.05, c || 0xe5e2da, { ly: y });
-  const balkone = (lx, lz, w, d, hh) => { for (let y = 0.3; y < hh - 0.15; y += 0.32) box("flach", lx, lz + d / 2 + 0.035, w * 0.84, 0.025, 0.07, 0xf2efe8, { ly: y }); };
-  const markise = (lx, w, c, z) => box("flach", lx, z == null ? vorn - 0.02 : z, w * 0.92, 0.05, 0.18, c, { ly: 0.33 });
-  const pool = (lx, lz, w, d) => box("flach", lx, lz, w, 0.014, d, 0x5fc8e8, { ly: 0.002 });
-  const schild = (lx, lz, w, c, y) => box("flach", lx, lz, w, 0.1, 0.02, c, { ly: y });
-  const parkplatz = (lx, lz, w, d, n) => { box("flach", lx, lz, w, 0.006, d, 0x55595f, { ly: 0.004 }); for (let k = 0; k < n; k++) box("flach", lx - w / 2 + (k + 0.5) * w / n, lz, 0.13, 0.1, 0.22, PAL.auto[(h.variante + k * 3) % PAL.auto.length], { ly: 0.01 }); };
-  const zyl = (lx, lz, d, hh, c, ex) => box("zyl", lx, lz, d, hh, d, c, ex);
+  const r = zufall(h.variante * 31 + h.stufe * 7919), W = h.w * ZELLE, D = h.d * ZELLE, T = [], vorn = D / 2 - 0.06, Z = ZONEN[h.zone], DS = detailStufe();
+  const E = ETAGE, SO = SOCKEL;
+  const add = (b, lx, lz, w, hh, d, c, ex) => { T.push(Object.assign({ b, lx, ly: 0, lz, sx: w, sy: hh, sz: d, c }, ex || {})); return T[T.length - 1]; };
+  const klein = (b, lx, lz, w, hh, d, c, ex) => { if (DS >= 1) add(b, lx, lz, w, hh, d, c, ex); };
+  const fein = (b, lx, lz, w, hh, d, c, ex) => { if (DS >= 2) add(b, lx, lz, w, hh, d, c, ex); };
   const pk = (a) => a[Math.floor(r() * a.length)];
-  const HAUS = PAL.haus, DACH = PAL.dach, BLOCK = PAL.block, TURM = PAL.turm, HALLE = PAL.halle, MARK = PAL.markise;
-  box("flach", 0, 0, W * 0.97, 0.008, D * 0.97, Z.boden, { fest: true });
+  const zw = (a, b) => a + r() * (b - a), zi = (a, b) => a + Math.floor(r() * (b - a + 1));
+  const baum = (lx, lz, g, y) => add("garten", lx, lz, g, g, g, null, { rund: true, ly: y || 0 });
+  const zyl = (lx, lz, d, hh, c, ex) => add("zyl", lx, lz, d, hh, d, c, ex);
+  const flaeche = (lx, lz, w, d, c, y) => add("flach", lx, lz, w, 0.008, d, c, { ly: y == null ? 0.003 : y });
+  const auto = (lx, lz, quer, i) => add("flach", lx, lz, quer ? 0.24 : 0.13, 0.1, quer ? 0.13 : 0.24, PAL.auto[(h.variante + (i || 0) * 3) % PAL.auto.length], { ly: 0.01 });
+
+  /* --- Dächer --- */
+  function attika(lx, lz, w, d, y, c) { if (DS < 1) return; const t = 0.025, hh = 0.055; add("flach", lx, lz + d / 2 - t / 2, w, hh, t, c, { ly: y }); add("flach", lx, lz - d / 2 + t / 2, w, hh, t, c, { ly: y }); add("flach", lx - w / 2 + t / 2, lz, t, hh, d - 2 * t, c, { ly: y }); add("flach", lx + w / 2 - t / 2, lz, t, hh, d - 2 * t, c, { ly: y }); }
+  function dach(typ, lx, lz, w, d, y, c, o) {
+    o = o || {}; const ww = o.quer ? d : w, dd = o.quer ? w : d, ry = o.quer ? Math.PI / 2 : 0, ue = o.ue == null ? 0.07 : o.ue;
+    const H = o.h != null ? o.h : typ === "flach" ? 0 : typ === "pult" ? dd * 0.24 : typ === "mansard" ? dd * 0.48 : typ === "zelt" ? Math.min(w, d) * 0.55 : dd * (o.steil ? 0.62 : 0.42) + 0.03;
+    if (typ === "sattel") add("dach", lx, lz, ww + ue, H, dd + ue, c, { ly: y, ry });
+    else if (typ === "walm") add("walm", lx, lz, ww + ue, H, dd + ue, c, { ly: y, ry });
+    else if (typ === "mansard") add("mansard", lx, lz, ww + 0.03, H, dd + 0.05, c, { ly: y, ry });
+    else if (typ === "pult") add("pult", lx, lz, ww + ue, H, dd + ue, c, { ly: y, ry: ry + (o.dreh ? Math.PI : 0) });
+    else if (typ === "zelt") add("zelt", lx, lz, w + ue, H, d + ue, c, { ly: y });
+    else { add("flach", lx, lz, w + 0.02, 0.03, d + 0.02, c == null ? 0xcfcbc3 : c, { ly: y }); if (o.attika !== false) attika(lx, lz, w + 0.02, d + 0.02, y + 0.03, o.ac == null ? 0xd8d4cc : o.ac); return 0.03; }
+    return H;
+  }
+  function gauben(lx, lz, w, d, top, H, k, c, dc) {
+    for (let i = 0; i < k; i++) {
+      const x = lx - w / 2 + w / k * (i + 0.5), gz = lz + d * 0.24, y = top + H * 0.12, gh = Math.min(0.2, H * 0.5);
+      add("flach", x, gz, 0.17, gh, 0.2, c, { ly: y }); fein("flach", x, gz + 0.101, 0.11, gh * 0.62, 0.006, 0x2a3644, { ly: y + gh * 0.2 }); fein("flach", x, gz + 0.104, 0.13, 0.015, 0.012, 0xf2f0ea, { ly: y + gh * 0.14 });
+      dach("sattel", x, gz, 0.17, 0.2, y + gh, dc, { quer: true, h: 0.08, ue: 0.04 });
+    }
+  }
+  function solar(lx, lz, w, d, top, H, typ, quer) {
+    if (typ === "sattel" && !quer) { const neig = Math.atan2(H, d / 2), len = Math.hypot(H, d / 2) * 0.62, n = Math.max(1, Math.floor(w / 0.28)); for (let i = 0; i < n; i++) add("flach", lx - w / 2 + w / n * (i + 0.5), lz + d * 0.25, w / n * 0.86, 0.012, len, 0x1f3a6b, { ly: top + H * 0.5 + 0.012, rx: neig }); }
+    else if (!typ || typ === "flach") { const rows = Math.max(1, Math.floor(d / 0.32)), n = Math.max(1, Math.floor(w / 0.3)); for (let a = 0; a < rows; a++) for (let i = 0; i < n; i++) add("flach", lx - w / 2 + w / n * (i + 0.5), lz - d / 2 + d / rows * (a + 0.5), w / n * 0.8, 0.012, 0.16, 0x1f3a6b, { ly: top + 0.06, rx: -0.45 }); }
+  }
+  function technik(lx, lz, w, d, top, viel) {
+    if (DS < 1) return; const n = Math.min(6, Math.max(1, Math.round(w * d * (viel || 1) * 1.2)));
+    for (let i = 0; i < n; i++) add("flach", lx + (r() - 0.5) * w * 0.7, lz + (r() - 0.5) * d * 0.7, 0.12 + r() * 0.1, 0.07 + r() * 0.05, 0.1 + r() * 0.08, pk([0xb9bec4, 0xd2d5d8, 0x9aa0a8]), { ly: top });
+    if (w * d > 0.6) add("flach", lx - w * 0.22, lz - d * 0.18, Math.min(0.36, w * 0.3), 0.2, Math.min(0.3, d * 0.3), 0xc9c6bf, { ly: top });
+    if (viel > 1 && DS >= 2) { zyl(lx + w * 0.25, lz - d * 0.2, 0.18, 0.22, 0x8a8f96, { ly: top }); add("flach", lx + w * 0.3, lz + d * 0.2, 0.02, 0.5, 0.02, 0xc9ced6, { ly: top }); }
+  }
+  function dachgarten(lx, lz, w, d, top) { add("flach", lx, lz, w * 0.9, 0.02, d * 0.9, 0x6fae4a, { ly: top }); if (DS >= 1) { const n = Math.max(1, Math.round(w * d * 3)); for (let i = 0; i < Math.min(n, 6); i++) baum(lx + (r() - 0.5) * w * 0.7, lz + (r() - 0.5) * d * 0.7, 0.22 + r() * 0.15, top + 0.02); } }
+  /* --- Fassadenteile --- */
+  function eingang(x, front, art, c, ly) {
+    ly = ly || 0;
+    if (art === "glas") { add("flach", x, front + 0.006, 0.2, 0.25, 0.012, 0x2a3a48, { ly: ly + 0.01 }); klein("flach", x, front + 0.07, 0.34, 0.025, 0.14, 0xd8dade, { ly: ly + 0.3 }); }
+    else if (art === "portal") { klein("flach", x, front + 0.006, 0.2, 0.3, 0.012, hell(c, 0.5), { ly }); add("flach", x, front + 0.01, 0.12, 0.25, 0.012, 0x5a3a24, { ly }); fein("flach", x, front + 0.03, 0.2, 0.02, 0.06, 0xb9b4a8, { ly }); }
+    else { add("flach", x, front + 0.006, 0.1, 0.2, 0.012, pk([0x6b4a2f, 0x3d5a80, 0x2f6b4a, 0x8a2f2f, 0xf2efe8, 0x3a3d42]), { ly }); klein("flach", x, front + 0.05, 0.18, 0.02, 0.09, hell(c, 0.3), { ly: ly + 0.24 }); fein("flach", x, front + 0.04, 0.16, 0.02, 0.07, 0xb9b4a8, { ly }); }
+  }
+  function balkone(lx, front, w, n, ly, art, bc, von) {
+    if (DS < 1 || n < 2) return; const k = Math.max(1, Math.floor(w / (art === "loggia" ? 0.5 : 0.6))), max = DS >= 2 ? 70 : 26; let z = 0;
+    for (let f = von || 1; f < n; f++) for (let i = 0; i < k; i++) {
+      if (z++ > max) return; const x = lx - w / 2 + w / k * (i + 0.5), y = ly + SO + f * E, bw = Math.min(0.42, w / k * 0.8);
+      if (art === "franz") { add("flach", x, front + 0.012, bw * 0.55, 0.09, 0.012, bc == null ? 0x3a3d42 : bc, { ly: y + 0.06 }); continue; }
+      if (art === "loggia") { add("flach", x, front + 0.004, bw, 0.27, 0.01, 0x4a4f57, { ly: y + 0.03 }); add("flach", x, front + 0.012, bw, 0.11, 0.014, bc == null ? 0xe8ecef : bc, { ly: y }); continue; }
+      add("flach", x, front + 0.06, bw, 0.025, 0.12, art === "beton" ? 0xd8d6d0 : 0xe9e7e2, { ly: y });
+      add("flach", x, front + 0.115, bw, 0.1, 0.012, bc == null ? 0x9fbfd0 : bc, { ly: y + 0.025 });
+    }
+  }
+  function laubengang(lx, front, w, n, ly, c) { if (DS < 1) return; for (let f = 1; f < n; f++) { const y = ly + SO + f * E; add("flach", lx, front + 0.07, w, 0.03, 0.14, 0xd8d6d0, { ly: y }); add("flach", lx, front + 0.135, w, 0.1, 0.012, c == null ? 0x5d6470 : c, { ly: y + 0.03 }); } }
+  function markise(x, front, w, c, y) { add("flach", x, front + 0.08, w, 0.035, 0.17, c, { ly: (y || 0) + SO + E * 0.86, rx: 0.32 }); }
+  function schild(x, front, w, c, y) { add("flach", x, front + 0.012, w, 0.075, 0.014, c, { ly: y }); }
+  function gesims(lx, lz, w, d, y, c) { klein("flach", lx, lz, w + 0.05, 0.035, d + 0.05, c, { ly: y - 0.035 }); }
+  function baender(lx, front, w, n, ly, c) { if (DS < 2) return; for (let f = 1; f < n; f++) add("flach", lx, front + 0.008, w + 0.01, 0.022, 0.018, c, { ly: ly + SO + f * E - 0.012 }); }
+
+  /* Der Kern: ein Gebäudekörper mit allem drum und dran */
+  function bau(o) {
+    const lx = o.lx || 0, lz = o.lz, w = o.w, d = o.d, n = o.n || 1, ly = o.ly || 0, c = o.c, art = o.art || "haus";
+    const hh = o.hh || geschossH(n), top = ly + hh, front = lz + d / 2;
+    if (o.laden) { add("laden", lx, lz, w, SO + E, d, o.lc == null ? c : o.lc, { ly }); if (n > 1 || hh > SO + E + 0.05) add(art, lx, lz, w, hh - SO - E, d, c, { ly: ly + SO + E }); markise(lx, front, w * 0.92, o.laden, ly); schild(lx, front, Math.min(w * 0.55, 0.6), o.sc == null ? 0xf2f0ea : o.sc, ly + SO + E - 0.04); }
+    else add(art, lx, lz, w, hh, d, c, { ly });
+    if (o.gesims) gesims(lx, lz, w, d, top, o.gc == null ? hell(c, 0.5) : o.gc);
+    if (o.baender) baender(lx, front, w, n, ly, o.gc == null ? hell(c, 0.5) : o.gc);
+    if (o.eingang !== false && ly < 0.01 && !o.laden) eingang(lx + (o.ex || 0), front, o.eingang || (art === "glas" || art === "buero" ? "glas" : art === "altbau" ? "portal" : "tuer"), c);
+    if (o.laden && o.eingang !== false && DS >= 1) add("flach", lx + w * 0.36, front + 0.008, 0.12, 0.23, 0.012, 0x2f3540, { ly: ly + 0.01 });
+    if (o.balkon) balkone(lx, front, w, n, ly, o.balkon, o.bc, o.laden ? 1 : 1);
+    if (o.laubengang) laubengang(lx, front, w, n, ly, o.bc);
+    if (o.erker && n >= 3 && DS >= 1) { const ew = Math.min(0.34, w * 0.3), ex = o.erkerX || 0; add(art, lx + ex, front + 0.07, ew, (n - 1) * E - 0.04, 0.14, c, { ly: ly + SO + E }); if (o.erkerDach === "zelt") dach("zelt", lx + ex, front + 0.07, ew, 0.14, ly + SO + n * E - 0.04, o.dc, { h: 0.22, ue: 0.03 }); else add("flach", lx + ex, front + 0.07, ew + 0.03, 0.03, 0.17, hell(c, 0.5), { ly: ly + SO + n * E - 0.04 }); }
+    let H = 0;
+    if (o.dach) H = dach(o.dach, lx, lz, w, d, top, o.dc, { quer: o.quer, h: o.dachH, attika: o.attika, steil: o.steil, dreh: o.dreh });
+    if (o.gauben && (o.dach === "sattel" || o.dach === "mansard" || o.dach === "walm") && !o.quer && DS >= 1) gauben(lx, lz, w, d, top, H, o.gauben, o.gaubeC == null ? hell(c, 0.2) : o.gaubeC, o.dc);
+    if (o.kamin && H > 0.05 && DS >= 1) add("flach", lx + w * 0.26 * (o.kamin < 0 ? -1 : 1), lz - d * 0.1, 0.07, H * 0.85 + 0.12, 0.07, o.kc == null ? 0x8a4a3a : o.kc, { ly: top });
+    if (o.solar && DS >= 1) solar(lx, lz, w, d, top, H, o.dach, o.quer);
+    if (o.technik && (!o.dach || o.dach === "flach")) technik(lx, lz, w, d, top + 0.03, o.technik);
+    if (o.garten && (!o.dach || o.dach === "flach")) dachgarten(lx, lz, w, d, top + 0.03);
+    return top + H;
+  }
+  /* Grundstücke */
+  function garten(viel) {
+    const hinten = -D / 2 + 0.35;
+    if (D >= 1.9) for (let i = 0; i < (viel || 2); i++) baum((r() - 0.5) * W * 0.75, hinten + r() * 0.3, 0.42 + r() * 0.25);
+    else if (r() < 0.6) baum(W * (r() < 0.5 ? -0.36 : 0.36), vorn - 0.12, 0.3);
+    if (DS >= 1) for (let k = 0; k < 3; k++) add("flach", (r() - 0.5) * W * 0.7, vorn - 0.05, 0.11, 0.03, 0.06, pk([0xe85b9a, 0xf2c14e, 0xe8493f, 0x9a5be8, 0xffffff]), { ly: 0.002 });
+  }
+  function einfahrt(x, bis, mitAuto) { add("flach", x, (vorn + 0.06 + bis) / 2, 0.17, 0.006, Math.max(0.1, vorn + 0.06 - bis), 0xa7a49c, { ly: 0.002 }); if (mitAuto) auto(x, vorn - 0.2, false); }
+  function weg(x, bis) { klein("flach", x, (vorn + 0.06 + bis) / 2, 0.08, 0.006, Math.max(0.05, vorn + 0.06 - bis), 0xc9c3b6, { ly: 0.003 }); }
+  function zaun(art) {
+    if (DS < 1) return; const c = art === 0 ? 0x4a8a3a : art === 1 ? 0xf4f2ee : 0x6b4a2f, hh = art === 0 ? 0.11 : 0.07, d = art === 0 ? 0.06 : 0.015;
+    for (const sx of [-1, 1]) add("flach", sx * (W / 2 - 0.04), 0, d, hh, D * 0.92, c, { rand: true, hecke: art === 0 });
+    add("flach", 0, -D / 2 + 0.04, W * 0.92, hh, d, c, { rand: true, hecke: art === 0 });
+  }
+  function terrasse(x, z, w, d) { klein("flach", x, z, w, 0.014, d, 0xc9b79c, { ly: 0.003 }); fein("flach", x + w * 0.25, z, 0.1, 0.07, 0.1, 0xf2f0ea, { ly: 0.017 }); }
+  function pool(x, z, w, d) { add("flach", x, z, w + 0.06, 0.014, d + 0.06, 0xe8e4dc, { ly: 0.002 }); add("flach", x, z, w, 0.016, d, 0x4fc3e8, { ly: 0.003 }); }
+  function parkplatz(x, z, w, d, n, quer) { flaeche(x, z, w, d, 0x55595f); for (let k = 0; k < n; k++) if (r() < 0.8) auto(x - w / 2 + (k + 0.5) * w / n, z, quer, k); }
+  function vorplatz(c) { flaeche(0, vorn - 0.12, W * 0.96, 0.3, c == null ? 0xc9c3b6 : c); }
+  function fahrraeder(x, z, n) { if (DS < 2) return; for (let k = 0; k < n; k++) add("flach", x + k * 0.07, z, 0.02, 0.06, 0.12, pk([0x3f7fe8, 0xe8493f, 0x2c2f36, 0x4fbf7a]), { ly: 0.005 }); }
+  function bank(x, z) { klein("flach", x, z, 0.16, 0.05, 0.05, 0x8b5a2b, { ly: 0.02 }); }
+  function container(x, z, quer) { add("flach", x, z, quer ? 0.48 : 0.2, 0.2, quer ? 0.2 : 0.48, CONTAINER[(h.variante + Math.floor(x * 10)) % CONTAINER.length], { ly: 0.005 }); }
+  function lkw(x, z) { add("flach", x, z, 0.16, 0.18, 0.62, pk([0xf4f4f4, 0xe8493f, 0x3f7fe8]), { ly: 0.01 }); add("flach", x, z + 0.37, 0.16, 0.15, 0.12, 0x2f3540, { ly: 0.01 }); }
+  const VORNE = (d, ab) => vorn - d / 2 - (ab == null ? 0.12 : ab);
+
   const L = {
-    1: [ // Wohnen niedrig
-      [() => { const w = 0.6, d = 0.55, hh = 0.42, lz = vorn - d / 2 - 0.1; box("haus", 0, lz, w, hh, d, 0xb98a5e); giebel(0, lz, w, d, hh, 0x5a4636); if (D >= 2) { box("flach", 0.25, lz - d / 2 - 0.45, 0.22, 0.18, 0.2, 0x8a6a4a); baum(-0.25, lz - d / 2 - 0.5, 0.55); } return "Holzhaus"; },
-       () => { const n = W >= 2 ? 2 : 1; for (let k = 0; k < n; k++) { const w = 0.62, d = 0.58, hh = 0.46, lx = n === 2 ? (k ? 0.5 : -0.5) : 0, lz = vorn - d / 2 - 0.1; box("haus", lx, lz, w, hh, d, pk(HAUS)); giebel(lx, lz, w, d, hh, pk(DACH), r() < 0.4); if (D >= 2) baum(lx, lz - d / 2 - 0.5, 0.5); } return "Siedlungshaus"; },
-       () => { const w = Math.min(W * 0.8, 0.8), d = 0.55, hh = 0.34, lz = vorn - d / 2 - 0.1; box("haus", 0, lz, w, hh, d, pk(HAUS)); flachdach(0, lz, w, d, hh); if (D >= 2) baum(0, lz - d / 2 - 0.5, 0.6); return "Kleiner Bungalow"; }],
-      [() => { const w = 0.58, d = 0.6, hh = 0.5, lz = vorn - d / 2 - 0.08, lx = -0.13; box("haus", lx, lz, w, hh, d, pk(HAUS)); giebel(lx, lz, w, d, hh, pk(DACH)); box("flach", lx + w / 2 + 0.16, vorn - 0.25, 0.3, 0.26, 0.42, 0xd9d4ca); if (D >= 2) baum(0, lz - d / 2 - 0.5, 0.6); return "Haus mit Garage"; },
-       () => { const w = Math.min(W * 0.86, 1.6), d = 0.64, hh = 0.55, lz = vorn - d / 2 - 0.08; box("haus", -w / 4, lz, w / 2, hh, d, pk(HAUS)); box("haus", w / 4, lz, w / 2, hh, d, pk(HAUS)); giebel(0, lz, w, d, hh, pk(DACH)); if (D >= 2) { baum(-w / 4, lz - d / 2 - 0.5, 0.5); baum(w / 4, lz - d / 2 - 0.55, 0.45); } return "Doppelhaus"; },
-       () => { const w = 0.66, d = 0.6, hh = 0.55, lz = vorn - d / 2 - 0.15, c = pk(HAUS); box("haus", 0, lz, w, hh, d, c); giebel(0, lz, w, d, hh, pk(DACH)); box("haus", 0.12, lz + d / 2 + 0.1, 0.28, 0.42, 0.2, c); giebel(0.12, lz + d / 2 + 0.1, 0.28, 0.2, 0.42, pk(DACH), true, 0.18); if (D >= 2) baum(-0.2, lz - d / 2 - 0.5, 0.55); return "Haus mit Erker"; }],
-      [() => { const w = Math.min(W * 0.8, 0.95), d = 0.6, hh = 0.36, lz = vorn - d / 2 - 0.1; box("haus", 0, lz, w, hh, d, pk(HAUS)); flachdach(0, lz, w, d, hh); if (D >= 2) { pool(0.15, lz - d / 2 - 0.45, 0.42, 0.3); baum(-0.3, lz - d / 2 - 0.5, 0.55); } return "Bungalow mit Pool"; },
-       () => { const w = 0.7, d = 0.62, hh = 0.82, lz = vorn - d / 2 - 0.1; box("haus", 0, lz, w, hh, d, pk(HAUS)); giebel(0, lz, w, d, hh, pk(DACH), false, 0.38); if (D >= 2) baum(0.1, lz - d / 2 - 0.5, 0.6); return "Stadthaus"; },
-       () => { const w = 0.62, d = 0.6, hh = 0.56, lz = vorn - d / 2 - 0.1; box("haus", -0.12, lz, w, hh, d, pk(HAUS)); giebel(-0.12, lz, w, d, hh, pk(DACH)); box("flach", 0.34, lz, 0.3, 0.32, 0.45, 0xbfe3ef); if (D >= 2) baum(0, lz - d / 2 - 0.5, 0.6); return "Haus mit Wintergarten"; }],
-      [() => { const lz = vorn - 0.38, c = 0xf4f2ee; box("haus", 0, lz, Math.min(W * 0.85, 0.95), 0.4, 0.6, c); flachdach(0, lz, Math.min(W * 0.85, 0.95), 0.6, 0.4, 0xd9d6cf); box("haus", -0.12, lz - 0.05, 0.55, 0.35, 0.45, c, { ly: 0.44 }); flachdach(-0.12, lz - 0.05, 0.55, 0.45, 0.79, 0xd9d6cf); if (D >= 2) { pool(0.05, lz - 0.75, 0.6, 0.3); baum(0.35, lz - 0.8, 0.5); } return "Moderne Villa"; },
-       () => { const lz = vorn - 0.32, c = pk(HAUS), dc = pk(DACH); box("haus", 0, lz, Math.min(W * 0.85, 0.9), 0.5, 0.48, c); giebel(0, lz, Math.min(W * 0.85, 0.9), 0.48, 0.5, dc); if (D >= 2) { box("haus", -0.3, lz - 0.5, 0.36, 0.5, 0.55, c); giebel(-0.3, lz - 0.5, 0.36, 0.55, 0.5, dc, true); baum(0.3, lz - 0.7, 0.6); } return "Landhaus"; }],
-      [() => { const lz = vorn - 0.4, c = 0xf6f4f0; box("haus", 0, lz, Math.min(W * 0.9, 1.6), 0.42, 0.62, c); flachdach(0, lz, Math.min(W * 0.9, 1.6), 0.62, 0.42, 0xcfcac2); box("haus", W >= 2 ? 0.3 : 0.1, lz, 0.6, 0.38, 0.5, c, { ly: 0.46 }); box("flach", 0, lz + 0.32, Math.min(W * 0.9, 1.6) * 0.8, 0.12, 0.02, 0x7fa3b8, { ly: 0.18 }); if (D >= 2) { pool(-0.1, lz - 0.85, 0.7, 0.32); baum(-W * 0.35, lz - 0.85, 0.6); baum(W * 0.35, lz - 0.9, 0.55); } return "Luxusvilla"; },
-       () => { const lz = vorn - 0.35, c = pk(HAUS), dc = pk(DACH); box("haus", -0.1, lz, 0.7, 0.62, 0.55, c); walm(-0.1, lz, 0.7, 0.55, 0.62, dc, 0.3); box("haus", 0.33, lz + 0.1, 0.24, 1.05, 0.24, c); walm(0.33, lz + 0.1, 0.24, 0.24, 1.05, dc, 0.25); if (D >= 2) { baum(-0.3, lz - 0.7, 0.6); pool(0.2, lz - 0.7, 0.4, 0.25); } return "Villa mit Turm"; }]
+    1: [ // Wohnen niedrig – 5 Stufen
+      [() => { const w = Math.min(W * 0.62, 0.62), d = 0.56, lz = VORNE(d, 0.22); bau({ lz, w, d, n: 1, c: pk(STIL.putz), dach: "sattel", dc: pk(STIL.ziegel), kamin: 1 }); weg(0, lz + d / 2); einfahrt(w / 2 + 0.14, lz, r() < 0.7); garten(2); zaun(h.variante % 3); return "Siedlungshaus"; },
+       () => { const w = Math.min(W * 0.6, 0.62), d = 0.56, lz = VORNE(d, 0.24); bau({ lz, w, d, n: 1, art: "holz", c: pk(STIL.holz.slice(0, 3)), dach: "sattel", dc: 0x2f343b, steil: true }); klein("flach", 0, lz + d / 2 + 0.08, w * 0.9, 0.02, 0.16, 0x8b6a4a, { ly: 0.04 }); weg(0, lz + d / 2); garten(3); zaun(2); return "Schwedenhaus"; },
+       () => { const w = Math.min(W * 0.78, 0.8), d = 0.58, lz = VORNE(d, 0.2); bau({ lz, w, d, n: 1, c: pk(STIL.modern), dach: "flach" }); einfahrt(-w / 2 - 0.12 > -W / 2 ? -w / 2 - 0.1 : 0.3, lz, true); garten(2); zaun(1); return "Kleiner Bungalow"; },
+       () => { const w = Math.min(W * 0.6, 0.6), d = 0.58, lz = VORNE(d, 0.2); bau({ lz, w, d, n: 2, c: 0xf6f5f1, dach: "sattel", dc: 0x3a3d42, quer: r() < 0.3, solar: true }); einfahrt(w / 2 + 0.13, lz, true); garten(1); return "Fertighaus"; },
+       () => { const w = 0.42, d = 0.36, lz = VORNE(d, 0.35); bau({ lz, w, d, n: 1, art: "holz", c: pk(STIL.holz), dach: "pult", dc: 0x4a4e55 }); terrasse(0, lz + d / 2 + 0.1, w, 0.14); garten(3); return "Tiny House"; },
+       () => { const w = Math.min(W * 0.6, 0.62), d = 0.56, lz = VORNE(d, 0.22); bau({ lz, w, d, n: 1, c: pk(STIL.klinker), dach: "sattel", dc: 0x6b5a3a, steil: true, gauben: 1, kamin: -1 }); weg(0, lz + d / 2); garten(2); zaun(0); return "Friesenhaus"; },
+       () => { const w = Math.min(W * 0.5, 0.5), d = 0.5, lz = VORNE(d, 0.25); bau({ lz, w, d, n: 2, c: pk(STIL.modern), dach: "flach", attika: false }); einfahrt(w / 2 + 0.13, lz, r() < 0.5); garten(2); return "Würfelhaus"; }],
+      [() => { const w = Math.min(W * 0.55, 0.6), d = 0.6, lz = VORNE(d, 0.2), lx = -0.12; bau({ lx, lz, w, d, n: 2, c: pk(STIL.putz), dach: "sattel", dc: pk(STIL.ziegel), kamin: 1 }); add("flach", lx + w / 2 + 0.17, vorn - 0.32, 0.3, 0.3, 0.42, 0xdcd8cf); dach("flach", lx + w / 2 + 0.17, vorn - 0.32, 0.3, 0.42, 0.3, 0xbfbab1, { attika: false }); einfahrt(lx + w / 2 + 0.17, vorn - 0.1, false); garten(2); zaun(h.variante % 3); return "Haus mit Garage"; },
+       () => { const w = Math.min(W * 0.86, 1.5), d = 0.62, lz = VORNE(d, 0.18), c = pk(STIL.putz), dc = pk(STIL.ziegel); bau({ lx: -w / 4, lz, w: w / 2, d, n: 2, c, dach: "sattel", dc, quer: false, eingang: "tuer" }); bau({ lx: w / 4, lz, w: w / 2, d, n: 2, c: pk(STIL.putz), dach: "sattel", dc, eingang: "tuer" }); garten(2); return "Doppelhaus"; },
+       () => { const w = Math.min(W * 0.62, 0.66), d = 0.6, lz = VORNE(d, 0.22), c = pk(STIL.putz); bau({ lz, w, d, n: 2, c, dach: "sattel", dc: pk(STIL.ziegel), erker: false, kamin: 1 }); add("haus", 0.13, lz + d / 2 + 0.08, 0.26, geschossH(1) + 0.05, 0.16, c); dach("sattel", 0.13, lz + d / 2 + 0.08, 0.26, 0.16, geschossH(1) + 0.05, pk(STIL.ziegel), { quer: true, h: 0.14 }); garten(2); zaun(h.variante % 3); return "Haus mit Erker"; },
+       () => { const w = Math.min(W * 0.62, 0.68), d = 0.62, lz = VORNE(d, 0.2); bau({ lz, w, d, n: 2, c: pk(STIL.putz), dach: "walm", dc: pk(STIL.schiefer.concat(STIL.ziegel)) }); einfahrt(w / 2 + 0.12, lz, true); garten(2); zaun(h.variante % 3); return "Walmdachhaus"; },
+       () => { const w = Math.min(W * 0.6, 0.64), d = 0.56, lz = VORNE(d, 0.2); bau({ lz, w, d, n: 2, art: "fachwerk", c: pk([0xf4efe2, 0xf2e8d0, 0xe9e2d4]), dach: "sattel", dc: pk(STIL.ziegel), steil: true, kamin: 1 }); weg(0, lz + d / 2); garten(3); zaun(0); return "Fachwerkhaus"; },
+       () => { const w = Math.min(W * 0.66, 0.7), d = 0.56, lz = VORNE(d, 0.2); bau({ lz, w, d, n: 2, c: pk(STIL.modern), dach: "pult", dc: 0x4a4e55, solar: true }); einfahrt(-w / 2 - 0.1, lz, true); garten(1); zaun(1); return "Pultdachhaus"; },
+       () => { const w = Math.min(W * 0.9, 1.0), d = 0.56, lz = VORNE(d, 0.18), c = pk(STIL.klinker); bau({ lz, w, d, n: 2, c, dach: "sattel", dc: 0x3f4650, eingang: false }); for (const x of [-w / 4, w / 4]) eingang(x, lz + d / 2, "tuer", c); garten(2); return "Reihenendhaus"; }],
+      [() => { const w = Math.min(W * 0.66, 0.72), d = 0.66, lz = VORNE(d, 0.22); bau({ lz, w, d, n: 2, c: pk(STIL.putz), dach: "walm", dc: pk(STIL.schiefer), gauben: 2, gesims: true }); einfahrt(w / 2 + 0.12, lz, true); garten(3); zaun(1); return "Stadtvilla"; },
+       () => { const w = Math.min(W * 0.8, 0.95), d = 0.6, lz = VORNE(d, 0.16); bau({ lz, w, d, n: 1, c: pk(STIL.modern), dach: "flach" }); if (D >= 1.9) { pool(0.12, lz - d / 2 - 0.42, 0.44, 0.28); terrasse(-0.25, lz - d / 2 - 0.12, 0.4, 0.2); } garten(2); zaun(0); return "Bungalow mit Pool"; },
+       () => { const w = Math.min(W * 0.58, 0.62), d = 0.6, lz = VORNE(d, 0.2), lx = -0.13; bau({ lx, lz, w, d, n: 2, c: pk(STIL.putz), dach: "sattel", dc: pk(STIL.ziegel), kamin: -1 }); add("glas", lx + w / 2 + 0.16, lz, 0.3, geschossH(1), 0.45, 0xbfe3ef); dach("pult", lx + w / 2 + 0.16, lz, 0.3, 0.45, geschossH(1), 0xd8dade, { quer: true, h: 0.08, ue: 0.02 }); garten(3); zaun(h.variante % 3); return "Haus mit Wintergarten"; },
+       () => { const c = pk(STIL.putz), dc = pk(STIL.ziegel), lz = VORNE(0.5, 0.18); bau({ lz, w: Math.min(W * 0.84, 0.9), d: 0.5, n: 2, c, dach: "sattel", dc }); if (D >= 1.9) bau({ lx: -0.3, lz: lz - 0.5, w: 0.36, d: 0.55, n: 1, c, dach: "sattel", dc, quer: true, eingang: false }); garten(2); zaun(0); return "Landhaus"; },
+       () => { const w = Math.min(W * 0.64, 0.7), d = 0.6, lz = VORNE(d, 0.2), c = pk(STIL.klinker); bau({ lz, w, d, n: 2, c, dach: "sattel", dc: 0x2f343b, gauben: 1, baender: true, gc: 0xf2f0ea }); einfahrt(w / 2 + 0.12, lz, true); garten(2); zaun(0); return "Klinkerhaus"; },
+       () => { const w = Math.min(W * 0.62, 0.68), d = 0.62, lz = VORNE(d, 0.2); bau({ lz, w, d, n: 2, art: "altbau", c: pk(STIL.altbau), dach: "mansard", dc: pk(STIL.schiefer), gauben: 2, gesims: true }); garten(3); zaun(1); return "Mansardhaus"; },
+       () => { const w = Math.min(W * 0.66, 0.7), d = 0.58, lz = VORNE(d, 0.26); bau({ lz, w, d, n: 2, art: "holz", c: pk(STIL.holz), dach: "sattel", dc: 0x3a3d42 }); klein("flach", 0, lz + d / 2 + 0.1, w, 0.02, 0.2, 0x9a7a55, { ly: 0.04 }); fein("flach", 0, lz + d / 2 + 0.1, w + 0.02, 0.02, 0.22, 0x5a4636, { ly: geschossH(1) - 0.04 }); garten(3); zaun(2); return "Holzhaus mit Veranda"; }],
+      [() => { const lz = VORNE(0.6, 0.14), c = 0xf6f5f1, w = Math.min(W * 0.86, 1.05); bau({ lz, w, d: 0.6, n: 1, c, art: "glas", dach: "flach", eingang: "glas" }); bau({ lx: -0.12, lz: lz - 0.06, w: w * 0.62, d: 0.5, n: 1, c, ly: geschossH(1), dach: "flach", eingang: false }); if (D >= 1.9) pool(0.05, lz - 0.72, 0.6, 0.3); garten(2); zaun(0); return "Moderne Villa"; },
+       () => { const lz = VORNE(0.55, 0.16), c = 0xfbfaf6; bau({ lz, w: Math.min(W * 0.8, 0.9), d: 0.55, n: 2, c, art: "buero", dach: "flach" }); add("flach", 0.25, lz + 0.31, 0.32, 0.02, 0.16, c, { ly: geschossH(1) }); garten(2); zaun(1); return "Bauhaus-Villa"; },
+       () => { const w = Math.min(W * 0.72, 0.8), d = 0.62, lz = VORNE(d, 0.2); bau({ lz, w, d, n: 2, c: pk([0xf0d9a8, 0xe9c79a, 0xf2e2c0]), dach: "walm", dc: 0xc0653f, dachH: 0.22 }); klein("flach", 0, lz + d / 2 + 0.12, w * 0.6, 0.02, 0.2, 0xd8c7a0, { ly: geschossH(1) - 0.05 }); if (D >= 1.9) pool(0, lz - d / 2 - 0.4, 0.5, 0.26); garten(3); baum(-W * 0.4, vorn - 0.1, 0.32); return "Toskana-Villa"; },
+       () => { const c = pk(STIL.putz), dc = pk(STIL.ziegel), lz = VORNE(0.55, 0.16); bau({ lx: -0.15, lz, w: 0.66, d: 0.55, n: 2, c, dach: "sattel", dc, kamin: 1 }); bau({ lx: W * 0.32, lz: lz - 0.1, w: 0.4, d: 0.62, n: 1, art: "holz", c: 0x8a2f24, dach: "sattel", dc: 0x5d6470, quer: true, eingang: false }); garten(3); zaun(2); return "Landhaus mit Scheune"; },
+       () => { const w = Math.min(W * 0.66, 0.72), d = 0.64, lz = VORNE(d, 0.2), c = pk(STIL.altbau), dc = pk(STIL.schiefer); bau({ lz, w, d, n: 3, art: "altbau", c, dach: "mansard", dc, gauben: 2, gesims: true, erker: true, erkerX: w * 0.22, erkerDach: "zelt" }); garten(3); zaun(1); return "Jugendstilvilla"; },
+       () => { const lz = VORNE(0.6, 0.18), c = pk(STIL.modern); bau({ lz, w: Math.min(W * 0.78, 0.85), d: 0.6, n: 2, art: "glas", c, dach: "pult", dc: 0x3a3d42, dachH: 0.2, eingang: "glas" }); garten(3); zaun(0); return "Architektenhaus"; }],
+      [() => { const lz = VORNE(0.66, 0.14), c = 0xf6f4f0, w = Math.min(W * 0.9, 1.6); bau({ lz, w, d: 0.66, n: 1, c, art: "glas", dach: "flach", eingang: "glas" }); bau({ lx: W >= 2 ? 0.28 : 0.1, lz, w: Math.min(0.75, w * 0.6), d: 0.52, n: 1, c, ly: geschossH(1), dach: "flach", garten: true, eingang: false }); if (D >= 1.9) { pool(-0.1, lz - 0.9, 0.72, 0.32); terrasse(0.3, lz - 0.55, 0.4, 0.2); } garten(3); zaun(0); return "Luxusvilla"; },
+       () => { const lz = VORNE(0.56, 0.16), c = pk(STIL.putz), dc = pk(STIL.schiefer); bau({ lx: -0.1, lz, w: 0.72, d: 0.56, n: 2, c, dach: "walm", dc, gauben: 1 }); bau({ lx: 0.36, lz: lz + 0.06, w: 0.26, d: 0.26, n: 3, c, dach: "zelt", dc, dachH: 0.32, eingang: false }); if (D >= 1.9) pool(0.1, lz - 0.68, 0.42, 0.26); garten(3); zaun(1); return "Villa mit Turm"; },
+       () => { const lz = VORNE(0.62, 0.22), c = pk(STIL.altbau), dc = pk(STIL.schiefer), w = Math.min(W * 0.62, 1.1); bau({ lz, w, d: 0.62, n: 2, art: "altbau", c, dach: "mansard", dc, gauben: 3, gesims: true, kamin: 1 }); for (const s of [-1, 1]) if (W >= 1.9) bau({ lx: s * (w / 2 + 0.17), lz: lz - 0.05, w: 0.32, d: 0.5, n: 1, art: "altbau", c, dach: "walm", dc, eingang: false }); flaeche(0, vorn - 0.1, 0.5, 0.18, 0xd8cbb0); garten(4); zaun(0); return "Herrenhaus"; },
+       () => { const lz = VORNE(0.62, 0.16), w = Math.min(W * 0.86, 1.2); bau({ lz, w, d: 0.62, n: 2, art: "glas", c: pk(STIL.glas), dach: "flach", technik: 0.3, eingang: "glas" }); if (D >= 1.9) pool(0, lz - 0.8, 0.8, 0.3); garten(2); zaun(0); return "Glasvilla"; },
+       () => { const lz = VORNE(0.6, 0.18), c = 0xffffff, w = Math.min(W * 0.84, 1.1); bau({ lz, w, d: 0.6, n: 2, c, dach: "flach", balkon: "kragen", bc: 0xbfe3ef }); add("flach", 0, lz + 0.4, w * 0.7, 0.025, 0.18, 0xe9e7e2, { ly: geschossH(1) }); if (D >= 1.9) pool(-0.15, lz - 0.75, 0.5, 0.3); garten(2); zaun(1); return "Strandvilla"; },
+       () => { const lz = VORNE(0.7, 0.2), c = pk(STIL.putz), dc = pk(STIL.ziegel.concat(STIL.schiefer)), w = Math.min(W * 0.7, 1.2); bau({ lz, w, d: 0.7, n: 2, c, dach: "walm", dc, gauben: 2, kamin: 1, solar: false }); if (W >= 1.9) { add("flach", -W * 0.38, vorn - 0.3, 0.32, 0.3, 0.44, hell(c, 0.1)); dach("walm", -W * 0.38, vorn - 0.3, 0.32, 0.44, 0.3, dc, { h: 0.14 }); } if (D >= 1.9) { pool(0.15, lz - 0.85, 0.5, 0.28); flaeche(-0.3, -D / 2 + 0.35, 0.5, 0.36, 0xc26a4a); } garten(4); zaun(0); return "Anwesen"; }]
     ],
-    2: [ // Wohnen hoch
-      [() => { const w = W * 0.85, d = Math.min(D * 0.6, 1.1), hh = 1.0, lz = vorn - d / 2 - 0.06; box("haus", 0, lz, w, hh, d, pk(BLOCK)); giebel(0, lz, w, d, hh, pk(DACH), false, 0.36); return "Altbau-Mietshaus"; },
-       () => { const w = W * 0.85, d = Math.min(D * 0.6, 1.0), hh = 0.95, lz = vorn - d / 2 - 0.06; box("haus", 0, lz, w, hh, d, 0xd8d4c8); flachdach(0, lz, w, d, hh); balkone(0, lz, w, d, hh); return "Plattenbau"; }],
-      [() => { const w = W * 0.85, d = Math.min(D * 0.62, 1.2), hh = 1.25, lz = vorn - d / 2 - 0.06; box("haus", 0, lz, w, hh, d, pk(BLOCK)); flachdach(0, lz, w, d, hh); balkone(0, lz, w, d, hh); baum(-W * 0.3, -D / 2 + 0.4, 0.55); return "Mehrfamilienhaus"; },
-       () => { const n = Math.max(3, Math.round(W / 0.4)), bw = W * 0.9 / n, d = Math.min(D * 0.55, 0.85), hh = 0.72, lz = vorn - d / 2 - 0.06, dc = pk(DACH); for (let k = 0; k < n; k++) { const lx = -W * 0.45 + bw * (k + 0.5); box("haus", lx, lz, bw - 0.01, hh, d, HAUS[(h.variante + k) % HAUS.length]); box("dach", lx, lz, bw + 0.005, 0.28, d + 0.08, dc, { ly: hh }); } return "Reihenhäuser"; }],
-      [() => { const w = W * 0.86, d = D * 0.72, hh = 1.6 + r() * 0.5, lz = vorn - d / 2 - 0.04; box("haus", 0, lz, w, hh, d, pk(BLOCK)); flachdach(0, lz, w, d, hh); balkone(0, lz, w, d, hh); return "Wohnblock"; },
-       () => { const c = pk(BLOCK), hh = 1.3 + r() * 0.4, d1 = 0.7, lz1 = vorn - d1 / 2 - 0.04; box("haus", 0, lz1, W * 0.86, hh, d1, c); const wd = Math.max(0.5, D - d1 - 0.3); box("haus", -W * 0.43 + 0.35, lz1 - d1 / 2 - wd / 2, 0.7, hh * 0.85, wd, c); baum(W * 0.2, lz1 - d1 / 2 - 0.6, 0.6); return "Wohnanlage"; }],
-      [() => { const s0 = Math.min(W, D) * 0.62, hh = 2.6 + r() * 1.2, lz = vorn - D * 0.42, c = pk(BLOCK); box("haus", 0, lz, s0, hh, s0, c); balkone(0, lz, s0, s0, hh); box("haus", 0, lz, s0 * 0.7, 0.3, s0 * 0.7, c, { ly: hh }); baum(-W * 0.35, vorn - 0.25, 0.45); return "Hochhaus"; },
-       () => { const s0 = Math.min(W, D) * 0.6, hh = 2.4 + r() * 1.0, lz = vorn - D * 0.42; box("haus", 0, lz, s0, hh, s0, pk(BLOCK)); flachdach(0, lz, s0, s0, hh, 0x7dbb55); baum(-s0 * 0.25, lz, 0.4, hh + 0.03); baum(s0 * 0.25, lz + 0.1, 0.35, hh + 0.03); return "Wohnturm mit Dachgarten"; }],
-      [() => { const s0 = Math.min(W, D) * 0.55, hh = 4.2 + r() * 1.8, lz = vorn - D * 0.42, c = pk(TURM); box("haus", 0, lz, s0, hh, s0, c); box("haus", 0, lz, s0 * 0.7, 0.4, s0 * 0.7, c, { ly: hh }); box("flach", s0 * 0.15, lz, 0.03, 0.8, 0.03, 0xc9ced6, { ly: hh + 0.4 }); return "Wohn-Wolkenkratzer"; },
-       () => { const c = pk(TURM); if (W >= 3) { for (const lx of [-W * 0.22, W * 0.22]) { box("haus", lx, vorn - D * 0.42, 0.85, 3.6 + r() * 0.8, 0.85, c); } box("flach", 0, vorn - D * 0.42, W * 0.3, 0.12, 0.3, 0xd9dde2, { ly: 2.0 }); return "Zwillingstürme"; } const s0 = Math.min(W, D) * 0.6; box("haus", 0, vorn - D * 0.42, s0, 3.8, s0, c); return "Wohnturm"; }]
+    2: [ // Wohnen hoch – 5 Stufen
+      [() => { const w = W * 0.92, d = Math.min(D * 0.6, 1.0), lz = VORNE(d, 0.02), c = pk(STIL.altbau); bau({ lz, w, d, n: zi(3, 4), art: "altbau", c, dach: "mansard", dc: pk(STIL.schiefer), gauben: Math.max(1, Math.round(w / 0.4)), gesims: true, balkon: "franz" }); garten(2); return "Altbau-Mietshaus"; },
+       () => { const w = W * 0.92, d = Math.min(D * 0.62, 1.0), lz = VORNE(d, 0.02), c = pk(STIL.altbau); bau({ lz, w, d, n: 4, art: "altbau", c, dach: "sattel", dc: pk(STIL.ziegel), gauben: 2, gesims: true, baender: true, erker: true, erkerX: -w * 0.2 }); garten(2); return "Gründerzeithaus"; },
+       () => { const w = W * 0.9, d = Math.min(D * 0.6, 0.95), lz = VORNE(d, 0.06), c = pk(STIL.klinker); bau({ lz, w, d, n: 3, c, dach: "sattel", dc: pk(STIL.schiefer), balkon: "kragen", bc: 0xf2f0ea }); garten(2); return "Klinker-Mehrfamilienhaus"; },
+       () => { const n = Math.max(3, Math.round(W / 0.42)), bw = W * 0.94 / n, d = Math.min(D * 0.55, 0.8), lz = VORNE(d, 0.14), dc = pk(STIL.ziegel); for (let k = 0; k < n; k++) { const lx = -W * 0.47 + bw * (k + 0.5); bau({ lx, lz, w: bw - 0.008, d, n: 2, c: STIL.putz[(h.variante + k) % STIL.putz.length], dach: "sattel", dc, ue: 0.0 }); } garten(3); return "Reihenhäuser"; },
+       () => { const w = W * 0.9, d = Math.min(D * 0.58, 0.9), lz = VORNE(d, 0.1); bau({ lz, w, d, n: 4, c: pk([0xd8d4c8, 0xe2dccd, 0xcfd4d6]), dach: "flach", balkon: "loggia" }); garten(2); fahrraeder(-W * 0.3, vorn - 0.05, 4); return "Plattenbau"; },
+       () => { const w = Math.min(W * 0.5, 0.55), d = Math.min(D * 0.62, 0.9), lz = VORNE(d, 0.04); bau({ lx: -W * 0.2, lz, w, d, n: 3, art: "altbau", c: pk(STIL.altbau), dach: "pult", dc: 0x4a4e55, gesims: true }); bau({ lx: W * 0.24, lz, w: Math.min(W * 0.4, 0.5), d, n: 3, c: pk(STIL.putz), dach: "sattel", dc: pk(STIL.ziegel) }); garten(2); return "Stadthäuser"; }],
+      [() => { const w = W * 0.9, d = Math.min(D * 0.62, 1.1), lz = VORNE(d, 0.08); bau({ lz, w, d, n: 5, c: pk(STIL.putz), dach: "flach", balkon: "kragen", technik: 0.5 }); garten(2); fahrraeder(W * 0.25, vorn - 0.05, 5); return "Mehrfamilienhaus"; },
+       () => { const w = W * 0.9, d = Math.min(D * 0.55, 0.8), lz = VORNE(d, 0.16); bau({ lz, w, d, n: 4, c: pk([0xe8dcc8, 0xd6d8da, 0xefe9df]), dach: "flach", laubengang: true, bc: pk([0x3f7fe8, 0x2f8f6f, 0xe8493f]) }); garten(2); return "Laubenganghaus"; },
+       () => { const w = W * 0.92, d = Math.min(D * 0.62, 1.0), lz = VORNE(d, 0.02), c = pk(STIL.altbau), dc = pk(STIL.schiefer); bau({ lz, w, d, n: 5, art: "altbau", c, dach: "mansard", dc, gauben: 2, gesims: true, erker: true, erkerX: w * 0.25, erkerDach: "zelt", balkon: "franz" }); garten(2); return "Jugendstilhaus"; },
+       () => { const w = W * 0.88, d = Math.min(D * 0.62, 1.0), lz = VORNE(d, 0.08); bau({ lz, w, d, n: 5, c: pk(STIL.modern), dach: "flach", garten: true, balkon: "kragen", bc: 0xbfe3ef }); garten(2); return "Wohnhaus mit Dachgarten"; },
+       () => { const n = Math.max(3, Math.round(W / 0.45)), bw = W * 0.94 / n, d = Math.min(D * 0.6, 0.85), lz = VORNE(d, 0.12); for (let k = 0; k < n; k++) bau({ lx: -W * 0.47 + bw * (k + 0.5), lz, w: bw - 0.01, d, n: 3, c: [0xf4f4f2, 0x4a4e55, 0xc9b79c, 0xe8e8e6][(h.variante + k) % 4], dach: "flach", attika: true }); garten(3); return "Townhouses"; },
+       () => { const c = pk(STIL.altbau), dc = pk(STIL.schiefer), d1 = Math.min(D * 0.45, 0.75), lz = VORNE(d1, 0.02); bau({ lz, w: W * 0.92, d: d1, n: 5, art: "altbau", c, dach: "mansard", dc, gesims: true, balkon: "franz", laden: pk(STIL.ziegel.concat([0x2f8f6f, 0x3d5a80])) }); if (D >= 1.9) bau({ lx: -W * 0.46 + 0.3, lz: lz - d1 / 2 - (D * 0.4) / 2, w: 0.55, d: D * 0.4, n: 5, art: "altbau", c, dach: "mansard", dc, quer: true, eingang: false }); return "Eckhaus mit Läden"; }],
+      [() => { const w = W * 0.9, d = Math.min(D * 0.7, 1.4), lz = VORNE(d, 0.06); bau({ lz, w, d, n: zi(6, 8), c: pk(STIL.putz.concat(STIL.modern)), dach: "flach", balkon: "kragen", technik: 1 }); garten(2); fahrraeder(-W * 0.3, vorn - 0.05, 6); return "Wohnblock"; },
+       () => { const c = pk(STIL.putz), n = zi(5, 6), d1 = 0.62, lz1 = VORNE(d1, 0.04), wd = Math.max(0.5, D - d1 - 0.3); bau({ lz: lz1, w: W * 0.9, d: d1, n, c, dach: "flach", balkon: "kragen" }); bau({ lx: -W * 0.45 + 0.32, lz: lz1 - d1 / 2 - wd / 2, w: 0.62, d: wd, n, c, dach: "flach", eingang: false }); baum(W * 0.15, lz1 - d1 / 2 - 0.5, 0.55); return "Wohnanlage"; },
+       () => { const c = pk(STIL.modern), d0 = Math.min(D * 0.8, 1.6), lz0 = VORNE(d0, 0.04), n = 3; let y = 0; for (let k = 0; k < n; k++) { const d = d0 * (1 - k * 0.28), lz = lz0 - (d0 - d) / 2; y = bau({ lz, w: W * 0.9, d, n: 2, c, ly: y, dach: "flach", eingang: k === 0 ? "glas" : false }); klein("flach", 0, lz + d / 2 - 0.08, W * 0.86, 0.025, 0.12, 0x6fae4a, { ly: y }); y -= 0.03; } return "Terrassenhaus"; },
+       () => { const w = W * 0.9, d = Math.min(D * 0.66, 1.3), lz = VORNE(d, 0.06); bau({ lz, w, d, n: 6, c: pk(STIL.klinker), dach: "flach", balkon: "kragen", bc: 0xf2f0ea, baender: true, gc: 0xe9e4da }); garten(2); return "Klinkerblock"; },
+       () => { const s0 = Math.min(W, D) * 0.62, lz = VORNE(s0, 0.12); bau({ lz, w: s0, d: s0, n: zi(8, 10), c: pk(STIL.putz), dach: "flach", balkon: "kragen", technik: 1 }); garten(3); return "Punkthaus"; },
+       () => { const c = pk(STIL.altbau), n = 5, d1 = Math.min(0.6, D * 0.35), lz = VORNE(d1, 0.02); bau({ lz, w: W * 0.92, d: d1, n, art: "altbau", c, dach: "sattel", dc: pk(STIL.ziegel), gesims: true }); if (D >= 1.9) for (const s of [-1, 1]) bau({ lx: s * (W * 0.46 - 0.28), lz: lz - d1 / 2 - (D * 0.5) / 2, w: 0.55, d: D * 0.5, n, art: "altbau", c, dach: "sattel", dc: pk(STIL.ziegel), quer: true, eingang: false }); baum(0, -D * 0.15, 0.6); return "Wohnhof"; }],
+      [() => { const s0 = Math.min(W, D) * 0.64, lz = VORNE(s0, 0.12), c = pk(STIL.putz.concat(STIL.modern)); bau({ lz, w: s0, d: s0, n: zi(14, 18), c, dach: "flach", balkon: "kragen", technik: 2 }); garten(2); return "Hochhaus"; },
+       () => { const s0 = Math.min(W, D) * 0.6, lz = VORNE(s0, 0.12); bau({ lz, w: s0, d: s0, n: zi(12, 15), c: pk(STIL.modern), dach: "flach", garten: true, balkon: "kragen", bc: 0xbfe3ef }); garten(2); return "Wohnturm mit Dachgarten"; },
+       () => { const w = W * 0.9, d = Math.min(D * 0.45, 0.8), lz = VORNE(d, 0.1); bau({ lz, w, d, n: zi(11, 13), c: pk([0xe8e4dc, 0xd8d4c8, 0xcfd4d6]), dach: "flach", balkon: "loggia", bc: pk([0xe8493f, 0x3f7fe8, 0xf2c14e, 0x2f8f6f]), technik: 1 }); garten(2); return "Scheibenhochhaus"; },
+       () => { const lz0 = VORNE(D * 0.8, 0.04), c = pk(STIL.modern); bau({ lz: lz0, w: W * 0.9, d: D * 0.8, n: 2, c, laden: pk(STIL.ziegel.concat([0x3d5a80])), dach: "flach" }); const s0 = Math.min(W, D) * 0.55; bau({ lz: lz0 - 0.1, w: s0, d: s0, n: zi(12, 16), c: pk(STIL.putz), ly: geschossH(2), dach: "flach", balkon: "kragen", technik: 1, eingang: false }); return "Turm mit Sockel"; },
+       () => { const c = pk(STIL.modern), lz = VORNE(Math.min(W, D) * 0.72, 0.1); let y = 0, s = Math.min(W, D) * 0.72; for (let k = 0; k < 3; k++) { y = bau({ lz, w: s, d: s, n: zi(4, 6), c, ly: y, dach: "flach", balkon: "kragen", eingang: k ? false : "glas", garten: k < 2 }); s *= 0.78; } return "Stufenhochhaus"; },
+       () => { const s0 = Math.min(W, D) * 0.62, lz = VORNE(s0, 0.12); bau({ lz, w: s0, d: s0, n: zi(10, 13), art: "holz", c: pk([0xb08a5a, 0x9a7a55, 0xc9a77a]), dach: "flach", garten: true, balkon: "kragen", bc: 0xe8ecef }); garten(3); return "Holzhochhaus"; }],
+      [() => { const s0 = Math.min(W, D) * 0.56, lz = VORNE(s0, 0.14), c = pk(STIL.glas); const y = bau({ lz, w: s0, d: s0, n: zi(18, 24), art: "glas", c, dach: "flach", eingang: "glas" }); add("glas", 0, lz, s0 * 0.7, 0.45, s0 * 0.7, c, { ly: y }); add("flach", s0 * 0.15, lz, 0.03, 0.9, 0.03, 0xc9ced6, { ly: y + 0.45 }); return "Wohn-Wolkenkratzer"; },
+       () => { const c = pk(STIL.glas); if (W >= 2.9) { const s = Math.min(0.85, W * 0.28); for (const lx of [-W * 0.23, W * 0.23]) bau({ lx, lz: VORNE(s, 0.12), w: s, d: s, n: zi(20, 24), art: "glas", c, dach: "flach", technik: 1, eingang: "glas" }); add("glas", 0, VORNE(s, 0.12), W * 0.3, 0.3, 0.3, c, { ly: 4.2 }); return "Zwillingstürme"; } const s0 = Math.min(W, D) * 0.6; bau({ lz: VORNE(s0, 0.12), w: s0, d: s0, n: 22, art: "glas", c, dach: "flach", technik: 1 }); return "Wohnturm"; },
+       () => { const c = pk(STIL.modern), s0 = Math.min(W, D) * 0.52, lz = VORNE(s0, 0.2); let y = 0; for (let k = 0; k < 9; k++) { add("haus", 0, lz, s0, 3 * ETAGE, s0, c, { ly: y, ry: k * 0.09 }); fein("flach", 0, lz, s0 + 0.08, 0.03, s0 + 0.08, 0xe9e7e2, { ly: y, ry: k * 0.09 }); y += 3 * ETAGE; } dach("flach", 0, lz, s0, s0, y, null, {}); eingang(0, lz + s0 / 2, "glas", c); return "Gedrehter Turm"; },
+       () => { const s0 = Math.min(W, D) * 0.58, lz = VORNE(s0, 0.14), c = pk(STIL.altbau); const y = bau({ lz, w: s0, d: s0, n: zi(20, 26), art: "altbau", c, dach: "flach", gesims: true, baender: true, attika: false, eingang: "portal" }); bau({ lz, w: s0 * 0.7, d: s0 * 0.7, n: 2, art: "altbau", c, ly: y, dach: "zelt", dc: 0x5f8f7a, dachH: 0.7, eingang: false }); return "Luxusturm mit Krone"; },
+       () => { const c = pk(STIL.modern), lz = VORNE(Math.min(W, D) * 0.66, 0.12); let y = 0, s = Math.min(W, D) * 0.66; for (let k = 0; k < 4; k++) { y = bau({ lz, w: s, d: s, n: zi(6, 8), c, ly: y, dach: "flach", balkon: "kragen", bc: 0xbfe3ef, garten: true, eingang: k ? false : "glas" }); s *= 0.84; } return "Wolkenkratzer mit Terrassen"; },
+       () => { const c = pk(STIL.glas); bau({ lz: VORNE(D * 0.8, 0.04), w: W * 0.92, d: D * 0.8, n: 2, art: "glas", c: pk(STIL.modern), dach: "flach", eingang: "glas" }); const s = Math.min(0.62, W * 0.26); [[-W * 0.28, 0.1], [0.05, -D * 0.2], [W * 0.3, 0.05]].forEach(([lx, lz], i) => bau({ lx, lz, w: s, d: s, n: [18, 26, 14][i], art: i === 1 ? "glas" : "haus", c: i === 1 ? c : pk(STIL.modern), ly: geschossH(2), dach: "flach", balkon: i === 1 ? null : "kragen", technik: 1, eingang: false })); return "Turmensemble"; }]
     ],
-    3: [ // Gewerbe niedrig
-      [() => { const lz = vorn - 0.3; box("haus", 0, lz, 0.4, 0.38, 0.35, 0xf2efe8); markise(0, 0.45, pk(MARK), lz + 0.2); return "Kiosk"; },
-       () => { const w = Math.min(W * 0.8, 0.8), d = 0.6, lz = vorn - d / 2 - 0.05; box("haus", 0, lz, w, 0.5, d, 0xe9d8bd); markise(0, w, 0x8a5a3a); schild(0, vorn + 0.01, w * 0.5, 0xf2c14e, 0.42); return "Bäckerei"; },
-       () => { const w = Math.min(W * 0.7, 0.75), d = 0.5, hh = 0.48, lz = vorn - d / 2 - 0.32; box("haus", 0, lz, w, hh, d, pk(PAL.laden)); box("flach", 0, lz + d / 2 + 0.06, w * 0.95, 0.04, 0.14, pk(MARK), { ly: 0.3 }); const sc = pk(MARK); for (const px of [-0.28, 0, 0.28]) { box("flach", px, vorn - 0.1, 0.015, 0.22, 0.015, 0xdddddd); box("dach", px, vorn - 0.1, 0.2, 0.06, 0.2, sc, { ly: 0.22 }); } return "Café"; }],
-      [() => { const lz = vorn - 0.38, w = Math.min(W * 0.9, 0.95); box("flach", 0, lz, w, 0.05, 0.6, 0xf4f4f4, { ly: 0.42 }); box("flach", 0, lz + 0.31, w, 0.06, 0.02, 0xe8493f, { ly: 0.4 }); for (const px of [-0.35, 0.35]) for (const pz of [-0.22, 0.22]) box("flach", px * Math.min(W, 1), lz + pz, 0.04, 0.42, 0.04, 0xd9d9d9); for (const px of [-0.15, 0.15]) box("flach", px, lz, 0.07, 0.15, 0.1, 0xe8493f); if (D >= 2) box("haus", 0, lz - 0.55, 0.55, 0.36, 0.32, 0xf2efe8); return "Tankstelle"; },
-       () => { const w = Math.min(W * 0.8, 0.85), d = 0.62, lz = vorn - d / 2 - 0.25; box("haus", 0, lz, w, 0.52, d, 0xc96f4a); giebel(0, lz, w, d, 0.52, 0x5d6470); zyl(w * 0.3, lz - 0.15, 0.08, 0.95, 0x8a6a5a); const sc = pk(MARK); for (const px of [-0.25, 0.25]) { box("flach", px, vorn - 0.08, 0.015, 0.2, 0.015, 0xdddddd); box("dach", px, vorn - 0.08, 0.18, 0.05, 0.18, sc, { ly: 0.2 }); } return "Restaurant"; },
-       () => { const w = Math.min(W * 0.85, 0.85), d = 0.62, lz = vorn - d / 2 - 0.05; box("haus", 0, lz, w, 0.82, d, pk(HAUS)); markise(0, w, pk(MARK)); giebel(0, lz, w, d, 0.82, pk(DACH)); return "Laden mit Wohnung"; }],
-      [() => { const w = W * 0.85, d = Math.min(D * 0.75, 0.9), hh = 1.05, lz = vorn - d / 2 - 0.04; box("haus", 0, lz, w, hh, d, pk(PAL.laden)); box("flach", 0, lz + d / 2 + 0.01, w * 0.9, 0.22, 0.02, 0x7fb8e0, { ly: 0.06 }); flachdach(0, lz, w, d, hh); return "Boutiquenhaus"; },
-       () => { const w = W * 0.85, d = Math.min(D * 0.75, 0.9), hh = 1.15, lz = vorn - d / 2 - 0.06; box("haus", 0, lz, w, hh, d, pk(BLOCK)); schild(0, lz + d / 2 + 0.01, 0.4, 0xf2c14e, hh - 0.18); box("flach", 0, lz + d / 2 + 0.1, 0.32, 0.04, 0.2, 0x2f3540, { ly: 0.3 }); return "Kleines Hotel"; },
-       () => { const n = W >= 2 ? 3 : 2, bw = W * 0.9 / n, d = Math.min(D * 0.75, 0.8), lz = vorn - d / 2 - 0.04; for (let k = 0; k < n; k++) { const lx = -W * 0.45 + bw * (k + 0.5); box("haus", lx, lz, bw - 0.02, 0.62, d, PAL.laden[(h.variante + k) % PAL.laden.length]); markise(lx, bw, MARK[(h.variante + k) % MARK.length]); } return "Ladenzeile"; }]
+    3: [ // Gewerbe niedrig – 3 Stufen
+      [() => { const lz = vorn - 0.28; add("laden", 0, lz, 0.42, SOCKEL + ETAGE, 0.34, 0xf2efe8); dach("flach", 0, lz, 0.42, 0.34, SOCKEL + ETAGE, 0xe8493f, { attika: false }); markise(0, lz + 0.17, 0.45, pk(PAL.markise)); vorplatz(); bank(-0.3, vorn - 0.05); return "Kiosk"; },
+       () => { const w = Math.min(W * 0.84, 0.86), d = 0.6, lz = VORNE(d, 0.06); bau({ lz, w, d, n: 2, c: pk(STIL.putz), laden: 0x8a5a3a, sc: 0xf2c14e, dach: "sattel", dc: pk(STIL.ziegel) }); vorplatz(); return "Bäckerei"; },
+       () => { const w = Math.min(W * 0.75, 0.78), d = 0.5, lz = VORNE(d, 0.32); bau({ lz, w, d, n: 1, c: pk(STIL.laden), laden: pk(PAL.markise), dach: "flach" }); vorplatz(0xd8cbb0); const sc = pk(PAL.markise); for (const px of [-0.28, 0, 0.28]) { klein("flach", px, vorn - 0.12, 0.015, 0.22, 0.015, 0xdddddd); klein("dach", px, vorn - 0.12, 0.2, 0.06, 0.2, sc, { ly: 0.22 }); klein("flach", px, vorn - 0.12, 0.14, 0.012, 0.14, 0xf2f0ea, { ly: 0.1 }); } return "Café"; },
+       () => { const w = Math.min(W * 0.7, 0.72), d = 0.5, lz = VORNE(d, 0.18); bau({ lz, w, d, n: 1, c: pk([0xf6d7e2, 0xd9f0e8, 0xfff0c8]), laden: pk([0xe85b9a, 0x4fbf7a, 0xf2a93b]), dach: "flach" }); vorplatz(); zyl(w * 0.45, vorn - 0.08, 0.1, 0.32, 0xf2c14e); return "Eisdiele"; },
+       () => { const w = Math.min(W * 0.75, 0.8), d = 0.55, lz = VORNE(d, 0.14); bau({ lz, w, d, n: 2, c: pk(STIL.putz), laden: 0x2f8f6f, dach: "sattel", dc: pk(STIL.ziegel) }); vorplatz(); for (let k = 0; k < 5; k++) add("flach", -w / 2 + 0.08 + k * 0.12, vorn - 0.06, 0.09, 0.07, 0.07, pk([0xe85b9a, 0xf2c14e, 0xe8493f, 0x9a5be8, 0xffffff]), { ly: 0.005 }); return "Blumenladen"; },
+       () => { const w = Math.min(W * 0.66, 0.7), d = 0.48, lz = VORNE(d, 0.24); bau({ lz, w, d, n: 1, c: 0xf2efe8, laden: 0xe8493f, sc: 0xf2c14e, dach: "flach", technik: 0.4 }); vorplatz(); bank(0.3, vorn - 0.05); return "Imbiss"; },
+       () => { const w = Math.min(W * 0.84, 0.86), d = 0.6, lz = VORNE(d, 0.06); bau({ lz, w, d, n: 2, c: pk(STIL.altbau), art: "altbau", laden: 0x3a3d42, sc: 0xffffff, dach: "sattel", dc: pk(STIL.schiefer), gesims: true }); vorplatz(); return "Friseur"; },
+       () => { const w = Math.min(W * 0.84, 0.86), d = 0.6, lz = VORNE(d, 0.06); bau({ lz, w, d, n: 2, c: 0xf4f4f2, laden: 0x2f8f6f, sc: 0xd9302f, dach: "flach" }); vorplatz(); return "Apotheke"; },
+       () => { const w = Math.min(W * 0.8, 0.84), d = 0.56, lz = VORNE(d, 0.1); bau({ lz, w, d, n: 1, c: pk(STIL.klinker), laden: 0x3d5a80, dach: "pult", dc: 0x4a4e55 }); vorplatz(); fahrraeder(-0.3, vorn - 0.08, 6); return "Fahrradladen"; },
+       () => { const w = Math.min(W * 0.84, 0.86), d = 0.6, lz = VORNE(d, 0.06); bau({ lz, w, d, n: 2, art: "fachwerk", c: 0xf4efe2, laden: 0x8a2f2f, dach: "sattel", dc: pk(STIL.ziegel), steil: true }); vorplatz(); return "Metzgerei"; }],
+      [() => { const lz = vorn - 0.38, w = Math.min(W * 0.9, 0.95); add("flach", 0, lz, w, 0.05, 0.6, 0xf4f4f4, { ly: 0.46 }); add("flach", 0, lz + 0.31, w, 0.07, 0.02, 0xe8493f, { ly: 0.44 }); for (const px of [-0.35, 0.35]) for (const pz of [-0.22, 0.22]) add("flach", px * Math.min(W, 1), lz + pz, 0.04, 0.46, 0.04, 0xd9d9d9); for (const px of [-0.15, 0.15]) add("flach", px, lz, 0.07, 0.16, 0.1, 0xe8493f); flaeche(0, lz, w, 0.7, 0x6d7178); if (D >= 2) bau({ lz: lz - 0.6, w: 0.6, d: 0.34, n: 1, c: 0xf2efe8, laden: 0xe8493f, dach: "flach" }); add("flach", -W * 0.42, vorn - 0.08, 0.05, 0.6, 0.05, 0xd9d9d9); add("flach", -W * 0.42, vorn - 0.08, 0.2, 0.22, 0.03, 0xe8493f, { ly: 0.55 }); return "Tankstelle"; },
+       () => { const w = Math.min(W * 0.8, 0.86), d = 0.62, lz = VORNE(d, 0.26); bau({ lz, w, d, n: 1, art: "altbau", c: pk([0xc96f4a, 0xd8c3a5, 0xe9d8bd]), laden: 0x5a3a24, dach: "sattel", dc: 0x5d6470, kamin: 1 }); vorplatz(0xd8cbb0); const sc = pk(PAL.markise); for (const px of [-0.25, 0.25]) { klein("flach", px, vorn - 0.1, 0.015, 0.2, 0.015, 0xdddddd); klein("dach", px, vorn - 0.1, 0.2, 0.05, 0.2, sc, { ly: 0.2 }); } return "Restaurant"; },
+       () => { const w = Math.min(W * 0.8, 0.86), d = 0.58, lz = VORNE(d, 0.2); bau({ lz, w, d, n: 2, c: pk([0xf0d9a8, 0xe9c79a]), laden: 0x2f8f6f, sc: 0xe8493f, dach: "walm", dc: 0xc0653f, dachH: 0.18 }); vorplatz(0xd8cbb0); return "Pizzeria"; },
+       () => { const w = Math.min(W * 0.86, 0.9), d = 0.62, lz = VORNE(d, 0.04); bau({ lz, w, d, n: 3, art: "altbau", c: pk(STIL.altbau), laden: pk(PAL.markise), dach: "mansard", dc: pk(STIL.schiefer), gauben: 2, gesims: true, balkon: "franz" }); vorplatz(); return "Laden mit Wohnung"; },
+       () => { const w = Math.min(W * 0.84, 0.86), d = 0.6, lz = VORNE(d, 0.05); bau({ lz, w, d, n: 3, art: "fachwerk", c: 0xf2e8d0, laden: 0x3d5a80, dach: "sattel", dc: pk(STIL.ziegel), steil: true, gauben: 1 }); vorplatz(); return "Buchhandlung"; },
+       () => { const w = Math.min(W * 0.84, 0.9), d = 0.6, lz = VORNE(d, 0.1); bau({ lz, w, d, n: 1, art: "holz", c: 0x9a7a55, laden: 0x4f9a3a, dach: "pult", dc: 0x4a5a3a, solar: true }); vorplatz(); for (let k = 0; k < 4; k++) add("flach", -0.3 + k * 0.2, vorn - 0.06, 0.14, 0.06, 0.08, pk([0x4f9a3a, 0xe8493f, 0xf2c14e]), { ly: 0.04 }); return "Bioladen"; },
+       () => { const w = Math.min(W * 0.84, 0.86), d = 0.6, lz = VORNE(d, 0.05); bau({ lz, w, d, n: 2, art: "fachwerk", c: 0xf4efe2, laden: 0x6b2f3a, dach: "sattel", dc: pk(STIL.ziegel), steil: true }); vorplatz(0xd8cbb0); return "Weinstube"; },
+       () => { const lz = VORNE(0.5, 0.42); bau({ lz, w: Math.min(W * 0.7, 0.75), d: 0.5, n: 1, c: 0xf2efe8, laden: 0xe8493f, sc: 0xf2c14e, dach: "flach", technik: 0.6 }); flaeche(0, vorn - 0.18, W * 0.95, 0.34, 0x6d7178); auto(-0.25, vorn - 0.18, true, 1); return "Burger-Restaurant"; }],
+      [() => { const w = W * 0.88, d = Math.min(D * 0.75, 0.9), lz = VORNE(d, 0.04); bau({ lz, w, d, n: 3, c: pk(STIL.laden), laden: pk(PAL.markise), dach: "flach", balkon: "franz" }); vorplatz(); return "Boutiquenhaus"; },
+       () => { const w = W * 0.86, d = Math.min(D * 0.75, 0.9), lz = VORNE(d, 0.08), c = pk(STIL.altbau); bau({ lz, w, d, n: 3, art: "altbau", c, dach: "mansard", dc: pk(STIL.schiefer), gauben: 2, gesims: true, balkon: "franz", eingang: "portal" }); schild(0, lz + d / 2, 0.4, 0xf2c14e, geschossH(3) - 0.16); klein("flach", 0, lz + d / 2 + 0.1, 0.32, 0.04, 0.2, 0x2f3540, { ly: 0.3 }); return "Kleines Hotel"; },
+       () => { const n = W >= 2 ? 3 : 2, bw = W * 0.92 / n, d = Math.min(D * 0.75, 0.8), lz = VORNE(d, 0.04); for (let k = 0; k < n; k++) bau({ lx: -W * 0.46 + bw * (k + 0.5), lz, w: bw - 0.01, d, n: 1, c: STIL.laden[(h.variante + k) % STIL.laden.length], laden: PAL.markise[(h.variante + k) % PAL.markise.length], dach: "flach" }); vorplatz(); return "Ladenzeile"; },
+       () => { const w = W * 0.9, d = Math.min(D * 0.7, 0.95), lz = VORNE(d, 0.02), c = pk(STIL.altbau); bau({ lz, w, d, n: 3, art: "altbau", c, dach: "sattel", dc: pk(STIL.ziegel), gesims: true, eingang: false, laden: 0x3a3d42 }); if (DS >= 1) for (let k = 0; k < Math.floor(w / 0.3); k++) add("flach", -w / 2 + 0.15 + k * 0.3, lz + d / 2 + 0.1, 0.05, SOCKEL + ETAGE, 0.05, hell(c, 0.4)); klein("flach", 0, lz + d / 2 + 0.1, w, 0.04, 0.22, hell(c, 0.3), { ly: SOCKEL + ETAGE }); return "Geschäftshaus mit Arkaden"; },
+       () => { const w = W * 0.84, d = Math.min(D * 0.7, 0.9), lz = VORNE(d, 0.1); bau({ lz, w, d, n: 2, art: "glas", c: pk(STIL.glas), dach: "flach", eingang: "glas" }); vorplatz(0xe8e4dc); return "Galerie"; },
+       () => { const w = W * 0.86, d = Math.min(D * 0.72, 0.95), lz = VORNE(d, 0.06); bau({ lz, w, d, n: 3, art: "buero", c: pk(STIL.buero), dach: "flach", technik: 0.5 }); vorplatz(); schild(0, lz + d / 2, 0.3, 0x2f8f6f, geschossH(1) - 0.06); return "Ärztehaus"; },
+       () => { const w = W * 0.88, d = Math.min(D * 0.7, 0.9), lz = VORNE(d, 0.3); bau({ lz, w, d, n: 2, c: pk(STIL.putz), laden: pk(PAL.markise), dach: "sattel", dc: pk(STIL.ziegel), quer: true }); vorplatz(0xd8cbb0); for (const px of [-0.3, 0, 0.3]) { klein("flach", px, vorn - 0.12, 0.13, 0.012, 0.13, 0xf2f0ea, { ly: 0.1 }); klein("flach", px, vorn - 0.12, 0.015, 0.1, 0.015, 0x5d6470); } return "Bistro am Platz"; }]
     ],
     4: [ // Gewerbe hoch
-      [() => { const d = Math.min(D * 0.5, 0.9), lz = -D / 2 + d / 2 + 0.12; box("haus", 0, lz, W * 0.9, 0.5, d, 0xeeeae2); schild(0, lz + d / 2 + 0.01, W * 0.6, pk(MARK), 0.34); parkplatz(0, vorn - (D - d - 0.3) / 2, W * 0.9, Math.max(0.4, D - d - 0.3), Math.max(2, Math.floor(W * 2))); return "Supermarkt"; },
-       () => { const w = W * 0.86, d = D * 0.7, hh = 1.2 + r() * 0.4, lz = vorn - d / 2 - 0.04; box("haus", 0, lz, w, hh, d, pk(PAL.laden)); markise(0, w, pk(MARK)); flachdach(0, lz, w, d, hh); return "Geschäftshaus"; }],
-      [() => { const w = W * 0.88, d = D * 0.75, hh = 1.2 + r() * 0.4, lz = vorn - d / 2 - 0.04; box("haus", 0, lz, w, hh, d, 0xe6dccb); box("flach", 0, lz + d / 2 + 0.01, w * 0.96, 0.16, 0.02, 0x7fb8e0, { ly: 0.25 }); schild(0, lz + d / 2 + 0.01, w * 0.5, pk(MARK), hh - 0.16); return "Kaufhaus"; },
-       () => { const w = W * 0.8, d = Math.min(D * 0.7, 1.6), hh = 1.6 + r() * 0.6, lz = vorn - d / 2 - 0.08; box("haus", 0, lz, w, hh, d, pk(BLOCK)); box("flach", 0, lz + d / 2 + 0.1, 0.42, 0.04, 0.22, 0x2f3540, { ly: 0.3 }); schild(0, lz + d / 2 + 0.01, 0.5, 0xf2c14e, hh - 0.2); return "Hotel"; }],
-      [() => { const w = W * 0.9, d = D * 0.62, lz = -D / 2 + d / 2 + 0.1; box("haus", 0, lz, w, 0.75, d, 0xe9e4da); box("flach", 0, lz, w * 0.5, 0.18, d * 0.5, 0xa9d4ea, { ly: 0.75 }); schild(0, lz + d / 2 + 0.01, w * 0.4, pk(MARK), 0.55); parkplatz(0, vorn - 0.25, w, 0.4, Math.max(3, Math.floor(W * 2))); return "Einkaufszentrum"; },
-       () => { const c = pk(TURM), lz = vorn - D * 0.45; box("haus", 0, lz, W * 0.86, 0.6, D * 0.7, 0xe6dccb); box("haus", 0, lz - 0.1, Math.min(W, D) * 0.5, 2.8 + r() * 1.2, Math.min(W, D) * 0.5, c, { ly: 0.6 }); schild(0, lz + D * 0.35 + 0.01, 0.6, 0xf2c14e, 0.45); return "Hotelturm"; }]
+      [() => { const d = Math.min(D * 0.5, 0.9), lz = -D / 2 + d / 2 + 0.1; bau({ lz, w: W * 0.92, d, n: 1, c: 0xeeeae2, laden: pk(PAL.markise), dach: "flach", technik: 1, hh: 0.55 }); parkplatz(0, vorn - (D - d - 0.3) / 2, W * 0.9, Math.max(0.4, D - d - 0.3), Math.max(2, Math.floor(W * 2.4))); return "Supermarkt"; },
+       () => { const d = Math.min(D * 0.45, 0.8), lz = -D / 2 + d / 2 + 0.12; bau({ lz, w: W * 0.88, d, n: 1, c: pk([0xf2c14e, 0x3d5a80, 0xe8493f]), laden: 0xf4f4f4, dach: "flach", technik: 0.6, hh: 0.5 }); parkplatz(0, vorn - (D - d - 0.3) / 2, W * 0.9, Math.max(0.4, D - d - 0.3), Math.max(2, Math.floor(W * 2.4))); return "Discounter"; },
+       () => { const d = Math.min(D * 0.55, 0.9), lz = -D / 2 + d / 2 + 0.12; bau({ lz, w: W * 0.85, d, n: 1, c: 0xf4f4f2, laden: 0xd9302f, sc: 0xffffff, dach: "flach", technik: 0.5 }); parkplatz(0, vorn - (D - d - 0.3) / 2, W * 0.9, Math.max(0.4, D - d - 0.3), Math.max(2, Math.floor(W * 2))); return "Drogeriemarkt"; },
+       () => { const w = W * 0.88, d = D * 0.7, lz = VORNE(d, 0.04); bau({ lz, w, d, n: zi(3, 4), c: pk(STIL.laden), laden: pk(PAL.markise), dach: "flach", technik: 0.6, baender: true }); return "Geschäftshaus"; },
+       () => { const d = Math.min(D * 0.6, 1.0), lz = -D / 2 + d / 2 + 0.12; bau({ lz, w: W * 0.88, d, n: 1, c: 0x3a3d42, laden: 0xe8493f, sc: 0xffffff, dach: "flach", technik: 0.8, hh: 0.6 }); parkplatz(0, vorn - (D - d - 0.3) / 2, W * 0.9, Math.max(0.4, D - d - 0.3), Math.max(2, Math.floor(W * 2))); return "Elektromarkt"; }],
+      [() => { const w = W * 0.9, d = D * 0.76, lz = VORNE(d, 0.04), c = pk([0xe6dccb, 0xd8c3a5, 0xefe9df]); bau({ lz, w, d, n: 4, art: "altbau", c, laden: 0x2f3540, dach: "flach", gesims: true, technik: 0.8 }); schild(0, lz + d / 2, w * 0.4, pk(PAL.markise), geschossH(4) - 0.15); return "Kaufhaus"; },
+       () => { const w = W * 0.82, d = Math.min(D * 0.7, 1.6), lz = VORNE(d, 0.1); bau({ lz, w, d, n: zi(6, 8), c: pk(STIL.putz), dach: "flach", balkon: "franz", technik: 1, eingang: "glas" }); klein("flach", 0, lz + d / 2 + 0.12, 0.5, 0.04, 0.24, 0x2f3540, { ly: 0.32 }); schild(0, lz + d / 2, 0.5, 0xf2c14e, geschossH(7) - 0.2); return "Hotel"; },
+       () => { const w = W * 0.9, d = D * 0.75, lz = VORNE(d, 0.1); bau({ lz, w, d, n: 1, c: 0x2f343b, laden: 0x8a2f2f, sc: 0xf2c14e, dach: "flach", hh: 0.9, technik: 0.5 }); add("flach", 0, lz + d / 2 + 0.02, w * 0.7, 0.18, 0.03, 0xf4f4f4, { ly: 0.6 }); vorplatz(); return "Kino"; },
+       () => { const d = Math.min(D * 0.6, 1.1), lz = -D / 2 + d / 2 + 0.1; bau({ lz, w: W * 0.9, d, n: 1, c: 0xf2a93b, laden: 0x3d5a80, dach: "sattel", dc: 0x8b9096, dachH: 0.18, hh: 0.6 }); parkplatz(0, vorn - (D - d - 0.3) / 2, W * 0.9, Math.max(0.4, D - d - 0.3), Math.max(2, Math.floor(W * 2))); return "Baumarkt"; },
+       () => { const w = W * 0.9, d = D * 0.72, lz = VORNE(d, 0.08), c = pk(STIL.klinker); bau({ lz, w, d, n: 2, art: "altbau", c, dach: "sattel", dc: 0x5d6470, quer: false, eingang: "portal" }); klein("glas", 0, lz, w * 0.3, 0.12, d * 0.6, 0xbfe3ef, { ly: geschossH(2) + 0.2 }); vorplatz(0xd8cbb0); return "Markthalle"; }],
+      [() => { const w = W * 0.92, d = D * 0.62, lz = -D / 2 + d / 2 + 0.08; bau({ lz, w, d, n: 2, c: 0xe9e4da, laden: pk(PAL.markise), dach: "flach", technik: 1.2 }); add("glas", 0, lz, w * 0.4, 0.2, d * 0.5, 0xa9d4ea, { ly: geschossH(2) }); parkplatz(0, vorn - 0.25, w, 0.4, Math.max(3, Math.floor(W * 2.4))); return "Einkaufszentrum"; },
+       () => { const c = pk(STIL.glas), lz = VORNE(D * 0.7, 0.06); bau({ lz, w: W * 0.88, d: D * 0.7, n: 2, c: pk(STIL.laden), laden: 0x2f3540, dach: "flach" }); const s = Math.min(W, D) * 0.5; const y = bau({ lz: lz - 0.1, w: s, d: s, n: zi(14, 20), art: "glas", c, ly: geschossH(2), dach: "flach", technik: 1, eingang: false }); schild(0, lz - 0.1 + s / 2, s * 0.6, 0xf2c14e, y - 0.2); return "Hotelturm"; },
+       () => { const d = Math.min(D * 0.6, 1.1), lz = -D / 2 + d / 2 + 0.1; bau({ lz, w: W * 0.92, d, n: 2, c: pk([0x3d5a80, 0xf2c14e, 0xf4f4f2]), art: "buero", dach: "flach", technik: 1, eingang: "glas" }); parkplatz(0, vorn - (D - d - 0.3) / 2, W * 0.9, Math.max(0.4, D - d - 0.3), Math.max(2, Math.floor(W * 2.4))); return "Möbelhaus"; },
+       () => { const w = W * 0.88, d = D * 0.72, lz = VORNE(d, 0.12); bau({ lz, w, d, n: 3, art: "glas", c: pk(STIL.glas), dach: "flach", eingang: "glas" }); add("dach", 0, lz, w + 0.1, 0.35, d + 0.1, 0xc9ced6, { ly: geschossH(3) }); vorplatz(0xe8e4dc); return "Eventhalle"; },
+       () => { const c = pk(STIL.glas); bau({ lz: VORNE(D * 0.8, 0.04), w: W * 0.92, d: D * 0.8, n: 3, c: pk(STIL.laden), laden: pk(PAL.markise), dach: "flach", baender: true }); const s = Math.min(W, D) * 0.48; let y = geschossH(3), sz = s; for (let k = 0; k < 3; k++) { y = bau({ lz: VORNE(D * 0.8, 0.04) - 0.1, w: sz, d: sz, n: zi(5, 7), art: "glas", c, ly: y, dach: "flach", eingang: false }); sz *= 0.82; } return "Shopping-Tower"; }]
     ],
     5: [ // Büros
-      [() => { const w = W * 0.82, d = D * 0.7, hh = 1.0 + r() * 0.3, lz = vorn - d / 2 - 0.06; box("haus", 0, lz, w, hh, d, 0xc9ced3); for (let y = 0.2; y < hh; y += 0.32) box("flach", 0, lz + d / 2 + 0.005, w * 0.98, 0.1, 0.01, 0x6f93ab, { ly: y }); flachdach(0, lz, w, d, hh); return "Bürohaus"; },
-       () => { const w = W * 0.82, d = D * 0.7, hh = 1.2 + r() * 0.4, lz = vorn - d / 2 - 0.06; box("haus", 0, lz, w, hh, d, 0x8fb3c9); flachdach(0, lz, w, d, hh, 0xb9c4cc); return "Bürogebäude mit Glasfront"; }],
-      [() => { const c = pk(TURM), d = D * 0.36; box("haus", -W * 0.22, vorn - d / 2 - 0.05, W * 0.4, 1.6, d, c); box("haus", W * 0.22, -D / 2 + d / 2 + 0.1, W * 0.4, 1.9, d, c); box("flach", 0, 0, 0.3, 0.12, D * 0.5, 0xd9dde2, { ly: 1.0 }); return "Bürokomplex"; },
-       () => { const s0 = Math.min(W, D) * 0.7, hh = 2.0 + r() * 0.6, lz = vorn - D * 0.45; box("haus", 0, lz, s0, hh, s0, pk(TURM)); box("flach", 0, lz, s0 * 0.5, 0.2, s0 * 0.5, 0x9aa0a8, { ly: hh }); return "Glasbürohaus"; }],
-      [() => { const s0 = Math.min(W, D) * 0.62, hh = 4.0 + r() * 1.6, lz = vorn - D * 0.45, c = pk(TURM); box("haus", 0, lz, s0, hh, s0, c); box("haus", 0, lz, s0 * 0.72, 0.5, s0 * 0.72, c, { ly: hh }); box("flach", 0, lz, 0.03, 0.9, 0.03, 0xc9ced6, { ly: hh + 0.5 }); return "Wolkenkratzer"; },
-       () => { const c = pk(TURM), lz = vorn - D * 0.45; let y = 0, sz = Math.min(W, D) * 0.78; for (let k = 0; k < 4; k++) { const hh = 1.0 + r() * 0.9; box("haus", 0, lz, sz, hh, sz, c, { ly: y }); y += hh; sz *= 0.78; } box("flach", 0, lz, 0.03, 0.6, 0.03, 0xc9ced6, { ly: y }); return "Gestufter Glasturm"; },
-       () => { const c = pk(TURM); if (W >= 3) { for (const lx of [-W * 0.22, W * 0.22]) box("haus", lx, vorn - D * 0.45, 0.8, 3.6 + r() * 0.6, 0.8, c); box("flach", 0, vorn - D * 0.45, W * 0.32, 0.14, 0.3, 0xd9dde2, { ly: 2.4 }); return "Zwillingstürme"; } box("haus", 0, vorn - D * 0.45, Math.min(W, D) * 0.6, 3.6, Math.min(W, D) * 0.6, c); return "Büroturm"; }]
+      [() => { const w = W * 0.84, d = D * 0.7, lz = VORNE(d, 0.08); bau({ lz, w, d, n: zi(3, 4), art: "buero", c: pk(STIL.buero), dach: "flach", technik: 0.6 }); vorplatz(); return "Bürohaus"; },
+       () => { const w = Math.min(W * 0.7, 0.8), d = 0.62, lz = VORNE(d, 0.2); bau({ lz, w, d, n: 2, art: "altbau", c: pk(STIL.altbau), dach: "walm", dc: pk(STIL.schiefer), gauben: 2, gesims: true }); garten(2); parkplatz(W * 0.3, -D / 2 + 0.25, 0.5, 0.3, 2); return "Bürovilla"; },
+       () => { const w = W * 0.86, d = D * 0.7, lz = VORNE(d, 0.06); bau({ lz, w, d, n: 4, art: "altbau", c: pk(STIL.klinker), dach: "sattel", dc: 0x3f4650, quer: false, baender: true, gc: 0xd8cbb0 }); vorplatz(); return "Backstein-Loft"; },
+       () => { const w = W * 0.84, d = D * 0.68, lz = VORNE(d, 0.08); bau({ lz, w, d, n: 3, c: pk(STIL.modern), dach: "flach", eingang: "glas", baender: true }); vorplatz(); return "Kanzleihaus"; },
+       () => { const w = W * 0.86, d = D * 0.65, lz = VORNE(d, 0.12), n = Math.max(2, Math.round(W / 0.5)), bw = w / n; for (let k = 0; k < n; k++) bau({ lx: -w / 2 + bw * (k + 0.5), lz, w: bw - 0.02, d, n: 2 + (k % 2), art: "holz", c: pk(STIL.holz), dach: "flach", eingang: k === 0 ? "glas" : false }); vorplatz(); return "Gründerzentrum"; },
+       () => { const w = W * 0.82, d = D * 0.7, lz = VORNE(d, 0.08); bau({ lz, w, d, n: zi(3, 5), art: "glas", c: pk(STIL.glas), dach: "flach", technik: 0.6 }); vorplatz(); return "Bürogebäude mit Glasfront"; }],
+      [() => { const c = pk(STIL.buero), d = D * 0.36; bau({ lx: -W * 0.22, lz: vorn - d / 2 - 0.06, w: W * 0.4, d, n: 5, art: "buero", c, dach: "flach", technik: 0.5 }); bau({ lx: W * 0.22, lz: -D / 2 + d / 2 + 0.1, w: W * 0.4, d, n: 6, art: "buero", c, dach: "flach", technik: 0.5, eingang: false }); klein("glas", 0, 0, 0.3, 0.14, D * 0.5, 0x9fc0d2, { ly: geschossH(3) }); vorplatz(); return "Bürokomplex"; },
+       () => { const s0 = Math.min(W, D) * 0.72, lz = VORNE(s0, 0.1); bau({ lz, w: s0, d: s0, n: zi(6, 8), art: "glas", c: pk(STIL.glas), dach: "flach", technik: 1 }); vorplatz(0xe8e4dc); return "Glasbürohaus"; },
+       () => { const w = W * 0.86, d = D * 0.68, lz = VORNE(d, 0.16), c = pk(STIL.altbau); bau({ lz, w, d, n: 4, art: "altbau", c, dach: "flach", gesims: true, eingang: "portal", attika: false }); if (DS >= 1) for (let k = 0; k < 4; k++) zyl(-w * 0.3 + k * w * 0.2, lz + d / 2 + 0.08, 0.06, geschossH(2), hell(c, 0.4)); klein("flach", 0, lz + d / 2 + 0.08, w * 0.75, 0.06, 0.12, hell(c, 0.4), { ly: geschossH(2) }); vorplatz(0xd8cbb0); return "Bankgebäude"; },
+       () => { const w = W * 0.9, d = D * 0.72, lz = VORNE(d, 0.1); bau({ lz, w, d, n: 2, art: "glas", c: pk(STIL.glas), dach: "flach", garten: true, eingang: "glas" }); vorplatz(); baum(-W * 0.4, vorn - 0.1, 0.35); return "Tech-Campus"; },
+       () => { const w = W * 0.86, d = D * 0.6, lz = VORNE(d, 0.1); bau({ lz, w, d, n: zi(5, 7), art: "buero", c: pk(STIL.buero), dach: "flach", technik: 1, baender: false }); vorplatz(); return "Verwaltungsgebäude"; },
+       () => { const lz = VORNE(D * 0.6, 0.1), c = pk(STIL.modern); bau({ lz, w: W * 0.5, d: D * 0.6, n: 3, art: "buero", c, dach: "flach", lx: -W * 0.2 }); bau({ lx: W * 0.08, lz: lz + 0.05, w: W * 0.7, d: D * 0.5, n: 2, art: "glas", c: pk(STIL.glas), ly: geschossH(3), dach: "flach", eingang: false, technik: 0.5 }); vorplatz(); return "Medienhaus"; }],
+      [() => { const s0 = Math.min(W, D) * 0.62, lz = VORNE(s0, 0.12), c = pk(STIL.glas); const y = bau({ lz, w: s0, d: s0, n: zi(18, 26), art: "glas", c, dach: "flach", eingang: "glas" }); add("glas", 0, lz, s0 * 0.72, 0.5, s0 * 0.72, c, { ly: y }); add("flach", 0, lz, 0.03, 0.9, 0.03, 0xc9ced6, { ly: y + 0.5 }); vorplatz(0xe8e4dc); return "Wolkenkratzer"; },
+       () => { const c = pk(STIL.glas), lz = VORNE(Math.min(W, D) * 0.78, 0.1); let y = 0, sz = Math.min(W, D) * 0.78; for (let k = 0; k < 4; k++) { y = bau({ lz, w: sz, d: sz, n: zi(4, 7), art: "glas", c, ly: y, dach: "flach", eingang: k ? false : "glas" }); sz *= 0.8; } add("flach", 0, lz, 0.03, 0.7, 0.03, 0xc9ced6, { ly: y }); return "Gestufter Glasturm"; },
+       () => { const c = pk(STIL.glas); if (W >= 2.9) { const s = Math.min(0.8, W * 0.27); for (const lx of [-W * 0.23, W * 0.23]) bau({ lx, lz: VORNE(s, 0.12), w: s, d: s, n: zi(24, 28), art: "glas", c, dach: "flach", technik: 1, eingang: "glas" }); add("glas", 0, VORNE(s, 0.12), W * 0.3, 0.32, 0.3, c, { ly: 3.4 }); return "Zwillingstürme"; } const s0 = Math.min(W, D) * 0.6; bau({ lz: VORNE(s0, 0.12), w: s0, d: s0, n: 24, art: "glas", c, dach: "flach", technik: 1 }); return "Büroturm"; },
+       () => { const c = pk(STIL.glas), s0 = Math.min(W, D) * 0.55, lz = VORNE(s0 * 1.2, 0.12), n = zi(20, 26); for (const ry of [0, Math.PI / 4]) add("glas", 0, lz, s0, geschossH(n), s0, c, { ry }); dach("flach", 0, lz, s0, s0, geschossH(n), null, { attika: false }); eingang(0, lz + s0 * 0.7, "glas", c); vorplatz(0xe8e4dc); return "Achteckturm"; },
+       () => { const c = pk(STIL.glas), s0 = Math.min(W, D) * 0.58, lz = VORNE(s0, 0.12); const y = bau({ lz, w: s0, d: s0, n: zi(20, 28), art: "glas", c, dach: "flach", attika: false, eingang: "glas" }); dach("zelt", 0, lz, s0, s0, y, dunkel(c, 0.2), { h: 0.9, ue: 0 }); add("flach", 0, lz, 0.025, 1.2, 0.025, 0xd9dde2, { ly: y + 0.85 }); return "Bankenturm mit Spitze"; },
+       () => { const c = pk(STIL.glas), s0 = Math.min(W, D) * 0.6, lz = VORNE(s0, 0.12); const y = bau({ lz, w: s0, d: s0, n: zi(24, 30), art: "buero", c: pk(STIL.buero), dach: "flach", technik: 0.4, eingang: "glas" }); zyl(0, lz, s0 * 0.7, 0.03, 0x4a4e55, { ly: y + 0.02 }); add("flach", 0, lz, 0.25, 0.005, 0.04, 0xffffff, { ly: y + 0.052 }); add("flach", 0, lz, 0.04, 0.005, 0.25, 0xffffff, { ly: y + 0.052 }); return "Turm mit Hubschrauberplatz"; },
+       () => { const c = pk(STIL.glas); bau({ lz: VORNE(D * 0.75, 0.06), w: W * 0.92, d: D * 0.75, n: 3, art: "glas", c: pk(STIL.buero), dach: "flach", garten: true, eingang: "glas" }); const s = Math.min(W, D) * 0.5; bau({ lx: W * 0.15, lz: -D * 0.1, w: s, d: s, n: zi(18, 24), art: "glas", c, ly: geschossH(3), dach: "flach", technik: 1, eingang: false }); return "Konzernzentrale"; }]
     ],
     6: [ // Industrie
-      [() => { const w = W * 0.86, d = D * 0.55, lz = vorn - d / 2 - 0.1; box("haus", 0, lz, w, 0.42, d, pk(HALLE)); box("dach", 0, lz, w + 0.04, 0.16, d + 0.04, 0x8b9096, { ly: 0.42 }); return "Werkstatt"; },
-       () => { const w = W * 0.86, d = D * 0.62, hh = 0.42, lz = vorn - d / 2 - 0.12, n = Math.max(2, Math.round(d / 0.3)); box("haus", 0, lz, w, hh, d, pk(HALLE)); for (let k = 0; k < n; k++) box("dach", 0, lz - d / 2 + d / n * (k + 0.5), w, 0.16, d / n, 0x9aa1a8, { ly: hh }); return "Lagerhalle"; },
-       () => { box("flach", 0, 0, W * 0.9, 0.01, D * 0.85, 0x8c8a84, { ly: 0.004 }); for (let k = 0; k < 6; k++) box("dach", (r() - 0.5) * W * 0.7, (r() - 0.5) * D * 0.6, 0.3 + r() * 0.3, 0.12 + r() * 0.15, 0.3 + r() * 0.3, pk([0x7a5a3a, 0x8a8f96, 0x6d4c3a, 0xa36a3a])); box("haus", W * 0.3, vorn - 0.25, 0.35, 0.3, 0.3, 0xb5b0a5); return "Schrottplatz"; }],
-      [() => { const w = W * 0.86, d = D * 0.75, hh = 0.65 + r() * 0.2, lz = vorn - d / 2 - 0.1; box("haus", 0, lz, w, hh, d, pk(HALLE)); box("dach", 0, lz, w + 0.04, 0.16, d + 0.04, 0x8b9096, { ly: hh }); zyl(-w / 2 + 0.2, lz - d / 2 + 0.2, 0.16, 1.3 + r() * 0.4, 0xb5523a, { schlot: true }); return "Fabrikhalle"; },
-       () => { const lz = vorn - 0.45; box("haus", -W * 0.28, lz, 0.55, 0.45, 0.55, pk(HALLE)); for (let k = 0; k < Math.min(4, W); k++) zyl(-W * 0.05 + k * 0.38, lz - 0.2, 0.34, 0.9 + r() * 0.3, 0xd8dade); return "Silos"; },
-       () => { const w = W * 0.9, d = D * 0.55, lz = -D / 2 + d / 2 + 0.1; box("haus", 0, lz, w, 0.6, d, 0xd0c8b8); for (let k = 0; k < Math.min(4, W); k++) box("flach", -w / 2 + 0.3 + k * 0.45, lz + d / 2 + 0.02, 0.3, 0.32, 0.02, 0x55595f); for (let k = 0; k < 2; k++) box("flach", -w * 0.25 + k * w * 0.5, vorn - 0.3, 0.22, 0.24, 0.55, k ? 0xe8493f : 0x3f7fe8, { ly: 0.01 }); return "Logistikzentrum"; }],
-      [() => { const w = W * 0.86, d = D * 0.78, hh = 0.75, lz = vorn - d / 2 - 0.1; box("haus", 0, lz, w, hh, d, pk(HALLE)); box("dach", 0, lz, w + 0.04, 0.16, d + 0.04, 0x8b9096, { ly: hh }); zyl(-w / 2 + 0.2, lz - d / 2 + 0.2, 0.16, 1.5, 0xb5523a, { schlot: true }); zyl(w / 2 - 0.35, lz - d / 2 - 0.3, 0.5, 0.55, 0xc8ccd0); return "Fabrik"; },
-       () => { const w = W * 0.86, d = D * 0.78, hh = 0.75, lz = vorn - d / 2 - 0.1; box("haus", -w / 4, lz, w / 2 - 0.05, hh, d, pk(HALLE)); box("haus", w / 4, lz, w / 2 - 0.05, hh * 0.8, d, pk(HALLE)); box("flach", 0, lz, w * 0.9, 0.06, 0.12, 0x6d737a, { ly: hh * 0.7 }); zyl(-w / 2 + 0.25, lz - d / 2 + 0.25, 0.18, 1.8, 0xb5523a, { schlot: true }); zyl(w / 2 - 0.25, lz - d / 2 + 0.25, 0.18, 1.6, 0xb5523a, { schlot: true }); return "Großfabrik"; },
-       () => { const lz = vorn - D * 0.4; box("haus", -W * 0.3, vorn - 0.3, 0.6, 0.5, 0.4, pk(HALLE)); for (let k = 0; k < 3; k++) zyl(-W * 0.1 + k * 0.5, lz - 0.2, 0.42, 0.7, 0xe9ecef); box("flach", 0.2, lz + 0.15, W * 0.6, 0.05, 0.05, 0x9aa0a8, { ly: 0.5 }); zyl(W * 0.38, lz + 0.3, 0.14, 1.6, 0xb5523a, { schlot: true }); return "Chemiewerk"; }]
+      [() => { const w = W * 0.86, d = D * 0.55, lz = VORNE(d, 0.1); bau({ lz, w, d, n: 1, c: pk(STIL.halle), dach: "sattel", dc: 0x8b9096, dachH: 0.14, hh: 0.5, eingang: false }); add("flach", 0, lz + d / 2 + 0.006, w * 0.4, 0.32, 0.012, 0x6d737a); flaeche(0, vorn - 0.06, W * 0.95, 0.2, 0x6d7178); return "Werkstatt"; },
+       () => { const w = W * 0.88, d = D * 0.65, lz = VORNE(d, 0.12); bau({ lz, w, d, n: 1, c: pk(STIL.halle), dach: "sattel", dc: 0x9aa1a8, dachH: 0.16, hh: 0.55, quer: d > w, eingang: false }); for (let k = 0; k < Math.min(4, Math.floor(w / 0.4)); k++) add("flach", -w / 2 + 0.25 + k * 0.4, lz + d / 2 + 0.006, 0.28, 0.34, 0.012, 0x55595f); flaeche(0, vorn - 0.06, W * 0.95, 0.2, 0x6d7178); return "Lagerhalle"; },
+       () => { flaeche(0, 0, W * 0.9, D * 0.85, 0x8c8a84); for (let k = 0; k < 7; k++) add("dach", (r() - 0.5) * W * 0.7, (r() - 0.5) * D * 0.6, 0.3 + r() * 0.3, 0.12 + r() * 0.15, 0.3 + r() * 0.3, pk([0x7a5a3a, 0x8a8f96, 0x6d4c3a, 0xa36a3a]), { ry: r() * 3 }); bau({ lx: W * 0.3, lz: vorn - 0.25, w: 0.35, d: 0.3, n: 1, c: 0xb5b0a5, dach: "flach" }); return "Schrottplatz"; },
+       () => { const w = W * 0.84, d = D * 0.55, lz = VORNE(d, 0.2); bau({ lz, w, d, n: 1, c: 0xf4f4f4, dach: "flach", hh: 0.55, eingang: false }); for (let k = 0; k < 2; k++) add("flach", -w * 0.25 + k * w * 0.5, lz + d / 2 + 0.006, w * 0.35, 0.34, 0.012, 0x3a3d42); schild(0, lz + d / 2, w * 0.5, 0x3d5a80, 0.46); flaeche(0, vorn - 0.1, W * 0.95, 0.28, 0x6d7178); auto(-0.2, vorn - 0.1, true, 2); auto(0.2, vorn - 0.1, true, 5); return "Autowerkstatt"; }],
+      [() => { const w = W * 0.88, d = D * 0.75, lz = VORNE(d, 0.1), hh = 0.7; add("haus", 0, lz, w, hh, d, pk(STIL.halle)); const n = Math.max(2, Math.round(d / 0.32)); for (let k = 0; k < n; k++) add("pult", 0, lz - d / 2 + d / n * (k + 0.5), w, 0.2, d / n, 0x9aa1a8, { ly: hh, ry: Math.PI }); zyl(-w / 2 + 0.2, lz - d / 2 + 0.2, 0.16, 1.5, 0xb5523a, { schlot: true }); return "Fabrikhalle mit Sheddach"; },
+       () => { const lz = vorn - 0.45; bau({ lx: -W * 0.28, lz, w: 0.55, d: 0.55, n: 1, c: pk(STIL.halle), dach: "pult", dc: 0x8b9096, eingang: false }); for (let k = 0; k < Math.min(4, W); k++) { zyl(-W * 0.05 + k * 0.38, lz - 0.2, 0.34, 1.0 + r() * 0.3, 0xd8dade); dach("zelt", -W * 0.05 + k * 0.38, lz - 0.2, 0.34, 0.34, 1.3, 0xb9bec4, { h: 0.12, ue: 0 }); } return "Silos"; },
+       () => { const w = W * 0.9, d = D * 0.55, lz = -D / 2 + d / 2 + 0.1; bau({ lz, w, d, n: 1, c: 0xd0c8b8, dach: "flach", hh: 0.65, eingang: false, technik: 0.4 }); for (let k = 0; k < Math.min(5, Math.floor(w / 0.42)); k++) add("flach", -w / 2 + 0.3 + k * 0.42, lz + d / 2 + 0.006, 0.28, 0.34, 0.012, 0x55595f); for (let k = 0; k < 2; k++) lkw(-w * 0.25 + k * w * 0.5, vorn - 0.35); flaeche(0, vorn - 0.3, W * 0.95, 0.6, 0x6d7178); return "Logistikzentrum"; },
+       () => { const w = W * 0.84, d = D * 0.62, lz = VORNE(d, 0.12); bau({ lz, w, d, n: 2, art: "altbau", c: pk(STIL.klinker), dach: "sattel", dc: 0x5d6470, eingang: false }); zyl(w / 2 - 0.2, lz - d / 2 + 0.1, 0.2, 2.0, 0xa9533b, { schlot: true }); for (let k = 0; k < 4; k++) add("flach", -w * 0.3 + k * 0.15, vorn - 0.12, 0.12, 0.12, 0.12, 0xb8653f, { ly: 0.005 }); return "Ziegelei"; }],
+      [() => { const w = W * 0.86, d = D * 0.78, hh = 0.85, lz = VORNE(d, 0.1); bau({ lz, w, d, n: 2, hh, c: pk(STIL.halle), dach: "sattel", dc: 0x8b9096, dachH: 0.2, eingang: false }); zyl(-w / 2 + 0.2, lz - d / 2 + 0.2, 0.16, 1.7, 0xb5523a, { schlot: true }); zyl(w / 2 - 0.35, lz - d / 2 - 0.3, 0.5, 0.6, 0xc8ccd0); container(-w * 0.3, vorn - 0.12, true); return "Fabrik"; },
+       () => { const w = W * 0.86, d = D * 0.78, hh = 0.8, lz = VORNE(d, 0.1); add("haus", -w / 4, lz, w / 2 - 0.05, hh, d, pk(STIL.halle)); add("haus", w / 4, lz, w / 2 - 0.05, hh * 0.8, d, pk(STIL.halle)); dach("sattel", -w / 4, lz, w / 2 - 0.05, d, hh, 0x8b9096, { h: 0.18, quer: true }); dach("flach", w / 4, lz, w / 2 - 0.05, d, hh * 0.8, 0x9aa0a8, {}); add("flach", 0, lz, w * 0.9, 0.06, 0.12, 0x6d737a, { ly: hh * 0.7 }); zyl(-w / 2 + 0.25, lz - d / 2 + 0.25, 0.18, 1.9, 0xb5523a, { schlot: true }); zyl(w / 2 - 0.25, lz - d / 2 + 0.25, 0.18, 1.7, 0xb5523a, { schlot: true }); return "Großfabrik"; },
+       () => { const lz = vorn - D * 0.4; bau({ lx: -W * 0.3, lz: vorn - 0.3, w: 0.6, d: 0.4, n: 2, art: "buero", c: pk(STIL.halle), dach: "flach" }); for (let k = 0; k < 3; k++) { zyl(-W * 0.1 + k * 0.5, lz - 0.2, 0.42, 0.75, 0xe9ecef); dach("zelt", -W * 0.1 + k * 0.5, lz - 0.2, 0.42, 0.42, 0.75, 0xd8dade, { h: 0.1, ue: 0 }); } add("flach", 0.2, lz + 0.15, W * 0.6, 0.05, 0.05, 0x9aa0a8, { ly: 0.5 }); zyl(W * 0.38, lz + 0.3, 0.14, 1.7, 0xb5523a, { schlot: true }); return "Chemiewerk"; },
+       () => { const w = W * 0.9, d = D * 0.7, lz = VORNE(d, 0.1); bau({ lz, w, d, n: 3, hh: 1.1, c: 0x6d737a, dach: "sattel", dc: 0x4a4e55, dachH: 0.25, eingang: false }); zyl(-w * 0.35, lz - d / 2 - 0.1, 0.3, 2.3, 0x8a8f96, { schlot: true }); zyl(-w * 0.1, lz - d / 2 - 0.1, 0.3, 2.3, 0x8a8f96, { schlot: true }); add("flach", w * 0.3, lz + d / 2 + 0.1, 0.12, 0.6, 0.12, 0xe8493f); container(w * 0.1, vorn - 0.12, true); return "Stahlwerk"; }]
     ],
-    7: [[ // Landwirtschaft (nur eine Stufe, wie bei Cities: Skylines)
-      () => { const n = Math.max(4, Math.round(D / 0.22)); for (let k = 0; k < n; k++) box("flach", 0, -D / 2 + 0.1 + (D - 0.4) / n * (k + 0.5), W * 0.88, 0.03, (D - 0.4) / n * 0.8, k % 2 ? 0xe2c26a : 0xd4b257, { ly: 0.004 }); box("haus", W * 0.35, vorn - 0.2, 0.42, 0.38, 0.3, 0xa8432f); giebel(W * 0.35, vorn - 0.2, 0.42, 0.3, 0.38, 0x5a4636); return "Getreidefeld"; },
-      () => { const n = Math.max(4, Math.round(D / 0.2)); for (let k = 0; k < n; k++) box("flach", 0, -D / 2 + 0.1 + (D - 0.4) / n * (k + 0.5), W * 0.88, 0.045, (D - 0.4) / n * 0.55, 0x4f9a3a, { ly: 0.004 }); box("flach", W * 0.35, vorn - 0.2, 0.35, 0.25, 0.25, 0x9a7a5a); return "Gemüsefeld"; },
-      () => { box("haus", -W * 0.25, vorn - 0.35, 0.6, 0.5, 0.45, 0xa8432f); giebel(-W * 0.25, vorn - 0.35, 0.6, 0.45, 0.5, 0x5a4636, false, 0.32); zyl(W * 0.05, vorn - 0.35, 0.3, 1.0, 0xd8dade); box("haus", W * 0.3, vorn - 0.3, 0.4, 0.4, 0.35, 0xf2efe8); giebel(W * 0.3, vorn - 0.3, 0.4, 0.35, 0.4, 0xa8432f); for (let k = 0; k < 5; k++) box("flach", (r() - 0.5) * W * 0.7, -D * 0.25 + (r() - 0.5) * D * 0.3, 0.12, 0.08, 0.06, k % 2 ? 0xf4f4f4 : 0x2c2f36, { ly: 0.01 }); return "Bauernhof"; },
-      () => { const n = Math.max(2, Math.min(4, W)); for (let k = 0; k < n; k++) box("flach", -W * 0.45 + W * 0.9 / n * (k + 0.5), -0.1, W * 0.9 / n - 0.08, 0.28, D * 0.7, 0xcfe8ef); return "Gewächshäuser"; }
+    7: [[ // Landwirtschaft
+      () => { const n = Math.max(4, Math.round(D / 0.22)); for (let k = 0; k < n; k++) add("flach", 0, -D / 2 + 0.1 + (D - 0.4) / n * (k + 0.5), W * 0.88, 0.03, (D - 0.4) / n * 0.8, k % 2 ? 0xe2c26a : 0xd4b257, { ly: 0.004 }); bau({ lx: W * 0.35, lz: vorn - 0.2, w: 0.42, d: 0.3, n: 1, c: 0xa8432f, dach: "sattel", dc: 0x5a4636, eingang: false }); return "Getreidefeld"; },
+      () => { const n = Math.max(4, Math.round(D / 0.2)); for (let k = 0; k < n; k++) add("flach", 0, -D / 2 + 0.1 + (D - 0.4) / n * (k + 0.5), W * 0.88, 0.045, (D - 0.4) / n * 0.55, 0x4f9a3a, { ly: 0.004 }); add("flach", W * 0.35, vorn - 0.2, 0.35, 0.25, 0.25, 0x9a7a5a); return "Gemüsefeld"; },
+      () => { bau({ lx: -W * 0.25, lz: vorn - 0.35, w: 0.6, d: 0.45, n: 1, art: "holz", c: 0xa8432f, dach: "sattel", dc: 0x5a4636, steil: true, eingang: false }); zyl(W * 0.05, vorn - 0.35, 0.3, 1.0, 0xd8dade); dach("zelt", W * 0.05, vorn - 0.35, 0.3, 0.3, 1.0, 0x8a8f96, { h: 0.12, ue: 0 }); bau({ lx: W * 0.3, lz: vorn - 0.3, w: 0.4, d: 0.35, n: 1, art: "fachwerk", c: 0xf2efe8, dach: "sattel", dc: 0xa8432f }); for (let k = 0; k < 5; k++) add("flach", (r() - 0.5) * W * 0.7, -D * 0.25 + (r() - 0.5) * D * 0.3, 0.12, 0.08, 0.06, k % 2 ? 0xf4f4f4 : 0x2c2f36, { ly: 0.01 }); return "Bauernhof"; },
+      () => { const n = Math.max(2, Math.min(4, W)); for (let k = 0; k < n; k++) { const x = -W * 0.45 + W * 0.9 / n * (k + 0.5), bw = W * 0.9 / n - 0.08; add("glas", x, -0.1, bw, 0.22, D * 0.7, 0xcfe8ef); dach("sattel", x, -0.1, bw, D * 0.7, 0.22, 0xdff0f4, { quer: true, h: 0.12, ue: 0 }); } return "Gewächshäuser"; },
+      () => { flaeche(0, 0, W * 0.9, D * 0.85, 0x7fc463); zaun(1); for (let k = 0; k < 6; k++) { const x = (r() - 0.5) * W * 0.7, z = (r() - 0.5) * D * 0.6; add("flach", x, z, 0.08, 0.08, 0.16, k % 2 ? 0xf4f4f4 : 0x5a3a24, { ly: 0.03, ry: r() * 3 }); } bau({ lx: W * 0.3, lz: vorn - 0.25, w: 0.4, d: 0.32, n: 1, art: "holz", c: 0x8a2f24, dach: "sattel", dc: 0x5a4636, eingang: false }); return "Kuhweide"; }
     ]],
     8: [[ // Forstwirtschaft
-      () => { const w = W * 0.6, lz = vorn - 0.4; box("haus", -W * 0.15, lz, w, 0.5, 0.6, 0x9c7a55); box("dach", -W * 0.15, lz, w + 0.06, 0.18, 0.66, 0x5a4636, { ly: 0.5 }); for (let k = 0; k < 3; k++) box("flach", W * 0.3, -D * 0.2 + k * 0.28 - 0.3, 0.5, 0.18, 0.2, 0x8b5a2b); return "Sägewerk"; },
-      () => { for (let k = 0; k < 8; k++) box("flach", (r() - 0.5) * W * 0.75, (r() - 0.5) * D * 0.7, 0.5, 0.16 + r() * 0.1, 0.2, 0x8b5a2b, { ry: r() < 0.5 ? 0 : Math.PI / 2 }); box("flach", W * 0.38, vorn - 0.3, 0.05, 1.1, 0.05, 0xf2c14e); box("flach", W * 0.2, vorn - 0.3, 0.45, 0.05, 0.05, 0xf2c14e, { ly: 1.05 }); return "Holzlager"; },
-      () => { for (let a = -W * 0.4; a < W * 0.45; a += 0.35) for (let b = -D * 0.4; b < D * 0.35; b += 0.35) baum(a, b, 0.35 + r() * 0.15); box("flach", W * 0.35, vorn - 0.2, 0.3, 0.25, 0.25, 0x9a7a5a); return "Baumschule"; }
+      () => { const w = W * 0.6, lz = vorn - 0.4; bau({ lx: -W * 0.15, lz, w, d: 0.6, n: 1, art: "holz", c: 0x9c7a55, dach: "sattel", dc: 0x5a4636, eingang: false }); for (let k = 0; k < 3; k++) add("flach", W * 0.3, -D * 0.2 + k * 0.28 - 0.3, 0.5, 0.18, 0.2, 0x8b5a2b); return "Sägewerk"; },
+      () => { for (let k = 0; k < 8; k++) add("flach", (r() - 0.5) * W * 0.75, (r() - 0.5) * D * 0.7, 0.5, 0.16 + r() * 0.1, 0.2, 0x8b5a2b, { ry: r() < 0.5 ? 0 : Math.PI / 2 }); add("flach", W * 0.38, vorn - 0.3, 0.05, 1.1, 0.05, 0xf2c14e); add("flach", W * 0.2, vorn - 0.3, 0.45, 0.05, 0.05, 0xf2c14e, { ly: 1.05 }); return "Holzlager"; },
+      () => { for (let a = -W * 0.4; a < W * 0.45; a += 0.35) for (let b = -D * 0.4; b < D * 0.35; b += 0.35) baum(a, b, 0.35 + r() * 0.15); add("flach", W * 0.35, vorn - 0.2, 0.3, 0.25, 0.25, 0x9a7a5a); return "Baumschule"; },
+      () => { bau({ lz: vorn - 0.35, w: 0.6, d: 0.5, n: 2, art: "holz", c: 0x6b4a2f, dach: "sattel", dc: 0x4a5a3a, steil: true }); for (let k = 0; k < 4; k++) baum((r() - 0.5) * W * 0.8, -D * 0.3 + r() * 0.2, 0.5); add("flach", W * 0.3, vorn - 0.15, 0.24, 0.14, 0.12, 0x4a5a3a, { ly: 0.01 }); return "Försterei"; }
     ]]
   };
   const stufen = L[h.zone], liste = stufen[Math.min(h.stufe, stufen.length) - 1];
   h.name = liste[h.variante % liste.length]();
-  details(T, h, W, D, vorn, r);
-  massstab(T, W, D, vorn);
   return T;
 }
-/* Kleine Dinge, die Häuser echt wirken lassen: Tür, Einfahrt mit Auto, Hecke oder Zaun, Blumen, Schornstein */
-function details(T, h, W, D, vorn, r) {
-  const haupt = T.filter((t) => t.b === "haus" && !t.fest && (t.ly || 0) < 0.05).sort((a, b) => (b.lz + b.sz / 2) - (a.lz + a.sz / 2) || b.sx * b.sy - a.sx * a.sy)[0];
-  const neu = (o) => T.push(Object.assign({ ly: 0 }, o));
-  if (haupt && [1, 2, 3, 4, 5].includes(h.zone)) {
-    const vz = haupt.lz + haupt.sz / 2 + 0.006, grosse = h.zone !== 1;
-    neu({ b: "flach", lx: haupt.lx + (grosse ? 0 : haupt.sx * 0.22), lz: vz, sx: grosse ? 0.16 : 0.09, sy: grosse ? 0.2 : 0.17, sz: 0.012, c: grosse ? 0x34495a : wahl(r, [0x6b4a2f, 0x3d5a80, 0x2f6b4a, 0x8a2f2f, 0xf2efe8]) });
-    neu({ b: "flach", lx: haupt.lx + (grosse ? 0 : haupt.sx * 0.22), lz: vz + 0.04, sx: grosse ? 0.22 : 0.14, sy: 0.012, sz: 0.08, c: 0xb9b4a8 });
-  }
-  if (h.zone === 1 && haupt) {
-    const dach = T.find((t) => t.b === "dach");
-    if (dach && r() < 0.7) neu({ b: "flach", lx: dach.lx + (r() - 0.5) * 0.25, lz: dach.lz - 0.06, ly: (dach.ly || 0) + 0.06, sx: 0.06, sy: 0.2, sz: 0.06, c: 0x8a4a3a });
-    const seite = haupt.lx + haupt.sx / 2 + 0.2 < W / 2 - 0.05 ? 1 : haupt.lx - haupt.sx / 2 - 0.2 > -W / 2 + 0.05 ? -1 : 0;
-    if (seite && r() < 0.8) {
-      const ex = haupt.lx + seite * (haupt.sx / 2 + 0.11), lang = vorn + 0.1 - (haupt.lz - haupt.sz * 0.2);
-      neu({ b: "flach", lx: ex, lz: vorn + 0.1 - lang / 2, sx: 0.17, sy: 0.006, sz: lang, c: 0xa7a49c, ly: 0.002 });
-      if (r() < 0.75) neu({ b: "flach", lx: ex, lz: vorn - 0.2, sx: 0.12, sy: 0.1, sz: 0.22, c: PAL.auto[(h.variante >> 3) % PAL.auto.length], ly: 0.008 });
-    }
-    for (let k = 0; k < 2; k++) neu({ b: "flach", lx: (r() - 0.5) * W * 0.6, lz: vorn - 0.06, sx: 0.12, sy: 0.03, sz: 0.06, c: wahl(r, [0xe85b9a, 0xf2c14e, 0xe8493f, 0x9a5be8, 0xffffff]), ly: 0.002 });
-    const art = h.variante % 3;
-    if (art < 2) {
-      const c = art === 0 ? 0x4a8a3a : 0xf4f2ee, hh = art === 0 ? 0.11 : 0.07, d = art === 0 ? 0.06 : 0.015;
-      for (const sx of [-1, 1]) neu({ b: "flach", lx: sx * (W / 2 - 0.04), lz: 0, sx: d, sy: hh, sz: D * 0.92, c, rand: true, hecke: art === 0 });
-      neu({ b: "flach", lx: 0, lz: -D / 2 + 0.04, sx: W * 0.92, sy: hh, sz: d, c, rand: true, hecke: art === 0 });
-    }
-  }
-  if (h.zone === 2) neu({ b: "flach", lx: 0, lz: vorn - 0.02, sx: W * 0.7, sy: 0.08, sz: 0.06, c: 0x4a8a3a, rand: true, hecke: true });
-}
-/* Gebäude auf echte Größe bringen: Grundstück besser ausfüllen und höher (1 Feld ≈ 8 m, ein Auto ≈ 4,5 m) */
-function massstab(T, W, D, vorn) {
-  let x0 = 0, x1 = 0, zmin = vorn;
-  for (const t of T) { if (t.fest || t.rand) continue; const quer = Math.abs(Math.sin(t.ry || 0)) > 0.7, ex = (quer ? t.sz : t.sx) / 2, ez = (quer ? t.sx : t.sz) / 2; x0 = Math.min(x0, t.lx - ex); x1 = Math.max(x1, t.lx + ex); zmin = Math.min(zmin, t.lz - ez); }
-  const fx = klemme(W * 0.47 / Math.max(-x0, x1, 0.01), 1, 1.3), fz = klemme((vorn + D / 2 - 0.06) / Math.max(0.01, vorn - zmin), 1, 1.3), fy = 1.3;
-  for (const t of T) {
-    if (t.fest || t.rand) continue;
-    const quer = Math.abs(Math.sin(t.ry || 0)) > 0.7;
-    t.lx *= fx; t.lz = vorn - (vorn - t.lz) * fz; t.ly = (t.ly || 0) * fy;
-    if (t.rund) { const f = Math.min(fx, fz) * 1.1; t.sx *= f; t.sy *= f; t.sz *= f; continue; }
-    if (quer) { t.sx *= fz; t.sz *= fx; } else { t.sx *= fx; t.sz *= fz; }
-    if (t.sy > 0.06) t.sy *= fy;
-  }
-}
+const KATALOG_ANZAHL = () => 145;
+
 function hausWeg(h) { if (!h) return; for (const id of h.zellen) { const z = zellen.get(id); if (z) z.haus = null; } haeuser.delete(h.id); haeuserNeu = zellenNeu = true; if (ZONEN[h.zone].gruppe === "i") dreckZeichnen(); }
 function neuesHaus(d, alt) {
   const h = Object.assign({ id: d.id || hId++, geboren: alt ? -100 : jetztS, simGeboren: alt ? -100 : simZeit, ab: 0, zug: null }, d); hId = Math.max(hId, h.id + 1);
@@ -952,7 +1172,7 @@ function zufahrt(h) {
 const federn = (t) => { const c = 1.4; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
 let rauchTeile = [];
 function haeuserZeichnen() {
-  let anim = false; const n = { haus: 0, flach: 0, dach: 0, zyl: 0, garten: 0 }; rauchTeile = [];
+  let anim = false; const n = {}; for (const k in B) if (k !== "rauch") n[k] = 0; rauchTeile = [];
   drehListe = [];
   for (const h of [...haeuser.values(), ...dienste.values(), ...halte.values()]) {
     const p = Math.min(1, Math.max(0, (jetztS - h.geboren) / 0.7)); if (p < 1) anim = true;
@@ -2543,7 +2763,7 @@ function brueckenZeichnen() {
   pfeiler.count = i; pfeiler.instanceMatrix.needsUpdate = true; if (pfeiler.instanceColor) pfeiler.instanceColor.needsUpdate = true;
 }
 function netzGeaendert() {
-  netzVersion++; brueckenZeichnen(); if (typeof parkenZeichnen === "function") parkenZeichnen();
+  netzVersion++; brueckenZeichnen(); if (typeof parkenZeichnen === "function") { parkenZeichnen(); moebelZeichnen(); }
   fahrzeuge.forEach((f) => { if (f.route.some((st) => !kanten.has(st.k))) fahrzeugWeg(f); }); fahrzeuge = fahrzeuge.filter((f) => !f.weg);
   for (const n of knoten.values()) n.drin = new Set([...n.drin].filter((f) => !f.weg));
   netzVerkehrVorbereiten(); laternenBauen(); alleeZeichnen(); kreiselZeichnen(); halteNeuAnkern(); uebergaengeBerechnen(); zellenNeu = true; speichernBald();
@@ -2704,6 +2924,21 @@ function parkenTippen(p) {
   tipp(k.parken ? "🅿️ Parkstreifen angelegt – Läden an dieser Straße bekommen mehr Kunden." : "Parkstreifen entfernt.", 2400);
 }
 const parkAuto = becken(G_BOX_UNTEN, new THREE.MeshLambertMaterial({ color: 0xffffff }), 2500, true), parkDach = becken(G_BOX_UNTEN, new THREE.MeshLambertMaterial({ color: 0x2b3440 }), 2500, false);
+const moebel = becken(G_BOX_UNTEN, new THREE.MeshLambertMaterial({ color: 0xffffff }), 6000, false);
+function moebelZeichnen() {
+  let i = 0; const setz = (x, y, z, rot, sx, sy, sz, c) => { if (i >= 6000) return; _o.position.set(x, y, z); _o.rotation.set(0, rot, 0); _o.scale.set(sx, sy, sz); _o.updateMatrix(); moebel.setMatrixAt(i, _o.matrix); moebel.setColorAt(i++, _farbe.setHex(c)); };
+  if (stufe !== "niedrig") for (const k of kanten.values()) {
+    const T = TYP[k.typ]; if (!T.zellen || k.aussen || k.ebene || k.ring || k.typ === "fuss") continue; const r = zufall(k.id * 977 + 3), zone = T.pflaster;
+    for (let s = 2.2; s < k.len - 2.2; s += zone ? 2.2 : 4.2) for (const sei of zone ? [1, -1] : [r() < 0.5 ? 1 : -1]) {
+      const p = punktBei(k, s), off = (zone ? T.halb - 0.16 : T.halb - 0.07) * sei, x = p.x - p.tz * off, z = p.z + p.tx * off, rot = Math.atan2(-p.tz, p.tx), w = r();
+      if (w < 0.4 || zone) { setz(x, G, z, rot, 0.2, 0.045, 0.055, 0x8b5a2b); setz(x - p.tz * 0.03 * sei, G + 0.045, z + p.tx * 0.03 * sei, rot, 0.2, 0.05, 0.012, 0x8b5a2b); if (zone) { const x2 = x + p.tx * 0.6, z2 = z + p.tz * 0.6; setz(x2, G, z2, rot, 0.16, 0.08, 0.16, 0x9a9a92); setz(x2, G + 0.08, z2, rot, 0.13, 0.02, 0.13, 0x5a8a3a); } }
+      else if (w < 0.75) setz(x, G, z, rot, 0.05, 0.08, 0.05, 0x2f5a3a);
+      else if (w < 0.85) setz(x, G, z, rot, 0.035, 0.07, 0.035, 0xd9302f);
+      else for (let q = 0; q < 3; q++) setz(x + p.tx * (q - 1) * 0.06, G, z + p.tz * (q - 1) * 0.06, rot + Math.PI / 2, 0.012, 0.055, 0.1, 0x6d737a);
+    }
+  }
+  moebel.count = i; moebel.instanceMatrix.needsUpdate = true; if (moebel.instanceColor) moebel.instanceColor.needsUpdate = true;
+}
 function parkenZeichnen() {
   let i = 0;
   for (const k of kanten.values()) {
@@ -3158,7 +3393,7 @@ $("neuAnfangen").onclick = () => {
   speichernAus = true; clearTimeout(speicherTimer); try { localStorage.removeItem(platzKey(platz)); } catch (x) { /* egal */ } location.href = location.pathname;
 };
 function qualitaet(neu) {
-  stufe = neu; merke("inselstadt-qualitaet", stufe); const q = STUFEN[stufe]; U.uDetail.value = q.details; aoMesh.visible = !!q.details; haeuserNeu = true;
+  const alt = stufe; stufe = neu; merke("inselstadt-qualitaet", stufe); if (alt !== neu) for (const h of haeuser.values()) { h.teile = hausTeile(h); h.box = null; } const q = STUFEN[stufe]; U.uDetail.value = q.details; aoMesh.visible = !!q.details; haeuserNeu = true;
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, q.pr));
   const vorher = renderer.shadowMap.enabled;
   renderer.shadowMap.enabled = q.schatten > 0; sonne.castShadow = q.schatten > 0;
@@ -3362,7 +3597,7 @@ function starten(n, daten, neueKarte) {
     setTimeout(() => $("laden").classList.add("weg"), 200);
   }, 60);
 }
-window.inselstadt = { zustandHolen: () => zustand(), kreiselGroesse: (i) => { kreiselGr = i; }, rasterTest: (A, B, C, t) => { strTyp = t || "klein"; const ls = rasterLinien(A, B, C); let n = 0; for (const [a, b] of ls) { const pl = planen(fangOderFrei(a), lerp(a, b, 0.5), fangOderFrei(b), strTyp, 0); if (pl.ok && bauen(pl).length) n++; else if (!pl.ok) console.log("raster", pl.grund); } return [ls.length, n]; }, ersetzen: (p, t) => { strTyp = t; ersetzenTippen(p); }, parken: (p) => parkenTippen(p), autoBruecke: (A, B) => { const pl = planen(fangen(A), lerp(A, B, 0.5), fangen(B), "klein", 0); if (!pl.ok && pl.wasser && pl.pts.some((q) => abstand(q.x, q.z) < 0.3)) { const p2 = planen(fangen(A), lerp(A, B, 0.5), fangen(B), "klein", 1); return [pl.grund, p2.ok, p2.grund]; } return [pl.ok, pl.grund]; }, bildschirm: (x, z) => { const v = new THREE.Vector3(x, G, z).project(kamera), r = renderer.domElement.getBoundingClientRect(); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; }, linienListe: () => [...linien.values()].map((L) => ({ nr: L.nr, art: L.art, halte: L.halte.length, busse: L.busse, keinDepot: L.keinDepot })), gleisPlanen, gleisBauen, bahnhofPlan, gKanten, gKnoten, zuege: () => zuege, zuglinien, uebergaenge: () => uebergaenge, gleisModus: (m) => { gleisModus = m; }, zuglinieBau: (ids) => { zuglinieBau = ids; }, zuglinieFertig, schienenUmschalten, aussenGleisBauen, zugTakt, modellTest: () => { const ks = Object.keys(FZ); let n = 0; for (const k of kanten.values()) { if (!autoKante(k) || k.aussen || k.len < 8) continue; for (let s = 1.5; s < k.len - 1.5 && n < ks.length; s += 2.2) { const f = fahrzeugAusWeg({ route: [{ k: k.id, dir: 1 }], s0: s, s1: k.len - 0.5 }, ks[n], mitAuflieger(ks[n]) ? "container" : null, "Test", "Test", "aussen"); if (f) { f.farbe = PAL.auto[n % PAL.auto.length]; f.v = 0; n++; } } } return n; }, allesBesitzen: () => { for (let i = 0; i < KN; i++) for (let j = 0; j < KN; j++) besitz.add(i + "," + j); gebieteZeichnen(); }, kameraAuf: (x, z, d) => { steuerung.target.set(x, 0, z); kamera.position.set(x + d * 0.55, d * 0.75, z + d * 0.65); steuerung.update(); }, dbgF: (id) => { const f = fahrzeuge.find((x) => x.id === id); if (!f || f.modus !== "kante") return null; const st = f.route[f.ri], k = kanten.get(st.k), nx = f.route[f.ri + 1]; if (!nx) return "letzte"; const n = endKnoten(k, st.dir), k2 = kanten.get(nx.k), s2 = anfang(k2, nx.dir); return { rest: +(ende(k, st.dir) - f.s).toFixed(2), frei: f.frei, darf: darfEinfahren(f, k, st, nx), k2: k2.id + (k2.ring ? "R" : ""), platz: fahrzeuge.filter((g) => g !== f && g.modus === "kante" && g.route[g.ri].k === k2.id && g.route[g.ri].dir === nx.dir && g.s < s2 + g.hintenL + f.vorneL + 0.35).map((g) => g.id + ":" + g.s.toFixed(2) + ":w" + g.warte.toFixed(0)), drin: [...n.drin].map((g) => g.id + (g.tr ? "t" + g.tr.t.toFixed(2) : "res") + " von" + g.von), naht: n.naht.map((g) => g.id), luecke: f.block }; }, kreiselBauen, einbahnUmschalten, strModus: (m) => { strModus = m; }, halte, linien, neueHalte, busTippen, linieFertig, busRechnen, busModus: (m) => { busModus = m; }, linieBau: (ids) => { linieBau = ids; }, abstand: (x, z) => abstand(x, z), dienstPlan, dienstBauen, dienste, versorgung: () => versorgung, versorgungRechnen, dienstTakt, ansichtSetzen, sim: (sek, ziel) => { const ev = new Map(); let tk = 0; for (let t = 0; t < sek; t += 0.05) { simZeit += 0.05; jetztS += 0.05; if (++tk % 10 === 0) dienstTakt(0.5); verkehrTakt(0.05, ziel || 60); fahrzeugeZeichnen(); const F = fahrzeuge.filter((f) => f.pos && f.skala > 0.9 && !f.parkt); for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) { const A = F[i], Bf = F[j]; let hit = false; for (let q = 0; q <= 6 && !hit; q++) { const o = Bf.vorneL - (Bf.vorneL + Bf.hintenL) * q / 6, dx = Bf.pos.x + Bf.pos.tx * o - A.pos.x, dz = Bf.pos.z + Bf.pos.tz * o - A.pos.z, lx = dx * A.pos.tx + dz * A.pos.tz, lz = Math.abs(-dx * A.pos.tz + dz * A.pos.tx); if (lx < A.vorneL * 0.8 && lx > -A.hintenL * 0.8 && lz < (A.B + Bf.B) / 2 * 0.7) hit = true; } if (hit) { const key = A.id + "-" + Bf.id; if (!ev.has(key)) { const d = (f) => f.modus === "kante" ? f.route[f.ri].k + "/" + f.route[f.ri].dir + "/sp" + f.spur + "/off" + f.off.toFixed(2) + "/s" + f.s.toFixed(2) + (f.ausparken ? "/AUS" : "") + (f.frei ? "/FREI" : "") : "KN" + f.tr.knoten + "/t" + f.tr.t.toFixed(2) + "/von" + f.von + "->" + f.route[f.ri + 1].k; ev.set(key, [A.typ, d(A), "blk" + (A.block == null ? "-" : A.block.toFixed(2)) + "w" + A.warte.toFixed(1), Bf.typ, d(Bf), "blk" + (Bf.block == null ? "-" : Bf.block.toFixed(2)) + "w" + Bf.warte.toFixed(1), "t" + t.toFixed(1)]); } } } } return [fahrzeuge.length, ev.size, [...ev.values()].slice(0, 12)]; }, fahrtStarten: () => { try { return fahrtStarten(); } catch (e) { return "FEHLER " + e.message + e.stack; } }, folgen: (f) => folgenStart(f), baeume: () => baeume.length, stufenTest: (st) => { let i = 0; for (const h of haeuser.values()) { h.stufe = Math.min(ZONEN[h.zone].max, st || 1 + (i++ % 5)); h.teile = hausTeile(h); } haeuserNeu = true; }, meilenstein: (m) => { meilenstein = m; unterleiste(); }, zoneWahl: (z) => { zoneWahl = z; }, malen: (a, b) => malen(a, b), werteAuffrischen, hausTeile, bedarf: () => bedarf, wertAnsicht: (v) => { wertAnsicht = v; wertZeichnen(); }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
+window.inselstadt = { katalogTest: () => { const fehler = [], namen = new Set(); let teile = 0; for (const z of [1, 2, 3, 4, 5, 6, 7, 8]) for (let st = 1; st <= ZONEN[z].max; st++) for (let v = 0; v < 12; v++) for (const [w, d] of [[1, 2], [2, 2], [2, 3], [3, 4], [4, 4]]) { try { const h = { zone: z, stufe: st, variante: v, w, d }; const T = hausTeile(h); teile = Math.max(teile, T.length); namen.add(z + ":" + h.name); for (const t of T) if (![t.lx, t.lz, t.sx, t.sy, t.sz, t.ly || 0].every(Number.isFinite) || !B[t.b]) { fehler.push(z + "/" + st + "/" + h.name + " " + t.b); break; } } catch (e) { fehler.push(z + "/" + st + "/" + v + " " + e.message); } } return { namen: namen.size, teile, fehler: [...new Set(fehler)].slice(0, 20) }; }, hausStufe: (f) => { for (const h of haeuser.values()) { const r = f(h); if (r) { h.stufe = r[0]; if (r[1] != null) h.variante = r[1]; h.teile = hausTeile(h); h.box = null; h.hoehe = hoeheVon(h); } } haeuserNeu = true; }, zustandHolen: () => zustand(), kreiselGroesse: (i) => { kreiselGr = i; }, rasterTest: (A, B, C, t) => { strTyp = t || "klein"; const ls = rasterLinien(A, B, C); let n = 0; for (const [a, b] of ls) { const pl = planen(fangOderFrei(a), lerp(a, b, 0.5), fangOderFrei(b), strTyp, 0); if (pl.ok && bauen(pl).length) n++; else if (!pl.ok) console.log("raster", pl.grund); } return [ls.length, n]; }, ersetzen: (p, t) => { strTyp = t; ersetzenTippen(p); }, parken: (p) => parkenTippen(p), autoBruecke: (A, B) => { const pl = planen(fangen(A), lerp(A, B, 0.5), fangen(B), "klein", 0); if (!pl.ok && pl.wasser && pl.pts.some((q) => abstand(q.x, q.z) < 0.3)) { const p2 = planen(fangen(A), lerp(A, B, 0.5), fangen(B), "klein", 1); return [pl.grund, p2.ok, p2.grund]; } return [pl.ok, pl.grund]; }, bildschirm: (x, z) => { const v = new THREE.Vector3(x, G, z).project(kamera), r = renderer.domElement.getBoundingClientRect(); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; }, linienListe: () => [...linien.values()].map((L) => ({ nr: L.nr, art: L.art, halte: L.halte.length, busse: L.busse, keinDepot: L.keinDepot })), gleisPlanen, gleisBauen, bahnhofPlan, gKanten, gKnoten, zuege: () => zuege, zuglinien, uebergaenge: () => uebergaenge, gleisModus: (m) => { gleisModus = m; }, zuglinieBau: (ids) => { zuglinieBau = ids; }, zuglinieFertig, schienenUmschalten, aussenGleisBauen, zugTakt, modellTest: () => { const ks = Object.keys(FZ); let n = 0; for (const k of kanten.values()) { if (!autoKante(k) || k.aussen || k.len < 8) continue; for (let s = 1.5; s < k.len - 1.5 && n < ks.length; s += 2.2) { const f = fahrzeugAusWeg({ route: [{ k: k.id, dir: 1 }], s0: s, s1: k.len - 0.5 }, ks[n], mitAuflieger(ks[n]) ? "container" : null, "Test", "Test", "aussen"); if (f) { f.farbe = PAL.auto[n % PAL.auto.length]; f.v = 0; n++; } } } return n; }, allesBesitzen: () => { for (let i = 0; i < KN; i++) for (let j = 0; j < KN; j++) besitz.add(i + "," + j); gebieteZeichnen(); }, kameraAuf: (x, z, d) => { steuerung.target.set(x, 0, z); kamera.position.set(x + d * 0.55, d * 0.75, z + d * 0.65); steuerung.update(); }, dbgF: (id) => { const f = fahrzeuge.find((x) => x.id === id); if (!f || f.modus !== "kante") return null; const st = f.route[f.ri], k = kanten.get(st.k), nx = f.route[f.ri + 1]; if (!nx) return "letzte"; const n = endKnoten(k, st.dir), k2 = kanten.get(nx.k), s2 = anfang(k2, nx.dir); return { rest: +(ende(k, st.dir) - f.s).toFixed(2), frei: f.frei, darf: darfEinfahren(f, k, st, nx), k2: k2.id + (k2.ring ? "R" : ""), platz: fahrzeuge.filter((g) => g !== f && g.modus === "kante" && g.route[g.ri].k === k2.id && g.route[g.ri].dir === nx.dir && g.s < s2 + g.hintenL + f.vorneL + 0.35).map((g) => g.id + ":" + g.s.toFixed(2) + ":w" + g.warte.toFixed(0)), drin: [...n.drin].map((g) => g.id + (g.tr ? "t" + g.tr.t.toFixed(2) : "res") + " von" + g.von), naht: n.naht.map((g) => g.id), luecke: f.block }; }, kreiselBauen, einbahnUmschalten, strModus: (m) => { strModus = m; }, halte, linien, neueHalte, busTippen, linieFertig, busRechnen, busModus: (m) => { busModus = m; }, linieBau: (ids) => { linieBau = ids; }, abstand: (x, z) => abstand(x, z), dienstPlan, dienstBauen, dienste, versorgung: () => versorgung, versorgungRechnen, dienstTakt, ansichtSetzen, sim: (sek, ziel) => { const ev = new Map(); let tk = 0; for (let t = 0; t < sek; t += 0.05) { simZeit += 0.05; jetztS += 0.05; if (++tk % 10 === 0) dienstTakt(0.5); verkehrTakt(0.05, ziel || 60); fahrzeugeZeichnen(); const F = fahrzeuge.filter((f) => f.pos && f.skala > 0.9 && !f.parkt); for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) { const A = F[i], Bf = F[j]; let hit = false; for (let q = 0; q <= 6 && !hit; q++) { const o = Bf.vorneL - (Bf.vorneL + Bf.hintenL) * q / 6, dx = Bf.pos.x + Bf.pos.tx * o - A.pos.x, dz = Bf.pos.z + Bf.pos.tz * o - A.pos.z, lx = dx * A.pos.tx + dz * A.pos.tz, lz = Math.abs(-dx * A.pos.tz + dz * A.pos.tx); if (lx < A.vorneL * 0.8 && lx > -A.hintenL * 0.8 && lz < (A.B + Bf.B) / 2 * 0.7) hit = true; } if (hit) { const key = A.id + "-" + Bf.id; if (!ev.has(key)) { const d = (f) => f.modus === "kante" ? f.route[f.ri].k + "/" + f.route[f.ri].dir + "/sp" + f.spur + "/off" + f.off.toFixed(2) + "/s" + f.s.toFixed(2) + (f.ausparken ? "/AUS" : "") + (f.frei ? "/FREI" : "") : "KN" + f.tr.knoten + "/t" + f.tr.t.toFixed(2) + "/von" + f.von + "->" + f.route[f.ri + 1].k; ev.set(key, [A.typ, d(A), "blk" + (A.block == null ? "-" : A.block.toFixed(2)) + "w" + A.warte.toFixed(1), Bf.typ, d(Bf), "blk" + (Bf.block == null ? "-" : Bf.block.toFixed(2)) + "w" + Bf.warte.toFixed(1), "t" + t.toFixed(1)]); } } } } return [fahrzeuge.length, ev.size, [...ev.values()].slice(0, 12)]; }, fahrtStarten: () => { try { return fahrtStarten(); } catch (e) { return "FEHLER " + e.message + e.stack; } }, folgen: (f) => folgenStart(f), baeume: () => baeume.length, stufenTest: (st) => { let i = 0; for (const h of haeuser.values()) { h.stufe = Math.min(ZONEN[h.zone].max, st || 1 + (i++ % 5)); h.teile = hausTeile(h); } haeuserNeu = true; }, meilenstein: (m) => { meilenstein = m; unterleiste(); }, zoneWahl: (z) => { zoneWahl = z; }, malen: (a, b) => malen(a, b), werteAuffrischen, hausTeile, bedarf: () => bedarf, wertAnsicht: (v) => { wertAnsicht = v; wertZeichnen(); }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
 
 /* ================================================================
    Hauptschleife
