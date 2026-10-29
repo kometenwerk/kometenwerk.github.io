@@ -485,6 +485,486 @@
    "datei": "ton/outro-short.mp3",
    "dauer": 0.99,
    "hash": "65686d16198a"
+  },
+  {
+   "id": "hz-intro-zeigen-1",
+   "gruppe": "hz_intro_zeigen",
+   "text": "Hey Leute, Thorsten hier! Heute zeige ich euch meine Stadt in Horizonte. Kommt mit auf einen Rundflug!",
+   "datei": "ton/hz-intro-zeigen-1.mp3",
+   "dauer": 5.41,
+   "hash": "40980bbc4338"
+  },
+  {
+   "id": "hz-intro-zeigen-2",
+   "gruppe": "hz_intro_zeigen",
+   "text": "Servus! Thorsten hier, eure Lieblings-KI. Heute gibt's eine Stadtführung von oben!",
+   "datei": "ton/hz-intro-zeigen-2.mp3",
+   "dauer": 4.99,
+   "hash": "046c84502c68"
+  },
+  {
+   "id": "hz-intro-bauen-1",
+   "gruppe": "hz_intro_bauen",
+   "text": "Hey Leute, Thorsten hier! Heute baue ich eine ganze Stadt. Aus dem Nichts. Los geht's!",
+   "datei": "ton/hz-intro-bauen-1.mp3",
+   "dauer": 4.99,
+   "hash": "aaf862ddc022"
+  },
+  {
+   "id": "hz-intro-bauen-2",
+   "gruppe": "hz_intro_bauen",
+   "text": "Hallo zusammen! Leeres Land, viel Geld und eine KI mit Plänen. Was kann da schon schiefgehen?",
+   "datei": "ton/hz-intro-bauen-2.mp3",
+   "dauer": 5.25,
+   "hash": "029dd772f2df"
+  },
+  {
+   "id": "hz-short-1",
+   "gruppe": "hz_short_intro",
+   "text": "Thorsten hier. Schaut euch diese Stadt an!",
+   "datei": "ton/hz-short-1.mp3",
+   "dauer": 2.35,
+   "hash": "0bf01e0a12ca"
+  },
+  {
+   "id": "hz-short-2",
+   "gruppe": "hz_short_intro",
+   "text": "Eine Stadt im Zeitraffer. Los!",
+   "datei": "ton/hz-short-2.mp3",
+   "dauer": 1.91,
+   "hash": "5033cf36f990"
+  },
+  {
+   "id": "hz-uebersicht-1",
+   "gruppe": "hz_uebersicht",
+   "text": "Das ist sie, meine Stadt. Von hier oben sieht alles so ordentlich aus.",
+   "datei": "ton/hz-uebersicht-1.mp3",
+   "dauer": 3.79,
+   "hash": "6e98fa4afd22"
+  },
+  {
+   "id": "hz-uebersicht-2",
+   "gruppe": "hz_uebersicht",
+   "text": "Erst mal ein Überblick. Hier wohnen, arbeiten und stauen sich meine Leute.",
+   "datei": "ton/hz-uebersicht-2.mp3",
+   "dauer": 3.74,
+   "hash": "50e377f43d60"
+  },
+  {
+   "id": "hz-hochhaus-1",
+   "gruppe": "hz_hochhaus",
+   "text": "Schaut mal, wie hoch das Ding ist! Da will ich ganz oben wohnen.",
+   "datei": "ton/hz-hochhaus-1.mp3",
+   "dauer": 3.19,
+   "hash": "8a9b6465b43e"
+  },
+  {
+   "id": "hz-hochhaus-2",
+   "gruppe": "hz_hochhaus",
+   "text": "Hier stehen die großen Häuser. Meine kleine Skyline!",
+   "datei": "ton/hz-hochhaus-2.mp3",
+   "dauer": 2.77,
+   "hash": "2e76c4a00015"
+  },
+  {
+   "id": "hz-haeuser-1",
+   "gruppe": "hz_haeuser",
+   "text": "Gemütliche Häuschen, kleine Gärten. Richtig schön hier.",
+   "datei": "ton/hz-haeuser-1.mp3",
+   "dauer": 3.32,
+   "hash": "9d82cbb5b20d"
+  },
+  {
+   "id": "hz-haeuser-2",
+   "gruppe": "hz_haeuser",
+   "text": "Hier wohnen die Leute. Und ja, jedes Haus ist echt gewachsen.",
+   "datei": "ton/hz-haeuser-2.mp3",
+   "dauer": 3.55,
+   "hash": "fa91b4bf454e"
+  },
+  {
+   "id": "hz-bahnhof-1",
+   "gruppe": "hz_bahnhof",
+   "text": "Der Bahnhof! Wenn ihr Glück habt, fährt gleich ein Zug ein.",
+   "datei": "ton/hz-bahnhof-1.mp3",
+   "dauer": 3.03,
+   "hash": "c12125c1f2cc"
+  },
+  {
+   "id": "hz-bahnhof-2",
+   "gruppe": "hz_bahnhof",
+   "text": "Hier halten die Züge. Pünktlicher als im echten Leben, versprochen.",
+   "datei": "ton/hz-bahnhof-2.mp3",
+   "dauer": 3.55,
+   "hash": "98fa0dfb12e2"
+  },
+  {
+   "id": "hz-hafen-1",
+   "gruppe": "hz_hafen",
+   "text": "Ahoi! Am Hafen ist immer was los.",
+   "datei": "ton/hz-hafen-1.mp3",
+   "dauer": 2.32,
+   "hash": "c309580196bd"
+  },
+  {
+   "id": "hz-hafen-2",
+   "gruppe": "hz_hafen",
+   "text": "Schiffe, Kräne, Wasser. Ich liebe den Hafen.",
+   "datei": "ton/hz-hafen-2.mp3",
+   "dauer": 2.74,
+   "hash": "f6ab602add36"
+  },
+  {
+   "id": "hz-flughafen-1",
+   "gruppe": "hz_flughafen",
+   "text": "Und hier der Flughafen. Gleich hebt ein Flieger ab!",
+   "datei": "ton/hz-flughafen-1.mp3",
+   "dauer": 2.56,
+   "hash": "2e2116659d07"
+  },
+  {
+   "id": "hz-flughafen-2",
+   "gruppe": "hz_flughafen",
+   "text": "Bitte anschnallen, wir sind am Flughafen!",
+   "datei": "ton/hz-flughafen-2.mp3",
+   "dauer": 2.3,
+   "hash": "a33b47ee503d"
+  },
+  {
+   "id": "hz-bus-1",
+   "gruppe": "hz_bus",
+   "text": "Der Bus bringt alle zur Arbeit. Hoffentlich ohne Stau.",
+   "datei": "ton/hz-bus-1.mp3",
+   "dauer": 3.0,
+   "hash": "d28b63f204a8"
+  },
+  {
+   "id": "hz-auto-1",
+   "gruppe": "hz_auto",
+   "text": "Ich hänge mich mal an ein Auto dran. Mal sehen, wo es hinfährt.",
+   "datei": "ton/hz-auto-1.mp3",
+   "dauer": 3.24,
+   "hash": "bdcaf8d3e1b3"
+  },
+  {
+   "id": "hz-auto-2",
+   "gruppe": "hz_auto",
+   "text": "Wir fahren mit! Bitte nicht zu schnell, liebe Fahrerin.",
+   "datei": "ton/hz-auto-2.mp3",
+   "dauer": 2.77,
+   "hash": "88e44ea85b60"
+  },
+  {
+   "id": "hz-nacht-1",
+   "gruppe": "hz_nacht",
+   "text": "Und jetzt wird's Nacht. Schaut euch diese Lichter an!",
+   "datei": "ton/hz-nacht-1.mp3",
+   "dauer": 2.51,
+   "hash": "d0c1747595e7"
+  },
+  {
+   "id": "hz-nacht-2",
+   "gruppe": "hz_nacht",
+   "text": "Bei Nacht ist meine Stadt am schönsten. Überall leuchten die Fenster.",
+   "datei": "ton/hz-nacht-2.mp3",
+   "dauer": 3.27,
+   "hash": "597a91a13a0d"
+  },
+  {
+   "id": "hz-land-1",
+   "gruppe": "hz_land",
+   "text": "Hier ist noch nichts. Nur Gras und Bäume. Noch!",
+   "datei": "ton/hz-land-1.mp3",
+   "dauer": 2.66,
+   "hash": "d8700112b265"
+  },
+  {
+   "id": "hz-land-2",
+   "gruppe": "hz_land",
+   "text": "Leeres Land. Hier wird gleich gebaut.",
+   "datei": "ton/hz-land-2.mp3",
+   "dauer": 2.14,
+   "hash": "e22f03708688"
+  },
+  {
+   "id": "hz-strassen-1",
+   "gruppe": "hz_strassen",
+   "text": "Zuerst die Straßen. Ohne Straßen keine Stadt.",
+   "datei": "ton/hz-strassen-1.mp3",
+   "dauer": 2.51,
+   "hash": "ed6041a9ff91"
+  },
+  {
+   "id": "hz-strassen-2",
+   "gruppe": "hz_strassen",
+   "text": "Straße hier, Straße da. Ich bin quasi Bauarbeiter.",
+   "datei": "ton/hz-strassen-2.mp3",
+   "dauer": 3.19,
+   "hash": "2dbb529b97e4"
+  },
+  {
+   "id": "hz-strom-1",
+   "gruppe": "hz_strom",
+   "text": "Windräder für den Strom. Sauber und leise.",
+   "datei": "ton/hz-strom-1.mp3",
+   "dauer": 2.53,
+   "hash": "951f20f7f38d"
+  },
+  {
+   "id": "hz-wasser-1",
+   "gruppe": "hz_wasser",
+   "text": "Ein Wasserturm, damit niemand durstig bleibt.",
+   "datei": "ton/hz-wasser-1.mp3",
+   "dauer": 2.61,
+   "hash": "5a3415f34d36"
+  },
+  {
+   "id": "hz-muell-1",
+   "gruppe": "hz_muell",
+   "text": "Und eine Deponie. Irgendwo muss der Müll ja hin.",
+   "datei": "ton/hz-muell-1.mp3",
+   "dauer": 2.48,
+   "hash": "6cebaea368ae"
+  },
+  {
+   "id": "hz-dienste-1",
+   "gruppe": "hz_dienste",
+   "text": "Feuerwehr, Polizei und ein Arzt. Sicherheit geht vor!",
+   "datei": "ton/hz-dienste-1.mp3",
+   "dauer": 3.27,
+   "hash": "507785246d9c"
+  },
+  {
+   "id": "hz-schule-1",
+   "gruppe": "hz_schule",
+   "text": "Eine Schule! Auch in meiner Stadt wird gelernt.",
+   "datei": "ton/hz-schule-1.mp3",
+   "dauer": 2.35,
+   "hash": "8b6f3b50242b"
+  },
+  {
+   "id": "hz-park-1",
+   "gruppe": "hz_park",
+   "text": "Ein Park und ein Spielplatz. Für gute Laune.",
+   "datei": "ton/hz-park-1.mp3",
+   "dauer": 2.64,
+   "hash": "384209f4b464"
+  },
+  {
+   "id": "hz-zonen-1",
+   "gruppe": "hz_zonen",
+   "text": "Jetzt male ich die Zonen. Grün heißt wohnen, blau heißt einkaufen.",
+   "datei": "ton/hz-zonen-1.mp3",
+   "dauer": 3.66,
+   "hash": "51bab60349ed"
+  },
+  {
+   "id": "hz-zonen-2",
+   "gruppe": "hz_zonen",
+   "text": "Zonen malen. Ab hier dürfen die Leute selbst bauen.",
+   "datei": "ton/hz-zonen-2.mp3",
+   "dauer": 2.85,
+   "hash": "35acfa439fc2"
+  },
+  {
+   "id": "hz-wachsen-1",
+   "gruppe": "hz_wachsen",
+   "text": "Und jetzt: Zeitraffer! Schaut, wie die Häuser wachsen!",
+   "datei": "ton/hz-wachsen-1.mp3",
+   "dauer": 3.03,
+   "hash": "18e55e3a20c5"
+  },
+  {
+   "id": "hz-wachsen-2",
+   "gruppe": "hz_wachsen",
+   "text": "Die ersten Leute ziehen ein. Willkommen in meiner Stadt!",
+   "datei": "ton/hz-wachsen-2.mp3",
+   "dauer": 2.8,
+   "hash": "4711cfb6de1e"
+  },
+  {
+   "id": "hz-busbau-1",
+   "gruppe": "hz_bus",
+   "text": "Jetzt noch eine Buslinie, damit nicht jeder mit dem Auto fährt.",
+   "datei": "ton/hz-busbau-1.mp3",
+   "dauer": 3.19,
+   "hash": "b9f0d974423a"
+  },
+  {
+   "id": "hz-erweiterung-1",
+   "gruppe": "hz_erweiterung",
+   "text": "Die Stadt ist zu klein. Wir brauchen mehr Platz!",
+   "datei": "ton/hz-erweiterung-1.mp3",
+   "dauer": 2.43,
+   "hash": "3491f685239d"
+  },
+  {
+   "id": "hz-erweiterung-2",
+   "gruppe": "hz_erweiterung",
+   "text": "Neues Viertel, größere Häuser. Jetzt wird's ernst.",
+   "datei": "ton/hz-erweiterung-2.mp3",
+   "dauer": 3.34,
+   "hash": "66d0d0158dfd"
+  },
+  {
+   "id": "hz-zonen2-1",
+   "gruppe": "hz_zonen2",
+   "text": "Diesmal mit Hochhäusern, Läden und Büros.",
+   "datei": "ton/hz-zonen2-1.mp3",
+   "dauer": 2.43,
+   "hash": "7309e84ab7af"
+  },
+  {
+   "id": "hz-wachsen2-1",
+   "gruppe": "hz_wachsen2",
+   "text": "Und wieder Zeitraffer. Aus dem Dorf wird eine richtige Stadt!",
+   "datei": "ton/hz-wachsen2-1.mp3",
+   "dauer": 3.21,
+   "hash": "4b3dd491c057"
+  },
+  {
+   "id": "hz-wachsen2-2",
+   "gruppe": "hz_wachsen2",
+   "text": "Seht ihr die Kräne? Da entsteht gerade was Großes.",
+   "datei": "ton/hz-wachsen2-2.mp3",
+   "dauer": 2.51,
+   "hash": "e01ce8663d96"
+  },
+  {
+   "id": "hz-einw-25",
+   "gruppe": "hz_einwohner",
+   "text": "Die ersten fünfundzwanzig Einwohner!",
+   "datei": "ton/hz-einw-25.mp3",
+   "dauer": 1.91,
+   "hash": "3a96377cbb69",
+   "zahl": 25
+  },
+  {
+   "id": "hz-einw-60",
+   "gruppe": "hz_einwohner",
+   "text": "Schon sechzig Leute wohnen hier!",
+   "datei": "ton/hz-einw-60.mp3",
+   "dauer": 1.59,
+   "hash": "f1ce8797e405",
+   "zahl": 60
+  },
+  {
+   "id": "hz-einw-120",
+   "gruppe": "hz_einwohner",
+   "text": "Über hundert Einwohner! Das ist schon ein Dorf.",
+   "datei": "ton/hz-einw-120.mp3",
+   "dauer": 2.27,
+   "hash": "d25f7d6b16c0",
+   "zahl": 120
+  },
+  {
+   "id": "hz-einw-250",
+   "gruppe": "hz_einwohner",
+   "text": "Zweihundertfünfzig Einwohner! Es läuft.",
+   "datei": "ton/hz-einw-250.mp3",
+   "dauer": 2.38,
+   "hash": "1a76611aafe9",
+   "zahl": 250
+  },
+  {
+   "id": "hz-einw-500",
+   "gruppe": "hz_einwohner",
+   "text": "Fünfhundert Einwohner! Meine Stadt wird groß.",
+   "datei": "ton/hz-einw-500.mp3",
+   "dauer": 2.35,
+   "hash": "f42952421980",
+   "zahl": 500
+  },
+  {
+   "id": "hz-einw-1000",
+   "gruppe": "hz_einwohner",
+   "text": "Tausend Einwohner! Party im Rathaus!",
+   "datei": "ton/hz-einw-1000.mp3",
+   "dauer": 2.09,
+   "hash": "b2f8328caf62",
+   "zahl": 1000
+  },
+  {
+   "id": "hz-einw-2000",
+   "gruppe": "hz_einwohner",
+   "text": "Zweitausend Leute! Ich bin stolz auf euch.",
+   "datei": "ton/hz-einw-2000.mp3",
+   "dauer": 2.51,
+   "hash": "f02e4c360c2e",
+   "zahl": 2000
+  },
+  {
+   "id": "hz-einw-5000",
+   "gruppe": "hz_einwohner",
+   "text": "Fünftausend Einwohner! Das ist eine richtige Stadt.",
+   "datei": "ton/hz-einw-5000.mp3",
+   "dauer": 2.8,
+   "hash": "ea9734a8359a",
+   "zahl": 5000
+  },
+  {
+   "id": "hz-fuell-1",
+   "gruppe": "hz_fuell",
+   "text": "Wie würdet ihr eure Stadt nennen? Schreibt's in die Kommentare!",
+   "datei": "ton/hz-fuell-1.mp3",
+   "dauer": 2.9,
+   "hash": "2b71b11a9b3a"
+  },
+  {
+   "id": "hz-fuell-2",
+   "gruppe": "hz_fuell",
+   "text": "Horizonte könnt ihr übrigens kostenlos im Browser spielen.",
+   "datei": "ton/hz-fuell-2.mp3",
+   "dauer": 3.13,
+   "hash": "8dc2b72d6d5a"
+  },
+  {
+   "id": "hz-fuell-3",
+   "gruppe": "hz_fuell",
+   "text": "Ich frage mich, wo all die Autos eigentlich hinfahren.",
+   "datei": "ton/hz-fuell-3.mp3",
+   "dauer": 2.48,
+   "hash": "e0e613e367ab"
+  },
+  {
+   "id": "hz-fuell-4",
+   "gruppe": "hz_fuell",
+   "text": "Was soll ich als Nächstes bauen? Einen Flughafen? Einen Zoo?",
+   "datei": "ton/hz-fuell-4.mp3",
+   "dauer": 3.45,
+   "hash": "72dc3526d2c5"
+  },
+  {
+   "id": "hz-fuell-5",
+   "gruppe": "hz_fuell",
+   "text": "Kein Stau. Noch nicht.",
+   "datei": "ton/hz-fuell-5.mp3",
+   "dauer": 1.54,
+   "hash": "7f2d1214d3a0"
+  },
+  {
+   "id": "hz-outro-1",
+   "gruppe": "hz_outro",
+   "text": "Das war meine Stadt für heute! Baut eure eigene auf kometenwerk punkt github punkt io. Bis zum nächsten Mal!",
+   "datei": "ton/hz-outro-1.mp3",
+   "dauer": 5.56,
+   "hash": "26a9cfa1ed6a"
+  },
+  {
+   "id": "hz-outro-2",
+   "gruppe": "hz_outro",
+   "text": "Danke fürs Zuschauen! Wenn's euch gefallen hat, lasst ein Like da. Tschüss!",
+   "datei": "ton/hz-outro-2.mp3",
+   "dauer": 4.1,
+   "hash": "480388e64a12"
+  },
+  {
+   "id": "hz-outro-short",
+   "gruppe": "hz_short_outro",
+   "text": "Bis zum nächsten Mal!",
+   "datei": "ton/hz-outro-short.mp3",
+   "dauer": 1.18,
+   "hash": "e26133fa06ab"
   }
  ]
 }
