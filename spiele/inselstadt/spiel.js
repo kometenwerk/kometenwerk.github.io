@@ -4823,11 +4823,71 @@ function zuNaechster() {
   if (s.was) zuEvent(s.ev || "shot", { was: s.was, einwohner: kennzahlen().e });
 }
 let zuLetzt = 0;
+/* Probleme erkennen und selbst reparieren – Thorsten reagiert, wenn etwas schiefgeht */
+let zuProblem = null, zuProblemT = 0, zuProblemZahl = 0, zuVerlassen = 0;
+const zuCooldown = {};
+const ZU_FIX = { strom: ["windrad", "solar"], wasser: ["wasserturm", "pumpe"], abwasser: ["klaer"], muell: ["deponie"], brand: ["feuerklein", "feuerwache"], krimi: ["polizei"], krank: ["arzt"], wegzug: ["park", "spielplatz"] };
+function zuSetzen(typ, aussen, Q, rad) {
+  const out = [];
+  for (const k of kanten.values()) { if (!autoKante(k) || k.aussen) continue; for (const t of [0.25, 0.5, 0.75]) { const q = punktBei(k, k.len * t); if (abst(q, Q) > rad) continue; for (const sg of [1, -1]) out.push({ x: q.x - q.tz * 2 * sg, z: q.z + q.tx * 2 * sg }); } }
+  out.sort((a, b) => aussen ? abst(b, Q) - abst(a, Q) : abst(a, Q) - abst(b, Q));
+  const g0 = geld; geld = 1e9;
+  try { for (const q of out) { if (!dienstFrei(typ)) break; const pl = dienstPlan(q, typ); if (pl.ok && !pl.haeuser) { const d = dienstBauen(pl); if (d) return d; } } } finally { geld = Math.max(g0, geld); }
+  return null;
+}
+function zuProblemSuchen() {
+  const H = [...haeuser.values()].filter((h) => !h.verlassen); if (H.length < 6) return null;
+  const frei = (a) => !zuCooldown[a] || zuT - zuCooldown[a] > 45;
+  const brand = H.find((h) => h.brand); if (brand && frei("brand")) return { art: "brand", x: brand.x, z: brand.z };
+  const zaehl = {}; for (const h of H) if (h.problem) (zaehl[h.problem] = zaehl[h.problem] || []).push(h);
+  for (const a of ["strom", "wasser", "abwasser", "muell"]) if ((zaehl[a] || []).length >= 4 && frei(a)) { const h = zaehl[a][0]; return { art: a, x: h.x, z: h.z, n: zaehl[a].length }; }
+  let stauK = null; for (const k of kanten.values()) if (TYP[k.typ].autos && !k.aussen && k.stau > 0.5 && (!stauK || k.stau > stauK.stau)) stauK = k;
+  if (stauK && frei("stau")) { const q = punktBei(stauK, stauK.len / 2); return { art: "stau", x: q.x, z: q.z, k: stauK.id }; }
+  const weg = [...haeuser.values()].filter((h) => h.verlassen); if (weg.length > zuVerlassen && frei("wegzug")) { zuVerlassen = weg.length; return { art: "wegzug", x: weg[0].x, z: weg[0].z }; }
+  for (const a of ["krimi", "krank"]) if ((zaehl[a] || []).length >= 5 && frei(a)) { const h = zaehl[a][0]; return { art: a, x: h.x, z: h.z }; }
+  return null;
+}
+function zuReparieren(P) {
+  const M = stadtMitte();
+  if (P.art === "stau") {
+    const k = kanten.get(P.k); if (!k) return false;
+    const t0 = strTyp, vorher = k.typ; strTyp = TYP[k.typ].spuren.length >= 2 && typFrei("gross") ? "gross" : "haupt";
+    if (k.typ === strTyp || !typFrei(strTyp)) { strTyp = t0; return false; }
+    const g0 = geld; geld = 1e9; const q = punktBei(k, k.len / 2);
+    try { ersetzenTippen({ x: q.x, z: q.z }); } catch (e) { console.warn(e); }
+    geld = g0; strTyp = t0; const k2 = kanten.get(P.k); return !!k2 && k2.typ !== vorher;
+  }
+  const typen = ZU_FIX[P.art] || []; let d = null;
+  const aussen = ["strom", "wasser", "abwasser", "muell"].includes(P.art);
+  for (const t of typen) { d = zuSetzen(t, aussen, aussen ? M : P, aussen ? M.r + 16 : 14); if (d) break; }
+  if (d) { versorgungRechnen(); busRechnen(); P.x2 = d.x; P.z2 = d.z; }
+  return !!d;
+}
+function zuProblemTakt() {
+  const P = zuProblem;
+  if (!P.fix && zuT >= P.fixBei) {
+    P.fix = true; const ok = zuReparieren(P);
+    zuEvent("loesung", { art: P.art, ok });
+    if (ok && P.x2 != null) zuKamera((P.x + P.x2) / 2, (P.z + P.z2) / 2, 14 + abst(P, { x: P.x2, z: P.z2 }) * 0.6, 0.6, null, 1.8, 0.08);
+  }
+  if (zuT >= P.bis) { zuProblem = null; zuShotEnde = zuT; }
+}
 function zuTakt(dt) {
   // Echte Zeit statt Spielzeit: der Ablauf passt so auch bei ruckelnder Grafik zur Videolänge
   const jetzt = performance.now() / 1000; dt = zuLetzt ? Math.min(0.5, jetzt - zuLetzt) : dt; zuLetzt = jetzt;
   zuT += dt;
-  if (zuT >= zuShotEnde) zuNaechster();
+  if (zuProblem) { zuProblemTakt(); zuShotEnde = Math.max(zuShotEnde, zuT + 0.1); }
+  else if (zuT > 12 && zuProblemZahl < 3 && (zuProblemT += dt) > 4) {
+    zuProblemT = 0;
+    const s = zuShots[zuIdx], ruhig = !s || !s.ev || s.was === "wachsen" || s.was === "wachsen2" || s.was === "uebersicht" || s.was === "haeuser" || s.was === "hochhaus";
+    const P = ruhig && !folgen && zuProblemSuchen();
+    if (P) {
+      zuProblemZahl++; zuCooldown[P.art] = zuT; zuProblem = Object.assign(P, { fixBei: zuT + 3.2, bis: zuT + 7.5 });
+      zuKamera(P.x, P.z, P.art === "stau" ? 10 : 9, 0.55, null, 1.6, 0.1);
+      zuEvent("problem", { art: P.art });
+    }
+  }
+  if (!zuProblem && zuT >= zuShotEnde) zuNaechster();
   zuKameraTakt(dt);
   if (zuSchnell > 0) { zuWachsT += dt; while (zuWachsT > 0.12) { zuWachsT -= 0.12; for (let i = 0; i < zuSchnell; i++) wachsTakt(); } }
   zuEinwT += dt;
@@ -4935,7 +4995,7 @@ function zuStart() {
     if (ZU_ART === "zeigen") { spielModus = "leicht"; dorfBauen(); for (let i = 0; i < 420; i++) wachsTakt(); zuSchnell = 1; for (const h of haeuser.values()) { if (h.bau) { h.bau = null; h.bauT = null; } h.geboren = -100; } haeuserNeu = true; name = "Thorstens Dorf"; }
     else { spielModus = "normal"; name = KARTEN[kname].name; }
   }
-  geld = 1e9; tempo = 1;
+  geld = 1e9; tempo = 1; meilenstein = Math.max(meilenstein, 2); zuVerlassen = [...haeuser.values()].filter((h) => h.verlassen).length;
   const M = stadtMitte(); steuerung.target.set(M.x, 0.3, M.z); kamera.position.set(M.x + 30, 28, M.z + 30); steuerung.update();
   renderer.setAnimationLoop(schleife);
   window.KZ_ZU = { canvas: renderer.domElement, ton: () => null, lautsprecher: () => {}, stopp: () => {}, neu: () => {} };
@@ -4944,7 +5004,7 @@ function zuStart() {
   zuShots = ZU_ART === "bauen" ? zuBauPlan() : zuTour();
   // Bauplan an die Videolänge anpassen (Schluss-Karte am Ende abziehen)
   const dauer = +new URLSearchParams(location.search).get("dauer") || 0;
-  if (dauer && ZU_ART === "bauen") { const summe = zuShots.reduce((a, x) => a + x.d, 0), f = Math.min(3, Math.max(0.3, (dauer - 9) / summe)); zuShots.forEach((x) => { x.d *= f; }); }
+  if (dauer && ZU_ART === "bauen") { const summe = zuShots.reduce((a, x) => a + x.d, 0), f = Math.min(3, Math.max(0.3, (dauer - 9 - Math.min(14, dauer * 0.12)) / summe)); zuShots.forEach((x) => { x.d *= f; }); }
   zuIdx = -1; zuNaechster();
 }
 

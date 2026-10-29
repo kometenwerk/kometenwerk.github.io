@@ -159,7 +159,7 @@
     Z = { aufnahme: aufnahme, spiel: e.spiel, S: SPIELE[e.spiel], format: e.format, F: F, dauer: aufnahme ? +e.laenge : 1e9, modus: e.modus, stimme: e.stimme, ctx: ctx, ziel: ziel, spielGain: spielGain, spielGainZiel: spielGain.gain.value,
       stimmeGain: stimmeGain, analyser: analyser, mithoeren: mithoeren, lw: lw, g: lw.getContext("2d"), start: 0, t: 0, bereit: false,
       spricht: null, letzterSatz: -99, benutzt: {}, warteschlange: [], untertitel: null, outro: false,
-      stats: { runden: 0, siege: 0, kos: 0, raus: 0, tiere: [], highlight: null, letzterSieger: null, einwohner: 0, momente: [] }, tier: "", modusName: "", vorschauBild: null, vorschauGrund: 0,
+      stats: { runden: 0, siege: 0, kos: 0, raus: 0, tiere: [], highlight: null, letzterSieger: null, einwohner: 0, momente: [], probleme: [], geloest: [], serie: 0, wechsel: 0 }, tier: "", modusName: "", vorschauBild: null, vorschauGrund: 0,
       blink: 0, staunen: 0 };
     ctx.resume().catch(function () {});
     // Spiel laden
@@ -258,15 +258,32 @@
         if (ton && ton[g]) sag(g, d.was === "nacht" ? 6 : 5);
         if (/nacht|hochhaus|wachsen2|flughafen|hafen/.test(d.was)) setTimeout(function () { merkeMoment(d.was === "nacht" ? 4 : 3, { nacht: "BEI NACHT!", hochhaus: "HOCH HINAUS!", wachsen2: "SIE WÄCHST!", flughafen: "ABHEBEN!", hafen: "AHOI!" }[d.was]); }, 3500);
         if (s.momente.indexOf(d.was) < 0) s.momente.push(d.was);
+      } else if (d.type === "problem") {
+        s.probleme.push(d.art); Z.staunen = 1; Z.problemSeit = Z.t;
+        if (!sag("hz_problem_" + d.art, 9)) sag("hz_problem", 9);
+        merkeMoment(3.5, { brand: "ES BRENNT!", stau: "STAU!", strom: "STROMAUSFALL!", wasser: "KEIN WASSER!", wegzug: "SIE ZIEHEN WEG!" }[d.art] || "OH NEIN!");
+      } else if (d.type === "loesung") {
+        if (d.ok) s.geloest.push(d.art);
+        sag(d.ok ? "hz_loesung_" + d.art : "hz_loesung_nicht", 9) || (d.ok && sag("hz_loesung", 9));
       } else if (d.type === "einwohner") { s.einwohner = Math.max(s.einwohner || 0, d.zahl); Z.einwText = d.zahl; sag("hz_einwohner", 4); merkeMoment(2, d.zahl + " EINWOHNER!"); }
       return;
     }
     switch (d.type) {
-      case "start": Z.tier = d.tier; Z.modusName = d.modusName; s.runden++; if (s.tiere.indexOf(d.tier) < 0) s.tiere.push(d.tier); break;
-      case "los": if (Z.t > 4) sag("los", 3); break;
+      case "start":
+        Z.tier = d.tier; Z.modusName = d.modusName; s.runden++; if (s.tiere.indexOf(d.tier) < 0) s.tiere.push(d.tier);
+        Z.kzWechsel = d.gewechselt; Z.kzBleib = !d.gewechselt && s.runden > 1;
+        break;
+      case "los":
+        Z.rundeStart = Z.t;
+        if (Z.kzWechsel) { s.wechsel++; Z.kzWechsel = false; sag("kz_wechsel", 7); }
+        else if (Z.kzBleib) { Z.kzBleib = false; sag("kz_bleib", 5); }
+        else if (Z.t > 4) sag("los", 3);
+        break;
+      case "nebel_ich": sag("kz_nebel_ich", 5); break;
+      case "knapp": Z.staunen = 1; sag("kz_knapp", 6); break;
       case "ko":
         if (d.thorstenTrifft) { s.kos++; Z.staunen = 1; merkeMoment(3, "K.O.!"); sag("ko_treffer", 6); }
-        else if (d.thorstenRaus) { s.raus++; Z.staunen = 1; sag("ko_raus", 7); }
+        else if (d.thorstenRaus) { s.raus++; Z.staunen = 1; if (Z.rundeStart != null && Z.t - Z.rundeStart < 7) sag("kz_frueh_raus", 8); else sag("ko_raus", 7); }
         else { if (Math.random() < 0.55) sag("ko_andere", 2); merkeMoment(1, "K.O.!"); }
         break;
       case "super":
@@ -277,29 +294,30 @@
       case "nebel": sag("nebel", 4); break;
       case "runde": sag(d.entscheidung ? "entscheidung" : "runde", 6); break;
       case "ende":
-        if (d.gewonnen) { s.siege++; Z.staunen = 1; merkeMoment(5, "SIEG!"); sag("sieg", 8); s.highlight = s.highlight || ("Sieg mit dem " + d.tier); }
+        if (d.gewonnen) { if (s.serie >= 2) { s.siege++; s.serie = 0; Z.staunen = 1; merkeMoment(5, "ENDLICH!"); sag("kz_endlich", 9); s.highlight = s.highlight || ("Sieg nach Pechsträhne"); break; } s.serie = 0; s.siege++; Z.staunen = 1; merkeMoment(5, "SIEG!"); sag("sieg", 8); s.highlight = s.highlight || ("Sieg mit dem " + d.tier); }
         else if (d.modus === "ffa" && d.platz && d.platz <= 3) sag("platz", 8);
-        else sag("niederlage", 8);
+        else { s.serie++; sag(s.serie >= 2 ? "kz_pech" : "niederlage", 8); }
         s.letzterSieger = d.sieger;
         break;
     }
   }
   // Satz aus einer Gruppe sprechen – mit Vorrang, damit Thorsten sich nicht selbst unterbricht
   function sag(gruppe, prio) {
-    if (!Z || Z.outro && !/outro$/.test(gruppe)) return;
+    if (!Z || Z.outro && !/outro$/.test(gruppe)) return false;
+    if (!(ton && ton[gruppe] && ton[gruppe].length) && ton) return false;
     var jetzt = Z.t;
     if (Z.spricht) {
       if (prio >= 7 && prio > Z.spricht.prio) { Z.warteschlange = [{ g: gruppe, p: prio }]; }
-      return;
+      return true;
     }
-    if (jetzt - Z.letzterSatz < (prio >= 6 ? 0.4 : 1.6)) return;
+    if (jetzt - Z.letzterSatz < (prio >= 6 ? 0.4 : 1.6)) return true;
     var liste = ton && ton[gruppe];
-    if (!liste || !liste.length) return untertitelOhneTon(gruppe, prio);
+    if (!liste || !liste.length) { untertitelOhneTon(gruppe, prio); return false; }
     var frei = liste.filter(function (s) { return !Z.benutzt[s.id] || jetzt - Z.benutzt[s.id] > 90; });
     var s = (frei.length ? frei : liste)[Math.floor(Math.random() * (frei.length || liste.length))];
     if (gruppe === "hz_einwohner" && Z.einwText) { var passend = liste.filter(function (x) { return x.zahl === Z.einwText; })[0]; if (passend) s = passend; }
     Z.benutzt[s.id] = jetzt;
-    if (!Z.stimme) { Z.untertitel = { text: s.text, bis: jetzt + Math.max(1.6, s.dauer || 2) }; Z.letzterSatz = jetzt + (s.dauer || 2); return; }
+    if (!Z.stimme) { Z.untertitel = { text: s.text, bis: jetzt + Math.max(1.6, s.dauer || 2) }; Z.letzterSatz = jetzt + (s.dauer || 2); return true; }
     var z = Z;
     Z.spricht = { prio: prio, text: s.text, quelle: null };
     satzPuffer(z.ctx, s).then(function (ab) {
@@ -315,6 +333,7 @@
       };
       q.start();
     }).catch(function () { if (Z === z) { z.spricht = null; z.untertitel = { text: s.text, bis: z.t + 2.2 }; } });
+    return true;
   }
   function untertitelOhneTon(gruppe, prio) {
     var T = { intro: "Hey Leute, Thorsten hier – eure Lieblings-KI! Ab in den Krawallzoo!", short_intro: "Thorsten hier – schaut euch das an!", sieg: "Gewonnen! 🎉", niederlage: "Verloren – Revanche!", outro: "Bleibt krawallig! Tschüss! 👋", short_outro: "Bleibt krawallig!", ko_treffer: "Erwischt!", ko_raus: "Neeein, raus!" };
@@ -502,10 +521,13 @@
       dateiName = bau ? "thorsten-baut-" : "thorsten-zeigt-";
       titel = kurz
         ? (bau ? "Eine Stadt in " + Math.round(z.dauer) + " Sekunden bauen 🏗️ #Shorts" : st.momente.indexOf("nacht") >= 0 ? "Meine Stadt bei Nacht 🌃 #Shorts" : "Rundflug über meine Stadt 🏙️ #Shorts")
+        : st.probleme.indexOf("brand") >= 0 && bau ? "Thorsten baut eine Stadt – und dann brennt es! 🔥 (Horizonte, KI-Städtebau)"
+        : st.probleme.indexOf("stau") >= 0 && bau ? "Thorsten baut eine Stadt – und versinkt im Stau! 🚗 (Horizonte, KI-Städtebau)"
         : bau ? "Thorsten baut eine Stadt in Horizonte – von leerem Land" + (ew ? " zu " + ew + " Einwohnern" : " zur Stadt") + "! (KI-Städtebau)"
           : "Thorsten zeigt seine Stadt in Horizonte – " + (st.momente.indexOf("nacht") >= 0 ? "Rundflug bei Tag und Nacht" : "der große Rundflug") + " (KI-Städtebau)";
       beschreibung = "Thorsten – der KI-YouTuber von OMNIVIA – " + (bau ? "baut eine Stadt in Horizonte, von leerem Land bis zur lebendigen Stadt im Zeitraffer" : "zeigt seine Stadt „" + stadt + "“ in Horizonte") + ".\n" +
         (ew ? "Einwohner am Ende: " + ew + ".\n" : "") +
+        (st.probleme.length ? "Unterwegs ging auch was schief (" + st.probleme.map(function (x) { return { brand: "Feuer", stau: "Stau", strom: "Stromausfall", wasser: "Wassermangel", abwasser: "Abwasser", muell: "Müll", wegzug: "Wegzug", krimi: "Kriminalität", krank: "Kranke" }[x] || x; }).join(", ") + ") – " + (st.geloest.length ? "Thorsten hat " + st.geloest.length + " davon selbst repariert." : "ganz retten konnte Thorsten es nicht.") + "\n" : "") +
         "\n🏙️ Horizonte kostenlos im Browser spielen: https://kometenwerk.github.io/spiele/horizonte/\n🌐 Mehr von OMNIVIA: https://kometenwerk.github.io\n\n" +
         "ℹ️ Thorsten ist eine KI-Figur, kein echter Mensch. Seine Stimme ist eine Computerstimme (Piper-Sprachmodell „Thorsten“ von Thorsten-Voice, CC0). " +
         (bau ? "Gebaut wird nach einem automatischen Bauplan. " : "") + "Horizonte ist ein Spiel von FLARESSA Gaming (OMNIVIA Group).";

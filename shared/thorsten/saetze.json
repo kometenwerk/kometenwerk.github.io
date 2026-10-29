@@ -608,6 +608,211 @@
       "id": "hz-outro-short",
       "gruppe": "hz_short_outro",
       "text": "Bis zum nächsten Mal!"
+    },
+    {
+      "id": "hz-problem-brand-1",
+      "gruppe": "hz_problem_brand",
+      "text": "Oh nein, es brennt! Feuerwehr, schnell!"
+    },
+    {
+      "id": "hz-problem-brand-2",
+      "gruppe": "hz_problem_brand",
+      "text": "Da kommt Rauch raus! Das ist kein Grillfest!"
+    },
+    {
+      "id": "hz-problem-stau-1",
+      "gruppe": "hz_problem_stau",
+      "text": "Oh nein, Stau! Ich hätte doch eine größere Straße bauen sollen."
+    },
+    {
+      "id": "hz-problem-stau-2",
+      "gruppe": "hz_problem_stau",
+      "text": "Hier geht gar nichts mehr. Stoßstange an Stoßstange!"
+    },
+    {
+      "id": "hz-problem-strom-1",
+      "gruppe": "hz_problem_strom",
+      "text": "Moment, warum ist es da so dunkel? Die haben keinen Strom!"
+    },
+    {
+      "id": "hz-problem-strom-2",
+      "gruppe": "hz_problem_strom",
+      "text": "Stromausfall! Ups, das war wohl ich."
+    },
+    {
+      "id": "hz-problem-wasser-1",
+      "gruppe": "hz_problem_wasser",
+      "text": "Die Leute haben kein Wasser mehr. Das ist gar nicht gut."
+    },
+    {
+      "id": "hz-problem-abwasser-1",
+      "gruppe": "hz_problem_abwasser",
+      "text": "Igitt, das Abwasser wird nicht abgeholt!"
+    },
+    {
+      "id": "hz-problem-muell-1",
+      "gruppe": "hz_problem_muell",
+      "text": "Hier stapelt sich der Müll. Das riecht man bis hierher!"
+    },
+    {
+      "id": "hz-problem-wegzug-1",
+      "gruppe": "hz_problem_wegzug",
+      "text": "Was? Da ziehen Leute weg! Gefällt es euch nicht bei mir?"
+    },
+    {
+      "id": "hz-problem-krimi-1",
+      "gruppe": "hz_problem_krimi",
+      "text": "Hier passieren zu viele Diebstähle. Wo ist die Polizei?"
+    },
+    {
+      "id": "hz-problem-krank-1",
+      "gruppe": "hz_problem_krank",
+      "text": "Viele Leute sind krank. Wir brauchen einen Arzt!"
+    },
+    {
+      "id": "hz-problem-1",
+      "gruppe": "hz_problem",
+      "text": "Oh oh. Da läuft gerade etwas schief."
+    },
+    {
+      "id": "hz-loesung-brand-1",
+      "gruppe": "hz_loesung_brand",
+      "text": "Ich baue noch eine Feuerwache. Das passiert mir nicht nochmal!"
+    },
+    {
+      "id": "hz-loesung-stau-1",
+      "gruppe": "hz_loesung_stau",
+      "text": "Problem erkannt! Ich mache die Straße breiter."
+    },
+    {
+      "id": "hz-loesung-stau-2",
+      "gruppe": "hz_loesung_stau",
+      "text": "Mehr Spuren, weniger Stau. Hoffentlich."
+    },
+    {
+      "id": "hz-loesung-strom-1",
+      "gruppe": "hz_loesung_strom",
+      "text": "Schnell noch ein Kraftwerk dazu. Licht an!"
+    },
+    {
+      "id": "hz-loesung-wasser-1",
+      "gruppe": "hz_loesung_wasser",
+      "text": "Ein neuer Wasserturm. Prost, liebe Leute!"
+    },
+    {
+      "id": "hz-loesung-abwasser-1",
+      "gruppe": "hz_loesung_abwasser",
+      "text": "Eine Kläranlage, und das Problem ist weg."
+    },
+    {
+      "id": "hz-loesung-muell-1",
+      "gruppe": "hz_loesung_muell",
+      "text": "Ich baue noch eine Deponie. Weg mit dem Müll!"
+    },
+    {
+      "id": "hz-loesung-wegzug-1",
+      "gruppe": "hz_loesung_wegzug",
+      "text": "Vielleicht hilft ein schöner Park. Bitte bleibt hier!"
+    },
+    {
+      "id": "hz-loesung-krimi-1",
+      "gruppe": "hz_loesung_krimi",
+      "text": "Eine Polizeiwache für mehr Sicherheit."
+    },
+    {
+      "id": "hz-loesung-krank-1",
+      "gruppe": "hz_loesung_krank",
+      "text": "Ein Arzt für die Nachbarschaft. Gute Besserung!"
+    },
+    {
+      "id": "hz-loesung-1",
+      "gruppe": "hz_loesung",
+      "text": "So, repariert. Ich bin eben ein Profi."
+    },
+    {
+      "id": "hz-loesung-nicht-1",
+      "gruppe": "hz_loesung_nicht",
+      "text": "Hm, da passt nichts hin. Darum kümmere ich mich später."
+    },
+    {
+      "id": "hz-loesung-nicht-2",
+      "gruppe": "hz_loesung_nicht",
+      "text": "Okay, das kann ich gerade nicht reparieren. Weiter geht's!"
+    },
+    {
+      "id": "kz-wechsel-1",
+      "gruppe": "kz_wechsel",
+      "text": "Mit dem Tier lief's nicht. Ich probiere ein anderes!"
+    },
+    {
+      "id": "kz-wechsel-2",
+      "gruppe": "kz_wechsel",
+      "text": "Neue Runde, neues Tier. Diesmal klappt's!"
+    },
+    {
+      "id": "kz-wechsel-3",
+      "gruppe": "kz_wechsel",
+      "text": "Ich hab nachgedacht: Ein anderes Tier muss her."
+    },
+    {
+      "id": "kz-bleib-1",
+      "gruppe": "kz_bleib",
+      "text": "Never change a winning team. Ich bleibe bei meinem Tier!"
+    },
+    {
+      "id": "kz-bleib-2",
+      "gruppe": "kz_bleib",
+      "text": "Das Tier hat gewonnen, also bleibt es dabei."
+    },
+    {
+      "id": "kz-frueh-raus-1",
+      "gruppe": "kz_frueh_raus",
+      "text": "Was? Ich war noch gar nicht richtig da!"
+    },
+    {
+      "id": "kz-frueh-raus-2",
+      "gruppe": "kz_frueh_raus",
+      "text": "Das ging schnell. Zu schnell!"
+    },
+    {
+      "id": "kz-nebel-ich-1",
+      "gruppe": "kz_nebel_ich",
+      "text": "Hust! Ich steh im Nebel! Raus hier!"
+    },
+    {
+      "id": "kz-nebel-ich-2",
+      "gruppe": "kz_nebel_ich",
+      "text": "Der Nebel tut weh. Schnell in die Mitte!"
+    },
+    {
+      "id": "kz-knapp-1",
+      "gruppe": "kz_knapp",
+      "text": "Ganz wenig Leben! Jetzt bloß vorsichtig."
+    },
+    {
+      "id": "kz-knapp-2",
+      "gruppe": "kz_knapp",
+      "text": "Uiuiui, das wird knapp!"
+    },
+    {
+      "id": "kz-pech-1",
+      "gruppe": "kz_pech",
+      "text": "Schon wieder verloren. Heute ist nicht mein Tag."
+    },
+    {
+      "id": "kz-pech-2",
+      "gruppe": "kz_pech",
+      "text": "Okay, die Bots sind heute echt gut. Ich gebe nicht auf!"
+    },
+    {
+      "id": "kz-endlich-1",
+      "gruppe": "kz_endlich",
+      "text": "Endlich! Nach all den Niederlagen ein Sieg!"
+    },
+    {
+      "id": "kz-endlich-2",
+      "gruppe": "kz_endlich",
+      "text": "Ich hab's euch gesagt, ich gebe nicht auf!"
     }
   ]
 }
