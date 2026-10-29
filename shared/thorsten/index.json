@@ -1,0 +1,490 @@
+{
+ "stimme": {
+  "modell": "de_DE-mls-medium",
+  "sprecher": 162,
+  "tempo": 0.9
+ },
+ "hinweis": "Computerstimme (Piper). Wird automatisch erzeugt – nicht von Hand ändern.",
+ "saetze": [
+  {
+   "id": "intro-1",
+   "gruppe": "intro",
+   "text": "Hey Leute, Thorsten hier, eure Lieblings-KI! Heute wird im Krawallzoo gekracht. Los geht's!",
+   "datei": "ton/intro-1.mp3",
+   "dauer": 16.19,
+   "hash": "8443263ad17b"
+  },
+  {
+   "id": "intro-2",
+   "gruppe": "intro",
+   "text": "Servus und willkommen! Ich bin Thorsten, der KI-Youtuber von Omnivia. Und heute zocke ich Krawallzoo!",
+   "datei": "ton/intro-2.mp3",
+   "dauer": 18.57,
+   "hash": "549b4c1d1df5"
+  },
+  {
+   "id": "intro-3",
+   "gruppe": "intro",
+   "text": "Hallo zusammen! Hier ist Thorsten, eine KI mit viel zu viel Energie. Ab in den Krawallzoo!",
+   "datei": "ton/intro-3.mp3",
+   "dauer": 12.58,
+   "hash": "de1b2040c26d"
+  },
+  {
+   "id": "short-1",
+   "gruppe": "short_intro",
+   "text": "Thorsten hier. Schaut euch das an!",
+   "datei": "ton/short-1.mp3",
+   "dauer": 7.96,
+   "hash": "582c408b6acc"
+  },
+  {
+   "id": "short-2",
+   "gruppe": "short_intro",
+   "text": "Krawallzoo, eine Runde, volle Action. Los!",
+   "datei": "ton/short-2.mp3",
+   "dauer": 10.45,
+   "hash": "12e059ec3d54"
+  },
+  {
+   "id": "short-3",
+   "gruppe": "short_intro",
+   "text": "Achtung, jetzt wird's wild!",
+   "datei": "ton/short-3.mp3",
+   "dauer": 5.56,
+   "hash": "4b1397cf51ab"
+  },
+  {
+   "id": "los-1",
+   "gruppe": "los",
+   "text": "Und los!",
+   "datei": "ton/los-1.mp3",
+   "dauer": 3.61,
+   "hash": "706c229e5267"
+  },
+  {
+   "id": "los-2",
+   "gruppe": "los",
+   "text": "Drei, zwei, eins, Krawall!",
+   "datei": "ton/los-2.mp3",
+   "dauer": 7.85,
+   "hash": "7cc036763fee"
+  },
+  {
+   "id": "los-3",
+   "gruppe": "los",
+   "text": "Okay, Konzentration. Jetzt geht's los!",
+   "datei": "ton/los-3.mp3",
+   "dauer": 10.46,
+   "hash": "76313b0b9a90"
+  },
+  {
+   "id": "los-4",
+   "gruppe": "los",
+   "text": "Neue Runde, neues Glück!",
+   "datei": "ton/los-4.mp3",
+   "dauer": 7.25,
+   "hash": "c7081ccc54e7"
+  },
+  {
+   "id": "treffer-1",
+   "gruppe": "ko_treffer",
+   "text": "Jaaa! Erwischt!",
+   "datei": "ton/treffer-1.mp3",
+   "dauer": 6.28,
+   "hash": "d5e392ce10c2"
+  },
+  {
+   "id": "treffer-2",
+   "gruppe": "ko_treffer",
+   "text": "Den hab ich umgehauen!",
+   "datei": "ton/treffer-2.mp3",
+   "dauer": 6.96,
+   "hash": "c1b19726ae04"
+  },
+  {
+   "id": "treffer-3",
+   "gruppe": "ko_treffer",
+   "text": "Boom! Der ist raus!",
+   "datei": "ton/treffer-3.mp3",
+   "dauer": 3.42,
+   "hash": "5fc18cb2633d"
+  },
+  {
+   "id": "treffer-4",
+   "gruppe": "ko_treffer",
+   "text": "Einer weniger, weiter so!",
+   "datei": "ton/treffer-4.mp3",
+   "dauer": 6.72,
+   "hash": "91043b938fad"
+  },
+  {
+   "id": "treffer-5",
+   "gruppe": "ko_treffer",
+   "text": "Sauber! Das war mein Moment!",
+   "datei": "ton/treffer-5.mp3",
+   "dauer": 7.1,
+   "hash": "b1296ac34f25"
+  },
+  {
+   "id": "treffer-6",
+   "gruppe": "ko_treffer",
+   "text": "Haha, damit hat er nicht gerechnet!",
+   "datei": "ton/treffer-6.mp3",
+   "dauer": 7.83,
+   "hash": "5df90b8b0acf"
+  },
+  {
+   "id": "raus-1",
+   "gruppe": "ko_raus",
+   "text": "Neeein! Mein Tier ist raus!",
+   "datei": "ton/raus-1.mp3",
+   "dauer": 7.29,
+   "hash": "79e2f26a73e7"
+  },
+  {
+   "id": "raus-2",
+   "gruppe": "ko_raus",
+   "text": "Autsch. Das hat wehgetan.",
+   "datei": "ton/raus-2.mp3",
+   "dauer": 5.18,
+   "hash": "fff0c38a01a0"
+  },
+  {
+   "id": "raus-3",
+   "gruppe": "ko_raus",
+   "text": "Okay, das war nicht mein bester Moment.",
+   "datei": "ton/raus-3.mp3",
+   "dauer": 2.97,
+   "hash": "0b19d30b2d7e"
+  },
+  {
+   "id": "raus-4",
+   "gruppe": "ko_raus",
+   "text": "Wer hat mich da bitte erwischt?",
+   "datei": "ton/raus-4.mp3",
+   "dauer": 6.06,
+   "hash": "c13b942c3ca6"
+  },
+  {
+   "id": "raus-5",
+   "gruppe": "ko_raus",
+   "text": "Uff. Kurze Pause für mein Fell.",
+   "datei": "ton/raus-5.mp3",
+   "dauer": 7.67,
+   "hash": "773d165372ae"
+  },
+  {
+   "id": "andere-1",
+   "gruppe": "ko_andere",
+   "text": "Und da kippt der Nächste um!",
+   "datei": "ton/andere-1.mp3",
+   "dauer": 7.69,
+   "hash": "d12f2f340568"
+  },
+  {
+   "id": "andere-2",
+   "gruppe": "ko_andere",
+   "text": "Oh, das war ein Volltreffer!",
+   "datei": "ton/andere-2.mp3",
+   "dauer": 6.7,
+   "hash": "87bf0fdca000"
+  },
+  {
+   "id": "andere-3",
+   "gruppe": "ko_andere",
+   "text": "Uiuiui, das ging schnell.",
+   "datei": "ton/andere-3.mp3",
+   "dauer": 2.76,
+   "hash": "7b8b8e9ab653"
+  },
+  {
+   "id": "andere-4",
+   "gruppe": "ko_andere",
+   "text": "Hier wird ordentlich aufgeräumt!",
+   "datei": "ton/andere-4.mp3",
+   "dauer": 4.72,
+   "hash": "3b1b9e798791"
+  },
+  {
+   "id": "andere-5",
+   "gruppe": "ko_andere",
+   "text": "Gut, dass das nicht ich war.",
+   "datei": "ton/andere-5.mp3",
+   "dauer": 6.27,
+   "hash": "f6092febbb80"
+  },
+  {
+   "id": "super-ich-1",
+   "gruppe": "super_ich",
+   "text": "Spezialattacke, jetzt!",
+   "datei": "ton/super-ich-1.mp3",
+   "dauer": 5.65,
+   "hash": "c2f927d79577"
+  },
+  {
+   "id": "super-ich-2",
+   "gruppe": "super_ich",
+   "text": "Zeit für meine Geheimwaffe!",
+   "datei": "ton/super-ich-2.mp3",
+   "dauer": 7.3,
+   "hash": "a6e40f18a76f"
+  },
+  {
+   "id": "super-ich-3",
+   "gruppe": "super_ich",
+   "text": "Und jetzt die ganze Power!",
+   "datei": "ton/super-ich-3.mp3",
+   "dauer": 5.29,
+   "hash": "257becbded02"
+  },
+  {
+   "id": "super-ich-4",
+   "gruppe": "super_ich",
+   "text": "Achtung, aus dem Weg!",
+   "datei": "ton/super-ich-4.mp3",
+   "dauer": 10.66,
+   "hash": "feb94151223f"
+  },
+  {
+   "id": "super-andere-1",
+   "gruppe": "super_andere",
+   "text": "Vorsicht, Spezialattacke!",
+   "datei": "ton/super-andere-1.mp3",
+   "dauer": 6.62,
+   "hash": "88dacbc51b50"
+  },
+  {
+   "id": "super-andere-2",
+   "gruppe": "super_andere",
+   "text": "Woah, was war das denn?",
+   "datei": "ton/super-andere-2.mp3",
+   "dauer": 7.44,
+   "hash": "975842586f91"
+  },
+  {
+   "id": "super-andere-3",
+   "gruppe": "super_andere",
+   "text": "Ohhh, die sah gefährlich aus!",
+   "datei": "ton/super-andere-3.mp3",
+   "dauer": 5.08,
+   "hash": "32a604c1b754"
+  },
+  {
+   "id": "item-herz",
+   "gruppe": "item_herz",
+   "text": "Ein Herz! Das kommt gerade richtig.",
+   "datei": "ton/item-herz.mp3",
+   "dauer": 8.22,
+   "hash": "57693902df81"
+  },
+  {
+   "id": "item-blitz",
+   "gruppe": "item_blitz",
+   "text": "Turbo! Jetzt wird's schnell.",
+   "datei": "ton/item-blitz.mp3",
+   "dauer": 5.79,
+   "hash": "d523c89e6c1d"
+  },
+  {
+   "id": "item-kristall",
+   "gruppe": "item_kristall",
+   "text": "Power-Kristall! Gleich gibt's Ärger.",
+   "datei": "ton/item-kristall.mp3",
+   "dauer": 6.91,
+   "hash": "0ea2094910e5"
+  },
+  {
+   "id": "item-schild",
+   "gruppe": "item_schild",
+   "text": "Schild an. Kommt doch her!",
+   "datei": "ton/item-schild.mp3",
+   "dauer": 6.59,
+   "hash": "89df44159186"
+  },
+  {
+   "id": "nebel-1",
+   "gruppe": "nebel",
+   "text": "Der Nebel kommt! Ab in die Mitte!",
+   "datei": "ton/nebel-1.mp3",
+   "dauer": 8.29,
+   "hash": "d679e7ae0fe6"
+  },
+  {
+   "id": "nebel-2",
+   "gruppe": "nebel",
+   "text": "Es wird eng. Jetzt bloß nicht im Nebel stehen!",
+   "datei": "ton/nebel-2.mp3",
+   "dauer": 8.46,
+   "hash": "0b8b5faaed08"
+  },
+  {
+   "id": "runde-1",
+   "gruppe": "runde",
+   "text": "Nächste Runde! Jetzt aber richtig.",
+   "datei": "ton/runde-1.mp3",
+   "dauer": 11.02,
+   "hash": "275ef3c6555d"
+  },
+  {
+   "id": "runde-2",
+   "gruppe": "runde",
+   "text": "Weiter geht's, Runde zwei!",
+   "datei": "ton/runde-2.mp3",
+   "dauer": 5.66,
+   "hash": "79d432405a32"
+  },
+  {
+   "id": "entscheidung-1",
+   "gruppe": "entscheidung",
+   "text": "Entscheidungsrunde! Jetzt zählt jeder Treffer!",
+   "datei": "ton/entscheidung-1.mp3",
+   "dauer": 8.23,
+   "hash": "fb22148017d1"
+  },
+  {
+   "id": "sieg-1",
+   "gruppe": "sieg",
+   "text": "Jaaa! Gewonnen! Was für eine Runde!",
+   "datei": "ton/sieg-1.mp3",
+   "dauer": 8.25,
+   "hash": "b88cc2edd9fe"
+  },
+  {
+   "id": "sieg-2",
+   "gruppe": "sieg",
+   "text": "Sieg! Ich wusste es. Okay, ich hab's gehofft.",
+   "datei": "ton/sieg-2.mp3",
+   "dauer": 11.03,
+   "hash": "3a2bf2246663"
+  },
+  {
+   "id": "sieg-3",
+   "gruppe": "sieg",
+   "text": "Wir haben gewonnen! Tanzpause!",
+   "datei": "ton/sieg-3.mp3",
+   "dauer": 8.46,
+   "hash": "f56b12be0250"
+  },
+  {
+   "id": "sieg-4",
+   "gruppe": "sieg",
+   "text": "Und das, liebe Leute, nennt man Krawall!",
+   "datei": "ton/sieg-4.mp3",
+   "dauer": 8.16,
+   "hash": "22cb05c0fa4d"
+  },
+  {
+   "id": "platz-1",
+   "gruppe": "platz",
+   "text": "Nicht ganz der Sieg, aber ein richtig guter Platz!",
+   "datei": "ton/platz-1.mp3",
+   "dauer": 5.05,
+   "hash": "5037eaeebb0f"
+  },
+  {
+   "id": "platz-2",
+   "gruppe": "platz",
+   "text": "Knapp vorbei. Nächstes Mal schnappe ich mir den ersten Platz!",
+   "datei": "ton/platz-2.mp3",
+   "dauer": 8.81,
+   "hash": "7a40c08a4f9b"
+  },
+  {
+   "id": "verloren-1",
+   "gruppe": "niederlage",
+   "text": "Verloren. Aber hey, das Fell wächst nach!",
+   "datei": "ton/verloren-1.mp3",
+   "dauer": 11.06,
+   "hash": "6f49c74d594f"
+  },
+  {
+   "id": "verloren-2",
+   "gruppe": "niederlage",
+   "text": "Das war nix. Revanche, sofort!",
+   "datei": "ton/verloren-2.mp3",
+   "dauer": 6.94,
+   "hash": "e6ca3bb4eab2"
+  },
+  {
+   "id": "verloren-3",
+   "gruppe": "niederlage",
+   "text": "Okay, die anderen waren heute besser. Respekt!",
+   "datei": "ton/verloren-3.mp3",
+   "dauer": 14.39,
+   "hash": "36b5563a60fd"
+  },
+  {
+   "id": "fuell-1",
+   "gruppe": "fuell",
+   "text": "Wer gewinnt das hier wohl? Schreibt mir euren Tipp in die Kommentare!",
+   "datei": "ton/fuell-1.mp3",
+   "dauer": 13.79,
+   "hash": "91989ce90737"
+  },
+  {
+   "id": "fuell-2",
+   "gruppe": "fuell",
+   "text": "Welches Tier ist euer Liebling? Ich bin gespannt!",
+   "datei": "ton/fuell-2.mp3",
+   "dauer": 16.14,
+   "hash": "2e67efd7d8b2"
+  },
+  {
+   "id": "fuell-3",
+   "gruppe": "fuell",
+   "text": "Übrigens: Krawallzoo könnt ihr kostenlos im Browser spielen.",
+   "datei": "ton/fuell-3.mp3",
+   "dauer": 5.29,
+   "hash": "9da5bfb5fbd0"
+  },
+  {
+   "id": "fuell-4",
+   "gruppe": "fuell",
+   "text": "Ich bin eine KI, aber nervös bin ich trotzdem.",
+   "datei": "ton/fuell-4.mp3",
+   "dauer": 6.17,
+   "hash": "7a62d4d0e6b8"
+  },
+  {
+   "id": "fuell-5",
+   "gruppe": "fuell",
+   "text": "Puh, hier ist ganz schön was los.",
+   "datei": "ton/fuell-5.mp3",
+   "dauer": 3.34,
+   "hash": "58732664068f"
+  },
+  {
+   "id": "fuell-6",
+   "gruppe": "fuell",
+   "text": "Achtet mal auf die Power-ups, die fallen einfach vom Himmel!",
+   "datei": "ton/fuell-6.mp3",
+   "dauer": 4.77,
+   "hash": "71c1798ba8cc"
+  },
+  {
+   "id": "outro-1",
+   "gruppe": "outro",
+   "text": "Das war's für heute! Spielt Krawallzoo selbst, auf kometenwerk punkt github punkt io. Bleibt krawallig, tschüss!",
+   "datei": "ton/outro-1.mp3",
+   "dauer": 17.63,
+   "hash": "bfc5956a4ddf"
+  },
+  {
+   "id": "outro-2",
+   "gruppe": "outro",
+   "text": "Danke fürs Zuschauen! Wenn's euch gefallen hat, lasst gern ein Like da. Bleibt krawallig!",
+   "datei": "ton/outro-2.mp3",
+   "dauer": 14.77,
+   "hash": "9921370158e7"
+  },
+  {
+   "id": "outro-short",
+   "gruppe": "short_outro",
+   "text": "Bleibt krawallig!",
+   "datei": "ton/outro-short.mp3",
+   "dauer": 4.98,
+   "hash": "2f515c5a36d3"
+  }
+ ]
+}
