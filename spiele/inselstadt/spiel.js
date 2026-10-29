@@ -1435,6 +1435,13 @@ const DIENSTE = {
   hauptbahnhof: { kat: "verkehr", name: "Hauptbahnhof", em: "🚄", preis: 70000, unterhalt: 620, w: 12, d: 5, ab: 4, station: true, text: "Vier Gleise unter einer großen Halle. Hier halten auch ICE." },
   gueterbahnhof: { kat: "verkehr", name: "Güterbahnhof", em: "🚛", preis: 40000, unterhalt: 360, w: 12, d: 4, ab: 3, station: true, text: "Vier Ladegleise mit Containerkran – Güterzüge bringen Waren für die Industrie." },
   ubahnhof: { kat: "verkehr", name: "U-Bahnhof", em: "🚇", preis: 34000, unterhalt: 300, w: 8, d: 2, ab: 4, station: true, text: "Station unter der Erde mit zwei Eingängen. Verbinde sie mit 🚇 U-Bahn-Tunneln." },
+  taxidepot: { kat: "verkehr", name: "Taxizentrale", em: "🚕", preis: 6000, unterhalt: 80, w: 2, d: 2, ab: 1, taxi: true, text: "Taxis fahren die Leute durch die Stadt – etwas weniger Autos, etwas mehr Geld." },
+  faehre: { kat: "verkehr", name: "Fähranleger", em: "⛴️", preis: 12000, unterhalt: 120, w: 2, d: 2, ab: 1, amWasser: true, text: "Baue zwei Anleger – dann pendelt eine Fähre übers Wasser und bringt Fahrgäste." },
+  fischereihafen: { kat: "verkehr", name: "Fischereihafen", em: "🎣", preis: 14000, unterhalt: 140, w: 3, d: 2, ab: 1, amWasser: true, text: "Fischerboote fahren raus und bringen Fang – Arbeit und etwas Industrie." },
+  yachthafen: { kat: "verkehr", name: "Yachthafen", em: "⛵", preis: 18000, unterhalt: 160, w: 3, d: 2, ab: 2, amWasser: true, radius: 10, wert: 12, text: "Segel- und Motorboote – die Gegend wird schöner und wertvoller." },
+  passagierhafen: { kat: "verkehr", name: "Passagierhafen", em: "🛳️", preis: 45000, unterhalt: 420, w: 3, d: 3, ab: 3, amWasser: true, text: "Kreuzfahrtschiffe bringen Touristen – mehr Bedarf an Läden und Geld pro Schiff." },
+  containerterminal: { kat: "verkehr", name: "Containerterminal", em: "🏗️", preis: 60000, unterhalt: 520, w: 4, d: 4, ab: 4, amWasser: true, dreck: 4, text: "Riesige Containerschiffe und Kräne – viel Bedarf an Industrie." },
+  flughafen: { kat: "verkehr", name: "Flughafen", em: "✈️", preis: 120000, unterhalt: 900, w: 14, d: 6, ab: 4, dreck: 3, text: "Flugzeuge landen und starten – Touristen, Geschäftsleute und viel Geld." },
   parkplatz: { kat: "verkehr", name: "Parkplatz", em: "🅿️", preis: 2500, unterhalt: 20, w: 2, d: 2, radius: 8, wert: 5, text: "Kunden finden einen Parkplatz – Läden und Büros in der Nähe werden wertvoller." },
   parkhaus: { kat: "verkehr", name: "Parkhaus", em: "🏢", preis: 12000, unterhalt: 90, w: 2, d: 2, radius: 13, wert: 8, ab: 3, text: "Viele Parkplätze auf wenig Platz – gut für die Innenstadt." },
   hafen: { kat: "verkehr", name: "Frachthafen", em: "🚢", preis: 30000, unterhalt: 350, w: 4, d: 3, ab: 1, amWasser: true, dreck: 5, text: "Schiffe bringen Waren – mehr Bedarf an Industrie, Lkw fahren vom Hafen los. Muss am Ufer stehen." }
@@ -1652,6 +1659,49 @@ const DIENST_NEU = (function () {
       flaeche(0, 0, W * 0.9, D * 0.8, 0xc9c3b6);
       for (const sx of [-1, 1]) { const x = sx * (W / 2 - 1.1), z = vorn - 0.42; add("flach", x, z, 0.62, 0.012, 0.5, 0x3a3d42, { ly: 0.004 }); add("flach", x, z - 0.24, 0.66, 0.3, 0.02, 0x9fc3d6); for (const s2 of [-1, 1]) add("flach", x + s2 * 0.32, z, 0.02, 0.3, 0.5, 0x9fc3d6); add("flach", x, z, 0.7, 0.03, 0.56, 0x3a3f47, { ly: 0.3 }); add("flach", x + sx * 0.45, z + 0.2, 0.025, 0.55, 0.025, 0x9aa0a8); add("flach", x + sx * 0.45, z + 0.2, 0.16, 0.16, 0.03, 0x1f4fbf, { ly: 0.5 }); add("flach", x + sx * 0.45, z + 0.2, 0.06, 0.1, 0.034, 0xffffff, { ly: 0.53 }); add("lampe", x, z, 0.5, 0.008, 0.4, 0xffffff, { ly: 0.295 }); }
       if (DS >= 1) { for (let k = 0; k < 3; k++) add("flach", -0.6 + k * 0.6, 0, 0.36, 0.02, 0.24, 0x5d6470, { ly: 0.01 }); K.baum(0, -0.6, 0.5); K.bank(-0.8, -0.55); K.bank(0.8, -0.55); } return 0xc9c3b6; },
+    /* Häfen (Rückseite am Wasser = -z), Flughafen, Taxi */
+    kai(K, o, steg) {
+      const { add } = K, { W, D, DS } = o, z = -D / 2;
+      add("flach", 0, z + 0.14, W * 0.98, 0.06, 0.28, 0x9a958a); add("flach", 0, z + 0.01, W * 0.98, 0.03, 0.02, 0x2a2d33, { ly: 0.03 });
+      if (DS >= 1) for (let x = -W / 2 + 0.3; x < W / 2 - 0.2; x += 0.6) { K.zyl(x, z + 0.06, 0.05, 0.06, 0x3a3d42, { ly: 0.06 }); add("flach", x + 0.3, z - 0.005, 0.12, 0.08, 0.02, 0x1a1c1f, { ly: -0.06 }); }
+      for (const [x, L, w] of steg || []) { add("flach", x, z - L / 2, w, 0.03, L, 0x8b6a4a, { ly: 0.01 }); if (DS >= 1) for (let k = 0.3; k < L; k += 0.5) for (const s of [-1, 1]) add("flach", x + s * w * 0.45, z - k, 0.03, 0.5, 0.03, 0x5a4636, { ly: -0.48 }); }
+    },
+    hafen(K, o, X) { const { bau, add, flaeche } = K, { W, D, vorn, DS, r } = o; DIENST_NEU.kai(K, o);
+      flaeche(0, 0, W * 0.94, D * 0.6, 0x8c8f94); for (let i = 0; i < 6; i++) for (let j = 0; j < 2; j++) { const h = 1 + Math.floor(r() * 2); for (let k = 0; k < h; k++) add("flach", -W * 0.38 + i * 0.5, -0.15 + j * 0.5, 0.44, 0.2, 0.22, CONTAINER[(i + j * 2 + k) % CONTAINER.length], { ly: k * 0.2 }); }
+      for (const sx of [-0.25, 0.3]) { add("flach", sx * W, -D / 2 + 0.35, 0.06, 1.25, 0.06, 0xf2c14e); add("flach", sx * W, -D / 2 + 0.05, 0.06, 0.06, 0.8, 0xf2c14e, { ly: 1.2 }); add("flach", sx * W, -D / 2 + 0.6, 0.18, 0.16, 0.18, 0xe0a52a, { ly: 1.1 }); }
+      bau({ lx: W * 0.33, lz: vorn - 0.35, w: 0.7, d: 0.5, n: 2, art: "buero", c: 0xd9d4c7, dach: "flach", eingang: "glas" }); if (DS >= 1) { K.lkw(-W * 0.3, vorn - 0.3); K.lkw(-W * 0.1, vorn - 0.3); } return 0x8c8f94; },
+    faehre(K, o, X) { const { bau, add, flaeche } = K, { W, D, vorn, DS } = o; DIENST_NEU.kai(K, o);
+      add("flach", 0, -D / 2 - 0.35, 0.5, 0.04, 0.7, 0x6d7178, { ly: 0.0, rx: 0.06 }); for (const s of [-1, 1]) add("flach", s * 0.27, -D / 2 - 0.35, 0.03, 0.12, 0.7, 0xf2c14e, { ly: 0.02 });
+      bau({ lx: W * 0.25, lz: vorn - 0.4, w: 0.7, d: 0.55, n: 1, hh: 0.45, art: "glas", c: 0xbfe0ea, dach: "pult", dc: 0x3f7fe8, eingang: "glas" });
+      flaeche(-W * 0.15, 0, 0.7, D * 0.6, 0x55585e); if (DS >= 1) for (let k = 0; k < 3; k++) add("flach", -W * 0.15, -0.3 + k * 0.32, 0.14, 0.09, 0.26, PAL.auto[k % PAL.auto.length], { ly: 0.01 });
+      add("flach", -W * 0.4, vorn - 0.2, 0.15, 0.25, 0.15, 0xd8dade); add("flach", W * 0.45, vorn - 0.1, 0.02, 0.5, 0.02, 0x9aa0a8); add("flach", W * 0.45, vorn - 0.1, 0.2, 0.2, 0.02, 0x1f4fbf, { ly: 0.42 }); return 0xbfe0ea; },
+    passagierhafen(K, o, X) { const { bau, add, flaeche, dach } = K, { W, D, vorn, DS } = o; DIENST_NEU.kai(K, o);
+      bau({ lz: 0.1, w: W * 0.7, d: 1.2, n: 2, hh: 0.75, art: "glas", c: 0xbfe0ea, dach: "flach", eingang: "glas" }); dach("sattel", 0, 0.1, W * 0.74, 1.3, 0.75, 0xf6f6f6, { h: 0.25, ue: 0.06 });
+      for (let k = 0; k < 2; k++) { add("flach", -W * 0.2 + k * W * 0.4, -D / 2 + 0.05, 0.16, 0.12, 0.9, 0xd8dade, { ly: 0.45 }); add("flach", -W * 0.2 + k * W * 0.4, -D / 2 + 0.3, 0.05, 0.45, 0.05, 0x9aa0a8); }
+      flaeche(0, vorn - 0.3, W * 0.9, 0.5, 0xd8cbb0); if (DS >= 1) for (const s of [-1, 1]) X.fahne(s * W * 0.42, vorn - 0.12, s < 0 ? 0x1f4fbf : 0xf2c14e); return 0xbfe0ea; },
+    containerterminal(K, o, X) { const { bau, add, flaeche } = K, { W, D, vorn, DS, r } = o; DIENST_NEU.kai(K, o);
+      flaeche(0, 0.2, W * 0.96, D * 0.75, 0x8c8f94); for (let i = 0; i < 7; i++) for (let j = 0; j < 3; j++) { const h = 1 + Math.floor(r() * 3); for (let k = 0; k < h; k++) add("flach", -W * 0.4 + i * 0.52, -0.2 + j * 0.42, 0.46, 0.2, 0.2, CONTAINER[(i * 2 + j + k * 3) % CONTAINER.length], { ly: k * 0.2 }); }
+      if (DS >= 1) for (let k = 0; k < 2; k++) { const x = W * 0.3 + k * 0.4, z = 0.2; for (const s of [-1, 1]) add("flach", x + s * 0.12, z, 0.03, 0.5, 0.36, 0xf2c14e); add("flach", x, z, 0.28, 0.06, 0.36, 0xf2c14e, { ly: 0.5 }); }
+      bau({ lx: -W * 0.35, lz: vorn - 0.35, w: 0.9, d: 0.5, n: 3, art: "buero", c: 0xd8dade, dach: "flach", eingang: "glas" }); for (let k = 0; k < 3; k++) add("flach", W * 0.1 + k * 0.35, vorn - 0.12, 0.25, 0.25, 0.04, 0xf2c14e, { ly: 0 }); if (DS >= 1) { K.lkw(W * 0.25, vorn - 0.45); K.lkw(W * 0.4, vorn - 0.45); } return 0x8c8f94; },
+    fischereihafen(K, o, X) { const { bau, add, flaeche } = K, { W, D, vorn, DS } = o; DIENST_NEU.kai(K, o, [[-W * 0.3, 1.2, 0.22], [W * 0.05, 1.0, 0.22]]);
+      bau({ lx: W * 0.25, lz: 0.05, w: 1.0, d: 0.7, n: 1, hh: 0.45, art: "holz", c: 0x7a9aaa, dach: "sattel", dc: 0x5d6470, eingang: false });
+      if (DS >= 1) { for (let k = 0; k < 5; k++) add("flach", -W * 0.1 + (k % 3) * 0.14, 0.2 + Math.floor(k / 3) * 0.14, 0.12, 0.06, 0.1, k % 2 ? 0x3f7fe8 : 0xe8493f, { ly: 0.01 }); for (const s of [-1, 1]) add("flach", -W * 0.38 + s * 0.3, 0.3, 0.02, 0.35, 0.02, 0x6b4a2f); add("flach", -W * 0.38, 0.3, 0.6, 0.25, 0.006, 0x2f6b4a, { ly: 0.08 }); }
+      for (const [x, L] of [[-W * 0.3 + 0.22, 0.8], [W * 0.05 + 0.22, 0.6]]) { add("flach", x, -D / 2 - L, 0.2, 0.06, 0.58, 0x2f6db5, { ly: -0.24 }); add("flach", x, -D / 2 - L + 0.08, 0.13, 0.1, 0.16, 0xf4f4f4, { ly: -0.18 }); add("flach", x, -D / 2 - L - 0.1, 0.012, 0.36, 0.012, 0x6b4a2f, { ly: -0.18 }); }
+      bau({ lx: -W * 0.3, lz: vorn - 0.25, w: 0.5, d: 0.35, n: 1, hh: 0.35, art: "holz", c: 0xe8dcc8, dach: "sattel", dc: 0xb2513a, eingang: "tuer" }); return 0x7a9aaa; },
+    yachthafen(K, o, X) { const { bau, add, flaeche } = K, { W, D, vorn, DS } = o; DIENST_NEU.kai(K, o, [[-W * 0.32, 1.6, 0.16], [0, 1.6, 0.16], [W * 0.32, 1.6, 0.16]]);
+      for (const x of [-W * 0.32, 0, W * 0.32]) for (let k = 0; k < 3; k++) for (const s of [-1, 1]) { const lz = -D / 2 - 0.35 - k * 0.45, bx = x + s * 0.22; add("flach", bx, lz, 0.13, 0.05, 0.4, k % 2 ? 0x1f4fbf : 0xf4f4f4, { ly: -0.25 }); if ((k + (s > 0 ? 1 : 0)) % 2 === 0) add("flach", bx, lz, 0.008, 0.5, 0.008, 0xd8d8d8, { ly: -0.2 }); }
+      bau({ lx: W * 0.2, lz: vorn - 0.45, w: 1.0, d: 0.6, n: 1, hh: 0.45, art: "holz", c: 0xf2f0ea, dach: "walm", dc: 0x3f6fa8, eingang: "glas", balkon: "kragen" });
+      flaeche(-W * 0.2, vorn - 0.4, 0.9, 0.5, 0x55585e); if (DS >= 1) { K.bank(-W * 0.4, -0.05); K.baum(W * 0.45, vorn - 0.2, 0.4); X.fahne(-W * 0.45, vorn - 0.1, 0x1f4fbf); } return 0xf2f0ea; },
+    flughafen(K, o, X) { const { bau, add, flaeche, zyl } = K, { W, D, vorn, DS } = o, rz = -1.6;
+      flaeche(0, rz, W * 0.98, 0.85, 0x3a3e46); if (DS >= 1) for (let x = -W / 2 + 1.2; x < W / 2 - 1; x += 0.7) add("flach", x, rz, 0.35, 0.003, 0.04, 0xffffff, { ly: 0.012 }); for (const s of [-1, 1]) for (let k = 0; k < 4; k++) add("flach", s * (W / 2 - 0.35), rz - 0.3 + k * 0.2, 0.4, 0.003, 0.06, 0xffffff, { ly: 0.012 });
+      flaeche(0, -0.6, W * 0.85, 0.3, 0x4a4d52); add("flach", 0, -0.6, W * 0.85, 0.003, 0.02, 0xf2c14e, { ly: 0.012 }); for (const x of [-W * 0.3, W * 0.3]) flaeche(x, -1.1, 0.3, 0.7, 0x4a4d52);
+      flaeche(0, 0.55, W * 0.75, 1.0, 0x8c8f94); for (const gx of [-3.2, -0.6, 1.6, 3.2]) add("flach", gx, 0.55, 0.02, 0.003, 0.9, 0xf2c14e, { ly: 0.012 });
+      bau({ lz: 1.75, w: W * 0.55, d: 1.1, n: 2, hh: 0.7, art: "glas", c: 0xbfe0ea, dach: "flach", eingang: "glas" }); add("flach", 0, 1.75, W * 0.57, 0.06, 1.2, 0xd8dade, { ly: 0.7 });
+      for (const gx of [-3.2, -0.6, 1.6, 3.2]) { add("flach", gx, 1.05, 0.12, 0.14, 0.5, 0xd8dade, { ly: 0.2 }); add("flach", gx, 0.82, 0.05, 0.2, 0.05, 0x9aa0a8); }
+      const tx = W / 2 - 1.0, tz = 1.6; zyl(tx, tz, 0.3, 1.6, 0xe9ecef); zyl(tx, tz, 0.55, 0.25, 0x2a3644, { ly: 1.6 }); zyl(tx, tz, 0.6, 0.05, 0xd8dade, { ly: 1.85 }); add("flach", tx, tz, 0.02, 0.3, 0.02, 0xe8493f, { ly: 1.9 });
+      bau({ lx: -W / 2 + 1.2, lz: 1.5, w: 1.6, d: 1.2, n: 1, hh: 0.7, c: 0xc4c9cc, dach: "sattel", dc: 0x8b9096, dachH: 0.25, eingang: false }); add("flach", -W / 2 + 1.2, 2.11, 1.2, 0.55, 0.01, 0x8a9099);
+      flaeche(W * 0.15, vorn - 0.2, W * 0.5, 0.35, 0x55585e); if (DS >= 1) for (let k = 0; k < 4; k++) add("flach", W * 0.05 + k * 0.3, vorn - 0.2, 0.24, 0.1, 0.13, 0xf2c14e, { ly: 0.01 }); return 0xbfe0ea; },
+    taxidepot(K, o, X) { const { bau, add } = K, { W, D, vorn } = o; X.halle(0, -0.25, W * 0.86, 0.9, 0.46, 0xf2e6c8, 3, 0x8a9099, ["taxi"]); bau({ lx: W * 0.3, lz: vorn - 0.25, w: 0.5, d: 0.35, n: 1, hh: 0.35, c: 0xf2c14e, dach: "flach", eingang: "glas" }); add("flach", -W * 0.25, vorn - 0.1, 0.02, 0.45, 0.02, 0x9aa0a8); add("flach", -W * 0.25, vorn - 0.1, 0.3, 0.12, 0.03, 0xf2c14e, { ly: 0.4 }); return 0xf2e6c8; },
     ausbau(K, o, X, kat, i, c) {
       const { bau, add, zyl, flaeche } = K, { W, D, DS } = o, s = i ? 1 : -1, w = Math.min(0.8, W * 0.42), x = s * (W / 2 - w / 2 - 0.04), z = -D / 2 + 0.4;
       if (kat === "feuer") {
@@ -1946,6 +1996,7 @@ function dienstTakt(dt) {
     if (D.muell) { d.timer = 7; if (eigeneFahrzeuge(d) < 3) { const L = [...haeuser.values()].filter((h) => h.komp === d.komp && !h.verlassen); if (L.length) einsatz(d, wahl(Math.random, L), Math.random() < 0.2 ? "kehrmaschine" : "muell", null, true); } }
     else if (D.kat === "polizei") { d.timer = 9; if (eigeneFahrzeuge(d) < Math.round((D.radius > 15 ? 3 : 2) * ausbauFak(d) / (1 + 0.3 * (d.ausbau || 0)))) { const L = [...haeuser.values()].filter((h) => abdHaus(h, "polizei", d) > 0); if (L.length) { const h = L.reduce((m, x) => (x.krimi || 0) > (m.krimi || 0) ? x : m, wahl(Math.random, L)); einsatz(d, h, D.radius > 15 && Math.random() < 0.4 ? "polizeivan" : "polizei", () => { h.krimi = 0; }, true); } } }
     else if (D.kat === "gesund") { d.timer = D.radius > 10 ? 10 : 16; if (eigeneFahrzeuge(d) < Math.round((D.radius > 10 ? 2 : 1) * ausbauFak(d) / (1 + 0.3 * (d.ausbau || 0)))) { const L = [...haeuser.values()].filter((h) => (h.krank || 0) > 20 && abdHaus(h, "gesund", d) > 0); if (L.length) { const h = wahl(Math.random, L); einsatz(d, h, D.radius > 10 ? "kranken" : "notarzt", () => { h.krank = 0; }, true); } } }
+    else if (D.taxi) { d.timer = 6; if (eigeneFahrzeuge(d) < Math.round(3 * ausbauFak(d))) { const L = [...haeuser.values()].filter((h) => !h.verlassen && Math.hypot(h.x - d.x, h.z - d.z) < 30); if (L.length) { const f = einsatz(d, wahl(Math.random, L), "taxi", () => { geld += 6 * ticketPreis; nvWoche.einnahmen += 6 * ticketPreis; nvWoche.fahrten += 1; }, true); if (f) f.alarm = false; } } }
     else d.timer = 5;
   }
 }
@@ -2286,6 +2337,7 @@ function bedarfBerechnen() {
   let b = zoneFrei(5) ? (k.e * (0.12 + bil * 0.06) - k.jb) * 1.3 + 10 : -100;
   let i = (arbeiter * (zoneFrei(5) ? 0.36 - bil * 0.06 : 0.42) - k.ji) * 1.2 + (k.e < 60 ? 25 : 0) + k.jl * 0.15;
   const nb = [...dienste.values()].filter((d) => d.typ === "bahnhof" && (d.gk == null || simZeit - (d.zugDa ?? -999) < 150)).length, nh = anzahlTyp("hafen"); w += 8 * nb; l += 10 * nb + 4 * nh; i += 14 * nh;
+  l += 12 * anzahlTyp("passagierhafen") + 18 * anzahlTyp("flughafen") + 2 * anzahlTyp("faehre"); b += 12 * anzahlTyp("flughafen"); i += 22 * anzahlTyp("containerterminal") + 6 * anzahlTyp("fischereihafen");
   const s = (z, v) => (v - (steuern[z] - 9) * 4.5) * (1 - (steuern[z] - 9) * 0.05);
   if (hatEntw("wirt1")) { l += 10; b += 10; }
   bedarf = { w: klemme(s("w", w), -100, 100), g: klemme(s("g", l), -100, 100), b: klemme(s("b", b), -100, 100), i: klemme(s("i", i), -100, 100) };
@@ -2555,6 +2607,89 @@ function bahnHafenZeichnen(dt) {
     }
   }
   for (const [m, n] of [[lokMesh, li], [wagenMesh, wi], [schiffMesh, si]]) { m.count = n; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
+}
+/* ================================================================
+   Wasser und Luft: Schiffe mit Bugwelle und Kielwasser, Häfen, Fähren, Flughafen
+   ================================================================ */
+const SCHIFF_GEO = {
+  frachter: mergeGeometries([profil([[-1.2, -0.1], [0.95, -0.1], [1.25, 0.18], [-1.2, 0.18]], 0.5, 0x6a2a2a, 0.02), kiste(0, 0.19, 0, 2.3, 0.02, 0.5, 0x4a4d52), ...[0, 1, 2].map((i) => kiste(-0.5 + i * 0.45, 0.24, 0, 0.36, 0.08, 0.4, 0x2f5d7a)), kiste(-0.98, 0.34, 0, 0.3, 0.32, 0.46, 0xf4f4f4), kiste(-0.98, 0.52, 0, 0.32, 0.05, 0.48, 0x2a3644), kiste(-1.05, 0.62, 0, 0.08, 0.2, 0.08, 0xd9302f), ...[-0.3, 0.4].flatMap((x) => [kiste(x, 0.45, 0, 0.04, 0.5, 0.04, 0xf2c14e), kiste(x + 0.18, 0.62, 0, 0.4, 0.025, 0.025, 0xf2c14e)])]),
+  faehre: mergeGeometries([profil([[-0.9, -0.08], [0.75, -0.08], [0.95, 0.16], [-0.95, 0.16]], 0.56, 0x1f4fbf, 0.02), kiste(0, 0.27, 0, 1.6, 0.22, 0.54, 0xf4f4f4), kiste(0, 0.2, 0, 1.62, 0.03, 0.56, 0x1f4fbf), kiste(0.05, 0.3, 0, 1.5, 0.04, 0.55, 0x2a3644), kiste(0.25, 0.45, 0, 0.4, 0.12, 0.44, 0xf4f4f4), kiste(0.27, 0.48, 0, 0.42, 0.04, 0.45, 0x2a3644), kiste(-0.3, 0.5, 0, 0.1, 0.16, 0.12, 0xe8493f)]),
+  kreuz: mergeGeometries([profil([[-1.7, -0.12], [1.35, -0.12], [1.75, 0.22], [-1.72, 0.22]], 0.66, 0x1f2a44, 0.03), kiste(-0.1, 0.27, 0, 3.0, 0.1, 0.64, 0xf6f6f6), kiste(-0.15, 0.37, 0, 2.7, 0.1, 0.6, 0xf6f6f6), kiste(-0.2, 0.47, 0, 2.3, 0.1, 0.56, 0xf6f6f6), kiste(-0.25, 0.57, 0, 1.8, 0.1, 0.5, 0xf6f6f6), ...[0.3, 0.4, 0.5, 0.6].map((y) => kiste(-0.15, y, 0, 2.6 - (y - 0.3) * 3, 0.025, 0.665 - (y - 0.3) * 0.5, 0x3d6fb0)), kiste(-0.9, 0.72, 0, 0.28, 0.22, 0.2, 0xd9302f), kiste(0.6, 0.64, 0, 0.3, 0.03, 0.4, 0x5fb8d8)]),
+  fischer: mergeGeometries([profil([[-0.32, -0.05], [0.25, -0.05], [0.36, 0.1], [-0.34, 0.1]], 0.22, 0x2f6db5, 0.015), kiste(0, 0.105, 0, 0.66, 0.01, 0.22, 0xd8d0c0), kiste(-0.12, 0.16, 0, 0.16, 0.1, 0.15, 0xf4f4f4), kiste(0.12, 0.3, 0, 0.015, 0.4, 0.015, 0x6b4a2f), kiste(-0.05, 0.38, 0, 0.36, 0.012, 0.012, 0x6b4a2f), kiste(-0.2, 0.2, 0, 0.012, 0.18, 0.12, 0xe8493f)]),
+  segel: mergeGeometries([profil([[-0.22, -0.03], [0.16, -0.03], [0.26, 0.06], [-0.24, 0.06]], 0.15, 0xf4f4f4, 0.01), kiste(0, 0.07, 0, 0.4, 0.01, 0.13, 0xb08a5a), kiste(0.02, 0.36, 0, 0.012, 0.58, 0.012, 0xd8d8d8), profil([[0.0, 0.1], [0.0, 0.62], [0.22, 0.1]], 0.006, 0xfafafa, 0), profil([[-0.01, 0.12], [-0.01, 0.5], [-0.2, 0.12]], 0.006, 0xf2f0ea, 0)]),
+  container: SCHIFF.clone().scale(1.25, 1.25, 1.25),
+  motor: mergeGeometries([profil([[-0.22, -0.03], [0.14, -0.03], [0.26, 0.07], [-0.23, 0.07]], 0.16, 0xf4f4f4, 0.01), kiste(-0.02, 0.09, 0, 0.14, 0.05, 0.13, 0x2a3644), kiste(-0.1, 0.075, 0, 0.12, 0.02, 0.14, 0x1f4fbf)])
+};
+const schiffPool = {}; for (const [k, n] of [["container", 8], ["frachter", 12], ["faehre", 12], ["kreuz", 8], ["fischer", 24], ["segel", 40], ["motor", 40]]) schiffPool[k] = becken(SCHIFF_GEO[k], AUTO_MAT, n, true);
+const FLUGZEUG = mergeGeometries([kiste(0, 0.13, 0, 1.3, 0.15, 0.15, 0xf6f6f6), kiste(0.7, 0.13, 0, 0.12, 0.11, 0.11, 0xf6f6f6), kiste(0.62, 0.17, 0, 0.1, 0.04, 0.12, 0x2a3644), kiste(0.02, 0.1, 0, 0.32, 0.025, 1.3, 0xe9ecef), kiste(-0.58, 0.27, 0, 0.18, 0.24, 0.02, 0x1f4fbf), kiste(-0.6, 0.15, 0, 0.15, 0.02, 0.46, 0xe9ecef), ...[-0.34, 0.34].map((z) => kiste(0.12, 0.05, z, 0.22, 0.08, 0.08, 0x8a8f96)), kiste(0, 0.12, 0, 1.24, 0.02, 0.152, 0x1f4fbf)]);
+const flugPool = becken(FLUGZEUG, AUTO_MAT, 24, true);
+const wellenPool = becken(G_BOX_UNTEN, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55, depthWrite: false }), 600, false);
+const kranPool = becken(G_BOX_UNTEN, M.flach, 400, true);
+let wi2 = 0, ki2 = 0, spi = {};
+function schiffSetzen(art, x, z, a, v, L, B, schaukeln) {
+  const P = schiffPool[art]; if (!P || spi[art] >= P.instanceMatrix.count) return;
+  _o.position.set(x, WASSER + 0.06 + Math.sin(jetztS * 1.3 + x) * 0.015 * (schaukeln || 1), z); _o.rotation.set(Math.sin(jetztS * 0.9 + z) * 0.02 * (schaukeln || 1), a, 0); _o.scale.setScalar(1); _o.updateMatrix();
+  P.setMatrixAt(spi[art], _o.matrix); P.setColorAt(spi[art]++, _farbe.setHex(0xffffff));
+  if (v > 0.05) welle(x, z, a, v, L, B);
+}
+function welle(x, z, a, v, L, B) {
+  const dx = Math.cos(a), dz = -Math.sin(a), hx = x - dx * L * 0.5, hz = z - dz * L * 0.5, lang = Math.min(3, 0.6 + v * 1.4);
+  for (const s of [1, -1]) { if (wi2 > 596) return; const b = a + Math.PI + s * 0.32, bx = Math.cos(b), bz = -Math.sin(b); _o.position.set(hx + bx * lang / 2 + -dz * s * B * 0.3, WASSER + 0.035, hz + bz * lang / 2 + dx * s * B * 0.3); _o.rotation.set(0, b, 0); _o.scale.set(lang, 0.004, 0.035 + v * 0.01); _o.updateMatrix(); wellenPool.setMatrixAt(wi2++, _o.matrix); }
+  if (wi2 > 596) return; _o.position.set(hx - dx * lang * 0.4, WASSER + 0.034, hz - dz * lang * 0.4); _o.rotation.set(0, a, 0); _o.scale.set(lang * 0.8, 0.004, B * 0.5); _o.updateMatrix(); wellenPool.setMatrixAt(wi2++, _o.matrix);
+  _o.position.set(x + dx * L * 0.5, WASSER + 0.036, z + dz * L * 0.5); _o.rotation.set(0, a, 0); _o.scale.set(0.12, 0.004, B * 1.15); _o.updateMatrix(); wellenPool.setMatrixAt(wi2++, _o.matrix);
+}
+function kranTeil(d, lx, ly, lz, sx, sy, sz, c) { if (ki2 > 398) return; const cs = Math.cos(d.rot), sn = Math.sin(d.rot); _o.position.set(d.x + lx * cs + lz * sn, BODEN + ly, d.z - lx * sn + lz * cs); _o.rotation.set(0, d.rot, 0); _o.scale.set(sx, sy, sz); _o.updateMatrix(); kranPool.setMatrixAt(ki2, _o.matrix); kranPool.setColorAt(ki2++, _farbe.setHex(c)); }
+const aRein = (wr) => Math.atan2(wr.dz, -wr.dx), aRaus = (wr) => Math.atan2(-wr.dz, wr.dx);
+function hafenVorbereiten(d) {
+  if (d.wr) return; const D = d.d * ZELLE; d.wr = wasserRichtung(d); let u0 = 0; while (u0 < 30 && abstand(d.x + d.wr.dx * (D / 2 + u0), d.z + d.wr.dz * (D / 2 + u0)) > -0.7) u0 += 0.25; d.dockU = u0 + 1.0;
+  d.dock = { x: d.x + d.wr.dx * (D / 2 + d.dockU), z: d.z + d.wr.dz * (D / 2 + d.dockU) };
+}
+function wasserFrei(a, b) { for (let i = 1; i < 24; i++) { const t = i / 24; if (abstand(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t) > -0.6) return false; } return true; }
+// Zyklus: anfahren – liegen – wegfahren – Pause; gibt Abstand vom Kai und Richtung zurück
+function zyklus(t, an, liegen, ab, weit) { if (t < an) { const q = 1 - t / an; return { u: weit * q * q, v: 2 * weit * q / an, rein: true }; } if (t < an + liegen) return { u: 0, v: 0, rein: true, da: true }; if (t < an + liegen + ab) { const q = (t - an - liegen) / ab; return { u: weit * q * q, v: 2 * weit * q / ab, rein: false }; } return null; }
+function hafenEinnahme(d, betrag, fahrgaeste) { geld += betrag; nvWoche.einnahmen += betrag; if (fahrgaeste) nvWoche.fahrten += fahrgaeste; d.woche = (d.woche || 0) + betrag; }
+function wasserLuftZeichnen(dt) {
+  wi2 = 0; ki2 = 0; spi = {}; for (const k in schiffPool) spi[k] = 0; let fi = 0;
+  const faehren = [...dienste.values()].filter((d) => d.typ === "faehre");
+  for (const d of dienste.values()) {
+    const typ = d.typ;
+    if (typ === "passagierhafen" || typ === "containerterminal" || typ === "fischereihafen" || typ === "yachthafen" || typ === "faehre") hafenVorbereiten(d); else if (typ !== "flughafen") continue;
+    const wr = d.wr, P0 = d.dock;
+    if (typ === "passagierhafen") {
+      d.st = ((d.st ?? d.id * 7.7) + dt) % 110; const z = zyklus(d.st, 35, 30, 28, 150); if (z) { const x = P0.x + wr.dx * (z.u + 0.4), zz = P0.z + wr.dz * (z.u + 0.4); if (abstand(x, zz) < -0.4) schiffSetzen("kreuz", x, zz, z.rein ? aRein(wr) : aRaus(wr), z.v, 3.4, 0.66); if (z.da && !d.angelegt) { d.angelegt = true; hafenEinnahme(d, 900 * ticketFak(), 400); } if (!z.da) d.angelegt = false; }
+    } else if (typ === "containerterminal") {
+      d.st = ((d.st ?? d.id * 5.3) + dt) % 90; const z = zyklus(d.st, 30, 25, 25, 160), da = !!(z && z.da);
+      if (z) { const x = P0.x + wr.dx * (z.u + 0.2), zz = P0.z + wr.dz * (z.u + 0.2); if (abstand(x, zz) < -0.4) schiffSetzen("container", x, zz, z.rein ? aRein(wr) : aRaus(wr), z.v, 3.3, 0.78); if (da && !d.angelegt) { d.angelegt = true; hafenEinnahme(d, 1100); } if (!da) d.angelegt = false; }
+      const W = d.w * ZELLE, D = d.d * ZELLE;
+      for (let k = 0; k < 2; k++) { const lx = da ? Math.sin(jetztS * 0.35 + k * 2.1) * W * 0.18 + (k ? 0.6 : -0.6) : (k ? 1 : -1) * W * 0.32, lz = -D / 2 + 0.3, c = 0xd9502f; for (const sz of [-0.28, 0.28]) for (const sx of [-0.22, 0.22]) kranTeil(d, lx + sx, 0, lz + sz, 0.05, 1.2, 0.05, c); kranTeil(d, lx, 1.2, lz - 0.45, 0.5, 0.08, 1.9, c); kranTeil(d, lx, 1.28, lz + 0.2, 0.22, 0.14, 0.3, 0x3a3d42); const lauf = da ? -0.9 - (Math.sin(jetztS * 0.9 + k) * 0.5 + 0.5) * 0.7 : -0.3; kranTeil(d, lx, 1.12, lz + lauf, 0.18, 0.08, 0.18, 0x3a3d42); kranTeil(d, lx, 0.5, lz + lauf, 0.008, 0.62, 0.008, 0x2a2d33); if (da) kranTeil(d, lx, 0.4, lz + lauf, 0.42, 0.1, 0.18, CONTAINER[(Math.floor(jetztS / 4) + k) % CONTAINER.length]); }
+    } else if (typ === "fischereihafen") {
+      for (let b = 0; b < 2; b++) { const t = ((d.id * 3.1 + b * 33 + (d.zeit = (d.zeit || 0) + (b ? 0 : dt))) % 66), z = zyklus(t, 18, 14, 18, 45); if (!z) continue; const seit = (b ? 1 : -1) * 0.5, x = P0.x + wr.dx * (z.u - 0.4) - wr.dz * seit, zz = P0.z + wr.dz * (z.u - 0.4) + wr.dx * seit; if (abstand(x, zz) < -0.3) schiffSetzen("fischer", x, zz, z.rein ? aRein(wr) : aRaus(wr), z.v, 0.7, 0.22, 1.6); if (z.da && !d["f" + b]) { d["f" + b] = true; hafenEinnahme(d, 120); } if (!z.da) d["f" + b] = false; }
+    } else if (typ === "yachthafen") {
+      const mx = P0.x + wr.dx * 2.5, mz = P0.z + wr.dz * 2.5;
+      for (let b = 0; b < 5; b++) { const art = b % 2 ? "motor" : "segel", r = 1.6 + b * 0.55, w = (art === "motor" ? 0.28 : 0.12) * (b % 3 === 0 ? -1 : 1), ph = jetztS * w + b * 1.7, x = mx + Math.cos(ph) * r, z = mz + Math.sin(ph) * r * 0.8, a = Math.atan2(-Math.cos(ph) * 0.8 * Math.sign(w), -Math.sin(ph) * Math.sign(w)); if (abstand(x, z) < -0.4) schiffSetzen(art, x, z, a, art === "motor" ? 0.9 : 0.3, 0.45, 0.16, 1.5); }
+    } else if (typ === "faehre") {
+      const p = faehren.filter((q) => q !== d && q.dock && wasserFrei(q.dock, P0)).sort((a, b) => Math.hypot(a.x - d.x, a.z - d.z) - Math.hypot(b.x - d.x, b.z - d.z))[0];
+      d.st = ((d.st ?? d.id * 4.1) + dt) % 60; const t = d.st;
+      if (p && d.id < p.id) { const B = p.dock, L = Math.hypot(B.x - P0.x, B.z - P0.z), T = Math.min(24, 6 + L * 0.35); const q = t < 8 ? 0 : t < 8 + T ? (t - 8) / T : t < 16 + T ? 1 : t < 16 + 2 * T ? 1 - (t - 16 - T) / T : 0, sm = q * q * (3 - 2 * q), x = P0.x + (B.x - P0.x) * sm, z = P0.z + (B.z - P0.z) * sm, hin = (t >= 8 && t < 8 + T), zur = (t >= 16 + T && t < 16 + 2 * T), dir = zur ? -1 : 1, a = Math.atan2(-(B.z - P0.z) * dir, (B.x - P0.x) * dir), v = (hin || zur) ? 6 * q * (1 - q) * L / T : 0; schiffSetzen("faehre", x, z, a, v, 1.8, 0.56); const ang = q === 1 ? "B" : q === 0 ? "A" : ""; if (ang && d.ferryAn !== ang) { d.ferryAn = ang; hafenEinnahme(d, 160 * ticketFak(), 60); } }
+      else if (!p) { const z = zyklus(t, 18, 10, 18, 40); if (z) { const x = P0.x + wr.dx * (z.u + 0.2), zz = P0.z + wr.dz * (z.u + 0.2); if (abstand(x, zz) < -0.4) schiffSetzen("faehre", x, zz, z.rein ? aRein(wr) : aRaus(wr), z.v, 1.8, 0.56); if (z.da && !d.angelegt) { d.angelegt = true; hafenEinnahme(d, 90, 30); } if (!z.da) d.angelegt = false; } }
+    } else if (typ === "flughafen") {
+      const W = d.w * ZELLE, rz = -1.6, cs = Math.cos(d.rot), sn = Math.sin(d.rot), welt = (lx, lz) => ({ x: d.x + lx * cs + lz * sn, z: d.z - lx * sn + lz * cs });
+      const setz = (lx, ly, lz, hdg, neig) => { if (fi >= 23) return; const w = welt(lx, lz); _o.position.set(w.x, BODEN + ly, w.z); _o.rotation.set(0, d.rot + hdg, neig || 0, "YXZ"); _o.scale.setScalar(1); _o.updateMatrix(); flugPool.setMatrixAt(fi, _o.matrix); flugPool.setColorAt(fi++, _farbe.setHex(0xffffff)); };
+      for (const gx of [-3.2, 3.2]) setz(gx, 0, 0.55, Math.PI / 2);
+      for (let k = 0; k < 2; k++) {
+        const t = ((d.ft = (d.ft ?? d.id * 3) + (k ? 0 : dt)) + k * 30) % 60, x0 = -W / 2 + 0.8, gx = k ? 1.6 : -0.6;
+        if (t < 12) { const q = t / 12; setz(x0 - 40 * (1 - q), 4.5 * (1 - q) * (1 - q) + 0.02, rz, 0, -0.08 * (1 - q)); }
+        else if (t < 18) { const q = (t - 12) / 6; setz(x0 + (W * 0.55) * (1 - (1 - q) * (1 - q)), 0, rz, 0); }
+        else if (t < 22) { const q = (t - 18) / 4; setz(x0 + W * 0.55 + (gx - x0 - W * 0.55) * q, 0, rz + (0.55 - rz) * q, q * Math.PI / 2); }
+        else if (t < 40) { setz(gx, 0, 0.55, Math.PI / 2); if (t - dt <= 22 && t > 22) hafenEinnahme(d, 700 * ticketFak(), 150); }
+        else if (t < 45) { const q = (t - 40) / 5; setz(gx + (x0 - gx) * q, 0, 0.55 + (rz - 0.55) * q, Math.PI / 2 * (1 - q) + 0); }
+        else { const q = (t - 45) / 15, s2 = q * q; setz(x0 + s2 * 60, Math.max(0, (s2 * 60 - W * 0.4) * 0.12), rz, 0, s2 * 60 > W * 0.4 ? 0.12 : 0); }
+      }
+    }
+  }
+  for (const k in schiffPool) { const P = schiffPool[k]; P.count = spi[k]; P.instanceMatrix.needsUpdate = true; if (P.instanceColor) P.instanceColor.needsUpdate = true; }
+  wellenPool.count = wi2; wellenPool.instanceMatrix.needsUpdate = true; kranPool.count = ki2; kranPool.instanceMatrix.needsUpdate = true; if (kranPool.instanceColor) kranPool.instanceColor.needsUpdate = true;
+  flugPool.count = fi; flugPool.instanceMatrix.needsUpdate = true; if (flugPool.instanceColor) flugPool.instanceColor.needsUpdate = true;
 }
 const anzahlTyp = (t) => { let n = 0; for (const d of dienste.values()) if (d.typ === t) n++; return n; };
 /* ================================================================
@@ -3025,7 +3160,7 @@ function rueckTakt() {
   }
 }
 const parkFz = {}, PARK_MAX = 900; let parkRaeder = null;
-const HALLE_TYPEN = ["feuerwehr", "drehleiter", "polizei", "polizeivan", "kranken", "notarzt", "muell", "kehrmaschine"], hallFz = {}; let hallNeu = true, hallRaeder = null;
+const HALLE_TYPEN = ["taxi", "feuerwehr", "drehleiter", "polizei", "polizeivan", "kranken", "notarzt", "muell", "kehrmaschine"], hallFz = {}; let hallNeu = true, hallRaeder = null;
 function halleZeichnen() {
   if (!hallNeu) return; hallNeu = false;
   if (!hallRaeder) { for (const k of HALLE_TYPEN) hallFz[k] = becken(FZ[k].geo, AUTO_MAT, 200, true); hallRaeder = becken(G_RAD, fzRaeder.material, 200 * 8, false); }
@@ -3790,7 +3925,7 @@ function vbRendern(key) {
 /* Infokarte zu einem Teil im Baumenü */
 const STR_KAT = { klein: "Klein", mittel: "Mittel", gross: "Groß", einbahn: "Einbahn", autobahn: "Autobahn & Land", fuss: "Fuß & Rad" };
 const ZONEN_REITER = { w: ["Wohnen", [1, 2]], g: ["Gewerbe", [3, 4]], b: ["Büro", [5]], i: ["Industrie", [6, 7, 8]] };
-const VERKEHR_REITER = { fahrzeuge: ["🚌 Depots & Häfen", ["busdepot", "tramdepot", "hafen"]], parken: ["🅿️ Parken", ["parkplatz", "parkhaus"]] };
+const VERKEHR_REITER = { fahrzeuge: ["🚌 Depots & Taxi", ["busdepot", "tramdepot", "taxidepot"]], wasser: ["⚓ Häfen", ["faehre", "fischereihafen", "yachthafen", "hafen", "passagierhafen", "containerterminal"]], luft: ["✈️ Flughafen", ["flughafen"]], parken: ["🅿️ Parken", ["parkplatz", "parkhaus"]] };
 let strReiter = null, zoneReiter = "w", verkehrReiter = "fahrzeuge", infoTimer2 = 0;
 const kmh = (t) => Math.round(t * 24 / 10) * 10;
 function infoKarte(key) {
@@ -4551,7 +4686,7 @@ function schleife() {
   if (zellenNeu) zellenZeichnen();
   if (haeuserNeu) haeuserZeichnen();
   document.body.classList.toggle("baut", (istBau() && bau.punkte.length > 0) || !!dienstPlanAktuell || linieBau.length > 0 || zuglinieBau.length > 0);
-  rauchZeichnen(); fahrzeugeZeichnen(); geparkteZeichnen(); halleZeichnen(); menschenZeichnen(); signaleZeichnen(); ampelnZeichnen(); toreZeichnen(dt); fussgaengerTakt(dt, kz.e); hochZeichnen(); warnZeichnen(); drehZeichnen(); if (linienNeu) linienZeichnen(); zugTakt(dt * (tempo || 0)); bahnHafenZeichnen(dt * (tempo || 0)); schrankenZeichnen(dt); if (ansicht && ansicht !== "verkehr" && jetztS - wertZeit > 2) wertZeichnen();
+  rauchZeichnen(); fahrzeugeZeichnen(); geparkteZeichnen(); halleZeichnen(); menschenZeichnen(); signaleZeichnen(); ampelnZeichnen(); toreZeichnen(dt); fussgaengerTakt(dt, kz.e); hochZeichnen(); warnZeichnen(); drehZeichnen(); if (linienNeu) linienZeichnen(); zugTakt(dt * (tempo || 0)); bahnHafenZeichnen(dt * (tempo || 0)); wasserLuftZeichnen(dt * (tempo || 0)); schrankenZeichnen(dt); if (ansicht && ansicht !== "verkehr" && jetztS - wertZeit > 2) wertZeichnen();
   boote.forEach((b) => { b.w += b.v * dt; b.g.position.set(b.mx + Math.cos(b.w) * b.rad, WASSER + 0.02 + Math.sin(t * 1.6 + b.ph) * 0.05, b.mz + Math.sin(b.w) * b.rad); b.g.rotation.set(Math.sin(t * 1.3 + b.ph) * 0.05, -b.w + (b.v > 0 ? -Math.PI / 2 : Math.PI / 2), 0); });
   if (leuchtturm) leuchtturm.userData.strahl.rotation.y = t * 0.8;
   if (spieler.an) fahrenTakt(dt);
