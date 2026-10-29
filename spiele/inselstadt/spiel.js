@@ -63,10 +63,10 @@ const TYP = {
 };
 const rang = (k) => TYP[k.typ].rang || 1;
 const KARTEN = {
-  insel: { name: "Große Insel", em: "🏝️", text: "Eine große Insel mitten im Meer, mit Leuchtturm und Stränden.", geld: 70000 },
-  kueste: { name: "Küste", em: "🏖️", text: "Festland mit langer Küste und einer Bucht. Viel Platz nach hinten.", geld: 70000 },
-  seen: { name: "Seenland", em: "🏞️", text: "Wiesen mit vielen Seen. Schön, aber man muss um das Wasser herum planen.", geld: 70000 },
-  wald: { name: "Waldtal", em: "🌲", text: "Dichter Wald und zwei Seen. Mehr Startgeld, aber viel zu roden.", geld: 85000 }
+  insel: { name: "Große Insel", em: "🏝️", text: "Eine große Insel mitten im Meer, mit Leuchtturm und Stränden.", geld: 100000 },
+  kueste: { name: "Küste", em: "🏖️", text: "Festland mit langer Küste und einer Bucht. Viel Platz nach hinten.", geld: 100000 },
+  seen: { name: "Seenland", em: "🏞️", text: "Wiesen mit vielen Seen. Schön, aber man muss um das Wasser herum planen.", geld: 100000 },
+  wald: { name: "Waldtal", em: "🌲", text: "Dichter Wald und zwei Seen. Mehr Startgeld, aber viel zu roden.", geld: 120000 }
 };
 const MEILEN0 = [
   { name: "Siedlung", ab: 0, gebiete: 1, geld: 0, frei: ["gasse", "parkstr", "einbahn_klein", "radweg", "kies"] },
@@ -510,7 +510,9 @@ function weltBauen(typ) {
    Gebiete (5 × 5)
    ================================================================ */
 const START_KACHEL = Math.floor(KN / 2) + "," + Math.floor(KN / 2);
-let besitz = new Set([START_KACHEL]), gekauft = 0, geld = 70000;
+let besitz = new Set([START_KACHEL]), gekauft = 0, geld = 100000, spielModus = "normal";
+const leicht = () => spielModus === "leicht", GRUENDER_TAGE = 56;
+const kostenFak = () => (leicht() ? 0.6 : 1) * (tage < GRUENDER_TAGE ? 0.5 : 1), geduldFak = () => leicht() ? 1.6 : 1;
 const kachelVon = (x, z) => [Math.floor((x + HALB) / KACHEL), Math.floor((z + HALB) / KACHEL)];
 const imBesitz = (x, z) => { const [i, j] = kachelVon(x, z); return besitz.has(i + "," + j); };
 const kachelMitte = (i, j) => ({ x: -HALB + (i + 0.5) * KACHEL, z: -HALB + (j + 0.5) * KACHEL });
@@ -707,7 +709,7 @@ function kreuzungen(pts, ausserNah) {
 function typFrei(t) { return MEILEN.slice(0, meilenstein + 1).some((m) => m.frei.includes(t)) || t === "fuss" || t === "klein"; }
 function planen(A, C, Bp, typ, ebene) {
   ebene = ebene || 0;
-  const T = TYP[typ], { pts, len } = abtasten(A, C, Bp), plan = { A, C, B: Bp, typ, pts, laenge: len, kosten: Math.round(len * T.preis * (ebene > 0 ? 3 : ebene < 0 ? 4 : 1) * (hatEntw("verkehr1") ? 0.85 : 1)), kreuz: [], ok: true, grund: "", ebene };
+  const T = TYP[typ], { pts, len } = abtasten(A, C, Bp), plan = { A, C, B: Bp, typ, pts, laenge: len, kosten: Math.round(len * T.preis * (ebene > 0 ? 3 : ebene < 0 ? 4 : 1) * (hatEntw("verkehr1") ? 0.85 : 1) * (meilenstein < 2 ? 0.7 : 1)), kreuz: [], ok: true, grund: "", ebene };
   const kk = { ebene, len }, ey = (q) => ebeneY(kk, q.s);
   const nein = (g) => { plan.ok = false; plan.grund = plan.grund || g; };
   if (!typFrei(typ)) { const m = MEILEN.find((x) => x.frei.includes(typ)); nein("🔒 Erst ab " + m.name + " (" + zahl(m.ab) + " XP)"); }
@@ -1916,9 +1918,9 @@ function dienstTakt(dt) {
     const not = p && ["strom", "wasser", "abwasser", "muell"].includes(p);
     if (not) { if (h.notSeit == null) h.notSeit = simZeit; } else h.notSeit = null;
     const nd = h.notSeit != null ? simZeit - h.notSeit : 0, T7 = TAG_SEK * 7, alt = h.pStufe || 0;
-    h.pStufe = h.brand ? 3 : not ? (nd < TAG_SEK * 3 ? 0 : nd < T7 * 2 ? 1 : nd < T7 * 3 ? 2 : 3) : p ? (h.krimi > 160 || h.krank > 180 ? 2 : 1) : 0;
+    const gf = geduldFak(); h.pStufe = h.brand ? 3 : not ? (nd < TAG_SEK * 3 * gf ? 0 : nd < T7 * 2 * gf ? 1 : nd < T7 * 3 * gf ? 2 : 3) : p ? (h.krimi > 160 || h.krank > 180 ? 2 : 1) : 0;
     if (h.pStufe > alt) h.pZeit = jetztS;
-    if (h.notSeit != null && simZeit - h.notSeit > T7 * 6) { h.verlassen = simZeit; h.notSeit = null; haeuserNeu = true; verlassenGemeldet++; }
+    if (h.notSeit != null && simZeit - h.notSeit > T7 * 6 * geduldFak()) { h.verlassen = simZeit; h.notSeit = null; haeuserNeu = true; verlassenGemeldet++; }
     // Brand
     if (h.brand) {
       const b = h.brand;
@@ -2270,10 +2272,10 @@ let steuern = { w: 9, g: 9, b: 9, i: 9 }, meilenstein = 0, tempo = 1, simZeit = 
 let bedarf = { w: 60, g: 20, b: 0, i: 40 };
 function kennzahlen() {
   let e = 0, jl = 0, jb = 0, ji = 0; for (const h of haeuser.values()) { const g = gruppe(h); if (g === "w") e += leute(h); else if (g === "g") jl += jobs(h); else if (g === "b") jb += jobs(h); else ji += jobs(h); }
-  const ein = { w: e * 2.0 * steuern.w / 9, g: jl * 2.6 * steuern.g / 9, b: jb * 3.2 * steuern.b / 9, i: ji * 2.4 * steuern.i / 9 };
-  let strassen = 0; for (const k of kanten.values()) strassen += k.len * TYP[k.typ].preis * 0.012;
+  const ein = { w: e * 2.4 * steuern.w / 9, g: jl * 3.0 * steuern.g / 9, b: jb * 3.6 * steuern.b / 9, i: ji * 2.8 * steuern.i / 9 };
+  let strassen = 0; for (const k of kanten.values()) if (!k.aussen) strassen += k.len * TYP[k.typ].preis * 0.012;
   if (hatEntw("wirt2")) for (const z in ein) ein[z] *= 1.05;
-  const nvE = busEinnahmen() + anzahlTyp("bahnhof") * 220 + anzahlTyp("hafen") * 320, nvK = busKosten() * (hatEntw("verkehr2") ? 0.8 : 1), einnahmen = ein.w + ein.g + ein.b + ein.i + nvE, dk = dienstKosten(), kr = kreditRaten();
+  const nvE = busEinnahmen() + anzahlTyp("bahnhof") * 220 + anzahlTyp("hafen") * 320, nvK = busKosten() * (hatEntw("verkehr2") ? 0.8 : 1) * kostenFak(), einnahmen = ein.w + ein.g + ein.b + ein.i + nvE, dk = dienstKosten() * kostenFak(), kr = kreditRaten(); strassen *= kostenFak();
   return { e, jl, jb, ji, j: jl + jb + ji, ein, nvE, nvK, einnahmen, strassen, dienste: dk, kredit: kr, ausgaben: strassen + dk + nvK + kr, saldo: einnahmen - strassen - dk - nvK - kr };
 }
 function bedarfBerechnen() {
@@ -2301,6 +2303,7 @@ function meilensteinPruefen() {
   xpZeigen();
 }
 function xpZeigen() { const el = $("xpBalken"); if (!el) return; const a = MS[ms], n = MS[ms + 1]; el.style.width = (n ? Math.min(100, (xp - a.xp) / (n.xp - a.xp) * 100) : 100) + "%"; $("xpName").textContent = a.name + (ep ? " · " + ep + " ⭐" : ""); }
+let minusWochen = 0;
 function wocheTakt() {
   nvLetzte = nvWoche; nvWoche = { fahrten: 0, einnahmen: 0 }; for (const L of zuglinien.values()) { L.letzteWoche = L.fahrgaeste || 0; L.letzteEinnahmen = L.geldWoche || 0; L.auslastung = L.plaetzeSumme ? Math.min(1, L.besetztSumme / L.plaetzeSumme) : 0; L.fahrgaeste = L.geldWoche = L.plaetzeSumme = L.besetztSumme = 0; } for (const L of linien.values()) { L.letzteWoche = L.fahrgaeste || 0; L.letzteEinnahmen = L.geldWoche || 0; L.geldWoche = 0; L.auslastung = L.plaetzeSumme ? L.besetztSumme / L.plaetzeSumme : 0; L.fahrgaeste = 0; L.plaetzeSumme = L.besetztSumme = 0; }
   const k = kennzahlen(); geld += k.saldo; letzteWoche = k;
@@ -2308,6 +2311,8 @@ function wocheTakt() {
   if (++monatXp >= 4) { monatXp = 0; xpPlus(Math.round(k.e * 0.02 * zufriedenheit() / 100)); }
   zeigeWerte();
   if (geld < 0 && geld - k.saldo >= 0) tipp("⚠️ Dein Geld ist im Minus! Senk die Ausgaben oder erhöh die Steuern.", 5000);
+  if (k.saldo < 0) { minusWochen++; if (minusWochen === 2 || minusWochen % 6 === 0) { const g = k.dienste > k.einnahmen * 0.6 ? "Viele Dienste für wenige Einwohner – erst mehr Wohngebiete ausweisen, dann neue Dienste bauen." : k.nvK > k.einnahmen * 0.3 ? "Der Nahverkehr kostet viel – weniger Fahrzeuge (längerer Takt) oder höherer Ticketpreis." : k.strassen > k.einnahmen * 0.4 ? "Sehr viele Straßen für wenige Häuser – mehr Zonen an die vorhandenen Straßen malen." : "Mehr Zonen ausweisen, Steuern etwas erhöhen oder das Budget von Diensten senken."; infoZeigen(`<b>📉 Du machst Verlust (${euro(Math.round(k.saldo))}/Woche)</b>${g}<br><small>Tipp oben auf dein Geld für alle Zahlen.</small>`, 9000); } } else minusWochen = 0;
+  if (Math.floor(tage) >= GRUENDER_TAGE && Math.floor(tage) - 7 < GRUENDER_TAGE) tipp("🏁 Der Gründerbonus ist vorbei – ab jetzt zahlst du den vollen Unterhalt.", 4500);
   if (werkzeug === "gebiet") gebieteZeichnen(); if (!$("budget").hidden) ($("budget").dataset.modus === "f" ? fortschrittZeigen : budgetZeigen)(); speichernBald();
 }
 let frohGlatt = null;
@@ -3547,7 +3552,7 @@ const platzKey = (n) => "inselstadt-v3-" + n;
 function zustand() {
   const r = (v) => Math.round(v * 1000) / 1000, k = kennzahlen();
   return {
-    v: 3, zonenV: 2, fortschritt: { xp: Math.round(xp), ms, maxEinw, ep, entw: [...entw], kredite, monatXp }, karte, kn: KN, gross: grossKarte ? 1 : 0, geld: Math.round(geld), besitz: [...besitz], gekauft, steuern, meilenstein, tage: Math.round(tage * 100) / 100, ids: { n: nId, k: kId, z: zId, g: gId, h: hId, d: dId, hs: haltId, l: linieId },
+    v: 3, zonenV: 2, modus: spielModus, fortschritt: { xp: Math.round(xp), ms, maxEinw, ep, entw: [...entw], kredite, monatXp }, karte, kn: KN, gross: grossKarte ? 1 : 0, geld: Math.round(geld), besitz: [...besitz], gekauft, steuern, meilenstein, tage: Math.round(tage * 100) / 100, ids: { n: nId, k: kId, z: zId, g: gId, h: hId, d: dId, hs: haltId, l: linieId },
     meta: { einwohner: k.e, gespeichert: Date.now() },
     knoten: [...knoten.values()].map((n) => [n.id, r(n.x), r(n.z), n.manuell ? (n.ampel ? 1 : 0) : -1, n.aussen ? 1 : 0]),
     kanten: [...kanten.values()].map((k) => [k.id, k.a, k.b, r(k.c.x), r(k.c.z), k.typ, k.aussen ? 1 : 0, k.einbahn || 0, k.ebene || 0, k.ring ? 1 : 0, k.busspur ? 1 : 0, k.schienen ? 1 : 0, k.parken ? 1 : 0]), kreisel,
@@ -3568,7 +3573,7 @@ function allesLeeren() {
   for (const b of baeume) if (b.weg) { b.weg = false; baumSetzen(b); }
 }
 function zustandRein(d) {
-  geld = d.geld; besitz = new Set(d.kn ? d.besitz : d.besitz.map((t) => { const [i, j] = t.split(",").map(Number), o = (KN - 5) / 2; return (i + o) + "," + (j + o); })); gekauft = d.gekauft || 0; meilenstein = d.meilenstein || 0; tage = d.tage || 0;
+  spielModus = d.modus || "normal"; geld = d.geld; besitz = new Set(d.kn ? d.besitz : d.besitz.map((t) => { const [i, j] = t.split(",").map(Number), o = (KN - 5) / 2; return (i + o) + "," + (j + o); })); gekauft = d.gekauft || 0; meilenstein = d.meilenstein || 0; tage = d.tage || 0;
   if (d.fortschritt) { const f = d.fortschritt; xp = f.xp || 0; ms = f.ms || 0; maxEinw = f.maxEinw || 0; ep = f.ep || 0; entw = new Set(f.entw || []); kredite = f.kredite || []; monatXp = f.monatXp || 0; }
   else { const st = d.meilenstein || 0; ms = Math.max(0, MS.findIndex((x) => x.stufe === st)); xp = MS[ms].xp; ep = MS.slice(1, ms + 1).reduce((a, x) => a + x.ep, 0); maxEinw = (d.haeuser || []).length * 10; }
   if (d.steuern) steuern = d.steuern.w != null ? Object.assign({ w: 9, g: 9, b: 9, i: 9 }, d.steuern) : { w: d.steuern[1] || 9, g: d.steuern[2] || 9, b: 9, i: d.steuern[3] || 9 };
@@ -4463,8 +4468,10 @@ function platzLaden(n) { const d = lade(platzKey(n), null); return d && d.v === 
 function hauptmenue(ansicht) {
   const box = $("hmBox"); const kopf = `<div class="titel"><img src="../../shared/marken/flaressa-zeichen.webp" alt=""><div><h1>Inselstadt</h1><p>Baue deine eigene Stadt – ein Spiel von FLARESSA Gaming</p></div></div>`;
   if (ansicht && ansicht.neu) {
-    box.innerHTML = kopf + `<h3>Neue Stadt auf Platz ${ansicht.neu} – wähle eine Karte</h3><div class="karten">${Object.keys(KARTEN).map((k) => `<button class="karte" type="button" data-karte="${k}"><span class="em">${KARTEN[k].em}</span><b>${KARTEN[k].name}</b><small>${KARTEN[k].text}</small><small>Startgeld: ${euro(KARTEN[k].geld)}</small></button>`).join("")}</div><button class="zurueck" type="button" id="hmZurueck">‹ Zurück</button>`;
-    box.querySelectorAll("[data-karte]").forEach((b) => { b.onclick = () => starten(ansicht.neu, null, b.dataset.karte); });
+    const m = ansicht.modus || "leicht";
+    box.innerHTML = kopf + `<h3>Neue Stadt auf Platz ${ansicht.neu}</h3><div class="modi"><button type="button" class="modus${m === "leicht" ? " an" : ""}" data-modus="leicht"><span class="em">🟢</span><b>Leicht</b><small>Du startest mit einem fertigen kleinen Dorf – Straßen, Häuser, Läden, Strom, Wasser, Feuerwehr, Schule und Buslinie sind schon da. Doppeltes Startgeld, günstiger Unterhalt, geduldige Bürger.</small></button><button type="button" class="modus${m === "normal" ? " an" : ""}" data-modus="normal"><span class="em">⚪</span><b>Normal</b><small>Leere Karte – du baust alles selbst. Die ersten 8 Wochen gibt es einen Gründerbonus (halber Unterhalt).</small></button></div><h3>Wähle eine Karte</h3><div class="karten">${Object.keys(KARTEN).map((k) => `<button class="karte" type="button" data-karte="${k}"><span class="em">${KARTEN[k].em}</span><b>${KARTEN[k].name}</b><small>${KARTEN[k].text}</small><small>Startgeld: ${euro(KARTEN[k].geld * (m === "leicht" ? 2 : 1))}</small></button>`).join("")}</div><button class="zurueck" type="button" id="hmZurueck">‹ Zurück</button>`;
+    box.querySelectorAll("[data-modus]").forEach((b) => { b.onclick = () => hauptmenue({ neu: ansicht.neu, modus: b.dataset.modus }); });
+    box.querySelectorAll("[data-karte]").forEach((b) => { b.onclick = () => starten(ansicht.neu, null, b.dataset.karte, m); });
     $("hmZurueck").onclick = () => hauptmenue();
     return;
   }
@@ -4480,15 +4487,40 @@ function hauptmenue(ansicht) {
   box.querySelectorAll("[data-neu]").forEach((b) => { b.onclick = () => hauptmenue({ neu: +b.dataset.neu }); });
   box.querySelectorAll("[data-weg]").forEach((b) => { let bereit = 0; b.onclick = () => { if (Date.now() - bereit > 3000) { bereit = Date.now(); b.textContent = "Sicher?"; return; } try { localStorage.removeItem(platzKey(+b.dataset.weg)); } catch (e) { /* egal */ } hauptmenue(); }; });
 }
-function starten(n, daten, neueKarte) {
+/* Leichter Modus: ein fertiges kleines Dorf am Ende der Zufahrt */
+function dorfBauen() {
+  const n = knoten.get(aussenKnoten); if (!n) return; const l = Math.hypot(n.x, n.z) || 1, dx = n.x / l, dz = n.z / l;
+  const innen = naechsterKnoten({ x: dx * 17, z: dz * 17 }, 3); if (!innen) return;
+  const geld0 = geld, typ0 = strTyp; geld = 1e9; strTyp = "klein";
+  const A = { art: "knoten", id: innen.id, x: innen.x, z: innen.z }, inx = -dx, inz = -dz, px = -dz, pz = dx, mitte = { x: innen.x + inx * 12, z: innen.z + inz * 12 };
+  const vorher = new Set(kanten.keys());
+  for (const sg of [1, -1]) { const B = { x: A.x + px * 12 * sg, z: A.z + pz * 12 * sg }, C = { x: A.x + inx * 24, z: A.z + inz * 24 }; for (const [a, b] of rasterLinien(A, B, C)) { const pl = planen(fangOderFrei(a), lerp(a, b, 0.5), fangOderFrei(b), "klein", 0); if (pl.ok) bauen(pl); } }
+  const dorfK = [...kanten.values()].filter((k) => !vorher.has(k.id) && autoKante(k));
+  const kand = []; for (const k of dorfK) for (const t of [0.3, 0.7]) { const q = punktBei(k, k.len * t); for (const sg of [1, -1]) kand.push({ x: q.x - q.tz * 2 * sg, z: q.z + q.tx * 2 * sg }); }
+  const abM = (q) => Math.hypot(q.x - mitte.x, q.z - mitte.z);
+  const setze = (typ, aussen) => { const L = kand.slice().sort((a, b) => aussen ? abM(b) - abM(a) : abM(a) - abM(b)); for (const q of L) { const pl = dienstPlan(q, typ); if (pl.ok && !pl.haeuser) { const d = dienstBauen(pl); if (d) return d; } } return null; };
+  for (const t of ["windrad", "windrad", "windrad", "wasserturm", "klaer", "deponie"]) setze(t, true);
+  for (const t of ["feuerklein", "polizei", "arzt", "grundschule", "park", "spielplatz"]) setze(t, false);
+  const depot = setze("busdepot", true);
+  for (const c of zellen.values()) { if (c.haus || c.zone) continue; const ex = c.x - innen.x, ez = c.z - innen.z, tief = ex * inx + ez * inz, quer = ex * px + ez * pz; if (tief < -1 || tief > 26 || Math.abs(quer) > 14) continue; c.zone = tief < 6 ? 3 : tief > 19 && quer > 4 ? 6 : 1; }
+  zellenNeu = true;
+  for (let i = 0; i < 260; i++) wachsTakt();
+  for (const h of haeuser.values()) { if (h.bau) { h.bau = null; h.bauT = null; } if (gruppe(h) === "w" && Math.random() < 0.4) { h.stufe = 2; h.teile = hausTeile(h); h.box = null; h.hoehe = hoeheVon(h); } h.geboren = -100; parkenNeu(h); }
+  if (depot) { const ks = dorfK.filter((k) => k.len > 4).sort((a, b) => Math.atan2(punktBei(a, a.len / 2).z - mitte.z, punktBei(a, a.len / 2).x - mitte.x) - Math.atan2(punktBei(b, b.len / 2).z - mitte.z, punktBei(b, b.len / 2).x - mitte.x)); const ids = []; for (let i = 0; i < ks.length && ids.length < 5; i += Math.max(1, Math.floor(ks.length / 5))) { const hh = neueHalte({ k: ks[i].id, s: ks[i].len / 2 }); if (hh) ids.push(hh.id); } if (ids.length >= 3) { const bm = busModus; busModus = "linie"; linieBau = ids; linieFertig(); busModus = bm; lfZeigen(null); const L = [...linien.values()][0]; if (L) L.name = "Dorfbus"; } }
+  geld = geld0; strTyp = typ0; haeuserNeu = true; netzGeaendert(); versorgungRechnen(); busRechnen(); bedarfBerechnen(); maxEinw = kennzahlen().e; zeigeWerte();
+  steuerung.target.set(mitte.x, 0, mitte.z); kamera.position.set(mitte.x + 14, 18, mitte.z + 16); steuerung.update();
+}
+function starten(n, daten, neueKarte, modus) {
   platz = n; $("hauptmenue").hidden = true; $("laden").classList.remove("weg");
   setTimeout(() => {
     grossKarte = daten ? !!daten.gross : true; weltBauen(daten ? (daten.karte || "insel") : neueKarte);
     if (daten) { zustandRein(daten); if (!daten.fortschritt) maxEinw = kennzahlen().e; }
-    else { geld = KARTEN[karte].geld; netzGeaendert(); gebieteZeichnen(); bedarfBerechnen(); zeigeWerte(); datumZeigen(); }
+    else { spielModus = modus === "leicht" ? "leicht" : "normal"; geld = KARTEN[karte].geld * (leicht() ? 2 : 1); netzGeaendert(); gebieteZeichnen(); bedarfBerechnen(); zeigeWerte(); datumZeigen(); }
     if (!aussenKnoten) aussenBauen(); aussenGleisBauen();
+    if (!daten && leicht()) { try { dorfBauen(); } catch (e) { console.warn("Dorf", e); } }
     spielLaeuft = true; document.body.classList.add("laeuft"); if (matchMedia("(pointer:coarse)").matches) vollbildQuer(); speichernBald(); unterleiste(); zeitKnoepfe(); menueKnoepfe();
-    if (!daten) { $("info").hidden = true; infoZeigen(`<b>${KARTEN[karte].em} Willkommen in deiner neuen Stadt!</b>1. 🛣️ Straßen: Anfang antippen, Ende antippen, ✓<br>2. 🏘️ Zonen: Felder neben der Straße anmalen<br>3. Zuschauen: Häuser wachsen, Autos fahren, Steuern bringen Geld<br><small>Tipp oben auf dein Geld für Budget &amp; Steuern.</small>`, 12000); werkzeugWaehlen("strasse"); }
+    if (!daten && leicht()) { $("info").hidden = true; infoZeigen(`<b>🟢 Willkommen in deinem Dorf!</b>Alles Wichtige steht schon: Strom, Wasser, Müll, Feuerwehr, Polizei, Arzt, Schule und eine Buslinie.<br>Bau einfach weiter: 🛣️ neue Straßen, 🏘️ Zonen daneben malen – das Dorf wächst zur Stadt.`, 12000); werkzeugWaehlen("ansehen"); }
+    else if (!daten) { $("info").hidden = true; infoZeigen(`<b>${KARTEN[karte].em} Willkommen in deiner neuen Stadt!</b>1. 🛣️ Straßen: Anfang antippen, Ende antippen, ✓<br>2. 🏘️ Zonen: Felder neben der Straße anmalen<br>3. Zuschauen: Häuser wachsen, Autos fahren, Steuern bringen Geld<br><small>Tipp oben auf dein Geld für Budget &amp; Steuern.</small>`, 12000); werkzeugWaehlen("strasse"); }
     else tipp("Willkommen zurück!", 2500);
     renderer.setAnimationLoop(schleife);
     setTimeout(() => $("laden").classList.add("weg"), 200);
