@@ -91,6 +91,17 @@ body.baut #fach{display:none!important}
 #fach .trenn{width:1px;align-self:stretch;background:var(--linie);flex:none;margin:4px 2px}
 #fach .chip{flex:none;min-height:36px;padding:6px 10px}
 #fach .fkarten{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.kk.mitbild{width:96px;padding:5px 4px 6px;align-content:start}
+.kk img{width:86px;height:58px;object-fit:cover;border-radius:9px;display:block;background:rgba(255,255,255,.06)}
+.kk.mitbild b{margin-top:3px}
+#fach .freiter{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none}
+#fach .freiter::-webkit-scrollbar{display:none}
+#fach .freiter .chip{min-height:30px;padding:4px 11px;font-size:.78rem;border-radius:999px}
+#infokarte{width:min(330px,calc(100vw - 16px));padding:10px 12px;font-size:.8rem;align-self:center}
+#infokarte h4{margin:0 0 3px;font-size:.95rem}
+#infokarte p{margin:0 0 7px;color:var(--leise);line-height:1.35}
+#infokarte .iz{display:grid;grid-template-columns:auto 1fr;gap:2px 10px}
+#infokarte .iz span{color:var(--leise)}
 .kk{flex:none;width:80px;min-height:70px;border:1px solid var(--linie);background:rgba(255,255,255,.05);border-radius:13px;display:grid;justify-items:center;align-content:center;gap:2px;padding:8px 4px;text-align:center;position:relative}
 .kk .em{font-size:1.4rem;line-height:1.1}
 .kk b{font-size:.66rem;font-weight:600;line-height:1.15}
@@ -160,7 +171,7 @@ body.baut #fach{display:none!important}
   #oben{right:max(150px,calc(env(safe-area-inset-right) + 150px))}
   #unten{bottom:max(4px,env(safe-area-inset-bottom));gap:4px;padding-left:calc(max(8px,env(safe-area-inset-left)) + 170px)}
   #optionen{max-height:calc(100vh - 120px)}
-  #fach{padding:4px}.kk{width:66px;min-height:56px;padding:4px 2px}.kk .em{font-size:1.15rem}.kk b{font-size:.6rem}.kk small{display:none}
+  #fach{padding:4px}.kk{width:66px;min-height:56px;padding:4px 2px}.kk .em{font-size:1.15rem}.kk b{font-size:.6rem}.kk small{display:none}.kk.mitbild{width:74px}.kk img{width:66px;height:42px}#fach .freiter .chip{min-height:24px;padding:2px 9px;font-size:.7rem}#infokarte{position:fixed;right:max(8px,env(safe-area-inset-right));top:60px;width:260px;font-size:.72rem}
   #optionen{top:calc(max(6px,env(safe-area-inset-top)) + 50px);max-height:calc(100vh - 130px);max-width:160px}#optionen .chip{min-height:28px;padding:3px 7px}
   #werkzeug button{width:44px;height:42px;font-size:1.25rem}
   #info{top:calc(max(8px,env(safe-area-inset-top)) + 52px);left:calc(50% - min(125px,16vw))}
@@ -206,6 +217,7 @@ body.baut #fach{display:none!important}
 <div id="unten">
   <div id="tipp" class="glas weg"></div>
   <div id="frage" class="glas" hidden><span class="text" id="frageText"></span><button type="button" id="nein" aria-label="Abbrechen">✕</button><button type="button" id="ja" aria-label="Bauen">✓</button></div>
+  <div id="infokarte" class="glas" hidden></div>
   <div id="fach" class="glas" hidden></div>
   <nav id="werkzeug" class="glas" aria-label="Werkzeuge">
     <button type="button" data-w="ansehen" aria-pressed="true" title="Ansehen" aria-label="Ansehen">👆</button>

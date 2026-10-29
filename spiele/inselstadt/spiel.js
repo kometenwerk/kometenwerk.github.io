@@ -39,13 +39,27 @@ const LEUTE = { 1: [0, 2, 3, 4, 5, 6], 2: [0, 6, 9, 12, 15, 20] };
 const JOBS = { 3: [0, 2, 3, 4], 4: [0, 5, 8, 11], 5: [0, 6, 10, 14], 6: [0, 4, 6, 8], 7: [0, 2], 8: [0, 3] };
 const BODENWERT_FUER = { w: [0, 0, 22, 38, 54, 70], g: [0, 0, 28, 48], b: [0, 0, 30, 50], i: [0, 0, 0, 0] };
 const TYP = {
-  fuss: { name: "Fußweg", em: "🚶", halb: 0.42, fahr: 0, preis: 15, zellen: false, autos: false, tempo: 0, spuren: [] },
-  klein: { name: "Straße", em: "🛣️", halb: 0.68, fahr: 0.42, preis: 60, zellen: true, autos: true, tempo: 2.1, spuren: [0.21] },
-  allee: { name: "Allee", em: "🌳", halb: 0.98, fahr: 0.42, preis: 100, zellen: true, autos: true, tempo: 2.1, spuren: [0.21] },
-  haupt: { name: "Hauptstraße", em: "🚗", halb: 1.12, fahr: 0.86, preis: 160, zellen: true, autos: true, tempo: 3.1, spuren: [0.22, 0.64], rang: 2 },
-  gross: { name: "Große Straße", em: "🛤", halb: 1.62, fahr: 1.36, preis: 260, zellen: true, autos: true, tempo: 3.4, spuren: [0.32, 0.74, 1.16], rang: 3, mitte: "gruen" },
-  autobahn: { name: "Autobahn", em: "🛣", halb: 1.55, fahr: 1.45, preis: 400, zellen: false, autos: true, tempo: 5.0, spuren: [0.3, 0.72, 1.14], rang: 4, mitte: "planke", ohneGehweg: true },
-  zone: { name: "Fußgängerzone", em: "🧺", halb: 0.72, fahr: 0, preis: 90, zellen: true, autos: false, tempo: 0, spuren: [], pflaster: true }
+  gasse: { name: "Gasse", em: "🏘️", halb: 0.5, fahr: 0.3, preis: 40, zellen: true, autos: true, tempo: 1.4, spuren: [0.14], kat: "klein", info: "Schmale Spielstraße, Schrittgeschwindigkeit." },
+  parkstr: { name: "Straße mit Parkstreifen", em: "🅿️", halb: 0.74, fahr: 0.42, preis: 75, zellen: true, autos: true, tempo: 2.0, spuren: [0.21], kat: "klein", parken: true, info: "Autos parken am Rand – gut für Läden." },
+  land: { name: "Landstraße", em: "🌾", halb: 0.78, fahr: 0.6, preis: 90, zellen: false, autos: true, tempo: 3.6, spuren: [0.28], kat: "autobahn", ohneGehweg: true, rang: 2, info: "Schnell, ohne Häuser am Rand – verbindet Orte." },
+  haupt_rad: { name: "Hauptstraße mit Radweg", em: "🚲", halb: 1.32, fahr: 0.86, preis: 190, zellen: true, autos: true, tempo: 3.0, spuren: [0.22, 0.64], rang: 2, kat: "mittel", radweg: true, info: "Rote Radwege an beiden Seiten." },
+  haupt_bus: { name: "Hauptstraße mit Busspur", em: "🚌", halb: 1.12, fahr: 0.86, preis: 180, zellen: true, autos: true, tempo: 3.1, spuren: [0.22, 0.64], rang: 2, kat: "mittel", busspur: true, info: "Rechte Spur nur für Busse und Taxis." },
+  haupt_gruen: { name: "Hauptstraße mit Grünstreifen", em: "🌿", halb: 1.26, fahr: 0.98, preis: 210, zellen: true, autos: true, tempo: 3.1, spuren: [0.34, 0.76], rang: 2, kat: "mittel", mitte: "gruen", info: "Grüner Mittelstreifen – ruhiger und schöner." },
+  haupt_tram: { name: "Hauptstraße mit Straßenbahn", em: "🚋", halb: 1.12, fahr: 0.86, preis: 280, zellen: true, autos: true, tempo: 3.0, spuren: [0.22, 0.64], rang: 2, kat: "mittel", schienen: true, info: "Mit Gleisen für Straßenbahnen." },
+  boulevard: { name: "Boulevard", em: "🌳", halb: 1.95, fahr: 1.7, preis: 340, zellen: true, autos: true, tempo: 3.3, spuren: [0.62, 1.04, 1.46], rang: 3, kat: "gross", mitte: "baeume", baeume: [0], info: "Breite Prachtstraße mit Bäumen in der Mitte." },
+  gross_tram: { name: "Große Straße mit Straßenbahn", em: "🚊", halb: 1.62, fahr: 1.36, preis: 380, zellen: true, autos: true, tempo: 3.3, spuren: [0.32, 0.74, 1.16], rang: 3, kat: "gross", mitte: "gruen", schienen: true, info: "6 Spuren mit Straßenbahngleisen." },
+  einbahn_klein: { name: "Einbahnstraße", em: "➡️", halb: 0.62, fahr: 0.4, preis: 55, zellen: true, autos: true, tempo: 2.1, spuren: [0.12], kat: "einbahn", einbahn: true, info: "Nur in eine Richtung – in Baurichtung." },
+  einbahn_gross: { name: "Große Einbahnstraße", em: "⏩", halb: 0.98, fahr: 0.78, preis: 150, zellen: true, autos: true, tempo: 3.0, spuren: [-0.4, 0, 0.4], rang: 2, kat: "einbahn", einbahn: true, info: "3 Spuren in eine Richtung." },
+  rampe: { name: "Auf- und Abfahrt", em: "↗️", halb: 0.55, fahr: 0.45, preis: 220, zellen: false, autos: true, tempo: 3.6, spuren: [0], rang: 3, kat: "autobahn", einbahn: true, ohneGehweg: true, info: "Einspurige Rampe zur Autobahn – in Baurichtung." },
+  radweg: { name: "Radweg", em: "🚴", halb: 0.32, fahr: 0, preis: 20, zellen: false, autos: false, tempo: 0, spuren: [], kat: "fuss", rad: true, info: "Eigener Weg für Fahrräder." },
+  kies: { name: "Kiesweg", em: "🪨", halb: 0.36, fahr: 0, preis: 10, zellen: false, autos: false, tempo: 0, spuren: [], kat: "fuss", kies: true, info: "Weg für Parks und Natur." },
+  fuss: { name: "Fußweg", em: "🚶", halb: 0.42, fahr: 0, preis: 15, zellen: false, autos: false, tempo: 0, spuren: [] , kat: "fuss" },
+  klein: { name: "Straße", em: "🛣️", halb: 0.68, fahr: 0.42, preis: 60, zellen: true, autos: true, tempo: 2.1, spuren: [0.21] , kat: "klein" },
+  allee: { name: "Allee", em: "🌳", baeume: [0.6], halb: 0.98, fahr: 0.42, preis: 100, zellen: true, autos: true, tempo: 2.1, spuren: [0.21] , kat: "klein" },
+  haupt: { name: "Hauptstraße", em: "🚗", halb: 1.12, fahr: 0.86, preis: 160, zellen: true, autos: true, tempo: 3.1, spuren: [0.22, 0.64], rang: 2 , kat: "mittel" },
+  gross: { name: "Große Straße", em: "🛤", halb: 1.62, fahr: 1.36, preis: 260, zellen: true, autos: true, tempo: 3.4, spuren: [0.32, 0.74, 1.16], rang: 3, mitte: "gruen" , kat: "gross" },
+  autobahn: { name: "Autobahn", em: "🛣", halb: 1.55, fahr: 1.45, preis: 400, zellen: false, autos: true, tempo: 5.0, spuren: [0.3, 0.72, 1.14], rang: 4, mitte: "planke", ohneGehweg: true , kat: "autobahn" },
+  zone: { name: "Fußgängerzone", em: "🧺", halb: 0.72, fahr: 0, preis: 90, zellen: true, autos: false, tempo: 0, spuren: [], pflaster: true , kat: "fuss" }
 };
 const rang = (k) => TYP[k.typ].rang || 1;
 const KARTEN = {
@@ -55,11 +69,11 @@ const KARTEN = {
   wald: { name: "Waldtal", em: "🌲", text: "Dichter Wald und zwei Seen. Mehr Startgeld, aber viel zu roden.", geld: 85000 }
 };
 const MEILEN = [
-  { name: "Siedlung", ab: 0, gebiete: 1, geld: 0, frei: [] },
-  { name: "Dorf", ab: 200, gebiete: 2, geld: 5000, frei: ["allee"] },
-  { name: "Kleinstadt", ab: 600, gebiete: 3, geld: 10000, frei: ["haupt", "zone", "autobahn"] },
-  { name: "Stadt", ab: 1500, gebiete: 5, geld: 15000, frei: ["gross"] },
-  { name: "Großstadt", ab: 4000, gebiete: 8, geld: 25000, frei: [] },
+  { name: "Siedlung", ab: 0, gebiete: 1, geld: 0, frei: ["gasse", "parkstr", "einbahn_klein", "radweg", "kies"] },
+  { name: "Dorf", ab: 200, gebiete: 2, geld: 5000, frei: ["allee", "land"] },
+  { name: "Kleinstadt", ab: 600, gebiete: 3, geld: 10000, frei: ["haupt", "haupt_rad", "haupt_bus", "haupt_gruen", "zone", "autobahn", "rampe", "einbahn_gross"] },
+  { name: "Stadt", ab: 1500, gebiete: 5, geld: 15000, frei: ["gross", "boulevard", "haupt_tram"] },
+  { name: "Großstadt", ab: 4000, gebiete: 8, geld: 25000, frei: ["gross_tram"] },
   { name: "Metropole", ab: 9000, gebiete: 13, geld: 40000, frei: [] },
   { name: "Weltstadt", ab: 20000, gebiete: 24, geld: 60000, frei: [] }
 ];
@@ -584,18 +598,22 @@ function geoAus(pos, col) { const g = new THREE.BufferGeometry(); g.setAttribute
 function kantenMesh(k) {
   const T = TYP[k.typ], pos = [], col = [], Y = (d) => k.ebene ? (p) => G + d + ebeneY(k, p.s) : G + d;
   if (k.typ === "fuss") band(pos, col, k.pts, T.halb, Y(0.014), SF.weg);
+  else if (T.kies) band(pos, col, k.pts, T.halb, Y(0.014), farbe(0xcbbf9f));
+  else if (T.rad) { band(pos, col, k.pts, T.halb, Y(0.013), SF.gehweg); band(pos, col, k.pts, T.halb - 0.06, Y(0.015), farbe(0xc9553f)); striche(pos, col, k, 0, SF.strich, 0.3, 0.4); }
   else if (T.pflaster) { band(pos, col, k.pts, T.halb, Y(0.014), farbe(0xd8cbb0)); band(pos, col, k.pts, 0.12, Y(0.016), farbe(0xb9a98a)); }
   else {
     band(pos, col, k.pts, T.halb, Y(0.012), T.ohneGehweg ? SF.gruen : SF.gehweg);
     if (k.typ === "allee") band(pos, col, k.pts, 0.78, Y(0.016), SF.gruen);
+    if (T.radweg) band(pos, col, k.pts, T.fahr + 0.2, Y(0.017), farbe(0xc9553f));
     band(pos, col, k.pts, T.fahr, Y(0.02), SF.fahrbahn);
     const sp = T.spuren;
     if (sp.length > 1) {
-      if (T.mitte === "gruen") band(pos, col, k.pts, 0.1, Y(0.024), SF.gruen); else if (T.mitte === "planke") band(pos, col, k.pts, 0.05, Y(0.03), farbe(0xc9ced6)); else { linie(pos, col, k, 0.05, SF.gelb); linie(pos, col, k, -0.05, SF.gelb); }
+      if (T.mitte === "gruen") band(pos, col, k.pts, 0.1, Y(0.024), SF.gruen); else if (T.mitte === "baeume") { band(pos, col, k.pts, 0.38, Y(0.025), farbe(0xc9c3b6)); band(pos, col, k.pts, 0.32, Y(0.027), SF.gruen); } else if (T.mitte === "planke") band(pos, col, k.pts, 0.05, Y(0.03), farbe(0xc9ced6)); else if (T.einbahn) {} else { linie(pos, col, k, 0.05, SF.gelb); linie(pos, col, k, -0.05, SF.gelb); }
       for (let i = 0; i < sp.length - 1; i++) { const o = (sp[i] + sp[i + 1]) / 2; striche(pos, col, k, o, SF.strich, 0.45, 0.65); striche(pos, col, k, -o, SF.strich, 0.45, 0.65); }
       if (T.ohneGehweg) for (const sei of [1, -1]) linie(pos, col, k, sei * (T.fahr - 0.04), SF.strich);
     }
-    else if (!k.einbahn) striche(pos, col, k, 0, SF.strich, 0.5, 0.6);
+    else if (!k.einbahn && !T.einbahn) striche(pos, col, k, 0, SF.strich, 0.5, 0.6);
+    if (T.ohneGehweg && sp.length === 1) for (const sei of [1, -1]) linie(pos, col, k, sei * (T.fahr - 0.04), SF.strich);
   }
   if (k.busspur) { const o = T.spuren[T.spuren.length - 1]; for (const sei of [1, -1]) band(pos, col, k.pts, 0.2, Y(0.0205), farbe(0x8a3a3a), sei * o); }
   if (k.schienen) { const o = TYP[k.typ].spuren[TYP[k.typ].spuren.length - 1], c = farbe(0xb9bfc7); for (const sei of [1, -1]) for (const d of [0.085, -0.085]) band(pos, col, k.pts, 0.012, Y(0.027), c, sei * o + d); }
@@ -697,7 +715,8 @@ function bauen(plan) {
     const c = { x: (1 - ta) * (1 - tb) * n0.x + ((1 - ta) * tb + ta * (1 - tb)) * C.x + ta * tb * n2.x, z: (1 - ta) * (1 - tb) * n0.z + ((1 - ta) * tb + ta * (1 - tb)) * C.z + ta * tb * n2.z };
     if (ns[j] === ns[j + 1] || abst(ns[j], ns[j + 1]) < 0.6) continue;
     if ([...ns[j].kanten].some((id) => { const k = kanten.get(id); return (k.a === ns[j].id && k.b === ns[j + 1].id) || (k.b === ns[j].id && k.a === ns[j + 1].id); })) continue;
-    neu.push(neueKante(ns[j].id, ns[j + 1].id, c, typ, null, plan.ebene ? { ebene: plan.ebene } : null));
+    const T0 = TYP[typ], opt = {}; if (plan.ebene) opt.ebene = plan.ebene; if (T0.einbahn) opt.einbahn = 1; if (T0.busspur) opt.busspur = true; if (T0.schienen) opt.schienen = true; if (T0.parken) opt.parken = true;
+    neu.push(neueKante(ns[j].id, ns[j + 1].id, c, typ, null, opt));
   }
   for (const n of [n0, n2]) if (knoten.has(n.id) && !n.kanten.size) knotenWeg(n);
   for (const k of neu) {
@@ -1110,7 +1129,7 @@ function bodenwert(x, z, ohne) {
   baeumeIn(x - 3, z - 3, x + 3, z + 3, (t) => { if (!t.weg && Math.hypot(t.x - x, t.z - z) < 3) b++; });
   w += Math.min(22, b * 1.6);
   const a = abstand(x, z); if (a < 9) w += 24 * (1 - Math.max(0, a - 3) / 6);
-  if (naechsteKante({ x, z }, 3.2, (k) => k.typ === "allee")) w += 12;
+  if (naechsteKante({ x, z }, 3.2, (k) => !!TYP[k.typ].baeume)) w += 12;
   if (naechsteKante({ x, z }, 3.2, (k) => rang(k) >= 2 && !k.aussen)) w -= 10;
   if (naechsteKante({ x, z }, 3.2, (k) => k.parken)) w += 4;
   let laeden = 0; for (const q of ladenListe) if (Math.hypot(q.x - x, q.z - z) < 6) laeden++;
@@ -1248,7 +1267,7 @@ function rauchZeichnen() {
 }
 function alleeZeichnen() {
   let i = 0;
-  for (const k of kanten.values()) { if (k.typ !== "allee") continue; for (let s = 1.2; s < k.len - 1.0 && i < 5990; s += 1.6) { const p = punktBei(k, s); for (const sei of [1, -1]) { _o.position.set(p.x - p.tz * 0.6 * sei, G + 0.016, p.z + p.tx * 0.6 * sei); _o.rotation.set(0, s * 3.7, 0); _o.scale.setScalar(0.62 + ((s * 7.3) % 0.2)); _o.updateMatrix(); alleeBaeume.setMatrixAt(i, _o.matrix); alleeBaeume.setColorAt(i, _farbe.setRGB(0.9, 1, 0.9)); i++; } } }
+  for (const k of kanten.values()) { const T = TYP[k.typ]; if (!T.baeume) continue; for (let s2 = 1.2; s2 < k.len - 1.0 && i < 5990; s2 += 1.6) { const p = punktBei(k, s2); for (const o of T.baeume) for (const sei of o ? [1, -1] : [1]) { _o.position.set(p.x - p.tz * o * sei, G + 0.016 + ebeneY(k, s2), p.z + p.tx * o * sei); _o.rotation.set(0, s2 * 3.7, 0); _o.scale.setScalar(0.85); _o.updateMatrix(); alleeBaeume.setMatrixAt(i, _o.matrix); alleeBaeume.setColorAt(i++, _farbe.setRGB(0.9, 1, 0.9)); } } }
   alleeBaeume.count = i; alleeBaeume.instanceMatrix.needsUpdate = true; if (alleeBaeume.instanceColor) alleeBaeume.instanceColor.needsUpdate = true;
 }
 
@@ -3131,7 +3150,7 @@ function ersetzenTippen(p) {
   const diff = Math.round(k.len * (neu.preis - alt.preis) * (k.ebene > 0 ? 3 : k.ebene < 0 ? 4 : 1)), preis = diff > 0 ? diff : 0;
   if (preis > geld) { tipp("Das kostet " + euro(preis) + ".", 2000); return; }
   merkeRueck(); geld -= preis; if (diff < 0) geld += Math.round(-diff * 0.3);
-  k.typ = strTyp; k.h = huelle(k.pts, neu.halb); if (!neu.autos) { k.busspur = false; k.schienen = false; k.parken = false; k.einbahn = 0; } if (neu.spuren.length < 2) k.busspur = false; if (strTyp === "autobahn") k.parken = false;
+  k.typ = strTyp; k.h = huelle(k.pts, neu.halb); if (!neu.autos) { k.busspur = false; k.schienen = false; k.parken = false; k.einbahn = 0; } if (neu.spuren.length < 2) k.busspur = false; if (strTyp === "autobahn") k.parken = false; if (neu.einbahn && !k.einbahn) k.einbahn = 1; if (!neu.einbahn && alt.einbahn) k.einbahn = 0; if (neu.busspur) k.busspur = true; if (neu.schienen) k.schienen = true; if (neu.parken) k.parken = true;
   for (const f of fahrzeuge) if (f.route.some((st) => st.k === k.id)) fahrzeugWeg(f); fahrzeuge = fahrzeuge.filter((f) => !f.weg);
   for (const z of zellenIn(k.h)) if (abstandZuLinie(z, k.pts) < neu.halb + 0.45) zelleWeg(z);
   if (neu.zellen) zellenFuer(k); kanteNeuZeichnen(k); const a = knoten.get(k.a), b = knoten.get(k.b); if (a) knotenNeuZeichnen(a); if (b) knotenNeuZeichnen(b);
@@ -3194,25 +3213,79 @@ const TIPPS = {
   abriss: "🧹 Tipp auf eine Straße, um sie abzureißen. Über Häuser und Zonen wischen löscht sie."
 };
 /* Fach über der Werkzeugleiste: Karten mit Bild, Name und Preis (wie bei Cities: Skylines) */
-const kk = (attr, wert, em, name, preis, an, zu) => `<button class="kk" type="button" ${attr}="${wert}" aria-pressed="${!!an}"${zu ? ' data-zu="1"' : ""}><span class="em">${em}</span><b>${name}</b>${preis ? `<small>${preis}</small>` : ""}</button>`;
+const kk = (attr, wert, em, name, preis, an, zu, vb) => { const url = vb ? vorschauBild(vb) : null; return `<button class="kk${vb ? " mitbild" : ""}" type="button" ${attr}="${wert}" aria-pressed="${!!an}"${zu ? ' data-zu="1"' : ""}${vb ? ` data-info="${vb}"` : ""}>${vb ? `<img data-vb="${vb}" alt=""${url ? ` src="${url}"` : " hidden"}>` : ""}<span class="em"${url ? " hidden" : ""}>${em}</span><b>${name}</b>${preis ? `<small>${preis}</small>` : ""}</button>`; };
+/* Vorschaubilder: das Spiel rendert jedes Teil selbst (Straße, Gebäude, Zone) als kleines Bild */
+const vorschauBilder = new Map(), vbWarte = []; let vbTimer = 0, vbR = null, vbSzene = null, vbKamera = null;
+function vorschauBild(key) { if (vorschauBilder.has(key)) return vorschauBilder.get(key); if (!vbWarte.includes(key)) vbWarte.push(key); if (!vbTimer) vbTimer = setTimeout(vbArbeiten, 60); return null; }
+function vbArbeiten() {
+  vbTimer = 0; const t0 = performance.now();
+  while (vbWarte.length && performance.now() - t0 < 45) { const key = vbWarte.shift(); if (vorschauBilder.has(key)) continue; let url = null; try { url = vbRendern(key); } catch (e) { console.warn("Vorschau", key, e); } vorschauBilder.set(key, url); if (url) document.querySelectorAll(`img[data-vb="${key}"]`).forEach((im) => { im.src = url; im.hidden = false; const em = im.nextElementSibling; if (em && em.classList.contains("em")) em.hidden = true; }); }
+  if (vbWarte.length) vbTimer = setTimeout(vbArbeiten, 30);
+}
+function teileGruppe(g, T) {
+  const gr = {}; for (const t of T) (gr[t.b] = gr[t.b] || []).push(t);
+  for (const b in gr) { const P = B[b]; if (!P) continue; const L = gr[b], m = new THREE.InstancedMesh(P.geometry, P.material, L.length); L.forEach((t, i) => { _o.position.set(t.lx, t.fest ? 0.004 : 0.02 + (t.ly || 0), t.lz); _o.rotation.set(t.rx || 0, t.ry || 0, t.rz || 0, "YXZ"); _o.scale.set(t.sx, Math.max(t.sy, 1e-3), t.sz); _o.updateMatrix(); m.setMatrixAt(i, _o.matrix); m.setColorAt(i, _farbe.setHex(t.c == null ? 0x6fae4a : t.c)); }); _o.rotation.order = "XYZ"; m.castShadow = true; g.add(m); }
+  let x = 0.5, y = 0.3; for (const t of T) { x = Math.max(x, Math.abs(t.lx) + t.sx / 2, Math.abs(t.lz) + t.sz / 2); y = Math.max(y, (t.ly || 0) + t.sy); } return { r: x, h: y };
+}
+function vbRendern(key) {
+  if (!vbR) {
+    const c = document.createElement("canvas"); c.width = 176; c.height = 120;
+    vbR = new THREE.WebGLRenderer({ canvas: c, antialias: true, preserveDrawingBuffer: true, alpha: true }); vbR.toneMapping = THREE.ACESFilmicToneMapping; vbR.outputColorSpace = THREE.SRGBColorSpace; vbR.shadowMap.enabled = true;
+    vbSzene = new THREE.Scene(); vbSzene.add(new THREE.HemisphereLight(0xdfefff, 0x6a7a5a, 1.6)); const l = new THREE.DirectionalLight(0xfff2dc, 2.4); l.position.set(4, 7, 3); l.castShadow = true; l.shadow.mapSize.set(512, 512); const sc = l.shadow.camera; sc.left = sc.bottom = -4; sc.right = sc.top = 4; vbSzene.add(l);
+    vbKamera = new THREE.PerspectiveCamera(28, 176 / 120, 0.05, 200);
+  }
+  const g = new THREE.Group(), [art, id] = key.split(":"); let r = 1, h = 0.4, boden = 0x86c45c;
+  if (art === "str") {
+    const T = TYP[id], A = { x: -2.2, z: 0 }, C = { x: 0, z: 0 }, Bp = { x: 2.2, z: 0 }, { pts, len } = abtasten(A, C, Bp);
+    const k = { typ: id, pts, len, ebene: 0, einbahn: T.einbahn ? 1 : 0, busspur: !!T.busspur, schienen: !!T.schienen, parken: !!T.parken };
+    const m = kantenMesh(k); m.position.y = -G; g.add(m);
+    if (T.baeume) for (let s2 = -1.6; s2 <= 1.7; s2 += 1.6) for (const o of T.baeume) for (const sei of o ? [1, -1] : [1]) { const b = new THREE.Mesh(G_LAUBBAUM, M.baum); b.position.set(s2, 0.004, o * sei); b.scale.setScalar(0.85); g.add(b); }
+    if (T.autos) T.spuren.slice(0, 2).forEach((o, i) => { const f = FZ[["limo", "suv", "klein"][i % 3]], car = new THREE.Mesh(f.geo, M.auto); car.position.set(i ? 0.7 : -0.4, 0.02, o); car.rotation.y = 0; g.add(car); });
+    r = Math.max(0.75, T.halb + 0.2); h = 0.3;
+  } else if (art === "zone") { const z = +id, T = hausTeile({ zone: z, stufe: Math.min(ZONEN[z].max, z <= 2 ? 3 : 2), variante: 7, w: 2, d: 2 }); const q = teileGruppe(g, T); r = q.r; h = q.h; boden = ZONEN[z].boden; }
+  else if (art === "d") { const T = dienstTeile({ typ: id, id: 5, ausbau: 0 }); const q = teileGruppe(g, T); r = q.r; h = q.h; }
+  const bo = new THREE.Mesh(new THREE.PlaneGeometry(12, 12).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: boden, roughness: 1 })); bo.receiveShadow = true; g.add(bo);
+  vbSzene.add(g);
+  const d = art === "str" ? r * 2.1 + 0.6 : Math.max(r * 2.3, h * 1.6, 1.6); vbKamera.position.set(d * 0.75, d * 0.62 + h * 0.4, d * 0.95); vbKamera.lookAt(0, h * 0.32, 0);
+  vbR.render(vbSzene, vbKamera); const url = vbR.domElement.toDataURL("image/png");
+  vbSzene.remove(g); bo.geometry.dispose(); bo.material.dispose(); g.traverse((o) => { if (o.isInstancedMesh) o.dispose(); if (o.isMesh && art === "str" && o.geometry !== G_LAUBBAUM && !Object.values(FZ).some((f) => f.geo === o.geometry)) o.geometry.dispose(); });
+  return url;
+}
+/* Infokarte zu einem Teil im Baumenü */
+const STR_KAT = { klein: "Klein", mittel: "Mittel", gross: "Groß", einbahn: "Einbahn", autobahn: "Autobahn & Land", fuss: "Fuß & Rad" };
+const ZONEN_REITER = { w: ["Wohnen", [1, 2]], g: ["Gewerbe", [3, 4]], b: ["Büro", [5]], i: ["Industrie", [6, 7, 8]] };
+const VERKEHR_REITER = { fahrzeuge: ["🚌 Depots & Bahnhof", ["busdepot", "tramdepot", "bahnhof", "hafen"]], parken: ["🅿️ Parken", ["parkplatz", "parkhaus"]] };
+let strReiter = null, zoneReiter = "w", verkehrReiter = "fahrzeuge", infoTimer2 = 0;
+const kmh = (t) => Math.round(t * 24 / 10) * 10;
+function infoKarte(key) {
+  const el = $("infokarte"); if (!el || !key) return; const [art, id] = key.split(":"); let html = "";
+  const zeile = (a, b) => `<span>${a}</span><b>${b}</b>`;
+  if (art === "str") { const T = TYP[id], m = MEILEN.find((x) => x.frei.includes(id)); html = `<h4>${T.em} ${T.name}</h4><p>${T.info || (T.autos ? "Straße für Autos, Busse und Lkw." : "Nur für Fußgänger.")}</p><div class="iz">${T.autos ? zeile("Spuren", T.einbahn ? T.spuren.length + " in eine Richtung" : T.spuren.length + " pro Richtung") + zeile("Tempo", kmh(T.tempo) + " km/h") : ""}${zeile("Preis", T.preis + " € pro Feld")}${zeile("Häuser am Rand", T.zellen ? "ja" : "nein")}${m ? zeile("Frei ab", m.name) : ""}</div>`; }
+  else if (art === "zone") { const Z = ZONEN[+id]; html = `<h4>${Z.em} ${Z.name}</h4><p>${ZONEN_TEXT[+id] || ""}</p><div class="iz">${zeile("Stufen", Z.max)}${Z.ab ? zeile("Frei ab", MEILEN[Z.ab].name) : ""}</div>`; }
+  else if (art === "d") { const D = DIENSTE[id], lst = ["strom", "wasser", "abwasser", "muell"].filter((r) => D[r]).map((r) => zeile(RESSOURCEN[r].em + " " + RESSOURCEN[r].name, zahl(D[r]))).join(""); html = `<h4>${D.em} ${D.name}</h4><p>${D.text || ""}</p><div class="iz">${zeile("Preis", euro(D.preis))}${zeile("Unterhalt", euro(D.unterhalt) + " pro Woche")}${lst}${D.kap ? zeile("Kapazität", zahl(D.kap)) : ""}${D.radius ? zeile("Reichweite", Math.round(D.radius * 8) + " m") : ""}${zeile("Größe", D.w + " × " + D.d + " Felder")}${D.ab ? zeile("Frei ab", MEILEN[D.ab].name) : ""}</div>`; }
+  el.innerHTML = html; el.hidden = !html; clearTimeout(infoTimer2); if (matchMedia("(pointer:coarse)").matches) infoTimer2 = setTimeout(() => { el.hidden = true; }, 4500);
+}
 const chip = (attr, wert, txt, an) => `<button class="chip" type="button" ${attr}="${wert}" aria-pressed="${!!an}">${txt}</button>`;
 const rueckChip = '<button class="chip" type="button" id="rueck">↩️ Rückgängig</button>';
 let fachZu = false;
 function unterleiste() {
-  const u = $("fach"); let kopf = "", karten = "";
+  const u = $("fach"); let kopf = "", karten = "", reiter = "";
   if (werkzeug === "ansehen") {
     kopf = '<span class="ftitel">👆 Ansehen</span><small style="color:var(--leise)">Haus oder Auto antippen für Infos</small>';
     karten = kk("id", "fahrenKnopf", "🚗", "Selbst fahren", "", false) + kk("id", "budgetKarte", "💶", "Budget &amp; Steuern", "", false) + kk("id", "ansichtKarte", "🔍", "Info-Ansichten", "", false);
   } else if (werkzeug === "strasse") {
     kopf = '<span class="ftitel">🛣️ Straßen</span>' + chip("data-modus", "gerade", "📏 Gerade", strModus === "gerade") + chip("data-modus", "kurve", "〰️ Kurve", strModus === "kurve") + chip("data-modus", "raster", "▦ Raster", strModus === "raster") + (["gerade", "kurve"].includes(strModus) ? chip("data-parallel", "1", "⇉ Parallel", parallelAn) : "") + (["gerade", "kurve"].includes(strModus) ? ebeneBox() : "") + '<span class="trenn"></span>' + chip("data-modus", "ersetzen", "🔁 Ersetzen", strModus === "ersetzen") + chip("data-modus", "einbahn", "➡️ Einbahn", strModus === "einbahn") + chip("data-modus", "kreisel", "⭕ Kreisverkehr", strModus === "kreisel") + (strModus === "kreisel" ? KREISEL_R.map((R, i) => chip("data-kreisel", i, KREISEL_NAME[i], kreiselGr === i)).join("") : "") + chip("data-modus", "parken", "🅿️ Parkstreifen", strModus === "parken") + chip("data-modus", "busspur", "🚌 Busspur", strModus === "busspur") + chip("data-modus", "schienen", "🚋 Schienen", strModus === "schienen") + chip("data-modus", "ampel", "🚦 Ampeln", strModus === "ampel") + '<span class="trenn"></span>' + rueckChip;
-    karten = Object.keys(TYP).map((k) => { const frei = typFrei(k), m = MEILEN.find((x) => x.frei.includes(k)); return kk("data-typ", k, TYP[k].em, TYP[k].name, frei ? TYP[k].preis + " €/Feld" : "ab " + (m ? m.name : ""), k === strTyp, !frei); }).join("");
+    if (!strReiter) strReiter = TYP[strTyp].kat || "klein";
+    reiter = Object.keys(STR_KAT).map((k) => chip("data-sreiter", k, STR_KAT[k], strReiter === k)).join("");
+    karten = Object.keys(TYP).filter((k) => (TYP[k].kat || "klein") === strReiter).map((k) => { const frei = typFrei(k), m = MEILEN.find((x) => x.frei.includes(k)); return kk("data-typ", k, TYP[k].em, TYP[k].name, frei ? TYP[k].preis + " €/Feld" : "ab " + (m ? m.name : ""), k === strTyp, !frei, "str:" + k); }).join("");
   } else if (werkzeug === "zone") {
     kopf = '<span class="ftitel">🏘️ Zonen</span>' + chip("data-pinsel", "klein", "🖌️ Klein", pinsel === "klein") + chip("data-pinsel", "gross", "🖌️ Groß", pinsel === "gross") + chip("data-pinsel", "fuellen", "🪣 Füllen", pinsel === "fuellen") + '<span class="trenn"></span>' + rueckChip;
-    karten = Object.keys(ZONEN).map(Number).map((z) => { const f = zoneFrei(z), Z = ZONEN[z]; return kk("data-zone", z, Z.em, Z.name, f ? GRUPPEN[Z.gruppe].name : "ab " + MEILEN[Z.ab].name, z === zoneWahl, !f); }).join("") + kk("data-zone", 0, "🧽", "Zone entfernen", "", zoneWahl === 0);
+    reiter = Object.keys(ZONEN_REITER).map((k) => chip("data-zreiter", k, ZONEN_REITER[k][0], zoneReiter === k)).join("");
+    karten = ZONEN_REITER[zoneReiter][1].map((z) => { const f = zoneFrei(z), Z = ZONEN[z]; return kk("data-zone", z, Z.em, Z.name, f ? GRUPPEN[Z.gruppe].name : "ab " + MEILEN[Z.ab].name, z === zoneWahl, !f, "zone:" + z); }).join("") + kk("data-zone", 0, "🧽", "Zone entfernen", "", zoneWahl === 0);
   } else if (werkzeug === "dienst" || werkzeug === "park") {
-    if (werkzeug === "dienst") kopf = '<span class="ftitel">🏛️ Dienste</span>' + Object.keys(DIENST_KAT).filter((k) => !PARK_KATS.includes(k) && k !== "verkehr").map((k) => chip("data-dkat", k, DIENST_KAT[k].em + " " + DIENST_KAT[k].name, dienstKat === k)).join("");
-    else kopf = '<span class="ftitel">🌳 Parks & Freizeit</span>' + PARK_KATS.map((k) => chip("data-dkat", k, DIENST_KAT[k].em + " " + DIENST_KAT[k].name, dienstKat === k)).join("");
-    karten = Object.keys(DIENSTE).filter((k) => DIENSTE[k].kat === dienstKat).map((k) => { const D = DIENSTE[k], f = dienstFrei(k); return kk("data-dienst", k, D.em, D.name, f ? euro(D.preis) : "ab " + MEILEN[D.ab].name, k === dienstWahl, !f); }).join("");
+    if (werkzeug === "dienst") reiter = Object.keys(DIENST_KAT).filter((k) => !PARK_KATS.includes(k) && k !== "verkehr").map((k) => chip("data-dkat", k, DIENST_KAT[k].em + " " + DIENST_KAT[k].name, dienstKat === k)).join("");
+    else reiter = PARK_KATS.map((k) => chip("data-dkat", k, DIENST_KAT[k].em + " " + DIENST_KAT[k].name, dienstKat === k)).join("");
+    karten = Object.keys(DIENSTE).filter((k) => DIENSTE[k].kat === dienstKat).map((k) => { const D = DIENSTE[k], f = dienstFrei(k); return kk("data-dienst", k, D.em, D.name, f ? euro(D.preis) : "ab " + MEILEN[D.ab].name, k === dienstWahl, !f, "d:" + k); }).join("");
   } else if (werkzeug === "gleis") {
     kopf = '<span class="ftitel">🛤️ Gleise</span>' + chip("data-gmodus", "gerade", "📏 Gerade", gleisModus === "gerade") + chip("data-gmodus", "kurve", "〰️ Kurve", gleisModus === "kurve") + (["gerade", "kurve"].includes(gleisModus) ? ebeneBox() : "") + chip("data-gmodus", "entfernen", "🧹 Entfernen", gleisModus === "entfernen") + chip("data-gmodus", "zuglinie", "🚆 Neue Zuglinie", gleisModus === "zuglinie") + '<span class="trenn"></span>' + rueckChip;
     const ZL = zuglinieWahl && zuglinien.get(zuglinieWahl);
@@ -3225,7 +3298,8 @@ function unterleiste() {
     kopf = '<span class="ftitel">🚌 Nahverkehr</span>' + chip("data-bmodus", "halt", "🚏 Haltestelle", busModus === "halt") + chip("data-bmodus", "linie", "🚌 Neue Buslinie", busModus === "linie") + chip("data-bmodus", "tram", (meilenstein >= 3 ? "🚋" : "🔒") + " Neue Straßenbahn", busModus === "tram") + chip("data-bmodus", "weg", "🧹 Entfernen", busModus === "weg") + '<span class="trenn"></span>' + rueckChip;
     kopf += `<span class="trenn"></span><div class="zeilebox"><button class="chip" type="button" id="ticketMinus">−</button><span>🎫 ${ticketPreis.toFixed(2).replace(".", ",")} €</span><button class="chip" type="button" id="ticketPlus">+</button></div>`;
     if (L) kopf += `<span class="trenn"></span><span class="ftitel" style="color:#${L.farbe.toString(16).padStart(6, "0")}">Linie ${L.nr}</span>${L.keinDepot ? `<span style="color:#ff9b9b;white-space:nowrap">⚠️ Kein ${L.art === "tram" ? "Straßenbahn-Depot" : "Busdepot"}!</span>` : ""}<div class="zeilebox"><button class="chip" type="button" id="busMinus">−</button><span>⏱️ ${L.takt || 40} s · ${L.art === "tram" ? "🚋" : "🚌"} ${L.busse || 1}</span><button class="chip" type="button" id="busPlus">+</button></div><span style="white-space:nowrap;color:var(--leise)">👥 ${zahl(L.letzteWoche || 0)}/Wo · ${Math.round((L.auslastung || 0) * 100)} % voll</span>${chip("data-bmodus", "bearbeiten", "✏️ Bearbeiten", busModus === "bearbeiten")}${L.art !== "tram" ? `<button class="chip" type="button" id="busModell">${BUS_MODELLE[L.modell || "mix"]}</button>` : ""}<button class="chip gefahr" type="button" id="linieLoeschen">🗑️</button>`;
-    karten = ["busdepot", "tramdepot", "bahnhof", "hafen", "parkplatz", "parkhaus"].map((k) => { const D = DIENSTE[k], f = dienstFrei(k); return kk("data-dienst", k, D.em, D.name, f ? euro(D.preis) : "ab " + MEILEN[D.ab].name, busModus === "bau" && dienstWahl === k, !f); }).join("") + [...linien.values()].map((x) => kk("data-linie", x.id, `<span style="display:inline-block;width:26px;height:26px;border-radius:50%;background:#${x.farbe.toString(16).padStart(6, "0")};color:#fff;font-size:.9rem;line-height:26px;font-weight:700">${x.nr}</span>`, "Linie " + x.nr, x.halte.length + " Halte · " + x.busse + " 🚌", x.id === linieWahl)).join("") || "";
+    reiter = Object.keys(VERKEHR_REITER).map((k) => chip("data-vreiter", k, VERKEHR_REITER[k][0], verkehrReiter === k)).join("");
+    karten = VERKEHR_REITER[verkehrReiter][1].map((k) => { const D = DIENSTE[k], f = dienstFrei(k); return kk("data-dienst", k, D.em, D.name, f ? euro(D.preis) : "ab " + MEILEN[D.ab].name, busModus === "bau" && dienstWahl === k, !f, "d:" + k); }).join("") + [...linien.values()].map((x) => kk("data-linie", x.id, `<span style="display:inline-block;width:26px;height:26px;border-radius:50%;background:#${x.farbe.toString(16).padStart(6, "0")};color:#fff;font-size:.9rem;line-height:26px;font-weight:700">${x.nr}</span>`, "Linie " + x.nr, x.halte.length + " Halte · " + x.busse + " 🚌", x.id === linieWahl)).join("") || "";
     if (!linien.size) karten += `<small style="color:var(--leise);padding:8px">Noch keine Linie. 1. Haltestellen bauen · 2. „Neue Linie“ und Haltestellen antippen · ${zahl(busAbdeckung.fahrgaeste)} Fahrgäste</small>`;
   } else if (werkzeug === "gebiet") {
     const m = MEILEN[meilenstein], frei = m.gebiete - gekauft;
@@ -3235,14 +3309,20 @@ function unterleiste() {
   }
   const o = $("optionen");
   o.innerHTML = kopf ? kopf.replace('<span class="ftitel">', '<span class="ftitel"><button class="chip" type="button" id="hilfeKnopf" style="float:right;min-height:24px;padding:0 7px;margin-left:6px">?</button>') : ""; o.hidden = !kopf || werkzeug === "ansehen";
-  u.innerHTML = karten ? `<div class="fkarten">${karten}</div>` : "";
+  u.innerHTML = karten ? (reiter ? `<div class="freiter">${reiter}</div>` : "") + `<div class="fkarten">${karten}</div>` : "";
   u.hidden = fachZu || !karten; rueckKnopf();
 }
 $("optionen").addEventListener("click", (e) => { if (e.target.closest("#hilfeKnopf")) { const t = TIPPS[werkzeug]; tipp(typeof t === "function" ? t() : t, 6000); return; } fachKlick(e); });
 $("fach").addEventListener("click", (e) => fachKlick(e));
+$("fach").addEventListener("mouseover", (e) => { const b = e.target.closest("[data-info]"); if (b && !matchMedia("(pointer:coarse)").matches) infoKarte(b.dataset.info); });
+$("fach").addEventListener("mouseleave", () => { const el = $("infokarte"); if (el && !matchMedia("(pointer:coarse)").matches) el.hidden = true; });
 function fachKlick(e) {
   const b = e.target.closest("button"); if (!b) return;
   if (b.id === "rueck") { rueckgaengig(); return; }
+  if (b.dataset.sreiter) { strReiter = b.dataset.sreiter; unterleiste(); return; }
+  if (b.dataset.zreiter) { zoneReiter = b.dataset.zreiter; unterleiste(); return; }
+  if (b.dataset.vreiter) { verkehrReiter = b.dataset.vreiter; unterleiste(); return; }
+  if (b.dataset.info) infoKarte(b.dataset.info);
   if (b.id === "fahrenKnopf") { fahrenStarten(); return; }
   if (b.id === "budgetKarte") { budgetZeigen(); return; }
   if (b.id === "ansichtKarte") { ansichtenAufZu(); return; }
@@ -3304,7 +3384,7 @@ function ansichtListe() { $("ansichtListe").innerHTML = Object.entries(ANSICHTEN
 function ansichtenAufZu() { const p = $("ansichten"); p.hidden = !p.hidden; if (!p.hidden) { ansichtListe(); $("menue").hidden = true; } }
 $("ansichtKnopf").onclick = ansichtenAufZu;
 $("ansichten").addEventListener("click", (e) => { const b = e.target.closest("[data-ansicht]"); if (b) { ansichtSetzen(b.dataset.ansicht); } });
-function werkzeugWaehlen(w) {
+function werkzeugWaehlen(w) { if ($("infokarte")) $("infokarte").hidden = true;
   werkzeug = w; document.querySelectorAll("#werkzeug button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.w === w)));
   const bauend = w !== "ansehen";
   steuerung.touches.ONE = bauend ? -1 : THREE.TOUCH.PAN; steuerung.mouseButtons.LEFT = bauend ? -1 : THREE.MOUSE.PAN;
