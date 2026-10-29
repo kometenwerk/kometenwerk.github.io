@@ -965,6 +965,334 @@
    "datei": "ton/hz-outro-short.mp3",
    "dauer": 1.18,
    "hash": "e26133fa06ab"
+  },
+  {
+   "id": "hz-problem-brand-1",
+   "gruppe": "hz_problem_brand",
+   "text": "Oh nein, es brennt! Feuerwehr, schnell!",
+   "datei": "ton/hz-problem-brand-1.mp3",
+   "dauer": 2.66,
+   "hash": "45a0d6f832de"
+  },
+  {
+   "id": "hz-problem-brand-2",
+   "gruppe": "hz_problem_brand",
+   "text": "Da kommt Rauch raus! Das ist kein Grillfest!",
+   "datei": "ton/hz-problem-brand-2.mp3",
+   "dauer": 2.51,
+   "hash": "e32b7d214f23"
+  },
+  {
+   "id": "hz-problem-stau-1",
+   "gruppe": "hz_problem_stau",
+   "text": "Oh nein, Stau! Ich hätte doch eine größere Straße bauen sollen.",
+   "datei": "ton/hz-problem-stau-1.mp3",
+   "dauer": 3.53,
+   "hash": "bf49ba46de6d"
+  },
+  {
+   "id": "hz-problem-stau-2",
+   "gruppe": "hz_problem_stau",
+   "text": "Hier geht gar nichts mehr. Stoßstange an Stoßstange!",
+   "datei": "ton/hz-problem-stau-2.mp3",
+   "dauer": 2.69,
+   "hash": "6ecd718918bb"
+  },
+  {
+   "id": "hz-problem-strom-1",
+   "gruppe": "hz_problem_strom",
+   "text": "Moment, warum ist es da so dunkel? Die haben keinen Strom!",
+   "datei": "ton/hz-problem-strom-1.mp3",
+   "dauer": 3.0,
+   "hash": "15b1d4576bc2"
+  },
+  {
+   "id": "hz-problem-strom-2",
+   "gruppe": "hz_problem_strom",
+   "text": "Stromausfall! Ups, das war wohl ich.",
+   "datei": "ton/hz-problem-strom-2.mp3",
+   "dauer": 2.48,
+   "hash": "d868820b532b"
+  },
+  {
+   "id": "hz-problem-wasser-1",
+   "gruppe": "hz_problem_wasser",
+   "text": "Die Leute haben kein Wasser mehr. Das ist gar nicht gut.",
+   "datei": "ton/hz-problem-wasser-1.mp3",
+   "dauer": 2.74,
+   "hash": "afed2c05ec84"
+  },
+  {
+   "id": "hz-problem-abwasser-1",
+   "gruppe": "hz_problem_abwasser",
+   "text": "Igitt, das Abwasser wird nicht abgeholt!",
+   "datei": "ton/hz-problem-abwasser-1.mp3",
+   "dauer": 2.14,
+   "hash": "22373addd42b"
+  },
+  {
+   "id": "hz-problem-muell-1",
+   "gruppe": "hz_problem_muell",
+   "text": "Hier stapelt sich der Müll. Das riecht man bis hierher!",
+   "datei": "ton/hz-problem-muell-1.mp3",
+   "dauer": 2.66,
+   "hash": "1c328ea1b119"
+  },
+  {
+   "id": "hz-problem-wegzug-1",
+   "gruppe": "hz_problem_wegzug",
+   "text": "Was? Da ziehen Leute weg! Gefällt es euch nicht bei mir?",
+   "datei": "ton/hz-problem-wegzug-1.mp3",
+   "dauer": 3.27,
+   "hash": "72db34756665"
+  },
+  {
+   "id": "hz-problem-krimi-1",
+   "gruppe": "hz_problem_krimi",
+   "text": "Hier passieren zu viele Diebstähle. Wo ist die Polizei?",
+   "datei": "ton/hz-problem-krimi-1.mp3",
+   "dauer": 2.95,
+   "hash": "7405eda96e16"
+  },
+  {
+   "id": "hz-problem-krank-1",
+   "gruppe": "hz_problem_krank",
+   "text": "Viele Leute sind krank. Wir brauchen einen Arzt!",
+   "datei": "ton/hz-problem-krank-1.mp3",
+   "dauer": 2.82,
+   "hash": "1f9a85b6bb9d"
+  },
+  {
+   "id": "hz-problem-1",
+   "gruppe": "hz_problem",
+   "text": "Oh oh. Da läuft gerade etwas schief.",
+   "datei": "ton/hz-problem-1.mp3",
+   "dauer": 2.06,
+   "hash": "2adbadf2d1c5"
+  },
+  {
+   "id": "hz-loesung-brand-1",
+   "gruppe": "hz_loesung_brand",
+   "text": "Ich baue noch eine Feuerwache. Das passiert mir nicht nochmal!",
+   "datei": "ton/hz-loesung-brand-1.mp3",
+   "dauer": 3.34,
+   "hash": "d119f0a85bb0"
+  },
+  {
+   "id": "hz-loesung-stau-1",
+   "gruppe": "hz_loesung_stau",
+   "text": "Problem erkannt! Ich mache die Straße breiter.",
+   "datei": "ton/hz-loesung-stau-1.mp3",
+   "dauer": 2.69,
+   "hash": "3ec48572fbff"
+  },
+  {
+   "id": "hz-loesung-stau-2",
+   "gruppe": "hz_loesung_stau",
+   "text": "Mehr Spuren, weniger Stau. Hoffentlich.",
+   "datei": "ton/hz-loesung-stau-2.mp3",
+   "dauer": 2.66,
+   "hash": "940fbf8cf6a2"
+  },
+  {
+   "id": "hz-loesung-strom-1",
+   "gruppe": "hz_loesung_strom",
+   "text": "Schnell noch ein Kraftwerk dazu. Licht an!",
+   "datei": "ton/hz-loesung-strom-1.mp3",
+   "dauer": 2.43,
+   "hash": "58a4fee2a093"
+  },
+  {
+   "id": "hz-loesung-wasser-1",
+   "gruppe": "hz_loesung_wasser",
+   "text": "Ein neuer Wasserturm. Prost, liebe Leute!",
+   "datei": "ton/hz-loesung-wasser-1.mp3",
+   "dauer": 2.53,
+   "hash": "447a693066bf"
+  },
+  {
+   "id": "hz-loesung-abwasser-1",
+   "gruppe": "hz_loesung_abwasser",
+   "text": "Eine Kläranlage, und das Problem ist weg.",
+   "datei": "ton/hz-loesung-abwasser-1.mp3",
+   "dauer": 2.56,
+   "hash": "ad312eccf2f2"
+  },
+  {
+   "id": "hz-loesung-muell-1",
+   "gruppe": "hz_loesung_muell",
+   "text": "Ich baue noch eine Deponie. Weg mit dem Müll!",
+   "datei": "ton/hz-loesung-muell-1.mp3",
+   "dauer": 2.53,
+   "hash": "76d02dc8858a"
+  },
+  {
+   "id": "hz-loesung-wegzug-1",
+   "gruppe": "hz_loesung_wegzug",
+   "text": "Vielleicht hilft ein schöner Park. Bitte bleibt hier!",
+   "datei": "ton/hz-loesung-wegzug-1.mp3",
+   "dauer": 2.46,
+   "hash": "b1369775d0e2"
+  },
+  {
+   "id": "hz-loesung-krimi-1",
+   "gruppe": "hz_loesung_krimi",
+   "text": "Eine Polizeiwache für mehr Sicherheit.",
+   "datei": "ton/hz-loesung-krimi-1.mp3",
+   "dauer": 2.06,
+   "hash": "c3abfa25d5c9"
+  },
+  {
+   "id": "hz-loesung-krank-1",
+   "gruppe": "hz_loesung_krank",
+   "text": "Ein Arzt für die Nachbarschaft. Gute Besserung!",
+   "datei": "ton/hz-loesung-krank-1.mp3",
+   "dauer": 2.59,
+   "hash": "b2df4b118edc"
+  },
+  {
+   "id": "hz-loesung-1",
+   "gruppe": "hz_loesung",
+   "text": "So, repariert. Ich bin eben ein Profi.",
+   "datei": "ton/hz-loesung-1.mp3",
+   "dauer": 2.56,
+   "hash": "7a3845f9d5aa"
+  },
+  {
+   "id": "hz-loesung-nicht-1",
+   "gruppe": "hz_loesung_nicht",
+   "text": "Hm, da passt nichts hin. Darum kümmere ich mich später.",
+   "datei": "ton/hz-loesung-nicht-1.mp3",
+   "dauer": 2.77,
+   "hash": "94f9bde1fd67"
+  },
+  {
+   "id": "hz-loesung-nicht-2",
+   "gruppe": "hz_loesung_nicht",
+   "text": "Okay, das kann ich gerade nicht reparieren. Weiter geht's!",
+   "datei": "ton/hz-loesung-nicht-2.mp3",
+   "dauer": 3.06,
+   "hash": "1a87a3265897"
+  },
+  {
+   "id": "kz-wechsel-1",
+   "gruppe": "kz_wechsel",
+   "text": "Mit dem Tier lief's nicht. Ich probiere ein anderes!",
+   "datei": "ton/kz-wechsel-1.mp3",
+   "dauer": 2.61,
+   "hash": "df647d90fd94"
+  },
+  {
+   "id": "kz-wechsel-2",
+   "gruppe": "kz_wechsel",
+   "text": "Neue Runde, neues Tier. Diesmal klappt's!",
+   "datei": "ton/kz-wechsel-2.mp3",
+   "dauer": 2.74,
+   "hash": "0be1c722afea"
+  },
+  {
+   "id": "kz-wechsel-3",
+   "gruppe": "kz_wechsel",
+   "text": "Ich hab nachgedacht: Ein anderes Tier muss her.",
+   "datei": "ton/kz-wechsel-3.mp3",
+   "dauer": 2.4,
+   "hash": "27e4306d8d61"
+  },
+  {
+   "id": "kz-bleib-1",
+   "gruppe": "kz_bleib",
+   "text": "Never change a winning team. Ich bleibe bei meinem Tier!",
+   "datei": "ton/kz-bleib-1.mp3",
+   "dauer": 2.95,
+   "hash": "0d4dd836fc46"
+  },
+  {
+   "id": "kz-bleib-2",
+   "gruppe": "kz_bleib",
+   "text": "Das Tier hat gewonnen, also bleibt es dabei.",
+   "datei": "ton/kz-bleib-2.mp3",
+   "dauer": 2.38,
+   "hash": "78a7d6f9cebf"
+  },
+  {
+   "id": "kz-frueh-raus-1",
+   "gruppe": "kz_frueh_raus",
+   "text": "Was? Ich war noch gar nicht richtig da!",
+   "datei": "ton/kz-frueh-raus-1.mp3",
+   "dauer": 1.99,
+   "hash": "947dcb419401"
+  },
+  {
+   "id": "kz-frueh-raus-2",
+   "gruppe": "kz_frueh_raus",
+   "text": "Das ging schnell. Zu schnell!",
+   "datei": "ton/kz-frueh-raus-2.mp3",
+   "dauer": 1.72,
+   "hash": "12bf544d3c03"
+  },
+  {
+   "id": "kz-nebel-ich-1",
+   "gruppe": "kz_nebel_ich",
+   "text": "Hust! Ich steh im Nebel! Raus hier!",
+   "datei": "ton/kz-nebel-ich-1.mp3",
+   "dauer": 2.27,
+   "hash": "47f478add656"
+  },
+  {
+   "id": "kz-nebel-ich-2",
+   "gruppe": "kz_nebel_ich",
+   "text": "Der Nebel tut weh. Schnell in die Mitte!",
+   "datei": "ton/kz-nebel-ich-2.mp3",
+   "dauer": 2.25,
+   "hash": "bacb5de39c6e"
+  },
+  {
+   "id": "kz-knapp-1",
+   "gruppe": "kz_knapp",
+   "text": "Ganz wenig Leben! Jetzt bloß vorsichtig.",
+   "datei": "ton/kz-knapp-1.mp3",
+   "dauer": 2.46,
+   "hash": "ccd88886f492"
+  },
+  {
+   "id": "kz-knapp-2",
+   "gruppe": "kz_knapp",
+   "text": "Uiuiui, das wird knapp!",
+   "datei": "ton/kz-knapp-2.mp3",
+   "dauer": 1.78,
+   "hash": "99239783e0dc"
+  },
+  {
+   "id": "kz-pech-1",
+   "gruppe": "kz_pech",
+   "text": "Schon wieder verloren. Heute ist nicht mein Tag.",
+   "datei": "ton/kz-pech-1.mp3",
+   "dauer": 2.35,
+   "hash": "c567bb9e9caf"
+  },
+  {
+   "id": "kz-pech-2",
+   "gruppe": "kz_pech",
+   "text": "Okay, die Bots sind heute echt gut. Ich gebe nicht auf!",
+   "datei": "ton/kz-pech-2.mp3",
+   "dauer": 3.03,
+   "hash": "6456c2bfb8be"
+  },
+  {
+   "id": "kz-endlich-1",
+   "gruppe": "kz_endlich",
+   "text": "Endlich! Nach all den Niederlagen ein Sieg!",
+   "datei": "ton/kz-endlich-1.mp3",
+   "dauer": 2.77,
+   "hash": "d53bc20ff14d"
+  },
+  {
+   "id": "kz-endlich-2",
+   "gruppe": "kz_endlich",
+   "text": "Ich hab's euch gesagt, ich gebe nicht auf!",
+   "datei": "ton/kz-endlich-2.mp3",
+   "dauer": 2.12,
+   "hash": "dab48fcc414a"
   }
  ]
 }
