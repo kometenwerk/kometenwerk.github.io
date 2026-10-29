@@ -2,7 +2,7 @@
 """Thorstens Stimme für das Video-Studio.
 
 Liest shared/thorsten/saetze.json, spricht jeden Satz mit derselben Piper-Stimme
-wie im Nachrichten-Heft (Modell de_DE-mls-medium, Sprecher 162) und legt ihn als
+wie die Video-Meldungen im Nachrichten-Heft (Piper-Modell de_DE-thorsten-high) und legt ihn als
 MP3 in shared/thorsten/ton/ ab. Schon vorhandene Sätze mit gleichem Text werden
 nicht neu gesprochen. Dazu entsteht shared/thorsten/index.json, die das Studio liest.
 
@@ -41,8 +41,9 @@ def sprechbar(text):
 def main():
     daten = json.loads((HIER / "saetze.json").read_text("utf8"))
     st = daten.get("stimme") or {}
-    modell = st.get("modell", "de_DE-mls-medium")
-    sprecher = int(st.get("sprecher", 162))
+    modell = st.get("modell", "de_DE-thorsten-high")
+    sprecher = st.get("sprecher")  # nur bei Modellen mit mehreren Sprechern
+    sprecher = int(sprecher) if sprecher is not None else None
     tempo = float(st.get("tempo", 0.9))
     schneller = float(st.get("schneller", 1.0))  # zusätzlich beschleunigen, ohne dass die Stimme höher klingt
     saetze = daten["saetze"]
@@ -85,7 +86,7 @@ def main():
             fertig.append(vorher)
             continue
         conf = SynthesisConfig(length_scale=grund * tempo, noise_scale=0.667, noise_w_scale=0.8,
-                               normalize_audio=True, speaker_id=sprecher)
+                               normalize_audio=True, **({"speaker_id": sprecher} if sprecher is not None else {}))
         roh = b"".join(c.audio_int16_bytes for c in voice.synthesize(text, conf))
         # Stille vorn und hinten weg, dann beschleunigen (atempo verändert die Tonhöhe nicht)
         tempi, rest = [], schneller

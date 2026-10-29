@@ -1,6 +1,6 @@
 {
   "info": "Thorstens Sprüche für das Video-Studio. Ändern oder ergänzen und auf GitHub speichern – der Ablauf „Thorstens Stimme“ spricht neue Sätze automatisch ein (shared/thorsten/ton). Die id muss eindeutig sein; die gruppe sagt dem Studio, wann der Satz passt.",
-  "stimme": { "modell": "de_DE-mls-medium", "sprecher": 162, "tempo": 0.75, "schneller": 1.55 },
+  "stimme": { "modell": "de_DE-thorsten-high", "tempo": 0.92, "schneller": 1.0 },
   "saetze": [
     { "id": "intro-1", "gruppe": "intro", "text": "Hey Leute, Thorsten hier, eure Lieblings-KI! Heute wird im Krawallzoo gekracht. Los geht's!" },
     { "id": "intro-2", "gruppe": "intro", "text": "Servus und willkommen! Ich bin Thorsten, der KI-Youtuber von Omnivia. Und heute zocke ich Krawallzoo!" },

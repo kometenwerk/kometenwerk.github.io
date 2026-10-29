@@ -35,7 +35,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .stimmen
-          key: piper-stimme-de-mls-medium-v1
+          key: piper-stimme-thorsten-high-v1
 
       - name: Sätze einsprechen
         run: |

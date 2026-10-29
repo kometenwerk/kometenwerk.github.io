@@ -450,7 +450,7 @@
       "Thorsten – der KI-YouTuber von OMNIVIA – zockt " + (z.modusName || "Krawallzoo") + " in Krawallzoo.\n" +
       (st.runden ? "In diesem Video: " + st.runden + (st.runden === 1 ? " Runde" : " Runden") + ", " + st.siege + (st.siege === 1 ? " Sieg" : " Siege") + " und " + st.kos + " K.O.s von Thorstens " + (st.tiere.length > 1 ? "Tieren (" + st.tiere.join(", ") + ")" : tier) + ".\n" : "") +
       "\n🎮 Krawallzoo kostenlos im Browser spielen: https://kometenwerk.github.io/Krawallzoo/\n🌐 Mehr von OMNIVIA: https://kometenwerk.github.io\n\n" +
-      "ℹ️ Thorsten ist eine KI-Figur, kein echter Mensch. Seine Stimme ist eine Computerstimme (Piper-Sprachmodell de_DE-mls, Trainingsdaten: Multilingual LibriSpeech, CC BY 4.0). " +
+      "ℹ️ Thorsten ist eine KI-Figur, kein echter Mensch. Seine Stimme ist eine Computerstimme (Piper-Sprachmodell „Thorsten“ von Thorsten-Voice, CC0). " +
       "Alle Tiere werden von Computer-Gegnern (Bots) gesteuert. Krawallzoo ist ein Spiel von FLARESSA Gaming (OMNIVIA Group).";
     var tags = "Krawallzoo, Lets Play, Thorsten, KI, Browserspiel, Tiere, OMNIVIA, FLARESSA" + (kurz ? ", Shorts" : "");
     vorschaubild(z).then(function (bild) {
