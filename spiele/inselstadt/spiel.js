@@ -595,6 +595,7 @@ const SF = { gehweg: farbe(0xcbc6ba), fahrbahn: farbe(0x3b4049), strich: farbe(0
 const tunnelR = (k) => Math.min(1.6, k.len / 2 - 0.6);
 function ebeneY(k, S) {
   if (!k || !k.ebene) return 0;
+  if (k.ebene === -2) return -0.75;
   if (k.ebene < 0) { const t = klemme((Math.min(S, k.len - S) - tunnelR(k)) / 0.35, 0, 1); return -0.75 * t; }
   const r = Math.min(3.2, k.len / 2), t = klemme(Math.min(S, k.len - S) / r, 0, 1), g = t * t * (3 - 2 * t); return 0.78 * g;
 }
@@ -1310,6 +1311,17 @@ function haeuserZeichnen() {
   aoMesh.count = ai; aoMesh.instanceMatrix.needsUpdate = true;
 }
 const GRAU = new THREE.Color(0x77736c), WEISS_C = new THREE.Color(0xffffff); let drehListe = [], torListe = [];
+const menschenPool = becken(G_BOX_UNTEN, M.flach, 4000, true); let menschenZeit = -1;
+const MENSCH_FARBEN = [0x3d5a80, 0xe8493f, 0xf2c14e, 0x2f8f4f, 0x8a5be8, 0x2a2d33, 0xd9d4c7, 0xe85b9a, 0x6b4a2f];
+function menschenZeichnen() {
+  if (jetztS - menschenZeit < 0.5) return; menschenZeit = jetztS; let i = 0;
+  const setz = (x, y, z, c, gross) => { if (i >= 3998) return; _o.position.set(x, y, z); _o.rotation.set(0, 0, 0); _o.scale.set(0.045, 0.1 * gross, 0.04); _o.updateMatrix(); menschenPool.setMatrixAt(i, _o.matrix); menschenPool.setColorAt(i++, _farbe.setHex(c)); _o.position.y = y + 0.1 * gross; _o.scale.set(0.03, 0.03, 0.03); _o.updateMatrix(); menschenPool.setMatrixAt(i, _o.matrix); menschenPool.setColorAt(i++, _farbe.setHex(0xe8c4a0)); };
+  for (const h of halte.values()) {
+    if (!h.inLinie) continue; const k = kanten.get(h.k); if (!k) continue; const n = Math.min(12, Math.ceil((h.wartend || 0) / 4)), o = TYP[k.typ].halb - 0.13, cs = Math.cos(h.rot), sn = Math.sin(h.rot), y0 = BODEN + (h.tram ? 0.035 : 0);
+    for (let j = 0; j < n; j++) { const s2 = j % 2 ? 1 : -1, lx = -0.5 + ((j * 37 + h.id * 13) % 100) / 100 * 0.9, lz = s2 * (o - 0.06 - ((j * 17) % 10) / 100); setz(h.x + lx * cs + lz * sn, y0, h.z - lx * sn + lz * cs, MENSCH_FARBEN[(j + h.id) % MENSCH_FARBEN.length], 0.9 + ((j * 7) % 4) * 0.06); }
+  }
+  menschenPool.count = i; menschenPool.instanceMatrix.needsUpdate = true; if (menschenPool.instanceColor) menschenPool.instanceColor.needsUpdate = true;
+}
 const torPool = becken(G_BOX_UNTEN, new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.32, roughness: 0.15, metalness: 0.1, depthWrite: false }), 600, true);
 function toreZeichnen(dt) {
   let i = 0;
@@ -1416,6 +1428,11 @@ const DIENSTE = {
   busdepot: { kat: "verkehr", name: "Busdepot", em: "🅿️", preis: 8000, unterhalt: 120, w: 3, d: 3, depot: "bus", text: "Hier starten die Busse. Ohne Depot fahren keine Busse." },
   tramdepot: { kat: "verkehr", name: "Straßenbahn-Depot", em: "🚋", preis: 15000, unterhalt: 200, w: 3, d: 3, depot: "tram", ab: 3, text: "Hier starten die Straßenbahnen." },
   bahnhof: { kat: "verkehr", name: "Bahnhof", em: "🚆", preis: 25000, unterhalt: 300, w: 3, d: 3, ab: 2, text: "Züge bringen Pendler und Touristen – mehr Bedarf an Wohnungen und Läden." },
+  haltepunkt: { kat: "verkehr", name: "Haltepunkt", em: "🚉", preis: 9000, unterhalt: 90, w: 8, d: 2, ab: 2, station: true, text: "Kleiner Halt mit einem Gleis und Bahnsteig. Gleise sind schon drin – schließ sie an den Enden an." },
+  bahnhof2: { kat: "verkehr", name: "Bahnhof", em: "🚆", preis: 26000, unterhalt: 260, w: 10, d: 3, ab: 2, station: true, text: "Zwei Gleise mit Mittelbahnsteig, Weichen und Empfangsgebäude." },
+  hauptbahnhof: { kat: "verkehr", name: "Hauptbahnhof", em: "🚄", preis: 70000, unterhalt: 620, w: 12, d: 5, ab: 4, station: true, text: "Vier Gleise unter einer großen Halle. Hier halten auch ICE." },
+  gueterbahnhof: { kat: "verkehr", name: "Güterbahnhof", em: "🚛", preis: 40000, unterhalt: 360, w: 12, d: 4, ab: 3, station: true, text: "Vier Ladegleise mit Containerkran – Güterzüge bringen Waren für die Industrie." },
+  ubahnhof: { kat: "verkehr", name: "U-Bahnhof", em: "🚇", preis: 34000, unterhalt: 300, w: 8, d: 2, ab: 4, station: true, text: "Station unter der Erde mit zwei Eingängen. Verbinde sie mit 🚇 U-Bahn-Tunneln." },
   parkplatz: { kat: "verkehr", name: "Parkplatz", em: "🅿️", preis: 2500, unterhalt: 20, w: 2, d: 2, radius: 8, wert: 5, text: "Kunden finden einen Parkplatz – Läden und Büros in der Nähe werden wertvoller." },
   parkhaus: { kat: "verkehr", name: "Parkhaus", em: "🏢", preis: 12000, unterhalt: 90, w: 2, d: 2, radius: 13, wert: 8, ab: 3, text: "Viele Parkplätze auf wenig Platz – gut für die Innenstadt." },
   hafen: { kat: "verkehr", name: "Frachthafen", em: "🚢", preis: 30000, unterhalt: 350, w: 4, d: 3, ab: 1, amWasser: true, dreck: 5, text: "Schiffe bringen Waren – mehr Bedarf an Industrie, Lkw fahren vom Hafen los. Muss am Ufer stehen." }
@@ -1588,6 +1605,51 @@ const DIENST_NEU = (function () {
     muellheiz(K, o) { const V = DIENST_NEU.vx(K, o), { bau, add } = K, { W, D, vorn } = o;
       bau({ lx: -W * 0.12, lz: vorn - 0.7, w: W * 0.66, d: 1.1, n: 5, art: "glas", c: 0xbcd6c6, dach: "flach", eingang: "glas", technik: 1 });
       V.schlot(W * 0.33, -D * 0.25, 0.3, 3.4, 0xe9ecef, 0x2fbf6a); for (let k = 0; k < 2; k++) V.tank(W * 0.33, vorn - 0.55 + k * 0.32, 0.28, 0.5, 0xd8dade); V.lkwHof(-W * 0.12, -D * 0.38, W * 0.6, 0.38, 3); V.trafo(W * 0.33, -D * 0.02, 2); V.zaunUm(); return 0xbcd6c6; },
+    /* Bahnhöfe: Bahnsteige, Dächer, Gebäude. Die Gleise selbst sind echte Gleise (in der Vorschau nur angedeutet). */
+    sbasis(K, o, typ) {
+      const { add } = K, { W, DS } = o, S = STATIONEN[typ], Lp = W - 3.3;
+      if (!o.echt) for (const gz of S.gleise) { add("flach", 0, gz, W, 0.006, 0.34, S.unter ? 0x6b4fd8 : 0x8a8378, { ly: 0.002 }); for (const s2 of [-0.1, 0.1]) add("flach", 0, gz + s2, W, 0.014, 0.02, S.unter ? 0xd8ccff : 0xc9ced6, { ly: 0.01 }); }
+      if (S.unter) return;
+      for (const [z0, z1] of S.steige) {
+        const zc = (z0 + z1) / 2, b = z1 - z0; add("flach", 0, zc, Lp, 0.07, b, 0xc9c3b6);
+        for (const zz of [z0 + 0.012, z1 - 0.012]) add("flach", 0, zz, Lp, 0.004, 0.02, 0xf2f2f2, { ly: 0.07 });
+        if (DS >= 1) for (const zz of [z0 + 0.05, z1 - 0.05]) add("flach", 0, zz, Lp, 0.003, 0.025, 0xe8c84a, { ly: 0.071 });
+        if (b >= 0.3) {
+          const n = Math.max(2, Math.round(Lp * 0.55 / 1.2)); for (let i = 0; i <= n; i++) add("flach", -Lp * 0.3 + i * Lp * 0.6 / n, zc, 0.03, 0.36, 0.03, 0x5d6470, { ly: 0.07 });
+          add("flach", 0, zc, Lp * 0.66, 0.03, b + 0.1, 0x6d7178, { ly: 0.43 }); add("lampe", 0, zc, Lp * 0.6, 0.008, 0.04, 0xffffff, { ly: 0.42 });
+          if (DS >= 1) for (const x of [-Lp * 0.36, Lp * 0.36]) { add("flach", x, zc, 0.02, 0.32, 0.02, 0x9aa0a8, { ly: 0.07 }); add("flach", x, zc, 0.4, 0.08, 0.015, 0x1f4fbf, { ly: 0.33 }); add("flach", x, zc, 0.3, 0.012, 0.016, 0xffffff, { ly: 0.365 }); }
+          if (DS >= 1) for (const x of [-Lp * 0.15, Lp * 0.15]) add("flach", x, zc, 0.28, 0.04, 0.07, 0x8b5a2b, { ly: 0.1 });
+        }
+      }
+    },
+    haltepunkt(K, o) { const { add, flaeche } = K, { W, D, vorn, DS } = o; DIENST_NEU.sbasis(K, o, "haltepunkt"); const Lp = W - 3.3;
+      add("flach", -Lp * 0.25, 0.3, 0.7, 0.28, 0.012, 0x9fc3d6, { ly: 0.07 }); add("flach", -Lp * 0.25, 0.22, 0.8, 0.025, 0.24, 0x3a3f47, { ly: 0.35 }); add("flach", -Lp * 0.25, 0.25, 0.4, 0.02, 0.06, 0x8b5a2b, { ly: 0.12 });
+      add("flach", Lp * 0.3, 0.3, 0.1, 0.22, 0.08, 0xe8493f, { ly: 0.07 }); add("flach", Lp * 0.42, 0.25, 0.02, 0.4, 0.02, 0x9aa0a8, { ly: 0.07 }); add("flach", Lp * 0.42, 0.25, 0.4, 0.1, 0.015, 0x1f4fbf, { ly: 0.4 });
+      flaeche(W * 0.12, (0.4 + vorn) / 2, 0.5, vorn - 0.4, 0xb9b4a8); if (DS >= 1) for (let k = 0; k < 4; k++) add("flach", -W * 0.3 + k * 0.12, vorn - 0.15, 0.02, 0.1, 0.12, 0x5d6470); return 0xc9c3b6; },
+    bahnhof2(K, o, X) { const { bau, add, zyl, flaeche } = K, { W, D, vorn, DS } = o; DIENST_NEU.sbasis(K, o, "bahnhof2");
+      const y = bau({ lz: 1.02, w: 3.0, d: 0.76, n: 2, art: "altbau", c: 0xd8c3a5, dach: "walm", dc: 0x5d6470, eingang: "portal", gesims: true, gauben: 2 });
+      zyl(0, 1.02 + 0.39, 0.22, 0.012, 0xf6f4ee, { ly: geschossH(2) - 0.1, rx: Math.PI / 2 }); add("flach", 0, 1.41, 0.9, 0.08, 0.012, 0x1f4fbf, { ly: geschossH(1) + 0.02 });
+      for (const sx of [-1, 1]) { add("flach", sx * 2.6, 0.46, 1.6, 0.03, 0.42, 0x6d7178, { ly: 0.42 }); for (let k = 0; k < 3; k++) add("flach", sx * (1.9 + k * 0.7), 0.46, 0.03, 0.35, 0.03, 0x5d6470, { ly: 0.07 }); }
+      add("flach", 1.6, -0.5, 0.36, 0.3, 0.3, 0x9fc3d6, { ly: 0.07 }); add("flach", 1.6, -0.5, 0.42, 0.03, 0.36, 0x3a3f47, { ly: 0.37 });
+      flaeche(0, vorn - 0.02, 3.6, 0.1, 0xd8cbb0); if (DS >= 1) for (const sx of [-2.4, 2.4]) X.fahne(sx, vorn - 0.1, 0x1f4fbf); return 0xd8c3a5; },
+    hauptbahnhof(K, o, X) { const { bau, add, zyl, flaeche, dach } = K, { W, D, vorn, DS } = o; DIENST_NEU.sbasis(K, o, "hauptbahnhof");
+      const hw = W - 2.6, hz0 = -2.55, hz1 = 1.12, hc = (hz0 + hz1) / 2, hd = hz1 - hz0;
+      for (let i = 0; i <= 6; i++) for (const zz of [hz0, -0.9, hz1]) add("flach", -hw / 2 + i * hw / 6, zz, 0.06, 0.95, 0.06, 0x5d6470);
+      add("flach", 0, hc, hw, 0.05, hd, 0x6d7178, { ly: 0.95 }); dach("sattel", 0, hc, hw, hd, 1.0, 0x9fc0d2, { h: 0.75, ue: 0.04 });
+      if (DS >= 1) for (let i = 0; i <= 6; i++) add("flach", -hw / 2 + i * hw / 6, hc, 0.04, 0.04, hd, 0x5d6470, { ly: 1.0 });
+      add("lampe", 0, hc, hw * 0.9, 0.01, hd * 0.8, 0xffffff, { ly: 0.92 });
+      const y = bau({ lz: 1.78, w: 5.6, d: 1.2, n: 3, art: "altbau", c: 0xd8c3a5, dach: "mansard", dc: 0x3f4650, eingang: "portal", gesims: true, baender: true, gauben: 4 });
+      const ty = bau({ lx: -2.1, lz: 1.85, w: 0.6, d: 0.6, n: 7, art: "altbau", c: 0xd8c3a5, dach: false, eingang: false, gesims: true }); dach("zelt", -2.1, 1.85, 0.62, 0.62, ty, 0x5f8f7a, { h: 0.5, ue: 0.02 });
+      zyl(-2.1, 2.16, 0.3, 0.012, 0xf6f4ee, { ly: ty - 0.32, rx: Math.PI / 2 }); add("flach", 0.5, 2.39, 2.0, 0.12, 0.012, 0x1f4fbf, { ly: geschossH(1) + 0.02 });
+      flaeche(0, vorn - 0.02, W * 0.7, 0.12, 0xd8cbb0); if (DS >= 1) for (let k = 0; k < 3; k++) add("flach", 1.8 + k * 0.3, vorn - 0.1, 0.24, 0.1, 0.14, 0xf2c14e, { ly: 0.01 }); return 0xd8c3a5; },
+    gueterbahnhof(K, o, X) { const { bau, add, flaeche } = K, { W, D, vorn, DS, r } = o; DIENST_NEU.sbasis(K, o, "gueterbahnhof");
+      flaeche(0, 1.2, W * 0.86, 1.25, 0x8c8f94); for (let i = 0; i < 9; i++) for (let j = 0; j < 2; j++) { const h = 1 + Math.floor(r() * 3); for (let k = 0; k < h; k++) add("flach", -W * 0.36 + i * 0.55, 0.85 + j * 0.62, 0.5, 0.2, 0.22, CONTAINER[(i * 3 + j + k) % CONTAINER.length], { ly: k * 0.2 }); }
+      for (const gx of [-1.4, 1.4]) { for (const sx of [-0.35, 0.35]) for (const zz of [-1.95, 1.95]) add("flach", gx + sx, zz, 0.07, 1.25, 0.07, 0xf2c14e); for (const sx of [-0.35, 0.35]) add("flach", gx + sx, 0, 0.07, 0.09, 4.0, 0xf2c14e, { ly: 1.25 }); add("flach", gx, -0.3, 0.8, 0.14, 0.3, 0xe0a52a, { ly: 1.2 }); add("flach", gx, -0.3, 0.004, 0.6, 0.004, 0x3a3d42, { ly: 0.6 }); add("flach", gx, -0.3, 0.5, 0.04, 0.22, 0x3a3d42, { ly: 0.56 }); }
+      bau({ lx: W / 2 - 0.8, lz: vorn - 0.35, w: 1.0, d: 0.5, n: 2, art: "buero", c: 0xd8dade, dach: "flach", eingang: "glas" }); if (DS >= 1) K.lkw(-W * 0.38, vorn - 0.25); return 0x8c8f94; },
+    ubahnhof(K, o, X) { const { add, flaeche } = K, { W, D, vorn, DS } = o; DIENST_NEU.sbasis(K, o, "ubahnhof");
+      flaeche(0, 0, W * 0.9, D * 0.8, 0xc9c3b6);
+      for (const sx of [-1, 1]) { const x = sx * (W / 2 - 1.1), z = vorn - 0.42; add("flach", x, z, 0.62, 0.012, 0.5, 0x3a3d42, { ly: 0.004 }); add("flach", x, z - 0.24, 0.66, 0.3, 0.02, 0x9fc3d6); for (const s2 of [-1, 1]) add("flach", x + s2 * 0.32, z, 0.02, 0.3, 0.5, 0x9fc3d6); add("flach", x, z, 0.7, 0.03, 0.56, 0x3a3f47, { ly: 0.3 }); add("flach", x + sx * 0.45, z + 0.2, 0.025, 0.55, 0.025, 0x9aa0a8); add("flach", x + sx * 0.45, z + 0.2, 0.16, 0.16, 0.03, 0x1f4fbf, { ly: 0.5 }); add("flach", x + sx * 0.45, z + 0.2, 0.06, 0.1, 0.034, 0xffffff, { ly: 0.53 }); add("lampe", x, z, 0.5, 0.008, 0.4, 0xffffff, { ly: 0.295 }); }
+      if (DS >= 1) { for (let k = 0; k < 3; k++) add("flach", -0.6 + k * 0.6, 0, 0.36, 0.02, 0.24, 0x5d6470, { ly: 0.01 }); K.baum(0, -0.6, 0.5); K.bank(-0.8, -0.55); K.bank(0.8, -0.55); } return 0xc9c3b6; },
     ausbau(K, o, X, kat, i, c) {
       const { bau, add, zyl, flaeche } = K, { W, D, DS } = o, s = i ? 1 : -1, w = Math.min(0.8, W * 0.42), x = s * (W / 2 - w / 2 - 0.04), z = -D / 2 + 0.4;
       if (kat === "feuer") {
@@ -1620,7 +1682,7 @@ function dienstTeile(d) {
   const autos = (lx, lz, n, c) => { for (let k = 0; k < n; k++) box("flach", lx + (k - (n - 1) / 2) * 0.2, lz, 0.13, 0.11, 0.24, c || PAL.auto[(d.id + k) % PAL.auto.length], { ly: 0.01 }); };
   const kreuz = (lx, lz, y, s, c) => { box("flach", lx, lz, s, s * 0.32, 0.02, c, { ly: y }); box("flach", lx, lz, s * 0.32, s, 0.02, c, { ly: y - s * 0.34 }); };
   if (DIENST_NEU[d.typ]) {
-    const DS = detailStufe(), K = baukasten(T, r, W, D, vorn, d.id, DS), o = { W, D, vorn, r, DS }, X = DIENST_NEU.setup(K, o);
+    const DS = detailStufe(), K = baukasten(T, r, W, D, vorn, d.id, DS), o = { W, D, vorn, r, DS, echt: !!d.dienst }, X = DIENST_NEU.setup(K, o);
     boden(D0.kat === "bildung" || D0.kat === "freizeit" ? 0xc9c3b6 : D0.kat === "gesund" ? 0xb9c4a8 : 0xb5b3ad);
     const c = DIENST_NEU[d.typ](K, o, X); T.tor = o.tore && o.tore.length ? o.tore[Math.floor(o.tore.length / 2)] : { lx: 0, lz: vorn - 0.25 };
     if (d.ausbau && ausbaubar(D0)) for (let i = 0; i < d.ausbau; i++) DIENST_NEU.ausbau(K, o, X, D0.kat, i, c);
@@ -1696,7 +1758,7 @@ function neuerDienst(o, alt) {
   const rr = Math.max(D.w, D.d) * 0.72; baeumeFaellen({ x0: d.x - rr, x1: d.x + rr, z0: d.z - rr, z1: d.z + rr }, (bx, bz) => !!inDienst(bx, bz, 0.15));
   return d;
 }
-function dienstWeg(d) { hallNeu = true; parkenWeg(d);
+function dienstWeg(d) { hallNeu = true; parkenWeg(d); if (istStation(d)) { for (const k of [...gKanten.values()]) if (k.station === d.id) gKanteWeg(k); gleisGeaendert(); }
   dienste.delete(d.id); haeuserNeu = true; versorgungZeit = -99; if (d.typ === "bahnhof") bahnGleiseZeichnen();
   const e = naechsteKante(d, 5, (k) => TYP[k.typ].zellen); if (e) { zellenFuer(e.k); }
   dreckZeichnen(); speichernBald();
@@ -1956,14 +2018,14 @@ function geistBauen(typ) {
   }
 }
 function dienstVorschau(p) {
-  const plan = dienstWahl === "bahnhof" ? bahnhofPlan(p) : dienstPlan(p, dienstWahl), D = DIENSTE[dienstWahl]; dienstPlanAktuell = plan;
+  const plan = STATIONEN[dienstWahl] ? stationPlan(p, dienstWahl) : dienstWahl === "bahnhof" ? bahnhofPlan(p) : dienstPlan(p, dienstWahl), D = DIENSTE[dienstWahl]; dienstPlanAktuell = plan;
   geist.visible = true; geist.position.set(plan.x, G + 0.01, plan.z); geist.rotation.set(0, plan.rot, 0); geist.scale.set(plan.W, 0.03, plan.D); geist.material.color.setHex(plan.ok ? 0x7dffb0 : 0xff5a5a); geist.material.opacity = 0.55;
   if (dienstWahl !== "bahnhof") { geistBauen(dienstWahl); geistModell.visible = true; geistModell.position.set(plan.x, G, plan.z); geistModell.rotation.set(0, plan.rot, 0); geistMat.emissive.setHex(plan.ok ? 0x000000 : 0x661010); geistMat.opacity = plan.ok ? 0.8 : 0.55; }
   const strasse = STRASSEN_DIENST.has(D.kat), rad = strasse ? 0 : D.radius || 0; geistRing.visible = geistFlaeche.visible = rad > 0;
   reichZeichnen(strasse && plan.zug ? D.kat : null, strasse && plan.zug ? reichweite(plan.zug, D.radius * REICH_FAKTOR) : null);
   if (rad) { geistRing.position.set(plan.x, G + 0.06, plan.z); geistRing.scale.setScalar(rad); geistFlaeche.position.set(plan.x, G + 0.055, plan.z); geistFlaeche.scale.setScalar(rad); }
-  frage(D.em + " " + D.name + " · " + euro(D.preis) + " · " + euro(D.unterhalt) + "/Wo" + (plan.ok ? (plan.haeuser ? " · reißt " + plan.haeuser + " Haus ab" : "") : " – " + plan.grund), plan.ok, () => {
-    merkeRueck(); const d = dienstBauen(dienstPlanAktuell); if (!d) return; geist.visible = geistRing.visible = geistFlaeche.visible = geistModell.visible = false; frageZu();
+  frage(D.em + " " + D.name + " · " + euro(D.preis) + " · " + euro(D.unterhalt) + "/Wo" + (plan.station ? (plan.snap ? " · 🔗 am Gleis eingerastet" : " · ⟳ R/Knopf dreht") : "") + (plan.ok ? (plan.haeuser ? " · reißt " + plan.haeuser + " Haus ab" : "") : " – " + plan.grund), plan.ok, () => {
+    merkeRueck(); const d = STATIONEN[dienstWahl] ? stationBauen(dienstPlanAktuell) : dienstBauen(dienstPlanAktuell); if (!d) return; geist.visible = geistRing.visible = geistFlaeche.visible = geistModell.visible = false; frageZu();
     tipp("✅ " + D.name + " gebaut! " + (D.depot ? "Jetzt fahren die Fahrzeuge deiner Linien los." : D.kat === "verkehr" ? "" : D.radius ? "Die eingefärbten Straßen zeigen, wie weit es wirkt." : "Strom und Rohre laufen automatisch durch die Straßen."), 3500); versorgungRechnen();
     if (werkzeug === "verkehr") { busModus = "halt"; unterleiste(); } else if (werkzeug === "gleis") { gleisModus = "gerade"; unterleiste(); }
   });
@@ -2014,18 +2076,28 @@ function dienstInfo(d) {
    Nahverkehr: Haltestellen und Buslinien
    ================================================================ */
 const halte = new Map(), linien = new Map(); let haltId = 1, linieId = 1;
-const LINIEN_FARBEN = [0xe8493f, 0x3f7fe8, 0x2fbf6a, 0xf2a93b, 0x9a5be8, 0xe85b9a, 0x2fb8c9, 0x8a6a3a];
+const LINIEN_FARBEN = [0xe8493f, 0x3f7fe8, 0x2fbf6a, 0xf2a93b, 0x9a5be8, 0xe85b9a, 0x2fb8c9, 0x8a6a3a, 0x1f3a8a, 0x7fbf2f, 0xd9302f, 0x5d6470];
+const HALT_NAMEN = ["Marktplatz", "Lindenweg", "Am Park", "Schulstraße", "Bergstraße", "Kirchplatz", "Mühlenweg", "Hafenblick", "Rosengarten", "Ahornallee", "Brunnenplatz", "Gartenstadt", "Sonnenhang", "Am Wäldchen", "Seeufer", "Birkenhof", "Neue Mitte", "Alter Markt", "Talblick", "Wiesengrund", "Eichendorff-Platz", "Feldstraße", "Kastanienhof", "Uferweg"];
+const HALT_ORTE = { rathaus: "Rathaus", krankenhaus: "Krankenhaus", bahnhof: "Bahnhof", grundschule: "Schule", gymnasium: "Gymnasium", uni: "Universität", feuerwache: "Feuerwache", polizei: "Polizei", museum: "Museum", stadion: "Stadion", schwimmbad: "Schwimmbad", zoo: "Zoo", busdepot: "Betriebshof", bibliothek: "Bibliothek", park: "Stadtpark", grosspark: "Stadtpark" };
+function haltName(h) { if (h.name) return h.name; let best = null, bd = 4; for (const d of dienste.values()) { const e = Math.hypot(d.x - h.x, d.z - h.z); if (HALT_ORTE[d.typ] && e < bd) { bd = e; best = d; } } return best ? HALT_ORTE[best.typ] : HALT_NAMEN[(h.id * 7) % HALT_NAMEN.length]; }
 const BUS_MODELLE = { mix: "🔀 Gemischt", bus: "🚌 Stadtbus", gelenkbus: "🚍 Gelenkbus", doppeldecker: "🚌 Doppeldecker", ebus: "⚡ Elektrobus", minibus: "🚐 Kleinbus" };
 const HALT_PREIS = 300, BUS_UNTERHALT = 120, HALT_RADIUS = 6;
 function haltTeile(h) {
-  const k = kanten.get(h.k), o = k ? TYP[k.typ].halb - 0.13 : 0.55, T = [];
+  const k = kanten.get(h.k), o = k ? TYP[k.typ].halb - 0.13 : 0.55, T = [], P = (b, lx, ly, lz, sx, sy, sz, c) => T.push({ b, lx, ly, lz, sx, sy, sz, c }), DS = detailStufe(), farben = h.farben || [];
   for (const s of [1, -1]) {
     const z = s * o;
-    T.push({ b: "flach", lx: 0, ly: 0, lz: z, sx: 0.5, sy: 0.26, sz: 0.012, c: 0x9fc3d6 });
-    T.push({ b: "flach", lx: 0, ly: 0.26, lz: z + s * 0.05, sx: 0.56, sy: 0.025, sz: 0.2, c: 0x3a3f47 });
-    T.push({ b: "flach", lx: -0.25, ly: 0, lz: z + s * 0.08, sx: 0.02, sy: 0.26, sz: 0.02, c: 0x3a3f47 }, { b: "flach", lx: 0.25, ly: 0, lz: z + s * 0.08, sx: 0.02, sy: 0.26, sz: 0.02, c: 0x3a3f47 });
-    T.push({ b: "flach", lx: 0.36, ly: 0, lz: z + s * 0.1, sx: 0.02, sy: 0.38, sz: 0.02, c: 0x9aa0a8 }, { b: "flach", lx: 0.36, ly: 0.33, lz: z + s * 0.1, sx: 0.12, sy: 0.12, sz: 0.015, c: 0xf2c14e });
-    T.push({ b: "flach", lx: 0, ly: 0.05, lz: z + s * 0.06, sx: 0.4, sy: 0.02, sz: 0.06, c: 0x8b5a2b });
+    if (h.tram) { P("flach", 0, 0, z - s * 0.12, 1.5, 0.035, 0.26, 0xc9c3b6); P("flach", 0, 0.035, z - s * 0.24, 1.5, 0.004, 0.025, 0xf2f2f2); if (DS >= 1) P("flach", 0, 0.035, z - s * 0.2, 1.5, 0.002, 0.03, 0xe8d39a); }
+    else { P("flach", 0, 0.004, z - s * 0.14, 1.1, 0.006, 0.16, 0x4a4d52); if (DS >= 1) for (let i = 0; i < 4; i++) P("flach", -0.36 + i * 0.24, 0.011, z - s * 0.23, 0.14, 0.002, 0.02, 0xf2c14e); }
+    const y0 = h.tram ? 0.035 : 0;
+    P("flach", 0, y0, z + s * 0.07, 0.62, 0.27, 0.012, 0x9fc3d6);
+    for (const x of [-0.31, 0.31]) P("flach", x, y0, z + s * 0.02, 0.012, 0.27, 0.1, 0x9fc3d6);
+    P("flach", 0, y0 + 0.27, z + s * 0.02, 0.68, 0.025, 0.2, 0x3a3f47);
+    for (const x of [-0.31, 0.31]) P("flach", x, y0, z + s * 0.075, 0.02, 0.27, 0.02, 0x3a3f47);
+    P("flach", -0.05, y0 + 0.05, z + s * 0.04, 0.4, 0.02, 0.06, 0x8b5a2b);
+    P("lampe", 0.2, y0 + 0.04, z + s * 0.08, 0.18, 0.2, 0.016, 0xffffff);
+    if (DS >= 1) P("lampe", 0, y0 + 0.26, z - s * 0.02, 0.5, 0.008, 0.06, 0xffffff);
+    P("flach", 0.45, y0, z - s * 0.06, 0.02, 0.42, 0.02, 0x9aa0a8); P("flach", 0.45, y0 + 0.36, z - s * 0.06, 0.12, 0.12, 0.015, h.tram ? 0xf2c14e : 0x2f8f4f);
+    farben.slice(0, 4).forEach((c, i) => P("flach", 0.45, y0 + 0.3 - i * 0.035, z - s * 0.06, 0.12, 0.028, 0.017, c));
   }
   return T;
 }
@@ -2062,7 +2134,7 @@ function haltestelleBedienen(f) {
   const kap = PLAETZE[f.typ] || 50; f.insassen = f.insassen || 0;
   const aus = Math.round(f.insassen * (0.3 + Math.random() * 0.4)); f.insassen -= aus;
   const ein = Math.max(0, Math.min(Math.floor(h.wartend), kap - f.insassen)); h.wartend -= ein; f.insassen += ein;
-  L.fahrgaeste = (L.fahrgaeste || 0) + ein; L.plaetzeSumme = (L.plaetzeSumme || 0) + kap; L.besetztSumme = (L.besetztSumme || 0) + f.insassen;
+  L.fahrgaeste = (L.fahrgaeste || 0) + ein; L.geldWoche = (L.geldWoche || 0) + ein * ticketPreis; L.plaetzeSumme = (L.plaetzeSumme || 0) + kap; L.besetztSumme = (L.besetztSumme || 0) + f.insassen;
   nvWoche.fahrten += ein; nvWoche.einnahmen += ein * ticketPreis; geld += ein * ticketPreis;
   return 1.6 + (ein + aus) * 0.02;
 }
@@ -2088,7 +2160,8 @@ function linienTakt() {
 let busAbdeckung = { leute: 0, jobs: 0, anteil: 0, fahrgaeste: 0 };
 function busRechnen() {
   const aktiv = new Set(), tram = new Set(); for (const L of linien.values()) for (const id of L.halte) { aktiv.add(id); if (L.art === "tram") tram.add(id); }
-  for (const h of halte.values()) { h.inLinie = aktiv.has(h.id); h.tram = tram.has(h.id); h.umgebung = 0; }
+  const farbenVon = new Map(); for (const L of linien.values()) for (const id of L.halte) { const a = farbenVon.get(id) || []; if (!a.includes(L.farbe)) a.push(L.farbe); farbenVon.set(id, a); }
+  for (const h of halte.values()) { const tr = tram.has(h.id), fb = farbenVon.get(h.id) || []; h.inLinie = aktiv.has(h.id); if (tr !== !!h.tram || fb.join() !== (h.farben || []).join()) { h.tram = tr; h.farben = fb; h.teile = haltTeile(h); haeuserNeu = true; } h.umgebung = 0; }
   let l = 0, j = 0, alle = 0;
   for (const h of haeuser.values()) {
     let nah = null; for (const s of halte.values()) if (s.inLinie && Math.hypot(s.x - h.x, s.z - h.z) < (s.tram ? HALT_RADIUS + 2.5 : HALT_RADIUS)) { nah = s; break; }
@@ -2098,7 +2171,7 @@ function busRechnen() {
   let tramPlus = 0; for (const L of linien.values()) if (L.art === "tram") tramPlus += L.busse;
   busAbdeckung = { leute: l, jobs: j, anteil: alle ? Math.min(1, l / alle * (1 + Math.min(0.4, tramPlus * 0.08))) : 0, fahrgaeste: Math.round((l * 0.6 + j * 0.3) * (1 + Math.min(0.5, tramPlus * 0.1))) };
 }
-const busKosten = () => { let b = 0; for (const L of linien.values()) b += (L.busse || 1) * (L.art === "tram" ? 2 : 1); return b * BUS_UNTERHALT + halte.size * 5; };
+const busKosten = () => { let b = 0; for (const L of linien.values()) b += (L.busse || 1) * (L.art === "tram" ? 2 : 1); let z = 0; for (const L of zuglinien.values()) z += (L.zuege || 2) * 300; return b * BUS_UNTERHALT + halte.size * 5 + z; };
 const busEinnahmen = () => 0;   // Tickets werden direkt beim Einsteigen bezahlt
 /* Linien auf der Karte */
 const linienMesh = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false, toneMapped: false }));
@@ -2118,6 +2191,11 @@ function gleiseZeichnen() {
   }
   gleiseMesh.geometry.dispose(); gleiseMesh.geometry = pos.length ? geoAus(pos, col) : new THREE.BufferGeometry();
 }
+function pfeil(pos, col, q, y, c) {
+  const nx = -q.tz, nz = q.tx, T = [q.x + q.tx * 0.14, q.z + q.tz * 0.14], A = [q.x - q.tx * 0.06 + nx * 0.11, q.z - q.tz * 0.06 + nz * 0.11], B = [q.x - q.tx * 0.06 - nx * 0.11, q.z - q.tz * 0.06 - nz * 0.11];
+  const up = (A[1] - T[1]) * (B[0] - T[0]) - (A[0] - T[0]) * (B[1] - T[1]) > 0, w = { r: Math.min(1, c.r * 0.5 + 0.5), g: Math.min(1, c.g * 0.5 + 0.5), b: Math.min(1, c.b * 0.5 + 0.5) };
+  pos.push(T[0], y, T[1], ...(up ? [A[0], y, A[1], B[0], y, B[1]] : [B[0], y, B[1], A[0], y, A[1]])); for (let v = 0; v < 3; v++) col.push(w.r, w.g, w.b);
+}
 function linienZeichnen() {
   linienNeu = false; const pos = [], col = []; let n = 0;
   for (const L of linien.values()) {
@@ -2129,7 +2207,7 @@ function linienZeichnen() {
         const k = kanten.get(st.k); if (!k) return;
         const s0 = ri === 0 ? w.s0 : 0, s1 = ri === w.route.length - 1 ? w.s1 : k.len, pts = [];
         for (let s = s0; s <= s1 + 1e-6; s += 0.5) pts.push(spurPunkt(k, st.dir, Math.min(s, s1), off));
-        if (pts.length > 1) band(pos, col, pts.map((q) => ({ x: q.x, z: q.z, tx: q.tx, tz: q.tz })), 0.045, G + 0.06, c);
+        if (pts.length > 1) { band(pos, col, pts.map((q) => ({ x: q.x, z: q.z, tx: q.tx, tz: q.tz })), 0.045, G + 0.06, c); for (let j = 2; j < pts.length - 1; j += 4) pfeil(pos, col, pts[j], G + 0.062, c); }
       });
     }
     for (const id of L.halte) { const h = halte.get(id); if (h) scheibe(pos, col, h.x, h.z, 0.32, G + 0.065, c); }
@@ -2178,7 +2256,7 @@ function linieFertig() {
   merkeRueck();
   const nr = Math.max(0, ...[...linien.values()].map((L) => L.nr)) + 1, tram = busModus === "tram", L = { id: linieId++, nr, takt: 40, art: tram ? "tram" : "bus", farbe: LINIEN_FARBEN[(nr - 1) % LINIEN_FARBEN.length], halte: linieBau.slice(), busse: Math.max(1, Math.round(linieBau.length / (tram ? 3 : 2))) };
 
-  linien.set(L.id, L); linieBau = []; linieWahl = L.id; frageZu(); busModus = "halt"; busRechnen(); linienNeu = true; speichernBald(); unterleiste();
+  linien.set(L.id, L); linieBau = []; linieWahl = L.id; frageZu(); busModus = "halt"; busRechnen(); linienNeu = true; speichernBald(); unterleiste(); lfZeigen("bus", L.id);
   const dep = depotFuer(L, halte.get(L.halte[0]));
   tipp(dep ? (tram ? "🚋 Straßenbahn " : "🚌 Linie ") + nr + " fährt! Mit + und − änderst du den Takt." : "⚠️ Linie " + nr + " ist fertig – bau noch ein " + (tram ? "Straßenbahn-Depot" : "Busdepot") + ", dann fahren die Fahrzeuge los.", 4500);
 }
@@ -2224,7 +2302,7 @@ function meilensteinPruefen() {
 }
 function xpZeigen() { const el = $("xpBalken"); if (!el) return; const a = MS[ms], n = MS[ms + 1]; el.style.width = (n ? Math.min(100, (xp - a.xp) / (n.xp - a.xp) * 100) : 100) + "%"; $("xpName").textContent = a.name + (ep ? " · " + ep + " ⭐" : ""); }
 function wocheTakt() {
-  nvLetzte = nvWoche; nvWoche = { fahrten: 0, einnahmen: 0 }; for (const L of linien.values()) { L.letzteWoche = L.fahrgaeste || 0; L.auslastung = L.plaetzeSumme ? L.besetztSumme / L.plaetzeSumme : 0; L.fahrgaeste = 0; L.plaetzeSumme = L.besetztSumme = 0; }
+  nvLetzte = nvWoche; nvWoche = { fahrten: 0, einnahmen: 0 }; for (const L of zuglinien.values()) { L.letzteWoche = L.fahrgaeste || 0; L.letzteEinnahmen = L.geldWoche || 0; L.auslastung = L.plaetzeSumme ? Math.min(1, L.besetztSumme / L.plaetzeSumme) : 0; L.fahrgaeste = L.geldWoche = L.plaetzeSumme = L.besetztSumme = 0; } for (const L of linien.values()) { L.letzteWoche = L.fahrgaeste || 0; L.letzteEinnahmen = L.geldWoche || 0; L.geldWoche = 0; L.auslastung = L.plaetzeSumme ? L.besetztSumme / L.plaetzeSumme : 0; L.fahrgaeste = 0; L.plaetzeSumme = L.besetztSumme = 0; }
   const k = kennzahlen(); geld += k.saldo; letzteWoche = k;
   for (const kr of kredite) kr.rest -= Math.min(kr.rate, kr.rest); if (kredite.some((kr) => kr.rest <= 0.5)) { kredite = kredite.filter((kr) => kr.rest > 0.5); tipp("🏦 Ein Kredit ist abbezahlt!", 3000); }
   if (++monatXp >= 4) { monatXp = 0; xpPlus(Math.round(k.e * 0.02 * zufriedenheit() / 100)); }
@@ -2401,6 +2479,7 @@ const FZ = {
   bus: { name: "Bus", L: 1.3, B: 0.29, rad: 0.056, achsen: [0.43, -0.36], beschl: 1.5, brems: 5, vf: 0.82, lack: 0xf2c14e, form: { art: "kasten", sill: 0.06, belt: 0.18, roof: 0.4, nase: 0.18, hf: 0.645, wf: 0.635, glasBis: 0.645, band: true, extra: (t) => { t.push(kiste(0, 0.408, 0, 1.0, 0.02, 0.24, 0xd8d8d8), kiste(0.66, 0.36, 0, 0.01, 0.03, 0.14, SCHWARZ)); } } },
   lkw: { name: "Lkw", L: 0.95, B: 0.28, rad: 0.055, achsen: [0.07], beschl: 1.3, brems: 4.5, vf: 0.8, vorneL: 0.15, hintenL: 0.8, form: { art: "kasten", L: 0.27, sill: 0.06, belt: 0.2, roof: 0.36, nase: 0.18, hf: 0.13, wf: 0.115, glasBis: 0.06, extra: (t) => { t.push(kiste(-0.2, 0.065, 0, 0.16, 0.05, 0.2, ZIER), kiste(-0.09, 0.27, 0, 0.04, 0.14, 0.22, ZIER)); } } }
 };
+const ZUG_MODELLE = { sbahn: "🚈 S-Bahn", regio: "🚆 Regionalzug", ice: "🚄 ICE" };
 const PLAETZE = { bus: 50, gelenkbus: 90, doppeldecker: 80, ebus: 50, minibus: 20, tram: 150 };
 for (const [k, t] of Object.entries(FZ)) {
   const f = t.form, o = Object.assign({ L: t.L, B: t.B }, f);
@@ -2479,8 +2558,10 @@ const anzahlTyp = (t) => { let n = 0; for (const d of dienste.values()) if (d.ty
 const gKnoten = new Map(), gKanten = new Map(); let gnId = 1, gkId = 1, gleisVersion = 0;
 const GLEIS_PREIS = 120, zuglinien = new Map(); let zlId = 1;
 function neuerGKnoten(p, id) { const n = { id: id || gnId++, x: p.x, z: p.z, kanten: new Set(), aussen: false }; gnId = Math.max(gnId, n.id + 1); gKnoten.set(n.id, n); return n; }
+const UNTER_MAT = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.6, depthWrite: false, toneMapped: false });
 function gleisMesh(k) {
   const pos = [], col = [], Y = (d) => (p) => G + d + ebeneY(k, p.s);
+  if (k.ebene === -2) { band(pos, col, k.pts, 0.2, G + 0.05, farbe(0x6b4fd8)); band(pos, col, k.pts, 0.02, G + 0.052, farbe(0xd8ccff), 0.1); band(pos, col, k.pts, 0.02, G + 0.052, farbe(0xd8ccff), -0.1); const m = new THREE.Mesh(geoAus(pos, col), UNTER_MAT); m.renderOrder = 3; m.visible = typeof werkzeug !== "undefined" && werkzeug === "gleis"; return m; }
   if (k.ebene >= 0) {
     band(pos, col, k.pts, 0.3, Y(0.016), farbe(0x8a8378));
     for (let s = 0.2; s < k.len; s += 0.32) { const a = Object.assign({ s }, punktBei(k, s)), s2 = Math.min(k.len, s + 0.07), b = Object.assign({ s: s2 }, punktBei(k, s2)); band(pos, col, [a, b], 0.18, Y(0.022), farbe(0x5a4636)); }
@@ -2498,7 +2579,7 @@ function neueGKante(aId, bId, c, id, opt) {
 }
 function gKanteWeg(k) { szene.remove(k.mesh); k.mesh.geometry.dispose(); gKanten.delete(k.id); for (const nid of [k.a, k.b]) { const n = gKnoten.get(nid); if (!n) continue; n.kanten.delete(k.id); if (!n.kanten.size) gKnoten.delete(nid); } }
 function gKanteTeilen(k, t) {
-  const a = gKnoten.get(k.a), b = gKnoten.get(k.b), m = bez(a, k.c, b, t), n = neuerGKnoten(m), c1 = lerp(a, k.c, t), c2 = lerp(k.c, b, t), aId = k.a, bId = k.b, ax = { x: a.x, z: a.z }, bx = { x: b.x, z: b.z }, opt = { aussen: k.aussen };
+  const a = gKnoten.get(k.a), b = gKnoten.get(k.b), m = bez(a, k.c, b, t), n = neuerGKnoten(m), c1 = lerp(a, k.c, t), c2 = lerp(k.c, b, t), aId = k.a, bId = k.b, ax = { x: a.x, z: a.z }, bx = { x: b.x, z: b.z }, opt = { aussen: k.aussen, einbahn: k.einbahn || 0, station: k.station || 0 };
   gKanteWeg(k); if (!gKnoten.has(aId)) neuerGKnoten(ax, aId); if (!gKnoten.has(bId)) neuerGKnoten(bx, bId);
   neueGKante(aId, n.id, c1, null, opt); neueGKante(n.id, bId, c2, null, opt); return n;
 }
@@ -2512,9 +2593,10 @@ function gleisKreuzungen(pts, ausserNah) {
   liste.sort((a, b) => a.t - b.t); return liste.filter((q, i) => !liste.slice(0, i).some((o) => abst(o, q) < 1.5));
 }
 function gleisPlanen(A, C, Bp, ebene) {
-  const { pts, len } = abtasten(A, C, Bp), plan = { A, C, B: Bp, pts, laenge: len, kosten: Math.round(len * GLEIS_PREIS * (ebene > 0 ? 3 : ebene < 0 ? 4 : 1)), ok: true, grund: "", ebene, kreuz: [], gleis: true };
+  const { pts, len } = abtasten(A, C, Bp), plan = { A, C, B: Bp, pts, laenge: len, kosten: Math.round(len * GLEIS_PREIS * (ebene === -2 ? 5 : ebene > 0 ? 3 : ebene < 0 ? 4 : 1)), ok: true, grund: "", ebene, kreuz: [], gleis: true };
   const nein = (g) => { plan.ok = false; plan.grund = plan.grund || g; }, kk = { ebene, len }, ey = (q) => ebeneY(kk, q.s);
-  if (len < 2) nein("Zu kurz"); if (len > 120) nein("Zu lang – setz einen Zwischenpunkt"); if (ebene && len < 7) nein("Brücken und Tunnel brauchen mindestens 7 Felder");
+  if (len < 2) nein("Zu kurz"); if (len > 120) nein("Zu lang – setz einen Zwischenpunkt"); if (ebene && ebene !== -2 && len < 7) nein("Brücken und Tunnel brauchen mindestens 7 Felder");
+  for (const q of pts) { if (abst(q, A) < 0.9 || abst(q, Bp) < 0.9) continue; const sd = inDienst(q.x, q.z, 0); if (sd && STATIONEN[sd.typ] && !!STATIONEN[sd.typ].unter === (ebene === -2)) { nein("Nicht quer durch den Bahnhof – schließ an den Gleisenden an"); break; } }
   for (const q of pts) { if (!aufLand(q.x, q.z, ebene && Math.abs(ey(q)) > 0.3 ? -99 : ebene ? 1.5 : 3.0)) { if (!ebene) plan.wasser = true; nein(ebene ? "Die Enden müssen auf festem Land liegen" : "Zu nah am Wasser – bau eine 🌉 Brücke"); break; } if (!imBesitz(q.x, q.z)) { nein("Außerhalb deiner Gebiete"); break; } }
   for (let i = 3; i < pts.length - 3 && plan.ok; i++) { const a = pts[i - 3], b = pts[i + 3]; if (a.tx * b.tx + a.tz * b.tz < 0.8) nein("Kurve zu eng für Züge – mach sie weiter"); }
   if (plan.ok && !ebene) { plan.kreuz = gleisKreuzungen(pts, [A, Bp]); for (const q of pts) { const n = naechsterKnoten(q, 1.6); if (n && [...n.kanten].length > 2) { nein("Gleise dürfen nicht über eine Straßenkreuzung"); break; } } }
@@ -2526,9 +2608,10 @@ function gleisBauen(plan) {
   const { pts } = abtasten(n0, plan.C, n2), C = plan.C;
   const kr = plan.ebene ? [] : gleisKreuzungen(pts, [n0, n2]).map((q) => ({ t: q.t, n: gKnotenFuer(q) })).filter((q) => q.n !== n0 && q.n !== n2);
   const ts = [0].concat(kr.map((q) => q.t), [1]), ns = [n0].concat(kr.map((q) => q.n), [n2]);
-  for (let j = 0; j < ns.length - 1; j++) { const ta = ts[j], tb = ts[j + 1], c = { x: (1 - ta) * (1 - tb) * n0.x + ((1 - ta) * tb + ta * (1 - tb)) * C.x + ta * tb * n2.x, z: (1 - ta) * (1 - tb) * n0.z + ((1 - ta) * tb + ta * (1 - tb)) * C.z + ta * tb * n2.z }; if (ns[j] === ns[j + 1] || abst(ns[j], ns[j + 1]) < 0.6) continue; neu.push(neueGKante(ns[j].id, ns[j + 1].id, c, null, plan.ebene ? { ebene: plan.ebene } : (plan.aussen ? { aussen: true } : null))); }
+  for (let j = 0; j < ns.length - 1; j++) { const ta = ts[j], tb = ts[j + 1], c = { x: (1 - ta) * (1 - tb) * n0.x + ((1 - ta) * tb + ta * (1 - tb)) * C.x + ta * tb * n2.x, z: (1 - ta) * (1 - tb) * n0.z + ((1 - ta) * tb + ta * (1 - tb)) * C.z + ta * tb * n2.z }; if (ns[j] === ns[j + 1] || abst(ns[j], ns[j + 1]) < 0.6) continue; neu.push(neueGKante(ns[j].id, ns[j + 1].id, c, null, plan.ebene ? { ebene: plan.ebene, einbahn: plan.einbahn || 0 } : (plan.aussen ? { aussen: true } : { einbahn: plan.einbahn || 0 }))); }
   for (const k of neu) { const unter = (x, z) => k.ebene < 0 && ebeneY(k, abstandZuLinie({ x, z }, k.pts, true).s) < -0.3; for (const z of zellenIn(k.h)) if (abstandZuLinie(z, k.pts) < 0.85 && !unter(z.x, z.z)) zelleWeg(z); baeumeFaellen(k.h, (x, z) => abstandZuLinie({ x, z }, k.pts) < 0.5 && !unter(x, z)); }
   if (neu.length && plan.kosten) { geld -= plan.kosten; zeigeWerte(); }
+  if (plan.einbahn) for (const k of neu) k.einbahn = plan.einbahn;
   gleisGeaendert(); return neu;
 }
 function gleisGeaendert() { gleisVersion++; uebergaengeBerechnen(); brueckenZeichnen(); zellenNeu = true; speichernBald(); }
@@ -2543,24 +2626,126 @@ function aussenGleisBauen() {
 function kreuztKante(A, B, k) { for (let i = 0; i < k.pts.length - 1; i++) { const p = k.pts[i], q = k.pts[i + 1], d = (B.x - A.x) * (q.z - p.z) - (B.z - A.z) * (q.x - p.x); if (Math.abs(d) < 1e-9) continue; const ua = ((p.x - A.x) * (q.z - p.z) - (p.z - A.z) * (q.x - p.x)) / d, ub = ((p.x - A.x) * (B.z - A.z) - (p.z - A.z) * (B.x - A.x)) / d; if (ua > 0 && ua < 1 && ub >= 0 && ub <= 1) return true; } return false; }
 const randGleis = () => { let best = null, bd = -1; for (const n of gKnoten.values()) { const d = Math.hypot(n.x, n.z); if (d > bd) { bd = d; best = n; } } return best && bd > 150 ? best : null; };
 /* Wegsuche auf den Gleisen → Linienzug zum Fahren */
-function gleisWeg(start, ziel) {
-  const ks = gKanten.get(start.k), kz = gKanten.get(ziel.k); if (!ks || !kz) return null;
-  const stueck = (k, s0, s1) => { const out = [], d = s1 >= s0 ? 1 : -1; for (let s = s0; d > 0 ? s <= s1 : s >= s1; s += 0.4 * d) { const p = punktBei(k, s); out.push({ x: p.x, z: p.z, y: ebeneY(k, s) }); } const p = punktBei(k, s1); out.push({ x: p.x, z: p.z, y: ebeneY(k, s1) }); return out; };
-  if (ks === kz) return stueck(ks, start.S, ziel.S);
-  const g = new Map(), von = new Map(), offen = [[0, ks.a, null], [0, ks.b, null]]; g.set(ks.a, start.S); g.set(ks.b, ks.len - start.S); offen[0][0] = start.S; offen[1][0] = ks.len - start.S;
-  let schritt = 0;
-  while (offen.length && schritt++ < 5000) { offen.sort((a, b) => a[0] - b[0]); const [w, id] = offen.shift(); if (w > (g.get(id) ?? 1e9)) continue; const n = gKnoten.get(id); if (!n) continue; for (const kid of n.kanten) { const k = gKanten.get(kid); if (k === ks) continue; const nach = k.a === id ? k.b : k.a, w2 = w + k.len; if (w2 < (g.get(nach) ?? 1e9)) { g.set(nach, w2); von.set(nach, { k, von: id }); offen.push([w2, nach]); } } }
-  const ende = [[kz.a, ziel.S], [kz.b, kz.len - ziel.S]].filter(([nid]) => g.has(nid)).sort((a, b) => (g.get(a[0]) + a[1]) - (g.get(b[0]) + b[1]))[0]; if (!ende) return null;
-  const kette = []; let nid = ende[0]; while (von.has(nid)) { const v = von.get(nid); kette.unshift({ k: v.k, von: v.von, nach: nid }); nid = v.von; }
-  if (nid !== ks.a && nid !== ks.b) return null;
-  let pts = stueck(ks, start.S, nid === ks.a ? 0 : ks.len);
-  for (const st of kette) pts = pts.concat(stueck(st.k, st.k.a === st.von ? 0 : st.k.len, st.k.a === st.von ? st.k.len : 0).slice(1));
-  pts = pts.concat(stueck(kz, ende[0] === kz.a ? 0 : kz.len, ziel.S).slice(1));
-  return pts;
-}
+function gleisWeg(start, ziel) { return gleisWeg2(start, [ziel]); }
 function pfadVorbereiten(pts) { let d = 0; pts[0].d = 0; for (let i = 1; i < pts.length; i++) { d += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z); pts[i].d = d; } return { pts, len: d }; }
 function pfadPunkt(P, u) { const pts = P.pts; u = klemme(u, 0, P.len); let lo = 0, hi = pts.length - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (pts[m].d <= u) lo = m; else hi = m; } const a = pts[lo], b = pts[hi], t = (u - a.d) / Math.max(1e-6, b.d - a.d), dx = b.x - a.x, dz = b.z - a.z, l = Math.hypot(dx, dz) || 1; return { x: a.x + dx * t, z: a.z + dz * t, y: a.y + (b.y - a.y) * t, tx: dx / l, tz: dz / l }; }
-/* Bahnhöfe auf Gleisen */
+/* Bahnhöfe mit eigenen Gleisen: an den Enden anschließen, Weichen entstehen von selbst */
+const STATIONEN = {
+  haltepunkt: { gleise: [-0.45], steige: [[-0.15, 0.4]] },
+  bahnhof2: { gleise: [-1.0, 0.0], steige: [[-0.7, -0.3], [0.3, 0.62]] },
+  hauptbahnhof: { gleise: [-2.2, -1.2, -0.6, 0.4], steige: [[-1.9, -1.5], [-0.3, 0.1], [0.7, 1.02]] },
+  gueterbahnhof: { gleise: [-1.6, -1.0, -0.4, 0.2], steige: [], gueter: true },
+  ubahnhof: { gleise: [-0.5, 0.3], steige: [[-0.2, 0.0]], unter: true }
+};
+const istStation = (d) => !!(d && STATIONEN[d.typ]);
+let stationDreh = 0, gleisDoppel = false, gleisUnter = false, letzterStationPunkt = null;
+const sLokal = (d, lx, lz) => { const cs = Math.cos(d.rot), sn = Math.sin(d.rot); return { x: d.x + lx * cs + lz * sn, z: d.z - lx * sn + lz * cs }; };
+function stationPlan(p, typ) {
+  const D = DIENSTE[typ], S = STATIONEN[typ], W = D.w * ZELLE, Dd = D.d * ZELLE; letzterStationPunkt = { x: p.x, z: p.z };
+  let x = p.x, z = p.z, rot = stationDreh, snap = null;
+  const ende = [...gKnoten.values()].filter((q) => q.kanten.size === 1 && abst(q, p) < Math.max(3, W * 0.65) && (() => { const k = gKanten.get([...q.kanten][0]); return k && !k.station && (k.ebene === -2) === !!S.unter; })()).sort((a, b) => abst(a, p) - abst(b, p))[0];
+  if (ende) {
+    const k = gKanten.get([...ende.kanten][0]), amA = k.a === ende.id, q = amA ? k.pts[0] : k.pts[k.pts.length - 1], tx = amA ? -q.tx : q.tx, tz = amA ? -q.tz : q.tz;
+    let j = 0; S.gleise.forEach((g, i) => { if (Math.abs(g) < Math.abs(S.gleise[j])) j = i; });
+    rot = Math.atan2(-tz, tx); let sn = Math.sin(rot), cs = Math.cos(rot);
+    const vorne = (p.x - ende.x) * sn + (p.z - ende.z) * cs; if (vorne < 0) { rot += Math.PI; sn = -sn; cs = -cs; }
+    const zj = S.gleise[j], mx = ende.x + tx * W / 2, mz = ende.z + tz * W / 2;
+    x = mx - sn * zj; z = mz - cs * zj; snap = ende.id;
+  }
+  const cs = Math.cos(rot), sn = Math.sin(rot), plan = { ok: true, typ, x, z, rot, W, D: Dd, preis: D.preis, haeuser: 0, station: true, snap };
+  const fail = (g) => { plan.ok = false; plan.grund = g; return plan; };
+  let land = true, bes = true, zuNah = false;
+  for (let a = -0.5; a <= 0.501; a += 0.0625) for (let b = -0.5; b <= 0.501; b += 0.25) { const lx = a * W * 0.96, lz = b * Dd * 0.94, wx = x + lx * cs + lz * sn, wz = z - lx * sn + lz * cs; if (!S.unter && !aufLand(wx, wz, 0.3)) land = false; if (!imBesitz(wx, wz)) bes = false; if (!S.unter && strassenFrei({ x: wx, z: wz }) < 0.02) zuNah = true; if (inDienst(wx, wz, 0.02)) zuNah = true; }
+  for (const gz of S.gleise) for (let lx = -W / 2 + 0.75; lx <= W / 2 - 0.75; lx += 0.5) { const q = { x: x + lx * cs + gz * sn, z: z - lx * sn + gz * cs }; if (naechstesGleis(q, 0.35, (k) => (k.ebene === -2) === !!S.unter)) return fail("Hier liegt schon ein Gleis – stell den Bahnhof ans Gleisende"); }
+  const hs = new Set(); for (const c of zellenNahe(x, z, Math.max(W, Dd))) { const dx = c.x - x, dz = c.z - z, lx = dx * cs - dz * sn, lz = dx * sn + dz * cs; if (Math.abs(lx) < W / 2 + 0.3 && Math.abs(lz) < Dd / 2 + 0.3 && c.haus) hs.add(c.haus); } plan.haeuser = S.unter ? 0 : hs.size;
+  if (!dienstFrei(typ)) return fail("🔒 Gibt es ab " + MEILEN[D.ab].name);
+  if (!bes) return fail("Außerhalb deiner Gebiete"); if (!land) return fail("Hier ist Wasser"); if (zuNah) return fail("Zu nah an einer Straße oder einem Gebäude");
+  if (!S.gueter && !naechsteKante({ x: x + sn * (Dd / 2 + 0.6), z: z + cs * (Dd / 2 + 0.6) }, 2.6, autoKante)) return fail("Braucht vorne eine Straße für die Fahrgäste");
+  if (geld < D.preis) return fail("Zu wenig Geld (" + euro(D.preis) + ")");
+  return plan;
+}
+const gKnotenAn = (p) => naechsterGKnoten(p, 0.7) || neuerGKnoten(p);
+function stationGleise(d) {
+  const S = STATIONEN[d.typ], W = d.w * ZELLE, T = 1.6, opt = (x) => Object.assign({ station: d.id, ebene: S.unter ? -2 : 0 }, x || {}), E0 = [], P0 = [], P1 = [], E1 = [];
+  S.gleise.forEach((zi, i) => {
+    const a = sLokal(d, -W / 2, zi), b = sLokal(d, -W / 2 + T, zi), c = sLokal(d, W / 2 - T, zi), e = sLokal(d, W / 2, zi);
+    E0[i] = gKnotenAn(a); P0[i] = neuerGKnoten(b); P1[i] = neuerGKnoten(c); E1[i] = gKnotenAn(e);
+    neueGKante(E0[i].id, P0[i].id, lerp(a, b, 0.5), null, opt()); const pk = neueGKante(P0[i].id, P1[i].id, lerp(b, c, 0.5), null, opt({ bahnsteig: i })); neueGKante(P1[i].id, E1[i].id, lerp(c, e, 0.5), null, opt());
+    if (i === 0) { d.gk = pk.id; d.gs = pk.len / 2; }
+  });
+  for (let i = 0; i < S.gleise.length - 1; i++) { if (Math.abs(S.gleise[i + 1] - S.gleise[i]) > 1.05) continue; for (const [u, v] of [[i, i + 1], [i + 1, i]]) { neueGKante(E0[u].id, P0[v].id, lerp(E0[u], P0[v], 0.5), null, opt()); neueGKante(P1[u].id, E1[v].id, lerp(P1[u], E1[v], 0.5), null, opt()); } }
+  gleisGeaendert();
+}
+function stationBauen(plan) { const d = dienstBauen(plan); if (d) stationGleise(d); return d; }
+function stationZiele(d) {
+  if (!d) return [];
+  if (istStation(d)) return [...gKanten.values()].filter((k) => k.station === d.id && k.bahnsteig != null).map((k) => ({ k: k.id, ende: true }));
+  return d.gk != null && gKanten.has(d.gk) ? [{ k: d.gk, S: d.gs }] : [];
+}
+function stationStart(d) { const Z = stationZiele(d); for (const z of Z) if (!gRes.has(z.k)) { const k = gKanten.get(z.k); return { k: z.k, S: z.S != null ? z.S : k.len / 2 }; } const z = Z[0]; return z ? { k: z.k, S: z.S != null ? z.S : gKanten.get(z.k).len / 2 } : null; }
+function doppelMitte(P) { if (!P || P.art !== "gknoten") return P; const n = gKnoten.get(P.id); if (!n || n.kanten.size !== 1) return P; const k = gKanten.get([...n.kanten][0]); if (!k || k.station || !k.einbahn) return P; const o = [...gKnoten.values()].find((q) => q !== n && q.kanten.size === 1 && abst(q, n) > 0.6 && abst(q, n) < 1.0); return o ? { art: "frei", x: (n.x + o.x) / 2, z: (n.z + o.z) / 2 } : P; }
+function doppelPlaene(plan) {
+  const pts = plan.pts, a = pts[0], b = pts[pts.length - 1], off = 0.42, nc = { x: -(a.tz + b.tz) / 2, z: (a.tx + b.tx) / 2 };
+  const mk = (s) => { const A = { x: plan.A.x - a.tz * off * s, z: plan.A.z + a.tx * off * s }, B = { x: plan.B.x - b.tz * off * s, z: plan.B.z + b.tx * off * s }, C = { x: plan.C.x + nc.x * off * s, z: plan.C.z + nc.z * off * s }, q = gleisPlanen(A, C, B, plan.ebene); q.einbahn = s; return q; };
+  return [mk(1), mk(-1)];
+}
+/* Wegsuche auf Gleisen: Richtung zählt (keine Spitzkehren an Weichen), Einbahn-Gleise, belegte Blöcke kosten extra */
+const gRes = new Map();
+function kTan(k, dir, amEnde) { const p = (dir > 0) === !!amEnde ? k.pts[k.pts.length - 1] : k.pts[0]; return { x: p.tx * dir, z: p.tz * dir }; }
+function gleisStueck(k, s0, s1) { const out = [], d = s1 >= s0 ? 1 : -1; for (let s = s0; d > 0 ? s <= s1 : s >= s1; s += 0.4 * d) { const p = punktBei(k, s); out.push({ x: p.x, z: p.z, y: ebeneY(k, s) }); } const p = punktBei(k, s1); out.push({ x: p.x, z: p.z, y: ebeneY(k, s1) }); return out; }
+function gleisWeg2(start, ziele, zugId) {
+  const ks = gKanten.get(start.k); if (!ks) return null;
+  const zmap = new Map(); for (const zz of ziele) if (zz && gKanten.has(zz.k)) zmap.set(zz.k, zz); if (!zmap.size) return null;
+  const zielS = (zz, dir) => zz.ende ? (dir > 0 ? gKanten.get(zz.k).len - 0.45 : 0.45) : zz.S, pen = (k) => (gRes.has(k.id) && gRes.get(k.id) !== zugId ? 25 : 0), key = (kid, dir) => kid * 2 + (dir > 0 ? 1 : 0);
+  let best = null, bestW = 1e9;
+  if (zmap.has(ks.id)) { const zz = zmap.get(ks.id); for (const dir of [1, -1]) { if (ks.einbahn && ks.einbahn !== dir) continue; const sz = zielS(zz, dir); if (dir > 0 ? sz >= start.S - 1e-6 : sz <= start.S + 1e-6) { const w = Math.abs(sz - start.S); if (w < bestW) { bestW = w; best = { direkt: true, zielK: ks, zielS: sz }; } } } }
+  const g = new Map(), von = new Map(), offen = [];
+  for (const dir of [1, -1]) { if (ks.einbahn && ks.einbahn !== dir) continue; const w = dir > 0 ? ks.len - start.S : start.S, kk = key(ks.id, dir); g.set(kk, w); von.set(kk, null); offen.push([w, ks.id, dir]); }
+  let schritt = 0;
+  while (offen.length && schritt++ < 9000) {
+    let mi = 0; for (let i = 1; i < offen.length; i++) if (offen[i][0] < offen[mi][0]) mi = i; const [w, kid, dir] = offen.splice(mi, 1)[0];
+    if (w > (g.get(key(kid, dir)) ?? 1e9) || w >= bestW) continue;
+    const k = gKanten.get(kid); if (!k) continue; const nid = dir > 0 ? k.b : k.a, n = gKnoten.get(nid); if (!n) continue; const t = kTan(k, dir, true);
+    for (const k2id of n.kanten) {
+      if (k2id === kid) continue; const k2 = gKanten.get(k2id); if (!k2) continue; const dir2 = k2.a === nid ? 1 : -1; if (k2.einbahn && k2.einbahn !== dir2) continue; const t2 = kTan(k2, dir2, false); if (t.x * t2.x + t.z * t2.z < 0.5) continue;
+      if (zmap.has(k2id)) { const sz = zielS(zmap.get(k2id), dir2), w2 = w + (dir2 > 0 ? sz : k2.len - sz) + pen(k2); if (w2 < bestW) { bestW = w2; best = { ende: key(kid, dir), zielK: k2, zielDir: dir2, zielS: sz }; } }
+      const w2 = w + k2.len + pen(k2), kk = key(k2id, dir2); if (w2 < (g.get(kk) ?? 1e9)) { g.set(kk, w2); von.set(kk, key(kid, dir)); offen.push([w2, k2id, dir2]); }
+    }
+  }
+  if (!best) return null;
+  const pts = [], seg = [], add = (k, s0, s1, nach) => { const st = gleisStueck(k, s0, s1), i0 = pts.length ? pts.length - 1 : 0; pts.push(...(pts.length ? st.slice(1) : st)); seg.push({ k: k.id, i0, i1: pts.length - 1, nach }); };
+  if (best.direkt) add(ks, start.S, best.zielS, null);
+  else { const kette = []; let c = best.ende; while (c != null) { kette.unshift(c); c = von.get(c); } kette.forEach((c2, i) => { const kid = Math.floor(c2 / 2), dir = c2 % 2 ? 1 : -1, k = gKanten.get(kid); add(k, i === 0 ? start.S : dir > 0 ? 0 : k.len, dir > 0 ? k.len : 0, dir > 0 ? k.b : k.a); }); add(best.zielK, best.zielDir > 0 ? 0 : best.zielK.len, best.zielS, null); }
+  pts.seg = seg; pts.endPunkt = { k: best.zielK.id, S: best.zielS }; return pts;
+}
+function zugPfad(z, pts, u) { z.P = pfadVorbereiten(pts); z.u = Math.min(z.P.len, u); z.seg = (pts.seg || []).map((q) => ({ k: q.k, u0: pts[q.i0].d, u1: pts[q.i1].d, nach: q.nach })); z.endPunkt = pts.endPunkt || null; }
+function zugBlock(z, vmax, lebt) {
+  if (!z.seg) return vmax; const L = z.wagen * 1.36 + 0.5, brems = z.v * z.v / 4.4 + 1.4;
+  for (const q of z.seg) if (q.u1 < z.u - L && gRes.get(q.k) === z.id) gRes.delete(q.k);
+  for (let i = 0; i < z.seg.length; i++) {
+    const q = z.seg[i]; if (q.u1 < z.u - L) continue; if (q.u0 > z.u + brems) break; if (gRes.get(q.k) === z.id) continue;
+    const kette = [i]; for (let j = i; j < z.seg.length - 1; j++) { const n = gKnoten.get(z.seg[j].nach), kj = gKanten.get(z.seg[j].k); if (!n || n.kanten.size >= 3 || (kj && kj.bahnsteig != null)) break; kette.push(j + 1); }
+    const frei = kette.every((j) => { const o = gRes.get(z.seg[j].k); return o == null || o === z.id || !lebt.has(o); });
+    if (frei) for (const j of kette) gRes.set(z.seg[j].k, z.id);
+    else return Math.min(vmax, q.u0 <= z.u ? vmax : Math.sqrt(2 * 2.2 * Math.max(0, q.u0 - 0.4 - z.u)));
+  }
+  return vmax;
+}
+const signalPool = becken(G_BOX_UNTEN, M.flach, 1600, true); let signalZeit = -1;
+function signaleZeichnen() {
+  if (jetztS - signalZeit < 0.3) return; signalZeit = jetztS; let i = 0;
+  for (const n of gKnoten.values()) {
+    if (n.kanten.size < 3) continue;
+    for (const kid of n.kanten) {
+      const k = gKanten.get(kid); if (!k || k.ebene || k.len < 1.2 || i > 1596) continue; const amA = k.a === n.id, p = punktBei(k, amA ? 0.7 : k.len - 0.7), sgn = amA ? 1 : -1, ox = -p.tz * 0.3 * sgn, oz = p.tx * 0.3 * sgn, rot = gRes.has(k.id);
+      _o.rotation.set(0, 0, 0); _o.position.set(p.x + ox, G, p.z + oz); _o.scale.set(0.025, 0.36, 0.025); _o.updateMatrix(); signalPool.setMatrixAt(i, _o.matrix); signalPool.setColorAt(i++, _farbe.setHex(0x5d6470));
+      _o.position.y = G + 0.33; _o.scale.set(0.05, 0.09, 0.05); _o.updateMatrix(); signalPool.setMatrixAt(i, _o.matrix); signalPool.setColorAt(i++, _farbe.setHex(rot ? 0xff2a2a : 0x2aff6a));
+    }
+  }
+  signalPool.count = i; signalPool.instanceMatrix.needsUpdate = true; if (signalPool.instanceColor) signalPool.instanceColor.needsUpdate = true;
+}
+const ZUG_ART = { sbahn: { wagen: 3, v: 3.6, lok: 0xe8493f }, regio: { wagen: 4, v: 4.2, lok: 0xd9302f }, ice: { wagen: 7, v: 5.6, lok: 0xf6f6f6 }, fern: { wagen: 7, v: 5.6, lok: 0xf6f6f6 }, gueter: { wagen: 7, v: 3.2, lok: 0xd9302f } };
+/* Bahnhöfe auf Gleisen (alt) */
 function bahnhofPlan(p) {
   const D = DIENSTE.bahnhof, W = D.w * ZELLE, Dd = D.d * ZELLE, e = naechstesGleis(p, 4, (k) => !k.ebene);
   if (!e) return { ok: false, grund: "Muss direkt an einem Gleis stehen", x: p.x, z: p.z, rot: 0, W, D: Dd, typ: "bahnhof" };
@@ -2575,41 +2760,52 @@ function bahnhofPlan(p) {
   if (geld < D.preis) return fail("Zu wenig Geld (" + euro(D.preis) + ")");
   return plan;
 }
-const neueBahnhoefe = () => [...dienste.values()].filter((d) => d.typ === "bahnhof" && d.gk != null && gKanten.has(d.gk));
+const neueBahnhoefe = () => [...dienste.values()].filter((d) => (d.typ === "bahnhof" && d.gk != null && gKanten.has(d.gk)) || (istStation(d) && !STATIONEN[d.typ].unter && d.typ !== "gueterbahnhof"));
 const bahnhofPunkt = (d) => ({ k: d.gk, S: d.gs });
 function bahnhofAnkern() { for (const d of dienste.values()) { if (d.typ !== "bahnhof" || d.gk == null || gKanten.has(d.gk)) continue; const e = naechstesGleis(d, 2.5, (k) => !k.ebene); if (e) { d.gk = e.k.id; d.gs = e.s; } else d.gk = -1; } }
 /* Züge */
 let zuege = [], zugNr = 1, fernZeit = 0, gueterZeit = 0;
 function zugStarten(art, pts, ziel, opt) {
   if (!pts || pts.length < 2) return null; const P = pfadVorbereiten(pts); if (P.len < 2) return null;
-  const z = Object.assign({ id: zugNr++, art, P, u: Math.min(P.len, 1.36 * 4), v: 0, ziel, halt: 0, warte: 0, wagen: art === "gueter" ? 6 : 4, farbe: art === "gueter" ? 0x3a3f47 : 0xf2f2f2 }, opt || {});
-  if (art === "fern" || art === "gueter") z.u = Math.min(P.len, 1.36 * (z.wagen + 1));
+  const A = ZUG_ART[(opt && opt.modell) || art] || ZUG_ART.regio;
+  const z = Object.assign({ id: zugNr++, art, P, u: Math.min(P.len, 1.36 * 4), v: 0, ziel, halt: 0, warte: 0, wagen: A.wagen, vmax: A.v, lokF: A.lok, farbe: art === "gueter" ? 0x3a3f47 : 0xf2f2f2 }, opt || {});
+  zugPfad(z, pts, art === "linie" ? Math.min(P.len, 1.36 * z.wagen * 0.5 + 0.6) : 1.36 * (z.wagen + 1));
+  for (const q of z.seg) if (q.u0 <= z.u && !gRes.has(q.k)) gRes.set(q.k, z.id);
   zuege.push(z); return z;
 }
 function zugTakt(dt) {
   if (dt <= 0) return;
   const bh = neueBahnhoefe(), rand = randGleis(), randK = rand && [...rand.kanten][0], randPunkt = randK != null ? { k: randK, S: gKanten.get(randK).a === rand.id ? 0.2 : gKanten.get(randK).len - 0.2 } : null;
   fernZeit -= dt; gueterZeit -= dt;
-  if (randPunkt && bh.length && fernZeit <= 0 && zuege.filter((z) => z.art === "fern").length < Math.min(4, bh.length * 2)) { fernZeit = 30; const d = wahl(Math.random, bh), w = gleisWeg(randPunkt, bahnhofPunkt(d)); if (w) zugStarten("fern", w, d, { zurueck: true }); }
-  if (randPunkt && bh.length && gueterZeit <= 0 && (industrieListe.length || anzahlTyp("hafen")) && zuege.filter((z) => z.art === "gueter").length < 2) { gueterZeit = 55; const d = wahl(Math.random, bh), w = gleisWeg(randPunkt, bahnhofPunkt(d)); if (w) zugStarten("gueter", w, d, { zurueck: true }); }
-  for (const L of zuglinien.values()) { const da = zuege.filter((z) => z.linie === L.id).length; if (da < 2 && L.st.length >= 2 && (!L.letzterStart || simZeit - L.letzterStart > 20)) { const i = da % L.st.length, a = dienste.get(L.st[i]), b = dienste.get(L.st[(i + 1) % L.st.length]); if (a && b && a.gk != null && b.gk != null) { const w = gleisWeg(bahnhofPunkt(a), bahnhofPunkt(b)); if (w) { zugStarten("linie", w, b, { linie: L.id, i: (i + 1) % L.st.length, farbe: L.farbe }); L.letzterStart = simZeit; } } } }
+  const hbf = bh.filter((d) => d.typ === "hauptbahnhof"), fernZiele = hbf.length ? hbf : bh.filter((d) => d.typ !== "haltepunkt"), gb = [...dienste.values()].filter((d) => d.typ === "gueterbahnhof"), gueterZiele = gb.length ? gb : bh;
+  if (randPunkt && fernZiele.length && fernZeit <= 0 && zuege.filter((z) => z.art === "fern").length < Math.min(4, fernZiele.length * 2)) { fernZeit = 30; const d = wahl(Math.random, fernZiele), w = gleisWeg2(randPunkt, stationZiele(d), -1); if (w) zugStarten("fern", w, d, { zurueck: true }); }
+  if (randPunkt && gueterZiele.length && gueterZeit <= 0 && (industrieListe.length || anzahlTyp("hafen") || gb.length) && zuege.filter((z) => z.art === "gueter").length < 2 + gb.length) { gueterZeit = 55; const d = wahl(Math.random, gueterZiele), w = gleisWeg2(randPunkt, stationZiele(d), -1); if (w) zugStarten("gueter", w, d, { zurueck: true }); }
+  for (const L of zuglinien.values()) { const da = zuege.filter((z) => z.linie === L.id).length, soll = L.zuege || 2; if (da < soll && L.st.length >= 2 && (!L.letzterStart || simZeit - L.letzterStart > 12)) { const i = (da * Math.max(1, Math.floor(L.st.length / soll))) % L.st.length, a = dienste.get(L.st[i]), b = dienste.get(L.st[(i + 1) % L.st.length]), st = a && stationStart(a); if (st && b) { const w = gleisWeg2(st, stationZiele(b), -1); if (w) { zugStarten("linie", w, b, { linie: L.id, i: (i + 1) % L.st.length, farbe: L.farbe, modell: L.modell || "regio" }); L.letzterStart = simZeit; } } } else if (da > soll) { const z = zuege.find((q) => q.linie === L.id && q.halt > 0); if (z) z.weg = true; } }
+  const lebt = new Set(zuege.filter((z) => !z.weg).map((z) => z.id));
   for (const z of zuege) {
     if (z.weg) continue;
     if (z.halt > 0) { z.halt -= dt; if (z.halt <= 0) zugWeiter(z, randPunkt); continue; }
-    const rest = z.P.len - z.u; let vmax = Math.min(4.2, Math.sqrt(2 * 1.4 * Math.max(0, rest)) + 0.05);
+    const rest = z.P.len - z.u; let vmax = Math.min(z.vmax || 4.2, Math.sqrt(2 * 1.4 * Math.max(0, rest)) + 0.05); vmax = zugBlock(z, vmax, lebt);
     const kopf = pfadPunkt(z.P, z.u);
     for (const o of zuege) { if (o === z || o.weg || !o.pos) continue; for (const q of o.pos) { const dx = q.x - kopf.x, dz = q.z - kopf.z, vor = dx * kopf.tx + dz * kopf.tz; if (vor > 0 && vor < 3.4 && Math.abs(-dx * kopf.tz + dz * kopf.tx) < 0.5) vmax = Math.min(vmax, Math.max(0, (vor - 1.6) * 1.5)); } }
     const a = vmax > z.v ? 1.1 : -2.2; z.v = klemme(z.v + a * dt, 0, Math.max(vmax, 0)); if (vmax < z.v) z.v = vmax; z.u += z.v * dt;
     z.warte = z.v < 0.05 && rest > 0.3 ? z.warte + dt : 0; if (z.warte > 15) z.weg = true;
-    if (rest < 0.05) { z.u = z.P.len; z.v = 0; z.halt = z.ziel === "rand" ? 0.01 : 6; if (z.ziel && z.ziel !== "rand") z.ziel.zugDa = simZeit; }
+    if (rest < 0.05) { z.u = z.P.len; z.v = 0; z.halt = z.ziel === "rand" ? 0.01 : 6; if (z.ziel && z.ziel !== "rand") { z.ziel.zugDa = simZeit; if (z.linie) zugFahrgaeste(z); } }
   }
+  for (const z of zuege) if (z.weg) for (const [k, v] of [...gRes]) if (v === z.id) gRes.delete(k);
   zuege = zuege.filter((z) => !z.weg);
+}
+function zugFahrgaeste(z) {
+  const L = zuglinien.get(z.linie); if (!L) return; const kap = z.wagen * 80, d = z.ziel, um = d ? [...haeuser.values()].reduce((s2, h) => s2 + (Math.hypot(h.x - d.x, h.z - d.z) < 10 ? leute(h) + jobs(h) : 0), 0) : 0;
+  const ein = Math.round(Math.min(kap * 0.8, 8 + um * 0.02 * ticketFak() * (L.modell === "ice" ? 1.5 : 1)) * (0.7 + Math.random() * 0.6)), preis = ticketPreis * (L.modell === "ice" ? 3 : 1.6);
+  L.fahrgaeste = (L.fahrgaeste || 0) + ein; L.geldWoche = (L.geldWoche || 0) + ein * preis; L.plaetzeSumme = (L.plaetzeSumme || 0) + kap; L.besetztSumme = (L.besetztSumme || 0) + Math.min(kap, ein * 2.2); nvWoche.fahrten += ein; nvWoche.einnahmen += ein * preis; geld += ein * preis;
 }
 function zugWeiter(z, randPunkt) {
   if (z.ziel === "rand") { z.weg = true; return; }
   const hier = z.ziel; if (!dienste.has(hier.id) || hier.gk == null || !gKanten.has(hier.gk)) { z.weg = true; return; }
-  if (z.linie) { const L = zuglinien.get(z.linie); if (!L) { z.weg = true; return; } const n = (z.i + 1) % L.st.length, b = dienste.get(L.st[n]); const w = b && b.gk != null && gleisWeg(bahnhofPunkt(hier), bahnhofPunkt(b)); if (!w) { z.weg = true; return; } z.P = pfadVorbereiten(w); z.u = Math.min(z.P.len, 0.3); z.i = n; z.ziel = b; return; }
-  if (z.zurueck && randPunkt) { const w = gleisWeg(bahnhofPunkt(hier), randPunkt); if (!w) { z.weg = true; return; } z.P = pfadVorbereiten(w); z.u = 0.3; z.ziel = "rand"; return; }
+  const von = z.endPunkt || bahnhofPunkt(hier);
+  if (z.linie) { const L = zuglinien.get(z.linie); if (!L) { z.weg = true; return; } const n = (z.i + 1) % L.st.length, b = dienste.get(L.st[n]); const w = b && gleisWeg2(von, stationZiele(b), z.id); if (!w) { z.halt = 2; z.warteWeg = (z.warteWeg || 0) + 1; if (z.warteWeg > 8) z.weg = true; return; } z.warteWeg = 0; zugPfad(z, w, 0.01); z.i = n; z.ziel = b; return; }
+  if (z.zurueck && randPunkt) { const w = gleisWeg2(von, [randPunkt], z.id); if (!w) { z.weg = true; return; } zugPfad(z, w, 0.01); z.ziel = "rand"; return; }
   z.weg = true;
 }
 function zuegeZeichnen() {
@@ -2620,7 +2816,7 @@ function zuegeZeichnen() {
       const p = pfadPunkt(z.P, z.u - 0.65 - i * 1.36); z.pos.push(p);
       if (z.u - 0.65 - i * 1.36 < -0.2 && z.ziel !== "rand") continue;
       _o.position.set(p.x, G + 0.035 + p.y, p.z); _o.rotation.set(0, Math.atan2(-p.tz, p.tx), 0); _o.scale.setScalar(1); _o.updateMatrix();
-      const m = i === 0 ? lokMesh : wagenMesh, n = i === 0 ? li++ : wi++; if (n >= m.instanceMatrix.count) continue; m.setMatrixAt(n, _o.matrix); m.setColorAt(n, _farbe.setHex(i === 0 ? (z.art === "gueter" ? 0xd9302f : 0xf2f2f2) : z.art === "gueter" ? CONTAINER[(z.id + i) % CONTAINER.length] : z.farbe));
+      const m = i === 0 ? lokMesh : wagenMesh, n = i === 0 ? li++ : wi++; if (n >= m.instanceMatrix.count) continue; m.setMatrixAt(n, _o.matrix); m.setColorAt(n, _farbe.setHex(i === 0 ? (z.lokF || (z.art === "gueter" ? 0xd9302f : 0xf2f2f2)) : z.art === "gueter" ? CONTAINER[(z.id + i) % CONTAINER.length] : z.modell === "ice" || z.art === "fern" ? 0xf6f6f6 : z.farbe));
     }
   }
   return [li, wi];
@@ -2651,19 +2847,19 @@ function schrankenZeichnen(dt) {
 /* Werkzeug: Gleise */
 let gleisModus = "gerade", zuglinieBau = [], zuglinieWahl = null;
 function gleisTippen(p) {
-  if (gleisModus === "entfernen") { const e = naechstesGleis(p, Math.max(0.9, fangRadius() * 0.6)); if (!e) { tipp("Tipp genau auf ein Gleis.", 1800); return; } if (e.k.aussen) { tipp("Der Bahnanschluss nach außen bleibt.", 2200); return; } merkeRueck(); geld += e.k.len * GLEIS_PREIS * 0.3; gKanteWeg(e.k); bahnhofAnkern(); gleisGeaendert(); zeigeWerte(); tipp("Gleis abgerissen.", 1600); return; }
-  if (gleisModus === "bahnhof") { dienstVorschau(p); return; }
+  if (gleisModus === "entfernen") { const e = naechstesGleis(p, Math.max(0.9, fangRadius() * 0.6)); if (!e) { tipp("Tipp genau auf ein Gleis.", 1800); return; } if (e.k.aussen) { tipp("Der Bahnanschluss nach außen bleibt.", 2200); return; } if (e.k.station) { tipp("Dieses Gleis gehört zum Bahnhof – reiß den Bahnhof ab, wenn er weg soll.", 2600); return; } merkeRueck(); geld += e.k.len * GLEIS_PREIS * 0.3; gKanteWeg(e.k); bahnhofAnkern(); gleisGeaendert(); zeigeWerte(); tipp("Gleis abgerissen.", 1600); return; }
+  if (gleisModus === "bahnhof" || gleisModus === "station") { dienstVorschau(p); return; }
   if (gleisModus === "zuglinie") {
-    const d = [...dienste.values()].find((x) => x.typ === "bahnhof" && x.gk != null && Math.hypot(x.x - p.x, x.z - p.z) < 2.6); if (!d) { tipp("Tipp auf einen Bahnhof 🚆, der an deinen Gleisen steht.", 2200); return; }
+    const d = [...dienste.values()].filter((x) => (x.typ === "bahnhof" && x.gk != null) || istStation(x)).find((x) => { const dx = p.x - x.x, dz = p.z - x.z, cs = Math.cos(x.rot), sn = Math.sin(x.rot), lx = dx * cs - dz * sn, lz = dx * sn + dz * cs; return Math.abs(lx) < x.w * ZELLE / 2 + 0.3 && Math.abs(lz) < x.d * ZELLE / 2 + 0.5; }); if (!d) { tipp("Tipp auf einen Bahnhof 🚆, der an deinen Gleisen steht.", 2200); return; }
     if (zuglinieBau.length >= 2 && d.id === zuglinieBau[0]) { zuglinieFertig(); return; } if (zuglinieBau[zuglinieBau.length - 1] === d.id) return;
     zuglinieBau.push(d.id); frage("🚆 Zuglinie: " + zuglinieBau.length + " Bahnhöfe" + (zuglinieBau.length >= 2 ? " – ✓ zum Fertigstellen" : " – tipp den nächsten"), zuglinieBau.length >= 2, zuglinieFertig);
   }
 }
 function zuglinieFertig() {
   if (zuglinieBau.length < 2) return;
-  for (let i = 0; i < zuglinieBau.length; i++) { const a = dienste.get(zuglinieBau[i]), b = dienste.get(zuglinieBau[(i + 1) % zuglinieBau.length]); if (!gleisWeg(bahnhofPunkt(a), bahnhofPunkt(b))) { tipp("⚠️ Zwischen diesen Bahnhöfen gibt es kein Gleis.", 3000); return; } }
-  merkeRueck(); const nr = Math.max(0, ...[...zuglinien.values()].map((L) => L.nr)) + 1, L = { id: zlId++, nr, farbe: LINIEN_FARBEN[(nr + 3) % LINIEN_FARBEN.length], st: zuglinieBau.slice() };
-  zuglinien.set(L.id, L); zuglinieBau = []; zuglinieWahl = L.id; frageZu(); gleisModus = "gerade"; busRechnen(); speichernBald(); unterleiste(); tipp("🚆 Zuglinie " + nr + " fährt!", 2500);
+  for (let i = 0; i < zuglinieBau.length; i++) { const a = dienste.get(zuglinieBau[i]), b = dienste.get(zuglinieBau[(i + 1) % zuglinieBau.length]), st = stationStart(a); if (!st || !gleisWeg2(st, stationZiele(b), -1)) { tipp("⚠️ Zwischen diesen Bahnhöfen gibt es kein Gleis.", 3000); return; } }
+  merkeRueck(); const nr = Math.max(0, ...[...zuglinien.values()].map((L) => L.nr)) + 1, uB = zuglinieBau.some((id) => dienste.get(id) && dienste.get(id).typ === "ubahnhof"), L = { id: zlId++, nr, farbe: LINIEN_FARBEN[(nr + 3) % LINIEN_FARBEN.length], st: zuglinieBau.slice(), modell: uB ? "sbahn" : "regio", zuege: 2 };
+  zuglinien.set(L.id, L); zuglinieBau = []; zuglinieWahl = L.id; frageZu(); gleisModus = "gerade"; busRechnen(); speichernBald(); unterleiste(); lfZeigen("zug", L.id); tipp("🚆 Zuglinie " + nr + " fährt!", 2500);
 }
 let fahrzeuge = [], fzId = 1;
 const rv = zufall(4711);
@@ -3358,8 +3554,8 @@ function zustand() {
     zellen: [...zellen.values()].map((z) => [z.id, r(z.x), r(z.z), r(z.rot), z.zone, z.g, z.seite, z.i, z.r]),
     haeuser: [...haeuser.values()].map((h) => [h.id, h.zone, h.stufe, h.w, h.d, h.variante, h.zellen]),
     dienste: [...dienste.values()].map((d) => [d.id, d.typ, r(d.x), r(d.z), r(d.rot), d.ausbau || 0, d.gk ?? null, d.gs != null ? r(d.gs) : null]),
-    gknoten: [...gKnoten.values()].map((n) => [n.id, r(n.x), r(n.z)]), gkanten: [...gKanten.values()].map((k) => [k.id, k.a, k.b, r(k.c.x), r(k.c.z), k.ebene || 0, k.aussen ? 1 : 0]), zuglinien: [...zuglinien.values()].map((L) => [L.id, L.nr, L.farbe, L.st]), dienstV: 2, budgetBereich,
-    halte: [...halte.values()].map((h) => [h.id, h.k, r(h.s)]), linien: [...linien.values()].map((L) => [L.id, L.nr, L.farbe, L.halte, L.busse, L.art, L.modell || "mix", L.takt || 40]), ticketPreis,
+    gknoten: [...gKnoten.values()].map((n) => [n.id, r(n.x), r(n.z)]), gkanten: [...gKanten.values()].map((k) => [k.id, k.a, k.b, r(k.c.x), r(k.c.z), k.ebene || 0, k.aussen ? 1 : 0, k.station || 0, k.bahnsteig == null ? -1 : k.bahnsteig, k.einbahn || 0]), zuglinien: [...zuglinien.values()].map((L) => [L.id, L.nr, L.farbe, L.st, L.name || null, L.modell || "regio", L.zuege || 2]), dienstV: 2, budgetBereich,
+    halte: [...halte.values()].map((h) => [h.id, h.k, r(h.s)]), linien: [...linien.values()].map((L) => [L.id, L.nr, L.farbe, L.halte, L.busse, L.art, L.modell || "mix", L.takt || 40, L.name || null]), ticketPreis,
     baeume: baeume.filter((b) => b.weg).map((b) => b.idx)
   };
 }
@@ -3391,15 +3587,15 @@ function zustandRein(d) {
   d.haeuser.forEach(([id, zone, stufe, w, dd, variante, ids]) => { if (ids.every((z) => zellen.has(z) && !zellen.get(z).haus)) neuesHaus({ id, zone, stufe, w, d: dd, variante, zellen: ids }, true); });
   d.baeume.forEach((i) => { const b = baeume[i]; if (b) { b.weg = true; baumSetzen(b); } });
   (d.gknoten || []).forEach(([id, x, z]) => neuerGKnoten({ x, z }, id));
-  (d.gkanten || []).forEach(([id, a, b, cx, cz, eb, au]) => { if (gKnoten.has(a) && gKnoten.has(b)) neueGKante(a, b, { x: cx, z: cz }, id, { ebene: eb || 0, aussen: !!au }); });
+  (d.gkanten || []).forEach(([id, a, b, cx, cz, eb, au, st, bs, eba]) => { if (gKnoten.has(a) && gKnoten.has(b)) { const o = { ebene: eb || 0, aussen: !!au }; if (st) o.station = st; if (bs != null && bs >= 0) o.bahnsteig = bs; if (eba) o.einbahn = eba; neueGKante(a, b, { x: cx, z: cz }, id, o); } });
   (d.dienste || []).forEach(([id, typ, x, z, rot, aus, gk, gs]) => { if (DIENSTE[typ]) { const dd = neuerDienst({ id, typ, x, z, rot, ausbau: aus || 0 }, true); if (gk != null) { dd.gk = gk; dd.gs = gs; } } });
-  (d.zuglinien || []).forEach(([id, nr, f, st]) => { zuglinien.set(id, { id, nr, farbe: f, st }); zlId = Math.max(zlId, id + 1); });
+  (d.zuglinien || []).forEach(([id, nr, f, st, name, modell, zg]) => { zuglinien.set(id, { id, nr, farbe: f, st, name: name || null, modell: modell || "regio", zuege: zg || 2 }); zlId = Math.max(zlId, id + 1); });
   uebergaengeBerechnen();
   if (d.budgetBereich) Object.assign(budgetBereich, d.budgetBereich); else for (const k in budgetBereich) budgetBereich[k] = 100; bahnGleiseZeichnen();
   if (d.ids.d) dId = Math.max(dId, d.ids.d);
   (d.halte || []).forEach(([id, k, s2]) => { if (kanten.has(k)) neueHalte({ id, k, s: s2 }, true); });
   if (d.ticketPreis != null) ticketPreis = d.ticketPreis;
-  (d.linien || []).forEach(([id, nr, f, hs, busse, art, modell, takt]) => { const L = { id, nr, farbe: f, halte: hs.filter((x) => halte.has(x)), busse, art: art || "bus", modell: modell || "mix", takt: takt || 40 }; if (L.halte.length >= 2) linien.set(id, L); linieId = Math.max(linieId, id + 1); });
+  (d.linien || []).forEach(([id, nr, f, hs, busse, art, modell, takt, name]) => { const L = { id, nr, farbe: f, halte: hs.filter((x) => halte.has(x)), busse, art: art || "bus", modell: modell || "mix", takt: takt || 40, name: name || null }; if (L.halte.length >= 2) linien.set(id, L); linieId = Math.max(linieId, id + 1); });
   haltId = Math.max(haltId, d.ids.hs || 1); linieId = Math.max(linieId, d.ids.l || 1); linienNeu = true;
   for (const L of linien.values()) if (L.art === "tram" && !linieErreichbar(L.halte, true)) { for (let i = 0; i < L.halte.length; i++) { const a = halte.get(L.halte[i]), b = halte.get(L.halte[(i + 1) % L.halte.length]); const w = a && b && wegSuchen(haltPunkt(a), haltPunkt(b)); if (w) for (const st of w.route) { const k = kanten.get(st.k); if (k && !k.schienen) { k.schienen = true; kanteNeuZeichnen(k); } } } }
   if (linien.size && ![...dienste.values()].some((x) => DIENSTE[x.typ].depot)) warteListe.push({ t: simZeit + 1, fn: () => infoZeigen("<b>🅿️ Neu: Depots!</b>Busse und Straßenbahnen starten jetzt im Depot.<br>Bau ein Busdepot (🚌 → Karten), sonst fahren deine Linien nicht.", 10000) });
@@ -3589,7 +3785,7 @@ function vbRendern(key) {
 /* Infokarte zu einem Teil im Baumenü */
 const STR_KAT = { klein: "Klein", mittel: "Mittel", gross: "Groß", einbahn: "Einbahn", autobahn: "Autobahn & Land", fuss: "Fuß & Rad" };
 const ZONEN_REITER = { w: ["Wohnen", [1, 2]], g: ["Gewerbe", [3, 4]], b: ["Büro", [5]], i: ["Industrie", [6, 7, 8]] };
-const VERKEHR_REITER = { fahrzeuge: ["🚌 Depots & Bahnhof", ["busdepot", "tramdepot", "bahnhof", "hafen"]], parken: ["🅿️ Parken", ["parkplatz", "parkhaus"]] };
+const VERKEHR_REITER = { fahrzeuge: ["🚌 Depots & Häfen", ["busdepot", "tramdepot", "hafen"]], parken: ["🅿️ Parken", ["parkplatz", "parkhaus"]] };
 let strReiter = null, zoneReiter = "w", verkehrReiter = "fahrzeuge", infoTimer2 = 0;
 const kmh = (t) => Math.round(t * 24 / 10) * 10;
 function infoKarte(key) {
@@ -3622,15 +3818,15 @@ function unterleiste() {
     else reiter = PARK_KATS.map((k) => chip("data-dkat", k, DIENST_KAT[k].em + " " + DIENST_KAT[k].name, dienstKat === k)).join("");
     karten = Object.keys(DIENSTE).filter((k) => DIENSTE[k].kat === dienstKat).map((k) => { const D = DIENSTE[k], f = dienstFrei(k); return kk("data-dienst", k, D.em, D.name, f ? euro(D.preis) : "ab " + MEILEN[D.ab].name, k === dienstWahl, !f, "d:" + k); }).join("");
   } else if (werkzeug === "gleis") {
-    kopf = '<span class="ftitel">🛤️ Gleise</span>' + chip("data-gmodus", "gerade", "📏 Gerade", gleisModus === "gerade") + chip("data-gmodus", "kurve", "〰️ Kurve", gleisModus === "kurve") + (["gerade", "kurve"].includes(gleisModus) ? ebeneBox() : "") + chip("data-gmodus", "entfernen", "🧹 Entfernen", gleisModus === "entfernen") + chip("data-gmodus", "zuglinie", "🚆 Neue Zuglinie", gleisModus === "zuglinie") + '<span class="trenn"></span>' + rueckChip;
+    const legen = ["gerade", "kurve"].includes(gleisModus);
+    kopf = '<span class="ftitel">🛤️ Gleise</span>' + chip("data-gmodus", "gerade", "📏 Gerade", gleisModus === "gerade") + chip("data-gmodus", "kurve", "〰️ Kurve", gleisModus === "kurve") + (legen && !gleisUnter ? ebeneBox() : "") + (legen ? chip("data-gdoppel", "1", "⇉ Doppelgleis", gleisDoppel) + chip("data-gunter", "1", (meilenstein >= 4 ? "🚇" : "🔒") + " U-Bahn-Tunnel", gleisUnter) : "") + (gleisModus === "station" ? '<button class="chip" type="button" id="stationDrehen">⟳ Drehen (R)</button>' : "") + chip("data-gmodus", "entfernen", "🧹 Entfernen", gleisModus === "entfernen") + chip("data-gmodus", "zuglinie", "🚆 Neue Zuglinie", gleisModus === "zuglinie") + '<button class="chip" type="button" id="alleLinien">📋 Linien</button><span class="trenn"></span>' + rueckChip;
     const ZL = zuglinieWahl && zuglinien.get(zuglinieWahl);
     if (ZL) kopf += `<span class="trenn"></span><span class="ftitel" style="color:#${ZL.farbe.toString(16).padStart(6, "0")}">Zuglinie ${ZL.nr}</span><span style="white-space:nowrap;color:var(--leise)">${ZL.st.length} Bahnhöfe</span><button class="chip gefahr" type="button" id="zuglinieLoeschen">🗑️</button>`;
-    const D = DIENSTE.bahnhof, fr = dienstFrei("bahnhof");
-    karten = kk("data-gmodus", "bahnhof", D.em, D.name, fr ? euro(D.preis) : "ab " + MEILEN[D.ab].name, gleisModus === "bahnhof", !fr) + [...zuglinien.values()].map((L) => kk("data-zlinie", L.id, `<span style="display:inline-block;width:26px;height:26px;border-radius:50%;background:#${L.farbe.toString(16).padStart(6, "0")};color:#fff;font-size:.9rem;line-height:26px;font-weight:700">${L.nr}</span>`, "Zuglinie " + L.nr, L.st.length + " Bahnhöfe", L.id === zuglinieWahl)).join("");
-    karten += `<small style="color:var(--leise);padding:8px;max-width:260px">Züge kommen über den Bahnanschluss am Kartenrand. Verbinde ihn mit deinen Bahnhöfen.</small>`;
+    karten = Object.keys(STATIONEN).map((k) => { const D = DIENSTE[k], fr = dienstFrei(k); return kk("data-station", k, D.em, D.name, fr ? euro(D.preis) : "ab " + MEILEN[D.ab].name, gleisModus === "station" && dienstWahl === k, !fr, "d:" + k); }).join("") + [...zuglinien.values()].map((L) => kk("data-zlinie", L.id, `<span style="display:inline-block;width:26px;height:26px;border-radius:50%;background:#${L.farbe.toString(16).padStart(6, "0")};color:#fff;font-size:.9rem;line-height:26px;font-weight:700">${L.nr}</span>`, "Zuglinie " + L.nr, L.st.length + " Bahnhöfe", L.id === zuglinieWahl)).join("");
+    karten += `<small style="color:var(--leise);padding:8px;max-width:280px">Bahnhöfe haben ihre Gleise schon drin. Stell sie ans Ende eines Gleises (rastet ein) und verbinde die Enden. Fern- und Güterzüge kommen über den Bahnanschluss am Kartenrand.</small>`;
   } else if (werkzeug === "verkehr") {
     const L = linieWahl && linien.get(linieWahl);
-    kopf = '<span class="ftitel">🚌 Nahverkehr</span>' + chip("data-bmodus", "halt", "🚏 Haltestelle", busModus === "halt") + chip("data-bmodus", "linie", "🚌 Neue Buslinie", busModus === "linie") + chip("data-bmodus", "tram", (meilenstein >= 3 ? "🚋" : "🔒") + " Neue Straßenbahn", busModus === "tram") + chip("data-bmodus", "weg", "🧹 Entfernen", busModus === "weg") + '<span class="trenn"></span>' + rueckChip;
+    kopf = '<span class="ftitel">🚌 Nahverkehr</span>' + chip("data-bmodus", "halt", "🚏 Haltestelle", busModus === "halt") + chip("data-bmodus", "linie", "🚌 Neue Buslinie", busModus === "linie") + chip("data-bmodus", "tram", (meilenstein >= 3 ? "🚋" : "🔒") + " Neue Straßenbahn", busModus === "tram") + chip("data-bmodus", "weg", "🧹 Entfernen", busModus === "weg") + '<button class="chip" type="button" id="alleLinien">📋 Linien</button><span class="trenn"></span>' + rueckChip;
     kopf += `<span class="trenn"></span><div class="zeilebox"><button class="chip" type="button" id="ticketMinus">−</button><span>🎫 ${ticketPreis.toFixed(2).replace(".", ",")} €</span><button class="chip" type="button" id="ticketPlus">+</button></div>`;
     if (L) kopf += `<span class="trenn"></span><span class="ftitel" style="color:#${L.farbe.toString(16).padStart(6, "0")}">Linie ${L.nr}</span>${L.keinDepot ? `<span style="color:#ff9b9b;white-space:nowrap">⚠️ Kein ${L.art === "tram" ? "Straßenbahn-Depot" : "Busdepot"}!</span>` : ""}<div class="zeilebox"><button class="chip" type="button" id="busMinus">−</button><span>⏱️ ${L.takt || 40} s · ${L.art === "tram" ? "🚋" : "🚌"} ${L.busse || 1}</span><button class="chip" type="button" id="busPlus">+</button></div><span style="white-space:nowrap;color:var(--leise)">👥 ${zahl(L.letzteWoche || 0)}/Wo · ${Math.round((L.auslastung || 0) * 100)} % voll</span>${chip("data-bmodus", "bearbeiten", "✏️ Bearbeiten", busModus === "bearbeiten")}${L.art !== "tram" ? `<button class="chip" type="button" id="busModell">${BUS_MODELLE[L.modell || "mix"]}</button>` : ""}<button class="chip gefahr" type="button" id="linieLoeschen">🗑️</button>`;
     reiter = Object.keys(VERKEHR_REITER).map((k) => chip("data-vreiter", k, VERKEHR_REITER[k][0], verkehrReiter === k)).join("");
@@ -3670,11 +3866,16 @@ function fachKlick(e) {
   if (b.dataset.zone != null) { const z = +b.dataset.zone; if (z && !zoneFrei(z)) { tipp("🔒 " + ZONEN[z].name + " gibt es ab dem Meilenstein " + MEILEN[ZONEN[z].ab].name + " (" + zahl(MEILEN[ZONEN[z].ab].ab) + " XP).", 3500); return; } zoneWahl = z; if (z) tippEinmal("z-" + z, ZONEN[z].em + " " + ZONEN[z].name + ": " + ZONEN_TEXT[z], 4000); }
   if (b.dataset.pinsel) { pinsel = b.dataset.pinsel; tippEinmal("p-" + pinsel, TIPPS.zone(), 3500); }
   if (b.dataset.gmodus) { if (b.dataset.gmodus === "bahnhof" && !dienstFrei("bahnhof")) { tipp("🔒 Bahnhöfe gibt es ab " + MEILEN[DIENSTE.bahnhof.ab].name + ".", 2500); return; } gleisModus = b.dataset.gmodus; zuglinieBau = []; bauAbbrechen(); vorschauWeg(); if (gleisModus === "bahnhof") dienstWahl = "bahnhof"; tippEinmal("g-" + gleisModus, TIPPS.gleis(), 3500); }
-  if (b.dataset.zlinie) zuglinieWahl = +b.dataset.zlinie === zuglinieWahl ? null : +b.dataset.zlinie;
+  if (b.dataset.station) { const k = b.dataset.station, D = DIENSTE[k]; if (!dienstFrei(k)) { tipp("🔒 " + D.name + " gibt es ab " + MEILEN[D.ab].name + " (" + zahl(MEILEN[D.ab].ab) + " XP).", 3000); return; } dienstWahl = k; gleisModus = "station"; zuglinieBau = []; bauAbbrechen(); vorschauWeg(); tipp(D.em + " " + D.name + ": " + D.text + " ⟳ R dreht.", 4500); }
+  if (b.id === "stationDrehen") { stationDreh += Math.PI / 12; if (letzterStationPunkt) dienstVorschau(letzterStationPunkt); return; }
+  if (b.dataset.gdoppel) { gleisDoppel = !gleisDoppel; planNeu(); if (gleisDoppel) tippEinmal("doppel", "⇉ Doppelgleis: zwei Gleise nebeneinander – Züge fahren rechts, so gibt es keinen Gegenverkehr. An Weichen und Bahnhöfen regeln Signale, wer fahren darf.", 5000); }
+  if (b.dataset.gunter) { if (meilenstein < 4) { tipp("🔒 U-Bahn gibt es ab " + MEILEN[4].name + ".", 2500); return; } gleisUnter = !gleisUnter; planNeu(); if (gleisUnter) tippEinmal("unter", "🚇 U-Bahn-Tunnel liegen ganz unter der Erde – auch unter Häusern und Wasser. Verbinde damit deine U-Bahnhöfe. Du siehst sie nur im Gleis-Werkzeug.", 5000); }
+  if (b.dataset.zlinie) { zuglinieWahl = +b.dataset.zlinie === zuglinieWahl ? null : +b.dataset.zlinie; lfZeigen(zuglinieWahl ? "zug" : null, zuglinieWahl); }
   if (b.id === "zuglinieLoeschen") { const L = zuglinien.get(zuglinieWahl); if (L) { merkeRueck(); zuglinien.delete(L.id); zuege = zuege.filter((z) => z.linie !== L.id); zuglinieWahl = null; busRechnen(); speichernBald(); } }
   if (b.dataset.bmodus === "tram" && meilenstein < 3) { tipp("🔒 Straßenbahnen gibt es ab " + MEILEN[3].name + " (" + zahl(MEILEN[3].ab) + " XP).", 3000); return; }
   if (b.dataset.bmodus) { busModus = b.dataset.bmodus; vorschauWeg(); linieBau = []; frageZu(); linienNeu = true; tippEinmal("b-" + busModus, TIPPS.verkehr(), 3500); }
-  if (b.dataset.linie) { linieWahl = +b.dataset.linie === linieWahl ? null : +b.dataset.linie; }
+  if (b.dataset.linie) { linieWahl = +b.dataset.linie === linieWahl ? null : +b.dataset.linie; lfZeigen(linieWahl ? "bus" : null, linieWahl); }
+  if (b.id === "alleLinien") lfZeigen("liste");
   if (b.id === "busPlus" || b.id === "busMinus") { const L = linien.get(linieWahl); if (L) { L.takt = klemme((L.takt || 40) + (b.id === "busPlus" ? -10 : 10), 10, 180); L.busse = busseFuer(L); speichernBald(); zeigeWerte(); tipp("⏱️ Linie " + L.nr + ": alle " + L.takt + " s ein Fahrzeug (" + L.busse + " unterwegs)", 2200); } }
   if (b.id === "ticketPlus" || b.id === "ticketMinus") { ticketPreis = klemme(Math.round((ticketPreis + (b.id === "ticketPlus" ? 0.25 : -0.25)) * 100) / 100, 0, 4); tipp("🎫 Ticket: " + ticketPreis.toFixed(2).replace(".", ",") + " € – " + (ticketPreis <= 1 ? "billig, mehr Fahrgäste" : ticketPreis >= 2.5 ? "teuer, weniger Fahrgäste" : "normal"), 2200); speichernBald(); }
   if (b.id === "busModell") { const L = linien.get(linieWahl); if (L) { const ks = Object.keys(BUS_MODELLE), i = ks.indexOf(L.modell || "mix"); L.modell = ks[(i + 1) % ks.length]; for (const f of fahrzeuge) if (f.linie === L.id) fahrzeugWeg(f); fahrzeuge = fahrzeuge.filter((f) => !f.weg); tipp("Linie " + L.nr + ": " + BUS_MODELLE[L.modell], 2000); speichernBald(); } }
@@ -3683,6 +3884,63 @@ function fachKlick(e) {
   if (b.dataset.dienst) { const k = b.dataset.dienst, D = DIENSTE[k]; if (!dienstFrei(k)) { tipp("🔒 " + D.name + " gibt es ab " + MEILEN[D.ab].name + " (" + zahl(MEILEN[D.ab].ab) + " XP).", 3500); return; } dienstWahl = k; if (werkzeug === "verkehr") busModus = "bau"; vorschauWeg(); frageZu(); tipp(D.em + " " + D.name + ": " + D.text, 3500); }
   unterleiste();
 }
+/* Linienfenster: Name, Farbe, Haltestellen, Takt, Fahrzeuge, Fahrgäste, Kosten und Einnahmen – plus Übersicht aller Linien */
+let lfOffen = null;
+const hex6 = (c) => "#" + c.toString(16).padStart(6, "0"), lfNr = (L) => `<span class="lfnr" style="background:${hex6(L.farbe)}">${L.nr}</span>`;
+function lfZeigen(art, id) { lfOffen = art ? { art, id } : null; lfRendern(); }
+function lfLinie() { if (!lfOffen) return null; return lfOffen.art === "zug" ? zuglinien.get(lfOffen.id) : lfOffen.art === "bus" ? linien.get(lfOffen.id) : null; }
+function lfKosten(L, zug) { return zug ? (L.zuege || 2) * 300 : (L.busse || 1) * (L.art === "tram" ? 2 : 1) * BUS_UNTERHALT; }
+function lfWerteHtml(L, zug) {
+  const ein = Math.round(L.letzteEinnahmen || 0), kost = lfKosten(L, zug), bil = ein - kost;
+  return `<span>👥 Fahrgäste pro Woche</span><b>${zahl(L.letzteWoche || 0)}</b><span>📊 Auslastung</span><b>${Math.round((L.auslastung || 0) * 100)} %</b><span>💶 Einnahmen pro Woche</span><b class="plus">${euro(ein)}</b><span>🔧 Kosten pro Woche</span><b class="minus">${euro(kost)}</b><span>⚖️ Bilanz</span><b class="${bil >= 0 ? "plus" : "minus"}">${bil >= 0 ? "+" : ""}${euro(bil)}</b>`;
+}
+function lfRendern() {
+  const el = $("linienfenster"); if (!lfOffen) { el.hidden = true; return; }
+  if (lfOffen.art === "liste") {
+    const zeile = (L, art, zug) => `<tr data-lf="${art}:${L.id}"><td>${lfNr(L)}</td><td>${L.name || (zug ? "Zuglinie " : "Linie ") + L.nr}<br><small style="color:var(--leise)">${zug ? "🚆 " + L.st.length + " Bahnhöfe" : (L.art === "tram" ? "🚋 " : "🚌 ") + L.halte.length + " Halte · " + (L.busse || 1) + " Fz."}</small></td><td class="r">${zahl(L.letzteWoche || 0)}<br><small style="color:var(--leise)">/Wo</small></td><td class="r" style="color:${(L.letzteEinnahmen || 0) - lfKosten(L, zug) >= 0 ? "#5fe08a" : "#ff8a80"}">${euro(Math.round((L.letzteEinnahmen || 0) - lfKosten(L, zug)))}</td></tr>`;
+    const rows = [...linien.values()].map((L) => zeile(L, "bus", false)).join("") + [...zuglinien.values()].map((L) => zeile(L, "zug", true)).join("");
+    el.innerHTML = `<h3><span style="flex:1">📋 Alle Linien</span><button class="zu" type="button" data-lfzu>✕</button></h3>` + (rows ? `<table class="lftab">${rows}</table>` : `<small style="color:var(--leise)">Noch keine Linien gebaut.</small>`) + `<small style="color:var(--leise)">Fahrgäste und Geld gelten für die letzte Woche. Tipp eine Linie an, um sie zu bearbeiten.</small>`;
+    el.hidden = false; return;
+  }
+  const L = lfLinie(); if (!L) { lfOffen = null; el.hidden = true; return; }
+  const zug = lfOffen.art === "zug", tram = !zug && L.art === "tram";
+  const stops = zug ? L.st.map((id) => { const d = dienste.get(id); return d ? (d.name || DIENSTE[d.typ].name) : "?"; }) : L.halte.map((id) => { const hh = halte.get(id); return hh ? haltName(hh) : "?"; });
+  const um = zug ? 0 : (L.umlauf || umlaufZeit(L)), takt = zug ? 0 : L.takt || 40, fz = zug ? (L.zuege || 2) : busseFuer(L);
+  const modelle = zug ? Object.entries(ZUG_MODELLE).map(([k, v]) => `<option value="${k}"${(L.modell || "regio") === k ? " selected" : ""}>${v}</option>`).join("") : tram ? "" : Object.entries(BUS_MODELLE).map(([k, v]) => `<option value="${k}"${(L.modell || "mix") === k ? " selected" : ""}>${v}</option>`).join("");
+  el.innerHTML = `<h3>${lfNr(L)}<input type="text" id="lfName" maxlength="28" value="${(L.name || (zug ? "Zuglinie " : "Linie ") + L.nr).replace(/"/g, "&quot;")}" aria-label="Name der Linie"><button class="zu" type="button" data-lfzu>✕</button></h3>
+    <div class="lffarben">${LINIEN_FARBEN.map((c) => `<button type="button" data-lffarbe="${c}" class="${c === L.farbe ? "an" : ""}" style="background:${hex6(c)}" aria-label="Farbe"></button>`).join("")}</div>
+    ${L.keinDepot ? `<small style="color:#ff9b9b">⚠️ Kein ${tram ? "Straßenbahn-Depot" : "Busdepot"} – es fahren keine Fahrzeuge!</small>` : ""}
+    <div class="lfwerte" id="lfWerte">${lfWerteHtml(L, zug)}</div>
+    ${zug ? `<div class="lfregler"><label><span>🚆 Züge auf der Linie</span><b id="lfFzT">${fz}</b></label><input type="range" id="lfZuege" min="1" max="8" step="1" value="${fz}"></div>` : `<div class="lfregler"><label><span>⏱️ Takt: alle</span><b id="lfTaktT">${takt} s</b></label><input type="range" id="lfTakt" min="10" max="180" step="5" value="${takt}"><label><span>${tram ? "🚋" : "🚌"} Fahrzeuge</span><b id="lfFzT">${fz}</b></label><input type="range" id="lfFz" min="1" max="24" step="1" value="${fz}"><small style="color:var(--leise)">Eine Runde dauert etwa ${Math.round(um)} s.</small></div>`}
+    ${modelle ? `<label class="lfregler"><span style="color:var(--leise)">Modell</span><select id="lfModell" class="chip" style="width:100%">${modelle}</select></label>` : ""}
+    <div><b>${zug ? "🚉 Bahnhöfe" : "🚏 Haltestellen"} (${stops.length})</b><ol class="lfhalte">${stops.map((n, i) => `<li>${n}${stops.length > 2 ? `<button type="button" data-lfhweg="${i}" title="Aus der Linie nehmen">✕</button>` : ""}</li>`).join("")}</ol></div>
+    <div class="lfknoepfe">${zug ? "" : `<button class="chip" type="button" data-lfbearb>✏️ Haltestellen ändern</button>`}<button class="chip" type="button" data-lfliste>📋 Alle Linien</button><button class="chip gefahr" type="button" data-lfweg>🗑️ Löschen</button></div>`;
+  el.hidden = false;
+}
+setInterval(() => { if (!lfOffen) return; const el = $("lfWerte"), L = lfLinie(); if (el && L) el.innerHTML = lfWerteHtml(L, lfOffen.art === "zug"); else if (lfOffen.art === "liste" && !$("linienfenster").matches(":hover")) lfRendern(); }, 2000);
+$("linienfenster").addEventListener("input", (e) => {
+  const L = lfLinie(); if (!L) return; const zug = lfOffen.art === "zug";
+  if (e.target.id === "lfName") { L.name = e.target.value.trim().slice(0, 28) || null; speichernBald(); return; }
+  if (e.target.id === "lfTakt") { L.takt = +e.target.value; L.busse = busseFuer(L); $("lfTaktT").textContent = L.takt + " s"; $("lfFzT").textContent = L.busse; $("lfFz").value = L.busse; speichernBald(); zeigeWerte(); }
+  if (e.target.id === "lfFz") { const n = +e.target.value, um = L.umlauf || umlaufZeit(L); L.takt = klemme(Math.round(um / n / 5) * 5, 10, 180); L.busse = busseFuer(L); $("lfTaktT").textContent = L.takt + " s"; $("lfFzT").textContent = L.busse; $("lfTakt").value = L.takt; speichernBald(); zeigeWerte(); }
+  if (e.target.id === "lfZuege" && zug) { L.zuege = +e.target.value; $("lfFzT").textContent = L.zuege; speichernBald(); zeigeWerte(); }
+});
+$("linienfenster").addEventListener("change", (e) => {
+  const L = lfLinie(); if (!L || e.target.id !== "lfModell") return; L.modell = e.target.value;
+  if (lfOffen.art === "zug") zuege = zuege.filter((z) => z.linie !== L.id); else { for (const f of fahrzeuge) if (f.linie === L.id) fahrzeugWeg(f); fahrzeuge = fahrzeuge.filter((f) => !f.weg); }
+  speichernBald(); tipp("Neues Modell – die Fahrzeuge werden getauscht.", 2000);
+});
+$("linienfenster").addEventListener("click", (e) => {
+  const b = e.target.closest("button,tr[data-lf]"); if (!b) return;
+  if (b.dataset.lf) { const [art, id] = b.dataset.lf.split(":"); if (art === "zug") { zuglinieWahl = +id; } else { linieWahl = +id; } lfZeigen(art, +id); linienNeu = true; unterleiste(); return; }
+  if (b.dataset.lfzu != null) { lfZeigen(null); return; }
+  if (b.dataset.lfliste != null) { lfZeigen("liste"); return; }
+  const L = lfLinie(); if (!L) return; const zug = lfOffen.art === "zug";
+  if (b.dataset.lffarbe) { L.farbe = +b.dataset.lffarbe; if (!zug) { for (const f of fahrzeuge) if (f.linie === L.id) f.farbe = L.farbe; } else for (const z of zuege) if (z.linie === L.id) z.farbe = L.farbe; linienNeu = true; busRechnen(); speichernBald(); lfRendern(); unterleiste(); return; }
+  if (b.dataset.lfhweg != null) { merkeRueck(); const i = +b.dataset.lfhweg; if (zug) L.st.splice(i, 1); else { L.halte.splice(i, 1); L.umlaufV = -1; } linienNeu = true; busRechnen(); speichernBald(); lfRendern(); return; }
+  if (b.dataset.lfbearb != null) { if (werkzeug !== "verkehr") werkzeugWaehlen("verkehr"); linieWahl = L.id; busModus = "bearbeiten"; linienNeu = true; unterleiste(); tipp(TIPPS.verkehr(), 4000); return; }
+  if (b.dataset.lfweg != null) { merkeRueck(); if (zug) { zuglinien.delete(L.id); zuege = zuege.filter((z) => z.linie !== L.id); zuglinieWahl = null; } else { linieWeg(L); linieWahl = null; } busRechnen(); speichernBald(); lfZeigen(null); unterleiste(); }
+});
 /* Info-Ansichten (oben rechts) */
 const ANSICHTEN = {
   verkehr: { em: "🚦", name: "Verkehr", legende: ["#3ddc6b", "#ffd23d", "#ff3b30", "frei", "Stau"], an: () => { verkehrsAnsicht = true; stauMessen(); }, aus: () => { verkehrsAnsicht = false; stauMessen(); } },
@@ -3720,7 +3978,7 @@ function ansichtListe() { $("ansichtListe").innerHTML = Object.entries(ANSICHTEN
 function ansichtenAufZu() { const p = $("ansichten"); p.hidden = !p.hidden; if (!p.hidden) { ansichtListe(); $("menue").hidden = true; } }
 $("ansichtKnopf").onclick = ansichtenAufZu;
 $("ansichten").addEventListener("click", (e) => { const b = e.target.closest("[data-ansicht]"); if (b) { ansichtSetzen(b.dataset.ansicht); } });
-function werkzeugWaehlen(w) { if ($("infokarte")) $("infokarte").hidden = true;
+function werkzeugWaehlen(w) { if ($("infokarte")) $("infokarte").hidden = true; for (const k of gKanten.values()) if (k.ebene === -2 && k.mesh) k.mesh.visible = w === "gleis";
   werkzeug = w; document.querySelectorAll("#werkzeug button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.w === w)));
   const bauend = w !== "ansehen";
   steuerung.touches.ONE = bauend ? -1 : THREE.TOUCH.PAN; steuerung.mouseButtons.LEFT = bauend ? -1 : THREE.MOUSE.PAN;
@@ -3807,24 +4065,25 @@ function planNeu() {
   if (modus() === "raster" && werkzeug === "strasse") { rasterPlanen(P); return; }
   const A = P[0]; let C, Bp;
   if (zweiPunkte() || P.length === 2) { Bp = P[1]; C = lerp(A, Bp, 0.5); } else { C = { x: P[1].x, z: P[1].z }; Bp = P[2]; }
-  const gl = werkzeug === "gleis"; let plan = gl ? gleisPlanen(A, C, Bp, ebeneModus()) : planen(A, C, Bp, strTyp, ebeneModus());
-  if (!plan.ok && plan.wasser && !ebeneModus() && plan.pts.some((q) => abstand(q.x, q.z) < 0.3)) { const p2 = gl ? gleisPlanen(A, C, Bp, 1) : planen(A, C, Bp, strTyp, 1); if (p2.ok || plan.laenge >= 7) { plan = p2; plan.auto = true; } }
+  const gl = werkzeug === "gleis"; let plan = gl ? gleisPlanen(gleisDoppel ? doppelMitte(A) : A, C, gleisDoppel ? doppelMitte(Bp) : Bp, gleisUnter ? -2 : ebeneModus()) : planen(A, C, Bp, strTyp, ebeneModus());
+  if (!plan.ok && plan.wasser && !ebeneModus() && !(gl && gleisUnter) && plan.pts.some((q) => abstand(q.x, q.z) < 0.3)) { const p2 = gl ? gleisPlanen(gleisDoppel ? doppelMitte(A) : A, C, gleisDoppel ? doppelMitte(Bp) : Bp, 1) : planen(A, C, Bp, strTyp, 1); if (p2.ok || plan.laenge >= 7) { plan = p2; plan.auto = true; } }
+  bau.doppel = null; if (gl && gleisDoppel) { const dp = doppelPlaene(plan); bau.doppel = dp; plan.kosten = dp[0].kosten + dp[1].kosten; if (plan.ok && !(dp[0].ok && dp[1].ok)) { plan.ok = false; plan.grund = (dp[0].ok ? dp[1] : dp[0]).grund; } if (plan.ok && plan.kosten > geld) { plan.ok = false; plan.grund = "Nicht genug Geld"; } }
   bau.plan = P.length >= noetig ? plan : null;
   const winkelTxt = fuehrungZeigen(A, P.length === 2 ? P[1] : C);
   let p2 = null; if (!gl && parallelAn && plan.ok && P.length >= noetig) { p2 = parallelPlan(A, C, Bp); if (p2.ok && p2.kosten + plan.kosten > geld) { p2.ok = false; p2.grund = "Nicht genug Geld"; } } bau.plan2 = p2;
   const pos = [], col = [], f = plan.ok ? farbe(0x7fb8ff) : farbe(0xff5a5a), hw = gl ? 0.32 : TYP[strTyp].halb;
-  band(pos, col, plan.pts, hw, G + 0.04, f);
+  if (bau.doppel) for (const dp of bau.doppel) band(pos, col, dp.pts, hw * 0.8, G + 0.04, plan.ok ? farbe(dp.einbahn > 0 ? 0x7fb8ff : 0x9fd0ff) : f); else band(pos, col, plan.pts, hw, G + 0.04, f);
   for (const k of plan.kreuz) scheibe(pos, col, k.x, k.z, hw * 0.7, G + 0.045, farbe(0xffffff));
   if (p2) band(pos, col, p2.pts, hw, G + 0.04, p2.ok ? farbe(0x9fd0ff) : farbe(0xff8a5a));
   vorschau.geometry.dispose(); vorschau.geometry = geoAus(pos, col); vorschau.visible = true;
   if (!bau.plan) { frage("Jetzt das Ende antippen", false, null); return; }
-  if (gl) { frage((plan.ebene > 0 ? "🌉 " : plan.ebene < 0 ? "🚇 " : "") + "🛤️ Gleis " + meter(plan.laenge) + winkelTxt + " · " + euro(plan.kosten) + (plan.ok ? "" : " – " + plan.grund), plan.ok, gleisBestaetigen); return; }
+  if (gl) { frage((plan.ebene === -2 ? "🚇 U-Bahn-" : plan.ebene > 0 ? "🌉 " : plan.ebene < 0 ? "🚇 " : "") + (bau.doppel ? "⇉ Doppelgleis " : "🛤️ Gleis ") + meter(plan.laenge) + winkelTxt + " · " + euro(plan.kosten) + (plan.ok ? "" : " – " + plan.grund), plan.ok, gleisBestaetigen); return; }
   const ok = plan.ok && (!p2 || p2.ok);
   frage((plan.ebene > 0 ? "🌉 " : plan.ebene < 0 ? "🚇 " : "") + (plan.auto ? "Brücke · " : "") + TYP[strTyp].em + " " + meter(plan.laenge) + winkelTxt + " · " + euro(plan.kosten + (p2 ? p2.kosten : 0)) + (p2 ? " (2 Straßen)" : "") + (plan.baeume ? " (" + plan.baeume + " 🌳)" : "") + (plan.ok ? (p2 && !p2.ok ? " – Parallele: " + p2.grund : "") : " – " + plan.grund), ok, strasseBestaetigen);
 }
 function gleisBestaetigen() {
   const plan = bau.plan; if (!plan || !plan.ok) return;
-  merkeRueck(); const neu = gleisBauen(plan); if (!neu.length) { rueck.pop(); rueckKnopf(); tipp("Hier liegt schon ein Gleis.", 2000); bauAbbrechen(); return; }
+  merkeRueck(); const neu = bau.doppel ? [...gleisBauen(bau.doppel[0]), ...gleisBauen(bau.doppel[1])] : gleisBauen(plan); if (!neu.length) { rueck.pop(); rueckKnopf(); tipp("Hier liegt schon ein Gleis.", 2000); bauAbbrechen(); return; }
   bahnhofAnkern(); const endK = naechsterGKnoten(plan.B, 0.7); bau.punkte = endK ? [{ art: "gknoten", id: endK.id, x: endK.x, z: endK.z }] : []; bau.kandidat = null; bau.plan = null;
   planNeu(); tipp("✅ Gleis gebaut! Tipp weiter – oder ✕ zum Beenden. Bahnhöfe stellst du direkt neben ein Gleis.", 3000);
 }
@@ -4091,6 +4350,7 @@ document.querySelectorAll("#fahrpult button").forEach((b) => {
 });
 const TASTEN = { ArrowUp: "gas", KeyW: "gas", ArrowDown: "bremse", KeyS: "bremse", ArrowLeft: "links", KeyA: "links", ArrowRight: "rechts", KeyD: "rechts" };
 addEventListener("keydown", (e) => {
+  if ((e.key === "r" || e.key === "R") && STATIONEN[dienstWahl] && dienstPlanAktuell && !e.target.closest("input,textarea,select")) { stationDreh += Math.PI / 12; if (letzterStationPunkt) dienstVorschau(letzterStationPunkt); return; }
   if (spieler.an && TASTEN[e.code]) { spieler[TASTEN[e.code]] = true; e.preventDefault(); return; }
   if (spieler.an && e.code === "KeyC") { spieler.kamera = spieler.kamera === "hinten" ? "innen" : "hinten"; return; }
   if (spieler.an && e.key === "Escape") { fahrenBeenden(); return; }
@@ -4234,7 +4494,7 @@ function starten(n, daten, neueKarte) {
     setTimeout(() => $("laden").classList.add("weg"), 200);
   }, 60);
 }
-window.inselstadt = { kameraVon: (x, z, d, a, hy) => { steuerung.target.set(x, 0.3, z); kamera.position.set(x + d * Math.sin(a), d * (hy || 0.45), z + d * Math.cos(a)); steuerung.update(); }, dienstLage: () => [...dienste.values()].map((d) => [d.typ, d.x, d.z, d.rot]), ausbauSetzen: (a) => { for (const d of dienste.values()) if (ausbaubar(DIENSTE[d.typ])) { d.ausbau = a; d.teile = dienstTeile(d); d.box = null; d.hoehe = hoeheVon(d); parkenNeu(d); } haeuserNeu = true; }, hallen: () => [...dienste.values()].map((d) => [d.typ, (d.halle || []).map((q) => q.typ + (q.aus ? "*" : "")).join(",")]), parkInfo: () => { const st = { autos: autos.size, daheim: 0, weg: 0, fahrend: 0, aufParkplatz: 0, strasse: 0 }; for (const a of autos.values()) { if (!a.wo) st.fahrend++; else if (a.wo.kante) st.strasse++; else if (a.wo.b && a.wo.b.dienst) st.aufParkplatz++; else if (a.wo.b && a.wo.b.id === a.heim) st.daheim++; else st.weg++; } st.stunde = Math.round(stunde()); return st; }, zeitSetzen: (z) => { zeit = z; }, warnDebug: () => warnSprites.filter((x) => x.visible).slice(0, 3).map((x) => [x.position.x, x.position.y, x.position.z, x.scale.x, x.scale.y, x.material.map.image.width]), alarmTest: (dtyp, ftyp) => { const d = [...dienste.values()].find((q) => q.typ === dtyp); if (!d) return 'kein dienst'; const hs = [...haeuser.values()].sort((a, b) => Math.hypot(b.x - d.x, b.z - d.z) - Math.hypot(a.x - d.x, a.z - d.z)); const f = einsatz(d, hs[0], ftyp, null, true); return f ? [f.id, f.modus, !!f.alarm] : 'kein fz'; }, dienstTest: () => { const f = []; for (const typ in DIENSTE) for (const a of [0, 2]) { try { const T = dienstTeile({ typ, id: 7, ausbau: a }); for (const t of T) if (![t.lx, t.lz, t.sx, t.sy, t.sz, t.ly || 0].every(Number.isFinite) || !B[t.b]) { f.push(typ + ' ' + t.b); break; } } catch (e) { f.push(typ + ' ' + e.message); } } return f; }, katalogTest: () => { const fehler = [], namen = new Set(); let teile = 0; for (const z of [1, 2, 3, 4, 5, 6, 7, 8]) for (let st = 1; st <= ZONEN[z].max; st++) for (let v = 0; v < 12; v++) for (const [w, d] of [[1, 2], [2, 2], [2, 3], [3, 4], [4, 4]]) { try { const h = { zone: z, stufe: st, variante: v, w, d }; const T = hausTeile(h); teile = Math.max(teile, T.length); namen.add(z + ":" + h.name); for (const t of T) if (![t.lx, t.lz, t.sx, t.sy, t.sz, t.ly || 0].every(Number.isFinite) || !B[t.b]) { fehler.push(z + "/" + st + "/" + h.name + " " + t.b); break; } } catch (e) { fehler.push(z + "/" + st + "/" + v + " " + e.message); } } return { namen: namen.size, teile, fehler: [...new Set(fehler)].slice(0, 20) }; }, hausStufe: (f) => { for (const h of haeuser.values()) { const r = f(h); if (r) { h.stufe = r[0]; if (r[1] != null) h.variante = r[1]; h.teile = hausTeile(h); h.box = null; h.hoehe = hoeheVon(h); } } haeuserNeu = true; }, zustandHolen: () => zustand(), kreiselGroesse: (i) => { kreiselGr = i; }, rasterTest: (A, B, C, t) => { strTyp = t || "klein"; const ls = rasterLinien(A, B, C); let n = 0; for (const [a, b] of ls) { const pl = planen(fangOderFrei(a), lerp(a, b, 0.5), fangOderFrei(b), strTyp, 0); if (pl.ok && bauen(pl).length) n++; else if (!pl.ok) console.log("raster", pl.grund); } return [ls.length, n]; }, ersetzen: (p, t) => { strTyp = t; ersetzenTippen(p); }, parken: (p) => parkenTippen(p), autoBruecke: (A, B) => { const pl = planen(fangen(A), lerp(A, B, 0.5), fangen(B), "klein", 0); if (!pl.ok && pl.wasser && pl.pts.some((q) => abstand(q.x, q.z) < 0.3)) { const p2 = planen(fangen(A), lerp(A, B, 0.5), fangen(B), "klein", 1); return [pl.grund, p2.ok, p2.grund]; } return [pl.ok, pl.grund]; }, bildschirm: (x, z) => { const v = new THREE.Vector3(x, G, z).project(kamera), r = renderer.domElement.getBoundingClientRect(); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; }, linienListe: () => [...linien.values()].map((L) => ({ nr: L.nr, art: L.art, halte: L.halte.length, busse: L.busse, keinDepot: L.keinDepot })), gleisPlanen, gleisBauen, bahnhofPlan, gKanten, gKnoten, zuege: () => zuege, zuglinien, uebergaenge: () => uebergaenge, gleisModus: (m) => { gleisModus = m; }, zuglinieBau: (ids) => { zuglinieBau = ids; }, zuglinieFertig, schienenUmschalten, aussenGleisBauen, zugTakt, modellTest: () => { const ks = Object.keys(FZ); let n = 0; for (const k of kanten.values()) { if (!autoKante(k) || k.aussen || k.len < 8) continue; for (let s = 1.5; s < k.len - 1.5 && n < ks.length; s += 2.2) { const f = fahrzeugAusWeg({ route: [{ k: k.id, dir: 1 }], s0: s, s1: k.len - 0.5 }, ks[n], mitAuflieger(ks[n]) ? "container" : null, "Test", "Test", "aussen"); if (f) { f.farbe = PAL.auto[n % PAL.auto.length]; f.v = 0; n++; } } } return n; }, allesBesitzen: () => { for (let i = 0; i < KN; i++) for (let j = 0; j < KN; j++) besitz.add(i + "," + j); gebieteZeichnen(); }, kameraAuf: (x, z, d) => { steuerung.target.set(x, 0, z); kamera.position.set(x + d * 0.55, d * 0.75, z + d * 0.65); steuerung.update(); }, dbgF: (id) => { const f = fahrzeuge.find((x) => x.id === id); if (!f || f.modus !== "kante") return null; const st = f.route[f.ri], k = kanten.get(st.k), nx = f.route[f.ri + 1]; if (!nx) return "letzte"; const n = endKnoten(k, st.dir), k2 = kanten.get(nx.k), s2 = anfang(k2, nx.dir); return { rest: +(ende(k, st.dir) - f.s).toFixed(2), frei: f.frei, darf: darfEinfahren(f, k, st, nx), k2: k2.id + (k2.ring ? "R" : ""), platz: fahrzeuge.filter((g) => g !== f && g.modus === "kante" && g.route[g.ri].k === k2.id && g.route[g.ri].dir === nx.dir && g.s < s2 + g.hintenL + f.vorneL + 0.35).map((g) => g.id + ":" + g.s.toFixed(2) + ":w" + g.warte.toFixed(0)), drin: [...n.drin].map((g) => g.id + (g.tr ? "t" + g.tr.t.toFixed(2) : "res") + " von" + g.von), naht: n.naht.map((g) => g.id), luecke: f.block }; }, kreiselBauen, einbahnUmschalten, strModus: (m) => { strModus = m; }, halte, linien, neueHalte, busTippen, linieFertig, busRechnen, busModus: (m) => { busModus = m; }, linieBau: (ids) => { linieBau = ids; }, abstand: (x, z) => abstand(x, z), dienstPlan, dienstBauen, dienste, versorgung: () => versorgung, versorgungRechnen, dienstTakt, ansichtSetzen, sim: (sek, ziel) => { const ev = new Map(); let tk = 0; for (let t = 0; t < sek; t += 0.05) { simZeit += 0.05; jetztS += 0.05; if (++tk % 10 === 0) dienstTakt(0.5); verkehrTakt(0.05, ziel || 60); fahrzeugeZeichnen(); const F = fahrzeuge.filter((f) => f.pos && f.skala > 0.9 && !f.parkt); for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) { const A = F[i], Bf = F[j]; let hit = false; for (let q = 0; q <= 6 && !hit; q++) { const o = Bf.vorneL - (Bf.vorneL + Bf.hintenL) * q / 6, dx = Bf.pos.x + Bf.pos.tx * o - A.pos.x, dz = Bf.pos.z + Bf.pos.tz * o - A.pos.z, lx = dx * A.pos.tx + dz * A.pos.tz, lz = Math.abs(-dx * A.pos.tz + dz * A.pos.tx); if (lx < A.vorneL * 0.8 && lx > -A.hintenL * 0.8 && lz < (A.B + Bf.B) / 2 * 0.7) hit = true; } if (hit) { const key = A.id + "-" + Bf.id; if (!ev.has(key)) { const d = (f) => f.modus === "hof" ? "HOF" + (f.hof && f.hof.raus ? "raus" : "rein") : f.modus === "kante" ? f.route[f.ri].k + "/" + f.route[f.ri].dir + "/sp" + f.spur + "/off" + f.off.toFixed(2) + "/s" + f.s.toFixed(2) + (f.ausparken ? "/AUS" : "") + (f.frei ? "/FREI" : "") : "KN" + f.tr.knoten + "/t" + f.tr.t.toFixed(2) + "/von" + f.von + "->" + f.route[f.ri + 1].k; ev.set(key, [A.typ, d(A), "blk" + (A.block == null ? "-" : A.block.toFixed(2)) + "w" + A.warte.toFixed(1), Bf.typ, d(Bf), "blk" + (Bf.block == null ? "-" : Bf.block.toFixed(2)) + "w" + Bf.warte.toFixed(1), "t" + t.toFixed(1)]); } } } } return [fahrzeuge.length, ev.size, [...ev.values()].slice(0, 12)]; }, fahrtStarten: () => { try { return fahrtStarten(); } catch (e) { return "FEHLER " + e.message + e.stack; } }, folgen: (f) => folgenStart(f), baeume: () => baeume.length, stufenTest: (st) => { let i = 0; for (const h of haeuser.values()) { h.stufe = Math.min(ZONEN[h.zone].max, st || 1 + (i++ % 5)); h.teile = hausTeile(h); } haeuserNeu = true; }, meilenstein: (m) => { meilenstein = m; unterleiste(); }, zoneWahl: (z) => { zoneWahl = z; }, malen: (a, b) => malen(a, b), werteAuffrischen, hausTeile, bedarf: () => bedarf, wertAnsicht: (v) => { wertAnsicht = v; wertZeichnen(); }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
+window.inselstadt = { stationPlan, stationBauen, stationZiele, gRes, gleisWeg2, zugInfo: () => zuege.map((z) => [z.id, z.art, z.modell || "", +z.u.toFixed(1), +z.P.len.toFixed(1), +z.v.toFixed(2), z.halt > 0 ? 1 : 0]), kameraVon: (x, z, d, a, hy) => { steuerung.target.set(x, 0.3, z); kamera.position.set(x + d * Math.sin(a), d * (hy || 0.45), z + d * Math.cos(a)); steuerung.update(); }, dienstLage: () => [...dienste.values()].map((d) => [d.typ, d.x, d.z, d.rot]), ausbauSetzen: (a) => { for (const d of dienste.values()) if (ausbaubar(DIENSTE[d.typ])) { d.ausbau = a; d.teile = dienstTeile(d); d.box = null; d.hoehe = hoeheVon(d); parkenNeu(d); } haeuserNeu = true; }, hallen: () => [...dienste.values()].map((d) => [d.typ, (d.halle || []).map((q) => q.typ + (q.aus ? "*" : "")).join(",")]), parkInfo: () => { const st = { autos: autos.size, daheim: 0, weg: 0, fahrend: 0, aufParkplatz: 0, strasse: 0 }; for (const a of autos.values()) { if (!a.wo) st.fahrend++; else if (a.wo.kante) st.strasse++; else if (a.wo.b && a.wo.b.dienst) st.aufParkplatz++; else if (a.wo.b && a.wo.b.id === a.heim) st.daheim++; else st.weg++; } st.stunde = Math.round(stunde()); return st; }, zeitSetzen: (z) => { zeit = z; }, warnDebug: () => warnSprites.filter((x) => x.visible).slice(0, 3).map((x) => [x.position.x, x.position.y, x.position.z, x.scale.x, x.scale.y, x.material.map.image.width]), alarmTest: (dtyp, ftyp) => { const d = [...dienste.values()].find((q) => q.typ === dtyp); if (!d) return 'kein dienst'; const hs = [...haeuser.values()].sort((a, b) => Math.hypot(b.x - d.x, b.z - d.z) - Math.hypot(a.x - d.x, a.z - d.z)); const f = einsatz(d, hs[0], ftyp, null, true); return f ? [f.id, f.modus, !!f.alarm] : 'kein fz'; }, dienstTest: () => { const f = []; for (const typ in DIENSTE) for (const a of [0, 2]) { try { const T = dienstTeile({ typ, id: 7, ausbau: a }); for (const t of T) if (![t.lx, t.lz, t.sx, t.sy, t.sz, t.ly || 0].every(Number.isFinite) || !B[t.b]) { f.push(typ + ' ' + t.b); break; } } catch (e) { f.push(typ + ' ' + e.message); } } return f; }, katalogTest: () => { const fehler = [], namen = new Set(); let teile = 0; for (const z of [1, 2, 3, 4, 5, 6, 7, 8]) for (let st = 1; st <= ZONEN[z].max; st++) for (let v = 0; v < 12; v++) for (const [w, d] of [[1, 2], [2, 2], [2, 3], [3, 4], [4, 4]]) { try { const h = { zone: z, stufe: st, variante: v, w, d }; const T = hausTeile(h); teile = Math.max(teile, T.length); namen.add(z + ":" + h.name); for (const t of T) if (![t.lx, t.lz, t.sx, t.sy, t.sz, t.ly || 0].every(Number.isFinite) || !B[t.b]) { fehler.push(z + "/" + st + "/" + h.name + " " + t.b); break; } } catch (e) { fehler.push(z + "/" + st + "/" + v + " " + e.message); } } return { namen: namen.size, teile, fehler: [...new Set(fehler)].slice(0, 20) }; }, hausStufe: (f) => { for (const h of haeuser.values()) { const r = f(h); if (r) { h.stufe = r[0]; if (r[1] != null) h.variante = r[1]; h.teile = hausTeile(h); h.box = null; h.hoehe = hoeheVon(h); } } haeuserNeu = true; }, zustandHolen: () => zustand(), kreiselGroesse: (i) => { kreiselGr = i; }, rasterTest: (A, B, C, t) => { strTyp = t || "klein"; const ls = rasterLinien(A, B, C); let n = 0; for (const [a, b] of ls) { const pl = planen(fangOderFrei(a), lerp(a, b, 0.5), fangOderFrei(b), strTyp, 0); if (pl.ok && bauen(pl).length) n++; else if (!pl.ok) console.log("raster", pl.grund); } return [ls.length, n]; }, ersetzen: (p, t) => { strTyp = t; ersetzenTippen(p); }, parken: (p) => parkenTippen(p), autoBruecke: (A, B) => { const pl = planen(fangen(A), lerp(A, B, 0.5), fangen(B), "klein", 0); if (!pl.ok && pl.wasser && pl.pts.some((q) => abstand(q.x, q.z) < 0.3)) { const p2 = planen(fangen(A), lerp(A, B, 0.5), fangen(B), "klein", 1); return [pl.grund, p2.ok, p2.grund]; } return [pl.ok, pl.grund]; }, bildschirm: (x, z) => { const v = new THREE.Vector3(x, G, z).project(kamera), r = renderer.domElement.getBoundingClientRect(); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; }, linienListe: () => [...linien.values()].map((L) => ({ nr: L.nr, art: L.art, halte: L.halte.length, busse: L.busse, keinDepot: L.keinDepot })), gleisPlanen, gleisBauen, bahnhofPlan, gKanten, gKnoten, zuege: () => zuege, zuglinien, uebergaenge: () => uebergaenge, gleisModus: (m) => { gleisModus = m; }, zuglinieBau: (ids) => { zuglinieBau = ids; }, zuglinieFertig, schienenUmschalten, aussenGleisBauen, zugTakt, modellTest: () => { const ks = Object.keys(FZ); let n = 0; for (const k of kanten.values()) { if (!autoKante(k) || k.aussen || k.len < 8) continue; for (let s = 1.5; s < k.len - 1.5 && n < ks.length; s += 2.2) { const f = fahrzeugAusWeg({ route: [{ k: k.id, dir: 1 }], s0: s, s1: k.len - 0.5 }, ks[n], mitAuflieger(ks[n]) ? "container" : null, "Test", "Test", "aussen"); if (f) { f.farbe = PAL.auto[n % PAL.auto.length]; f.v = 0; n++; } } } return n; }, allesBesitzen: () => { for (let i = 0; i < KN; i++) for (let j = 0; j < KN; j++) besitz.add(i + "," + j); gebieteZeichnen(); }, kameraAuf: (x, z, d) => { steuerung.target.set(x, 0, z); kamera.position.set(x + d * 0.55, d * 0.75, z + d * 0.65); steuerung.update(); }, dbgF: (id) => { const f = fahrzeuge.find((x) => x.id === id); if (!f || f.modus !== "kante") return null; const st = f.route[f.ri], k = kanten.get(st.k), nx = f.route[f.ri + 1]; if (!nx) return "letzte"; const n = endKnoten(k, st.dir), k2 = kanten.get(nx.k), s2 = anfang(k2, nx.dir); return { rest: +(ende(k, st.dir) - f.s).toFixed(2), frei: f.frei, darf: darfEinfahren(f, k, st, nx), k2: k2.id + (k2.ring ? "R" : ""), platz: fahrzeuge.filter((g) => g !== f && g.modus === "kante" && g.route[g.ri].k === k2.id && g.route[g.ri].dir === nx.dir && g.s < s2 + g.hintenL + f.vorneL + 0.35).map((g) => g.id + ":" + g.s.toFixed(2) + ":w" + g.warte.toFixed(0)), drin: [...n.drin].map((g) => g.id + (g.tr ? "t" + g.tr.t.toFixed(2) : "res") + " von" + g.von), naht: n.naht.map((g) => g.id), luecke: f.block }; }, kreiselBauen, einbahnUmschalten, strModus: (m) => { strModus = m; }, halte, linien, neueHalte, busTippen, linieFertig, busRechnen, busModus: (m) => { busModus = m; }, linieBau: (ids) => { linieBau = ids; }, abstand: (x, z) => abstand(x, z), dienstPlan, dienstBauen, dienste, versorgung: () => versorgung, versorgungRechnen, dienstTakt, ansichtSetzen, sim: (sek, ziel) => { const ev = new Map(); let tk = 0; for (let t = 0; t < sek; t += 0.05) { simZeit += 0.05; jetztS += 0.05; if (++tk % 10 === 0) dienstTakt(0.5); verkehrTakt(0.05, ziel || 60); fahrzeugeZeichnen(); const F = fahrzeuge.filter((f) => f.pos && f.skala > 0.9 && !f.parkt); for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) { const A = F[i], Bf = F[j]; let hit = false; for (let q = 0; q <= 6 && !hit; q++) { const o = Bf.vorneL - (Bf.vorneL + Bf.hintenL) * q / 6, dx = Bf.pos.x + Bf.pos.tx * o - A.pos.x, dz = Bf.pos.z + Bf.pos.tz * o - A.pos.z, lx = dx * A.pos.tx + dz * A.pos.tz, lz = Math.abs(-dx * A.pos.tz + dz * A.pos.tx); if (lx < A.vorneL * 0.8 && lx > -A.hintenL * 0.8 && lz < (A.B + Bf.B) / 2 * 0.7) hit = true; } if (hit) { const key = A.id + "-" + Bf.id; if (!ev.has(key)) { const d = (f) => f.modus === "hof" ? "HOF" + (f.hof && f.hof.raus ? "raus" : "rein") : f.modus === "kante" ? f.route[f.ri].k + "/" + f.route[f.ri].dir + "/sp" + f.spur + "/off" + f.off.toFixed(2) + "/s" + f.s.toFixed(2) + (f.ausparken ? "/AUS" : "") + (f.frei ? "/FREI" : "") : "KN" + f.tr.knoten + "/t" + f.tr.t.toFixed(2) + "/von" + f.von + "->" + f.route[f.ri + 1].k; ev.set(key, [A.typ, d(A), "blk" + (A.block == null ? "-" : A.block.toFixed(2)) + "w" + A.warte.toFixed(1), Bf.typ, d(Bf), "blk" + (Bf.block == null ? "-" : Bf.block.toFixed(2)) + "w" + Bf.warte.toFixed(1), "t" + t.toFixed(1)]); } } } } return [fahrzeuge.length, ev.size, [...ev.values()].slice(0, 12)]; }, fahrtStarten: () => { try { return fahrtStarten(); } catch (e) { return "FEHLER " + e.message + e.stack; } }, folgen: (f) => folgenStart(f), baeume: () => baeume.length, stufenTest: (st) => { let i = 0; for (const h of haeuser.values()) { h.stufe = Math.min(ZONEN[h.zone].max, st || 1 + (i++ % 5)); h.teile = hausTeile(h); } haeuserNeu = true; }, meilenstein: (m) => { meilenstein = m; unterleiste(); }, zoneWahl: (z) => { zoneWahl = z; }, malen: (a, b) => malen(a, b), werteAuffrischen, hausTeile, bedarf: () => bedarf, wertAnsicht: (v) => { wertAnsicht = v; wertZeichnen(); }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
 
 /* ================================================================
    Hauptschleife
@@ -4259,7 +4519,7 @@ function schleife() {
   if (zellenNeu) zellenZeichnen();
   if (haeuserNeu) haeuserZeichnen();
   document.body.classList.toggle("baut", (istBau() && bau.punkte.length > 0) || !!dienstPlanAktuell || linieBau.length > 0 || zuglinieBau.length > 0);
-  rauchZeichnen(); fahrzeugeZeichnen(); geparkteZeichnen(); halleZeichnen(); ampelnZeichnen(); toreZeichnen(dt); fussgaengerTakt(dt, kz.e); hochZeichnen(); warnZeichnen(); drehZeichnen(); if (linienNeu) linienZeichnen(); zugTakt(dt * (tempo || 0)); bahnHafenZeichnen(dt * (tempo || 0)); schrankenZeichnen(dt); if (ansicht && ansicht !== "verkehr" && jetztS - wertZeit > 2) wertZeichnen();
+  rauchZeichnen(); fahrzeugeZeichnen(); geparkteZeichnen(); halleZeichnen(); menschenZeichnen(); signaleZeichnen(); ampelnZeichnen(); toreZeichnen(dt); fussgaengerTakt(dt, kz.e); hochZeichnen(); warnZeichnen(); drehZeichnen(); if (linienNeu) linienZeichnen(); zugTakt(dt * (tempo || 0)); bahnHafenZeichnen(dt * (tempo || 0)); schrankenZeichnen(dt); if (ansicht && ansicht !== "verkehr" && jetztS - wertZeit > 2) wertZeichnen();
   boote.forEach((b) => { b.w += b.v * dt; b.g.position.set(b.mx + Math.cos(b.w) * b.rad, WASSER + 0.02 + Math.sin(t * 1.6 + b.ph) * 0.05, b.mz + Math.sin(b.w) * b.rad); b.g.rotation.set(Math.sin(t * 1.3 + b.ph) * 0.05, -b.w + (b.v > 0 ? -Math.PI / 2 : Math.PI / 2), 0); });
   if (leuchtturm) leuchtturm.userData.strahl.rotation.y = t * 0.8;
   if (spieler.an) fahrenTakt(dt);
