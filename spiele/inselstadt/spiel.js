@@ -638,6 +638,7 @@ function kantenMesh(k) {
   }
   if (k.busspur) { const o = T.spuren[T.spuren.length - 1]; for (const sei of [1, -1]) band(pos, col, k.pts, 0.2, Y(0.0205), farbe(0x8a3a3a), sei * o); }
   if (k.schienen) { const o = TYP[k.typ].spuren[TYP[k.typ].spuren.length - 1], c = farbe(0xb9bfc7); for (const sei of [1, -1]) for (const d of [0.085, -0.085]) band(pos, col, k.pts, 0.012, Y(0.027), c, sei * o + d); }
+  if (!k.ebene && k.pts.some((q) => abstand(q.x, q.z) < T.halb + 2.4)) { const c = farbe(0xa9a49a), unten = () => G - 1.1, oben = () => G + 0.013; for (const sei of [1, -1]) wand(pos, col, k.pts, sei * T.halb, unten, oben, c); }
   if (k.ebene > 0) { const c = farbe(0xb9b4a8), unten = (p) => G - 0.1 + ebeneY(k, p.s), oben = (p) => G + 0.09 + ebeneY(k, p.s); for (const sei of [1, -1]) wand(pos, col, k.pts, sei * T.halb, unten, oben, c); band(pos, col, k.pts, T.halb, unten, farbe(0x8c877c)); }
   if (k.einbahn) { const w = farbe(0xffffff); for (let s2 = 1.6; s2 < k.len - 1.4; s2 += 2.4) { const S = k.einbahn > 0 ? s2 : k.len - s2, p = punktBei(k, S), tx = p.tx * k.einbahn, tz = p.tz * k.einbahn, y = G + 0.025 + ebeneY(k, S); for (const off of TYP[k.typ].spuren.length > 1 ? [0.22, 0.64, -0.22, -0.64] : [0.21, -0.21]) { const cx = p.x - tz * off, cz = p.z + tx * off; pos.push(cx + tx * 0.22, y, cz + tz * 0.22, cx - tx * 0.05 - tz * 0.1, y, cz - tz * 0.05 + tx * 0.1, cx - tx * 0.05 + tz * 0.1, y, cz - tz * 0.05 - tx * 0.1); for (let v = 0; v < 3; v++) col.push(w.r, w.g, w.b); pos.push(cx - tx * 0.05 - tz * 0.035, y, cz - tz * 0.05 + tx * 0.035, cx - tx * 0.25 - tz * 0.035, y, cz - tz * 0.25 + tx * 0.035, cx - tx * 0.05 + tz * 0.035, y, cz - tz * 0.05 - tx * 0.035, cx - tx * 0.05 + tz * 0.035, y, cz - tz * 0.05 - tx * 0.035, cx - tx * 0.25 - tz * 0.035, y, cz - tz * 0.25 + tx * 0.035, cx - tx * 0.25 + tz * 0.035, y, cz - tz * 0.25 - tx * 0.035); for (let v = 0; v < 6; v++) col.push(w.r, w.g, w.b); } } }
   const m = new THREE.Mesh(geoAus(pos, col), M.strasse); m.receiveShadow = true; return m;
@@ -712,7 +713,7 @@ function planen(A, C, Bp, typ, ebene) {
   if (len < 1.5) nein("Zu kurz");
   if (len > 90) nein("Zu lang – setz einen Zwischenpunkt");
   if (ebene && len < 7) nein(ebene > 0 ? "Brücken müssen mindestens 7 Felder lang sein" : "Tunnel müssen mindestens 7 Felder lang sein");
-  for (const q of pts) { if (!aufLand(q.x, q.z, ebene && Math.abs(ey(q)) > 0.3 ? -99 : ebene ? 1.5 : 3.5)) { if (!ebene) plan.wasser = true; nein(ebene ? "Die Enden müssen auf festem Land liegen" : "Zu nah am Wasser – bau eine 🌉 Brücke"); break; } if (!imBesitz(q.x, q.z)) { nein("Außerhalb deiner Gebiete – kauf erst Land"); break; } }
+  for (const q of pts) { if (!aufLand(q.x, q.z, ebene && Math.abs(ey(q)) > 0.3 ? -99 : ebene ? 1.5 : T.halb + 0.9)) { if (!ebene) plan.wasser = true; nein(ebene ? "Die Enden müssen auf festem Land liegen" : "Zu nah am Wasser – bau eine 🌉 Brücke"); break; } if (!imBesitz(q.x, q.z)) { nein("Außerhalb deiner Gebiete – kauf erst Land"); break; } }
   for (let i = 1; i < pts.length - 1 && plan.ok; i++) { const a = pts[i - 1], b = pts[i + 1]; if (a.tx * b.tx + a.tz * b.tz < 0.55 && abst(a, b) < 1.2) nein("Kurve zu eng"); }
   if (plan.ok) {
     plan.kreuz = ebene ? [] : kreuzungen(pts, [A, Bp]);
@@ -1534,7 +1535,7 @@ function dienstPlan(p, typ) {
   let zuNah = false, land = true, bes = true, ufer = 99;
   for (let a = -0.5; a <= 0.501; a += 0.25) for (let b = -0.5; b <= 0.501; b += 0.25) {
     const lx = a * W * 0.94, lz = b * Dd * 0.94, wx = x + lx * cs + lz * sn, wz = z - lx * sn + lz * cs, ab2 = abstand(wx, wz);
-    ufer = Math.min(ufer, ab2); if (ab2 < 0.3) land = false; if (!imBesitz(wx, wz)) bes = false;
+    ufer = Math.min(ufer, ab2); if (ab2 < 0.3 && !(D.amWasser && b < 0.15)) land = false; if (!imBesitz(wx, wz)) bes = false;
     if (strassenFrei({ x: wx, z: wz }) < 0.02 || inDienst(wx, wz, 0.02)) zuNah = true;
   }
   const hs = new Set(); for (const c of zellenNahe(x, z, Math.max(W, Dd))) { const dx = c.x - x, dz = c.z - z, lx = dx * cs - dz * sn, lz = dx * sn + dz * cs; if (Math.abs(lx) < W / 2 + 0.3 && Math.abs(lz) < Dd / 2 + 0.3 && c.haus) hs.add(c.haus); }
@@ -1545,7 +1546,7 @@ function dienstPlan(p, typ) {
   if (!bes) return fail("Außerhalb deiner Gebiete");
   if (!land) return fail("Hier ist Wasser");
   if (zuNah) return fail("Zu nah an einer Straße oder einem Gebäude");
-  if (D.amWasser && ufer > 2.2) return fail("Muss direkt am Ufer stehen");
+  if (D.amWasser && ufer > 2.2) return fail("Muss direkt am Ufer stehen – die Rückseite muss ans Wasser");
   if (geld < D.preis) return fail("Zu wenig Geld (" + euro(D.preis) + ")");
   return plan;
 }
