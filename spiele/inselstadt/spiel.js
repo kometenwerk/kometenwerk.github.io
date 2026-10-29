@@ -68,7 +68,7 @@ const KARTEN = {
   seen: { name: "Seenland", em: "🏞️", text: "Wiesen mit vielen Seen. Schön, aber man muss um das Wasser herum planen.", geld: 70000 },
   wald: { name: "Waldtal", em: "🌲", text: "Dichter Wald und zwei Seen. Mehr Startgeld, aber viel zu roden.", geld: 85000 }
 };
-const MEILEN = [
+const MEILEN0 = [
   { name: "Siedlung", ab: 0, gebiete: 1, geld: 0, frei: ["gasse", "parkstr", "einbahn_klein", "radweg", "kies"] },
   { name: "Dorf", ab: 200, gebiete: 2, geld: 5000, frei: ["allee", "land"] },
   { name: "Kleinstadt", ab: 600, gebiete: 3, geld: 10000, frei: ["haupt", "haupt_rad", "haupt_bus", "haupt_gruen", "zone", "autobahn", "rampe", "einbahn_gross"] },
@@ -77,7 +77,28 @@ const MEILEN = [
   { name: "Metropole", ab: 9000, gebiete: 13, geld: 40000, frei: [] },
   { name: "Weltstadt", ab: 20000, gebiete: 24, geld: 60000, frei: [] }
 ];
+const MEILEN = MEILEN0;
 const GEBIET_PREIS = (n) => 15000 + 10000 * n;
+/* Fortschritt wie in Cities: Skylines 2: Erfahrungspunkte (XP), 20 Meilensteine, Entwicklungspunkte */
+const MS = [["Siedlung", 0, 0, 0, 1, 0], ["Weiler", 120, 0, 3000, 1, 1], ["Dorf", 350, 1, 5000, 2, 1], ["Großes Dorf", 700, 1, 6000, 3, 1], ["Marktflecken", 1200, 1, 8000, 3, 1], ["Kleinstadt", 1900, 2, 10000, 4, 2], ["Landstadt", 2800, 2, 12000, 5, 1], ["Mittelstadt", 3900, 2, 14000, 6, 1], ["Kreisstadt", 5200, 2, 16000, 7, 1], ["Stadt", 6800, 3, 20000, 8, 2], ["Große Stadt", 8800, 3, 22000, 10, 1], ["Regionalzentrum", 11200, 3, 25000, 12, 1], ["Oberzentrum", 14000, 3, 28000, 14, 1], ["Großstadt", 17500, 4, 32000, 16, 2], ["Großstadt mit Flair", 21500, 4, 36000, 18, 1], ["Kulturstadt", 26000, 4, 40000, 21, 1], ["Metropole", 31500, 5, 45000, 24, 2], ["Wirtschaftsmetropole", 38000, 5, 50000, 28, 1], ["Weltstadt-Anwärter", 46000, 5, 55000, 32, 1], ["Weltstadt", 55000, 6, 60000, 40, 2], ["Megacity", 66000, 6, 80000, 49, 3]].map(([name, xp, stufe, geld, gebiete, ep]) => ({ name, xp, stufe, geld, gebiete, ep }));
+const ENTW = {
+  strom: { name: "Strom", em: "⚡", knoten: [["strom1", "Effizientere Kraftwerke", "+15 % Strom aus allen Kraftwerken", 1], ["strom2", "Stromspeicher", "+15 % Strom zusätzlich", 2]] },
+  wasser: { name: "Wasser", em: "💧", knoten: [["wasser1", "Starke Pumpen", "+15 % Wasser", 1], ["wasser2", "Moderne Klärtechnik", "+20 % Abwasser-Leistung", 2]] },
+  muell: { name: "Müll", em: "🗑️", knoten: [["muell1", "Größere Müllwagen", "+20 % Müllkapazität", 1], ["muell2", "Mülltrennung", "+15 % Müllkapazität zusätzlich", 2]] },
+  polizei: { name: "Polizei", em: "🚓", knoten: [["polizei1", "Mehr Streifen", "+20 % Reichweite der Polizei", 1], ["polizei2", "Nachbarschaftshilfe", "Kriminalität wächst 30 % langsamer", 2]] },
+  feuer: { name: "Feuerwehr", em: "🚒", knoten: [["feuer1", "Mehr Löschzüge", "+20 % Reichweite der Feuerwehr", 1], ["feuer2", "Rauchmelder", "Halb so viele Brände", 2]] },
+  gesund: { name: "Gesundheit", em: "🏥", knoten: [["gesund1", "Mehr Rettungswagen", "+20 % Reichweite", 1], ["gesund2", "Sportvereine", "Krankheiten 30 % seltener", 2]] },
+  bildung: { name: "Bildung", em: "🎓", knoten: [["bildung1", "Schulbusse", "+20 % Reichweite der Schulen", 1], ["bildung2", "Ganztagsschulen", "+25 % Plätze in Schulen", 2]] },
+  verkehr: { name: "Verkehr", em: "🛣️", knoten: [["verkehr1", "Günstiger Straßenbau", "Straßen 15 % billiger", 1], ["verkehr2", "Effizienter Nahverkehr", "Busse und Bahnen 20 % billiger im Unterhalt", 2]] },
+  wirtschaft: { name: "Wirtschaft", em: "💼", knoten: [["wirt1", "Wirtschaftsförderung", "Mehr Bedarf an Gewerbe und Büros", 1], ["wirt2", "Steuerbüro", "+5 % Steuereinnahmen", 2], ["wirt3", "Stadtmarketing", "Alle sind etwas zufriedener", 2]] }
+};
+MEILEN.forEach((m, i) => { const q = MS.find((x) => x.stufe === i); if (q) m.ab = q.xp; });
+let xp = 0, ms = 0, maxEinw = 0, ep = 0, entw = new Set(), kredite = [], monatXp = 0;
+const hatEntw = (id) => entw.has(id);
+const gebieteErlaubt = () => MS[ms].gebiete;
+const KREDIT_ARTEN = [{ betrag: 25000, zins: 0.05, wochen: 52 }, { betrag: 100000, zins: 0.06, wochen: 104 }, { betrag: 250000, zins: 0.07, wochen: 156 }];
+const kreditRaten = () => kredite.reduce((a, k) => a + Math.min(k.rate, k.rest), 0);
+function xpPlus(n) { if (n > 0) { xp += n; } }
 const TAG_SEK = 12;   // ein Spieltag dauert bei ▶️ 12 Sekunden (ruhiger wie in Cities: Skylines 2)
 const WOCHENTAGE = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 const STUFEN = { niedrig: { name: "Niedrig", pr: 1, schatten: 0, autos: 45, leute: 30, details: 0 }, mittel: { name: "Mittel", pr: 1.5, schatten: 1024, autos: 90, leute: 60, details: 1 }, hoch: { name: "Hoch", pr: 2, schatten: 2048, autos: 150, leute: 100, details: 1 } };
@@ -522,13 +543,13 @@ function gebieteZeichnen() {
   grenze.geometry.dispose(); grenze.geometry = new THREE.BufferGeometry(); grenze.geometry.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); grenze.computeLineDistances();
   sperrFlaechen.clear(); preisSchilder.children.forEach((s) => { s.material.map.dispose(); s.material.dispose(); }); preisSchilder.clear();
   if (werkzeug !== "gebiet") return;
-  const erlaubt = MEILEN[meilenstein].gebiete, preis = GEBIET_PREIS(gekauft);
+  const erlaubt = gebieteErlaubt(), preis = GEBIET_PREIS(gekauft);
   for (let i = 0; i < KN; i++) for (let j = 0; j < KN; j++) {
     if (besitz.has(i + "," + j) || !kachelHatLand(i, j)) continue;
     const m = kachelMitte(i, j), p = new THREE.Mesh(sperrGeo, M.sperre); p.position.set(m.x, G + 0.09, m.z); p.renderOrder = 4; sperrFlaechen.add(p);
     if (!kaufbar(i, j)) continue;
     let s;
-    if (gekauft >= erlaubt) { const n = MEILEN.find((x) => x.gebiete > gekauft); s = schild("🔒 " + (n ? n.name : "–"), n ? "ab " + zahl(n.ab) + " Einwohnern" : "", false); }
+    if (gekauft >= erlaubt) { const n = MS.find((x) => x.gebiete > gekauft) && { name: MS.find((x) => x.gebiete > gekauft).name, ab: MS.find((x) => x.gebiete > gekauft).xp }; s = schild("🔒 " + (n ? n.name : "–"), n ? "ab " + zahl(n.ab) + " XP" : "", false); }
     else { const ok = geld >= preis; s = schild(euro(preis), ok ? "Antippen zum Kaufen" : "Noch zu teuer", ok); }
     s.position.set(m.x, 4, m.z); s.userData = { i, j }; preisSchilder.add(s);
   }
@@ -684,10 +705,10 @@ function kreuzungen(pts, ausserNah) {
 function typFrei(t) { return MEILEN.slice(0, meilenstein + 1).some((m) => m.frei.includes(t)) || t === "fuss" || t === "klein"; }
 function planen(A, C, Bp, typ, ebene) {
   ebene = ebene || 0;
-  const T = TYP[typ], { pts, len } = abtasten(A, C, Bp), plan = { A, C, B: Bp, typ, pts, laenge: len, kosten: Math.round(len * T.preis * (ebene > 0 ? 3 : ebene < 0 ? 4 : 1)), kreuz: [], ok: true, grund: "", ebene };
+  const T = TYP[typ], { pts, len } = abtasten(A, C, Bp), plan = { A, C, B: Bp, typ, pts, laenge: len, kosten: Math.round(len * T.preis * (ebene > 0 ? 3 : ebene < 0 ? 4 : 1) * (hatEntw("verkehr1") ? 0.85 : 1)), kreuz: [], ok: true, grund: "", ebene };
   const kk = { ebene, len }, ey = (q) => ebeneY(kk, q.s);
   const nein = (g) => { plan.ok = false; plan.grund = plan.grund || g; };
-  if (!typFrei(typ)) { const m = MEILEN.find((x) => x.frei.includes(typ)); nein("🔒 Erst ab " + m.name + " (" + zahl(m.ab) + " Einwohner)"); }
+  if (!typFrei(typ)) { const m = MEILEN.find((x) => x.frei.includes(typ)); nein("🔒 Erst ab " + m.name + " (" + zahl(m.ab) + " XP)"); }
   if (len < 1.5) nein("Zu kurz");
   if (len > 90) nein("Zu lang – setz einen Zwischenpunkt");
   if (ebene && len < 7) nein(ebene > 0 ? "Brücken müssen mindestens 7 Felder lang sein" : "Tunnel müssen mindestens 7 Felder lang sein");
@@ -725,7 +746,7 @@ function bauen(plan) {
     baeumeFaellen(k.h, (x, z) => abstandZuLinie({ x, z }, k.pts) < T.halb + 0.3 && !unterirdisch(x, z));
   }
   for (const k of neu) zellenFuer(k);
-  if (neu.length) { geld -= plan.kosten; zeigeWerte(); }
+  if (neu.length) { geld -= plan.kosten; if (plan.kosten > 0) xpPlus(Math.round(plan.laenge * 0.5)); zeigeWerte(); }
   netzGeaendert(); return neu;
 }
 
@@ -1346,12 +1367,14 @@ const PARK_KATS = ["park", "freizeit", "wahrzeichen"];
 const budgetBereich = { strom: 100, wasser: 100, muell: 100, polizei: 100, feuer: 100, gesund: 100, bildung: 100, park: 100 };
 const bKat = (kat) => PARK_KATS.includes(kat) || kat === "verkehr" ? "park" : kat;
 const ausbauFak = (d) => 1 + 0.6 * (d.ausbau || 0), budgetFak = (kat) => (budgetBereich[bKat(kat)] || 100) / 100;
-const leistungVon = (d, r) => (DIENSTE[d.typ][r] || 0) * ausbauFak(d) * budgetFak(DIENSTE[d.typ].kat);
-const kapVon = (d) => (DIENSTE[d.typ].kap || 0) * ausbauFak(d) * budgetFak(DIENSTE[d.typ].kat);
-const reichVon = (d) => DIENSTE[d.typ].radius * (1 + 0.15 * (d.ausbau || 0)) * Math.sqrt(budgetFak(DIENSTE[d.typ].kat));
+const entwLeistung = (r) => r === "strom" ? (hatEntw("strom1") ? 1.15 : 1) * (hatEntw("strom2") ? 1.15 : 1) : r === "wasser" ? (hatEntw("wasser1") ? 1.15 : 1) : r === "abwasser" ? (hatEntw("wasser2") ? 1.2 : 1) : r === "muell" ? (hatEntw("muell1") ? 1.2 : 1) * (hatEntw("muell2") ? 1.15 : 1) : 1;
+const entwReich = (kat) => hatEntw(kat + "1") && ["polizei", "feuer", "gesund", "bildung"].includes(kat) ? 1.2 : 1;
+const leistungVon = (d, r) => (DIENSTE[d.typ][r] || 0) * ausbauFak(d) * budgetFak(DIENSTE[d.typ].kat) * entwLeistung(r);
+const kapVon = (d) => (DIENSTE[d.typ].kap || 0) * ausbauFak(d) * budgetFak(DIENSTE[d.typ].kat) * (DIENSTE[d.typ].kat === "bildung" && hatEntw("bildung2") ? 1.25 : 1);
+const reichVon = (d) => DIENSTE[d.typ].radius * (1 + 0.15 * (d.ausbau || 0)) * Math.sqrt(budgetFak(DIENSTE[d.typ].kat)) * entwReich(DIENSTE[d.typ].kat);
 const unterhaltVon = (d) => DIENSTE[d.typ].unterhalt * (1 + 0.5 * (d.ausbau || 0)) * budgetFak(DIENSTE[d.typ].kat);
 const ausbaubar = (D) => !PARK_KATS.includes(D.kat) && D.kat !== "verkehr" && !D.einzig && !D.gefaengnis;
-const globalFroh = () => { let f = 0; for (const d of dienste.values()) f += DIENSTE[d.typ].froh || 0; return Math.min(12, f); };
+const globalFroh = () => { let f = 0; for (const d of dienste.values()) f += DIENSTE[d.typ].froh || 0; return Math.min(12, f) + (hatEntw("wirt3") ? 4 : 0); };
 const dienstFrei = (t) => meilenstein >= (DIENSTE[t].ab || 0);
 /* Dienstgebäude aus dem Gebäude-Baukasten – mit Toren für die Fahrzeuge */
 const DIENST_NEU = (function () {
@@ -1530,7 +1553,7 @@ function dienstBauen(plan) {
   if (!plan || !plan.ok) return null;
   const D = DIENSTE[plan.typ], cs = Math.cos(plan.rot), sn = Math.sin(plan.rot);
   for (const c of zellenNahe(plan.x, plan.z, Math.max(plan.W, plan.D))) { const dx = c.x - plan.x, dz = c.z - plan.z, lx = dx * cs - dz * sn, lz = dx * sn + dz * cs; if (Math.abs(lx) < plan.W / 2 + 0.35 && Math.abs(lz) < plan.D / 2 + 0.35) { if (c.haus) hausWeg(haeuser.get(c.haus)); zelleWeg(c); } }
-  geld -= D.preis; const d = neuerDienst({ typ: plan.typ, x: plan.x, z: plan.z, rot: plan.rot });
+  geld -= D.preis; xpPlus(Math.round(D.preis / 400)); const d = neuerDienst({ typ: plan.typ, x: plan.x, z: plan.z, rot: plan.rot });
   if (plan.gk != null) { d.gk = plan.gk; d.gs = plan.gs; }
   if (d.typ === "bahnhof" && plan.gk == null) { for (const c of [...zellen.values()]) if (aufGleis(c.x, c.z)) { if (c.haus) hausWeg(haeuser.get(c.haus)); zelleWeg(c); } const g = gleisVon(d); baeumeFaellen({ x0: Math.min(g.p0.x, g.p0.x + g.dx * 240) - 1, x1: Math.max(g.p0.x, g.p0.x + g.dx * 240) + 1, z0: Math.min(g.p0.z, g.p0.z + g.dz * 240) - 1, z1: Math.max(g.p0.z, g.p0.z + g.dz * 240) + 1 }, (bx, bz) => aufGleis(bx, bz)); bahnGleiseZeichnen(); }
   zellenNeu = true; dreckZeichnen(); zeigeWerte(); speichernBald(); return d;
@@ -1644,8 +1667,8 @@ function dienstTakt(dt) {
     if (h.verlassen) { if (simZeit - h.verlassen > 50) hausWeg(h); continue; }
     const hat = h.hat || {}, a = h.abd || {};
     const lebt = leute(h) + jobs(h) > 0, jung = simZeit - (h.simGeboren || 0) < TAG_SEK * 7;
-    h.krimi = a.polizei ? Math.max(0, (h.krimi || 0) - dt * 3) : (h.krimi || 0) + dt * (lebt ? 0.25 + Math.min(0.5, leute(h) / 80) : 0) * gefaengnisFak;
-    h.krank = a.gesund ? Math.max(0, (h.krank || 0) - dt * 3) : (h.krank || 0) + dt * (gruppe(h) === "w" ? 0.25 : 0.08);
+    h.krimi = a.polizei ? Math.max(0, (h.krimi || 0) - dt * 3) : (h.krimi || 0) + dt * (lebt ? 0.25 + Math.min(0.5, leute(h) / 80) : 0) * gefaengnisFak * (hatEntw("polizei2") ? 0.7 : 1);
+    h.krank = a.gesund ? Math.max(0, (h.krank || 0) - dt * 3) : (h.krank || 0) + dt * (gruppe(h) === "w" ? 0.25 : 0.08) * (hatEntw("gesund2") ? 0.7 : 1);
     let p = null;
     if (h.brand) p = "feuer";
     else if (!jung) for (const r of ["strom", "wasser", "abwasser", "muell"]) if (hat[r] === false) { probleme[r]++; if (!p) p = r; }
@@ -1671,7 +1694,7 @@ function dienstTakt(dt) {
     if (top && top[1] >= 3) { problemTippZeit = simZeit; const hilfe = { strom: "Bau ein Windrad oder Kraftwerk (🏛️ Dienste → ⚡ Strom).", wasser: "Bau eine Wasserpumpe am Ufer (🏛️ Dienste → 💧 Wasser).", abwasser: "Bau eine Kläranlage am Ufer (🏛️ Dienste → 💧 Wasser).", muell: "Bau eine Mülldeponie (🏛️ Dienste → 🗑️ Müll)." }; tipp(PROBLEM_TEXT[top[0]] + " bei " + top[1] + " Häusern. " + hilfe[top[0]], 6000); }
   }
   // Brände entstehen
-  if (haeuser.size > 40 && Math.random() < 0.0015 * dt * Math.min(2, haeuser.size / 150)) {
+  if (haeuser.size > 40 && Math.random() < 0.0015 * dt * Math.min(2, haeuser.size / 150) * (hatEntw("feuer2") ? 0.5 : 1)) {
     const L = [...haeuser.values()].filter((h) => !h.brand && !h.verlassen), h = L[Math.floor(Math.random() * L.length)];
     if (h && (!(h.abd && h.abd.feuer) || Math.random() < 0.3)) { h.brand = { t: simZeit, gerufen: false }; if (!(h.abd && h.abd.feuer)) tipp("🔥 Feuer bei " + hausName(h) + "! Ohne Feuerwache brennt es ab.", 4000); }
   }
@@ -1991,8 +2014,9 @@ function kennzahlen() {
   let e = 0, jl = 0, jb = 0, ji = 0; for (const h of haeuser.values()) { const g = gruppe(h); if (g === "w") e += leute(h); else if (g === "g") jl += jobs(h); else if (g === "b") jb += jobs(h); else ji += jobs(h); }
   const ein = { w: e * 2.0 * steuern.w / 9, g: jl * 2.6 * steuern.g / 9, b: jb * 3.2 * steuern.b / 9, i: ji * 2.4 * steuern.i / 9 };
   let strassen = 0; for (const k of kanten.values()) strassen += k.len * TYP[k.typ].preis * 0.012;
-  const nvE = busEinnahmen() + anzahlTyp("bahnhof") * 220 + anzahlTyp("hafen") * 320, nvK = busKosten(), einnahmen = ein.w + ein.g + ein.b + ein.i + nvE, dk = dienstKosten();
-  return { e, jl, jb, ji, j: jl + jb + ji, ein, nvE, nvK, einnahmen, strassen, dienste: dk, ausgaben: strassen + dk + nvK, saldo: einnahmen - strassen - dk - nvK };
+  if (hatEntw("wirt2")) for (const z in ein) ein[z] *= 1.05;
+  const nvE = busEinnahmen() + anzahlTyp("bahnhof") * 220 + anzahlTyp("hafen") * 320, nvK = busKosten() * (hatEntw("verkehr2") ? 0.8 : 1), einnahmen = ein.w + ein.g + ein.b + ein.i + nvE, dk = dienstKosten(), kr = kreditRaten();
+  return { e, jl, jb, ji, j: jl + jb + ji, ein, nvE, nvK, einnahmen, strassen, dienste: dk, kredit: kr, ausgaben: strassen + dk + nvK + kr, saldo: einnahmen - strassen - dk - nvK - kr };
 }
 function bedarfBerechnen() {
   const k = kennzahlen(), arbeiter = k.e * 0.55;
@@ -2003,23 +2027,30 @@ function bedarfBerechnen() {
   let i = (arbeiter * (zoneFrei(5) ? 0.36 - bil * 0.06 : 0.42) - k.ji) * 1.2 + (k.e < 60 ? 25 : 0) + k.jl * 0.15;
   const nb = [...dienste.values()].filter((d) => d.typ === "bahnhof" && (d.gk == null || simZeit - (d.zugDa ?? -999) < 150)).length, nh = anzahlTyp("hafen"); w += 8 * nb; l += 10 * nb + 4 * nh; i += 14 * nh;
   const s = (z, v) => (v - (steuern[z] - 9) * 4.5) * (1 - (steuern[z] - 9) * 0.05);
+  if (hatEntw("wirt1")) { l += 10; b += 10; }
   bedarf = { w: klemme(s("w", w), -100, 100), g: klemme(s("g", l), -100, 100), b: klemme(s("b", b), -100, 100), i: klemme(s("i", i), -100, 100) };
   const balken = document.querySelectorAll("#bedarf i"); ["w", "g", "b", "i"].forEach((z, n) => { if (balken[n]) balken[n].style.height = Math.max(2, bedarf[z] / 100 * 26) + "px"; });
 }
 function meilensteinPruefen() {
-  const e = kennzahlen().e;
-  while (meilenstein < MEILEN.length - 1 && e >= MEILEN[meilenstein + 1].ab) {
-    meilenstein++; const m = MEILEN[meilenstein]; geld += m.geld;
-    const frei = m.frei.map((t) => TYP[t].em + " " + TYP[t].name).concat(Object.values(ZONEN).filter((z) => z.ab === meilenstein).map((z) => z.em + " " + z.name));
-    infoZeigen(`<b>🎉 Meilenstein: ${m.name}!</b>Deine Stadt hat ${zahl(m.ab)} Einwohner.<br>+${euro(m.geld)} Belohnung${frei.length ? "<br>Neu: " + frei.join(", ") : ""}<br><small>Jetzt kannst du bis zu ${m.gebiete} Gebiete dazukaufen.</small>`, 7000);
+  const e = kennzahlen().e; if (e > maxEinw) { xpPlus((e - maxEinw) * 2); maxEinw = e; }
+  while (ms < MS.length - 1 && xp >= MS[ms + 1].xp) {
+    ms++; const m = MS[ms], alt = meilenstein; geld += m.geld; ep += m.ep; meilenstein = Math.max(meilenstein, m.stufe);
+    let frei = [];
+    if (meilenstein > alt) for (let i = alt + 1; i <= meilenstein; i++) frei = frei.concat(MEILEN[i].frei.map((t) => TYP[t].em + " " + TYP[t].name), Object.values(ZONEN).filter((z) => z.ab === i).map((z) => z.em + " " + z.name), Object.values(DIENSTE).filter((D) => D.ab === i).map((D) => D.em + " " + D.name));
+    infoZeigen(`<b>🎉 Meilenstein ${ms}: ${m.name}!</b>+${euro(m.geld)} · +${m.ep} Entwicklungspunkt${m.ep > 1 ? "e" : ""} · bis zu ${m.gebiete} Gebiete${frei.length ? "<br>Neu: " + frei.slice(0, 10).join(", ") + (frei.length > 10 ? " …" : "") : ""}<br><small>Tipp auf 📈 Fortschritt, um Entwicklungspunkte auszugeben.</small>`, 8000);
     unterleiste();
   }
+  xpZeigen();
 }
+function xpZeigen() { const el = $("xpBalken"); if (!el) return; const a = MS[ms], n = MS[ms + 1]; el.style.width = (n ? Math.min(100, (xp - a.xp) / (n.xp - a.xp) * 100) : 100) + "%"; $("xpName").textContent = a.name + (ep ? " · " + ep + " ⭐" : ""); }
 function wocheTakt() {
   nvLetzte = nvWoche; nvWoche = { fahrten: 0, einnahmen: 0 }; for (const L of linien.values()) { L.letzteWoche = L.fahrgaeste || 0; L.auslastung = L.plaetzeSumme ? L.besetztSumme / L.plaetzeSumme : 0; L.fahrgaeste = 0; L.plaetzeSumme = L.besetztSumme = 0; }
-  const k = kennzahlen(); geld += k.saldo; letzteWoche = k; zeigeWerte();
+  const k = kennzahlen(); geld += k.saldo; letzteWoche = k;
+  for (const kr of kredite) kr.rest -= Math.min(kr.rate, kr.rest); if (kredite.some((kr) => kr.rest <= 0.5)) { kredite = kredite.filter((kr) => kr.rest > 0.5); tipp("🏦 Ein Kredit ist abbezahlt!", 3000); }
+  if (++monatXp >= 4) { monatXp = 0; xpPlus(Math.round(k.e * 0.02 * zufriedenheit() / 100)); }
+  zeigeWerte();
   if (geld < 0 && geld - k.saldo >= 0) tipp("⚠️ Dein Geld ist im Minus! Senk die Ausgaben oder erhöh die Steuern.", 5000);
-  if (werkzeug === "gebiet") gebieteZeichnen(); if (!$("budget").hidden) budgetZeigen(); speichernBald();
+  if (werkzeug === "gebiet") gebieteZeichnen(); if (!$("budget").hidden) ($("budget").dataset.modus === "f" ? fortschrittZeigen : budgetZeigen)(); speichernBald();
 }
 let frohGlatt = null;
 function zufriedenheit() {
@@ -2035,7 +2066,23 @@ function zeigeWerte() {
   frohGlatt = frohGlatt == null ? zufriedenheit() : frohGlatt + (zufriedenheit() - frohGlatt) * 0.2; const z = Math.round(frohGlatt); $("wFroh").textContent = (z >= 75 ? "😄 " : z >= 55 ? "🙂 " : z >= 35 ? "😐 " : "😟 ") + z + " %";
   const t = $("trend"); t.textContent = (d >= 0 ? "+" : "") + zahl(d) + "/Wo"; t.className = d >= 0 ? "plus" : "minus";
 }
-function datumZeigen() { const w = Math.floor(tage / 7) + 1, d = Math.floor(tage) % 7; $("datum").textContent = "Woche " + w + " · " + WOCHENTAGE[d]; }
+function datumZeigen() { xpZeigen(); const w = Math.floor(tage / 7) + 1, d = Math.floor(tage) % 7; $("datum").textContent = "Woche " + w + " · " + WOCHENTAGE[d]; }
+function fortschrittZeigen() {
+  const el = $("budget"), a = MS[ms], n = MS[ms + 1], fort = n ? Math.min(100, (xp - a.xp) / (n.xp - a.xp) * 100) : 100;
+  const baum = (k) => { const E = ENTW[k]; return `<div class="ebaum"><b>${E.em} ${E.name}</b>${E.knoten.map(([id, name, text, kosten], i) => { const offen = hatEntw(id), vor = i === 0 || hatEntw(E.knoten[i - 1][0]), geht = !offen && vor && ep >= kosten; return `<button type="button" class="eknoten${offen ? " an" : ""}" data-entw="${id}" ${geht ? "" : "data-zu=\"1\""}><span>${offen ? "✅" : vor ? "⭐".repeat(kosten) : "🔒"} ${name}</span><small>${text}</small></button>`; }).join("")}</div>`; };
+  el.innerHTML = `<h2>📈 Fortschritt<button type="button" id="budgetZu" aria-label="Schließen">✕</button></h2>
+    <div><h3>Meilenstein ${ms} von ${MS.length - 1}: ${a.name}</h3><div class="leiste"><i style="width:${fort}%"></i></div><small style="color:var(--leise)">${zahl(Math.round(xp))} XP${n ? ` · nächster: <b>${n.name}</b> bei ${zahl(n.xp)} XP – Belohnung ${euro(n.geld)}, +${n.ep} ⭐, bis zu ${n.gebiete} Gebiete` : " · höchster Meilenstein erreicht!"}</small>
+    <small style="color:var(--leise);display:block;margin-top:6px">XP gibt es für neue Einwohner, neue Straßen und Gebäude und jeden Monat für zufriedene Bürger.</small></div>
+    <div><h3>Entwicklungspunkte: ${ep} ⭐</h3><small style="color:var(--leise);display:block;margin-bottom:8px">Jeder Meilenstein bringt Punkte. Gib sie für dauerhafte Verbesserungen aus.</small><div class="ebaeume">${Object.keys(ENTW).map(baum).join("")}</div></div>
+    <div><h3>Alle Meilensteine</h3><div class="mliste">${MS.slice(1).map((m, i) => `<div class="${i + 1 <= ms ? "an" : ""}"><span>${i + 1 <= ms ? "✅" : i + 1 === ms + 1 ? "▶️" : "⬜"} ${i + 1}. ${m.name}</span><small>${zahl(m.xp)} XP</small></div>`).join("")}</div></div>`;
+  el.hidden = false; el.dataset.modus = "f"; $("budgetZu").onclick = () => { el.hidden = true; };
+}
+$("budget").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.entw) { const id = b.dataset.entw, k = Object.values(ENTW).find((E) => E.knoten.some((q) => q[0] === id)), i = k.knoten.findIndex((q) => q[0] === id), [, name, , kosten] = k.knoten[i]; if (hatEntw(id)) return; if (i > 0 && !hatEntw(k.knoten[i - 1][0])) { tipp("🔒 Erst die Stufe davor freischalten.", 2000); return; } if (ep < kosten) { tipp("Dafür brauchst du " + kosten + " ⭐ – die gibt es bei Meilensteinen.", 2500); return; } ep -= kosten; entw.add(id); versorgungZeit = -99; tipp("✅ " + name + " freigeschaltet!", 2500); xpZeigen(); speichernBald(); fortschrittZeigen(); return; }
+  if (b.dataset.kredit != null) { const K = KREDIT_ARTEN[+b.dataset.kredit]; if (kredite.length >= 3) { tipp("Du kannst höchstens 3 Kredite gleichzeitig haben.", 2500); return; } const gesamt = K.betrag * (1 + K.zins * K.wochen / 52); kredite.push({ betrag: K.betrag, rest: gesamt, rate: gesamt / K.wochen }); geld += K.betrag; zeigeWerte(); tipp("🏦 Kredit über " + euro(K.betrag) + " aufgenommen.", 2500); speichernBald(); budgetZeigen(); return; }
+  if (b.dataset.tilgen != null) { const kr = kredite[+b.dataset.tilgen]; if (!kr) return; if (geld < kr.rest) { tipp("Zu wenig Geld, um den Kredit ganz zu bezahlen (" + euro(kr.rest) + ").", 2500); return; } geld -= kr.rest; kredite.splice(+b.dataset.tilgen, 1); zeigeWerte(); tipp("🏦 Kredit abbezahlt!", 2500); speichernBald(); budgetZeigen(); return; }
+});
 function budgetZeigen() {
   const k = kennzahlen(), el = $("budget"), m = MEILEN[meilenstein], n = MEILEN[meilenstein + 1];
   const zeile = (a, b, cls) => `<div class="zeile ${cls || ""}"><span>${a}</span><span>${b}</span></div>`;
@@ -2043,17 +2090,20 @@ function budgetZeigen() {
   const GR = ["w", "g", "b", "i"];
   const fort = n ? Math.min(100, (k.e - m.ab) / (n.ab - m.ab) * 100) : 100;
   el.innerHTML = `<h2>💶 Budget &amp; Steuern<button type="button" id="budgetZu" aria-label="Schließen">✕</button></h2>
-    <div><h3>Pro Woche</h3>${GR.map((z) => zeile(GRUPPEN[z].em + " Steuern " + GRUPPEN[z].name, "<span class='plus'>+" + euro(k.ein[z]) + "</span>")).join("")}${zeile("🛣️ Unterhalt Straßen", "<span class='minus'>−" + euro(k.strassen) + "</span>")}${k.dienste ? zeile("🏛️ Unterhalt Dienste", "<span class='minus'>−" + euro(k.dienste) + "</span>") : ""}${k.nvK || k.nvE ? zeile("🚌 Nahverkehr, Bahn & Hafen (" + zahl(nvLetzte.fahrten) + " Fahrgäste, Tickets +" + euro(nvLetzte.einnahmen) + ")", "<span class='" + (k.nvE >= k.nvK ? "plus" : "minus") + "'>" + (k.nvE - k.nvK >= 0 ? "+" : "−") + euro(Math.abs(k.nvE - k.nvK)) + "</span>") : ""}${zeile("Ergebnis", "<span class='" + (k.saldo >= 0 ? "plus" : "minus") + "'>" + (k.saldo >= 0 ? "+" : "−") + euro(Math.abs(k.saldo)) + "</span>", "summe")}</div>
+    <div><h3>Pro Woche</h3>${GR.map((z) => zeile(GRUPPEN[z].em + " Steuern " + GRUPPEN[z].name, "<span class='plus'>+" + euro(k.ein[z]) + "</span>")).join("")}${zeile("🛣️ Unterhalt Straßen", "<span class='minus'>−" + euro(k.strassen) + "</span>")}${k.kredit ? zeile("🏦 Kreditraten", "<span class='minus'>−" + euro(k.kredit) + "</span>") : ""}${k.dienste ? zeile("🏛️ Unterhalt Dienste", "<span class='minus'>−" + euro(k.dienste) + "</span>") : ""}${k.nvK || k.nvE ? zeile("🚌 Nahverkehr, Bahn & Hafen (" + zahl(nvLetzte.fahrten) + " Fahrgäste, Tickets +" + euro(nvLetzte.einnahmen) + ")", "<span class='" + (k.nvE >= k.nvK ? "plus" : "minus") + "'>" + (k.nvE - k.nvK >= 0 ? "+" : "−") + euro(Math.abs(k.nvE - k.nvK)) + "</span>") : ""}${zeile("Ergebnis", "<span class='" + (k.saldo >= 0 ? "plus" : "minus") + "'>" + (k.saldo >= 0 ? "+" : "−") + euro(Math.abs(k.saldo)) + "</span>", "summe")}</div>
+    <div><h3>Pro Monat (4 Wochen)</h3>${zeile("Einnahmen", "<span class='plus'>+" + euro(k.einnahmen * 4) + "</span>")}${zeile("Ausgaben", "<span class='minus'>−" + euro(k.ausgaben * 4) + "</span>")}${zeile("<b>Ergebnis</b>", "<b class='" + (k.saldo >= 0 ? "plus" : "minus") + "'>" + (k.saldo >= 0 ? "+" : "−") + euro(Math.abs(k.saldo * 4)) + "</b>")}</div>
+    <div><h3>🏦 Kredite</h3>${kredite.length ? kredite.map((kr, i) => zeile(euro(kr.betrag) + " · noch " + euro(kr.rest), `<span class="minus">−${euro(kr.rate)}/Wo</span> <button type="button" class="chip" data-tilgen="${i}" style="min-height:28px;padding:2px 8px">Ablösen</button>`)).join("") : "<small style='color:var(--leise)'>Keine Kredite.</small>"}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${KREDIT_ARTEN.map((K, i) => `<button type="button" class="chip" data-kredit="${i}">+${euro(K.betrag)}<br><small>${Math.round(K.zins * 100)} % · ${Math.round(K.wochen / 4)} Monate</small></button>`).join("")}</div><small style="color:var(--leise)">Die Rate wird jede Woche abgezogen. Zinsen machen den Kredit teurer.</small></div>
     <div><h3>Steuern</h3><div style="display:grid;gap:10px">${GR.map(regler).join("")}</div><small style="color:var(--leise);display:block;margin-top:8px">Hohe Steuern bringen mehr Geld, aber weniger Zuzug. 9 % ist ausgeglichen.</small></div>
     <div><h3>Budget pro Bereich</h3><div style="display:grid;gap:8px">${Object.keys(budgetBereich).map((k) => `<div class="steuer" style="--c:#a66bff"><span>${DIENST_KAT[k].em} ${DIENST_KAT[k].name}</span><input type="range" min="50" max="150" step="5" value="${budgetBereich[k]}" data-dbudget="${k}" aria-label="Budget ${DIENST_KAT[k].name}"><b>${budgetBereich[k]} %</b></div>`).join("")}</div><small style="color:var(--leise);display:block;margin-top:6px">Mehr Geld = mehr Leistung und weitere Reichweite, aber höhere Kosten.</small></div>
     <div><h3>Versorgung</h3>${Object.keys(RESSOURCEN).map((r) => { const [pr, vb] = versorgung[r], ok = pr >= vb; return zeile(RESSOURCEN[r].em + " " + RESSOURCEN[r].name, `<span class="${ok ? "plus" : "minus"}">${zahl(vb)} / ${zahl(pr)}</span>`); }).join("")}<small style="color:var(--leise)">Gebraucht / vorhanden. Zu wenig? Bau mehr unter 🏛️ Dienste.</small></div>
     <div><h3>Bedarf</h3>${GR.map((z) => zeile(GRUPPEN[z].em + " " + GRUPPEN[z].name, z === "b" && !zoneFrei(5) ? "🔒 ab " + MEILEN[ZONEN[5].ab].name : bedarf[z] > 40 ? "hoch" : bedarf[z] > 10 ? "mittel" : bedarf[z] > 0 ? "wenig" : "keiner")).join("")}</div>
-    <div><h3>Meilenstein: ${m.name}</h3>${n ? `<div class="leiste"><i style="width:${fort}%"></i></div><small style="color:var(--leise)">Nächster: <b>${n.name}</b> bei ${zahl(n.ab)} Einwohnern (jetzt ${zahl(k.e)})${(() => { const f = n.frei.map((t) => TYP[t].name).concat(Object.values(ZONEN).filter((z) => z.ab === meilenstein + 1).map((z) => z.name)); return f.length ? " – schaltet " + f.join(", ") + " frei" : ""; })()}</small>` : "<small>Höchster Meilenstein erreicht!</small>"}</div>`;
+    <div><h3>Meilenstein ${ms}: ${MS[ms].name}</h3><button type="button" class="chip" id="zumFortschritt">📈 Fortschritt &amp; Entwicklungspunkte (${ep} ⭐)</button></div>`;
   el.hidden = false;
-  $("budgetZu").onclick = () => { el.hidden = true; };
+  el.dataset.modus = "b"; $("budgetZu").onclick = () => { el.hidden = true; }; if ($("zumFortschritt")) $("zumFortschritt").onclick = fortschrittZeigen;
 }
 $("budget").addEventListener("input", (e) => { const db = e.target.dataset.dbudget; if (db) { budgetBereich[db] = +e.target.value; e.target.nextElementSibling.textContent = budgetBereich[db] + " %"; versorgungZeit = -99; zeigeWerte(); speichernBald(); return; } const z = e.target.dataset.steuer; if (!z) return; steuern[z] = +e.target.value; e.target.nextElementSibling.textContent = steuern[z] + " %"; bedarfBerechnen(); zeigeWerte(); speichernBald(); });
 $("budget").addEventListener("change", () => budgetZeigen());
+$("xp").onclick = () => fortschrittZeigen();
 
 /* Wachstum nach Bedarf */
 const zk = (g, s, i, r) => zellIndex.get(g + "|" + s + "|" + i + "|" + r);
@@ -3017,7 +3067,7 @@ const platzKey = (n) => "inselstadt-v3-" + n;
 function zustand() {
   const r = (v) => Math.round(v * 1000) / 1000, k = kennzahlen();
   return {
-    v: 3, zonenV: 2, karte, kn: KN, gross: grossKarte ? 1 : 0, geld: Math.round(geld), besitz: [...besitz], gekauft, steuern, meilenstein, tage: Math.round(tage * 100) / 100, ids: { n: nId, k: kId, z: zId, g: gId, h: hId, d: dId, hs: haltId, l: linieId },
+    v: 3, zonenV: 2, fortschritt: { xp: Math.round(xp), ms, maxEinw, ep, entw: [...entw], kredite, monatXp }, karte, kn: KN, gross: grossKarte ? 1 : 0, geld: Math.round(geld), besitz: [...besitz], gekauft, steuern, meilenstein, tage: Math.round(tage * 100) / 100, ids: { n: nId, k: kId, z: zId, g: gId, h: hId, d: dId, hs: haltId, l: linieId },
     meta: { einwohner: k.e, gespeichert: Date.now() },
     knoten: [...knoten.values()].map((n) => [n.id, r(n.x), r(n.z), n.manuell ? (n.ampel ? 1 : 0) : -1, n.aussen ? 1 : 0]),
     kanten: [...kanten.values()].map((k) => [k.id, k.a, k.b, r(k.c.x), r(k.c.z), k.typ, k.aussen ? 1 : 0, k.einbahn || 0, k.ebene || 0, k.ring ? 1 : 0, k.busspur ? 1 : 0, k.schienen ? 1 : 0, k.parken ? 1 : 0]), kreisel,
@@ -3039,6 +3089,8 @@ function allesLeeren() {
 }
 function zustandRein(d) {
   geld = d.geld; besitz = new Set(d.kn ? d.besitz : d.besitz.map((t) => { const [i, j] = t.split(",").map(Number), o = (KN - 5) / 2; return (i + o) + "," + (j + o); })); gekauft = d.gekauft || 0; meilenstein = d.meilenstein || 0; tage = d.tage || 0;
+  if (d.fortschritt) { const f = d.fortschritt; xp = f.xp || 0; ms = f.ms || 0; maxEinw = f.maxEinw || 0; ep = f.ep || 0; entw = new Set(f.entw || []); kredite = f.kredite || []; monatXp = f.monatXp || 0; }
+  else { const st = d.meilenstein || 0; ms = Math.max(0, MS.findIndex((x) => x.stufe === st)); xp = MS[ms].xp; ep = MS.slice(1, ms + 1).reduce((a, x) => a + x.ep, 0); maxEinw = (d.haeuser || []).length * 10; }
   if (d.steuern) steuern = d.steuern.w != null ? Object.assign({ w: 9, g: 9, b: 9, i: 9 }, d.steuern) : { w: d.steuern[1] || 9, g: d.steuern[2] || 9, b: 9, i: d.steuern[3] || 9 };
   if (!d.zonenV) {
     // alte Spielstände: 3 Zonen → neue Zonen wie bei Cities: Skylines
@@ -3272,7 +3324,7 @@ function unterleiste() {
   const u = $("fach"); let kopf = "", karten = "", reiter = "";
   if (werkzeug === "ansehen") {
     kopf = '<span class="ftitel">👆 Ansehen</span><small style="color:var(--leise)">Haus oder Auto antippen für Infos</small>';
-    karten = kk("id", "fahrenKnopf", "🚗", "Selbst fahren", "", false) + kk("id", "budgetKarte", "💶", "Budget &amp; Steuern", "", false) + kk("id", "ansichtKarte", "🔍", "Info-Ansichten", "", false);
+    karten = kk("id", "fahrenKnopf", "🚗", "Selbst fahren", "", false) + kk("id", "budgetKarte", "💶", "Budget &amp; Steuern", "", false) + kk("id", "ansichtKarte", "🔍", "Info-Ansichten", "", false) + kk("id", "fortschrittKarte", "📈", "Fortschritt", ep ? ep + " ⭐" : "", false);
   } else if (werkzeug === "strasse") {
     kopf = '<span class="ftitel">🛣️ Straßen</span>' + chip("data-modus", "gerade", "📏 Gerade", strModus === "gerade") + chip("data-modus", "kurve", "〰️ Kurve", strModus === "kurve") + chip("data-modus", "raster", "▦ Raster", strModus === "raster") + (["gerade", "kurve"].includes(strModus) ? chip("data-parallel", "1", "⇉ Parallel", parallelAn) : "") + (["gerade", "kurve"].includes(strModus) ? ebeneBox() : "") + '<span class="trenn"></span>' + chip("data-modus", "ersetzen", "🔁 Ersetzen", strModus === "ersetzen") + chip("data-modus", "einbahn", "➡️ Einbahn", strModus === "einbahn") + chip("data-modus", "kreisel", "⭕ Kreisverkehr", strModus === "kreisel") + (strModus === "kreisel" ? KREISEL_R.map((R, i) => chip("data-kreisel", i, KREISEL_NAME[i], kreiselGr === i)).join("") : "") + chip("data-modus", "parken", "🅿️ Parkstreifen", strModus === "parken") + chip("data-modus", "busspur", "🚌 Busspur", strModus === "busspur") + chip("data-modus", "schienen", "🚋 Schienen", strModus === "schienen") + chip("data-modus", "ampel", "🚦 Ampeln", strModus === "ampel") + '<span class="trenn"></span>' + rueckChip;
     if (!strReiter) strReiter = TYP[strTyp].kat || "klein";
@@ -3326,17 +3378,18 @@ function fachKlick(e) {
   if (b.id === "fahrenKnopf") { fahrenStarten(); return; }
   if (b.id === "budgetKarte") { budgetZeigen(); return; }
   if (b.id === "ansichtKarte") { ansichtenAufZu(); return; }
-  if (b.dataset.typ) { if (!typFrei(b.dataset.typ)) { const m = MEILEN.find((x) => x.frei.includes(b.dataset.typ)); tipp("🔒 " + TYP[b.dataset.typ].name + " gibt es ab " + (m ? m.name + " (" + zahl(m.ab) + " Einwohner)" : "später") + ".", 3000); return; } strTyp = b.dataset.typ; merke("inselstadt-strtyp", strTyp); planNeu(); }
+  if (b.id === "fortschrittKarte") { fortschrittZeigen(); return; }
+  if (b.dataset.typ) { if (!typFrei(b.dataset.typ)) { const m = MEILEN.find((x) => x.frei.includes(b.dataset.typ)); tipp("🔒 " + TYP[b.dataset.typ].name + " gibt es ab " + (m ? m.name + " (" + zahl(m.ab) + " XP)" : "später") + ".", 3000); return; } strTyp = b.dataset.typ; merke("inselstadt-strtyp", strTyp); planNeu(); }
   if (b.id === "ebeneHoch" || b.id === "ebeneRunter") { ebeneWahl = klemme(ebeneWahl + (b.id === "ebeneHoch" ? 1 : -1), -1, 1); planNeu(); tippEinmal("ebene", "▲▼ Höhe: Brücken führen über Wasser, Straßen und Gleise. Tunnel gehen unten durch. Über Wasser baut sich die Brücke von selbst.", 4500); }
   if (b.dataset.parallel) { parallelAn = !parallelAn; planNeu(); if (parallelAn) tippEinmal("parallel", "⇉ Parallel: Es wird gleich eine zweite Straße im Abstand von " + RASTER + " Feldern mitgebaut – perfekt für Wohnblöcke.", 4000); }
   if (b.dataset.kreisel != null) { kreiselGr = +b.dataset.kreisel; tipp("⭕ " + KREISEL_NAME[kreiselGr] + "er Kreisverkehr – ca. " + euro(Math.round(2 * Math.PI * KREISEL_R[kreiselGr] * 80 + 600)) + ". Tipp auf eine Kreuzung.", 2600); }
   if (b.dataset.modus) { strModus = b.dataset.modus; merke("inselstadt-strmodus", strModus); bauAbbrechen(); tippEinmal("m-" + strModus, TIPPS.strasse(), 3500); }
-  if (b.dataset.zone != null) { const z = +b.dataset.zone; if (z && !zoneFrei(z)) { tipp("🔒 " + ZONEN[z].name + " gibt es ab dem Meilenstein " + MEILEN[ZONEN[z].ab].name + " (" + zahl(MEILEN[ZONEN[z].ab].ab) + " Einwohner).", 3500); return; } zoneWahl = z; if (z) tippEinmal("z-" + z, ZONEN[z].em + " " + ZONEN[z].name + ": " + ZONEN_TEXT[z], 4000); }
+  if (b.dataset.zone != null) { const z = +b.dataset.zone; if (z && !zoneFrei(z)) { tipp("🔒 " + ZONEN[z].name + " gibt es ab dem Meilenstein " + MEILEN[ZONEN[z].ab].name + " (" + zahl(MEILEN[ZONEN[z].ab].ab) + " XP).", 3500); return; } zoneWahl = z; if (z) tippEinmal("z-" + z, ZONEN[z].em + " " + ZONEN[z].name + ": " + ZONEN_TEXT[z], 4000); }
   if (b.dataset.pinsel) { pinsel = b.dataset.pinsel; tippEinmal("p-" + pinsel, TIPPS.zone(), 3500); }
   if (b.dataset.gmodus) { if (b.dataset.gmodus === "bahnhof" && !dienstFrei("bahnhof")) { tipp("🔒 Bahnhöfe gibt es ab " + MEILEN[DIENSTE.bahnhof.ab].name + ".", 2500); return; } gleisModus = b.dataset.gmodus; zuglinieBau = []; bauAbbrechen(); vorschauWeg(); if (gleisModus === "bahnhof") dienstWahl = "bahnhof"; tippEinmal("g-" + gleisModus, TIPPS.gleis(), 3500); }
   if (b.dataset.zlinie) zuglinieWahl = +b.dataset.zlinie === zuglinieWahl ? null : +b.dataset.zlinie;
   if (b.id === "zuglinieLoeschen") { const L = zuglinien.get(zuglinieWahl); if (L) { merkeRueck(); zuglinien.delete(L.id); zuege = zuege.filter((z) => z.linie !== L.id); zuglinieWahl = null; busRechnen(); speichernBald(); } }
-  if (b.dataset.bmodus === "tram" && meilenstein < 3) { tipp("🔒 Straßenbahnen gibt es ab " + MEILEN[3].name + " (" + zahl(MEILEN[3].ab) + " Einwohner).", 3000); return; }
+  if (b.dataset.bmodus === "tram" && meilenstein < 3) { tipp("🔒 Straßenbahnen gibt es ab " + MEILEN[3].name + " (" + zahl(MEILEN[3].ab) + " XP).", 3000); return; }
   if (b.dataset.bmodus) { busModus = b.dataset.bmodus; vorschauWeg(); linieBau = []; frageZu(); linienNeu = true; tippEinmal("b-" + busModus, TIPPS.verkehr(), 3500); }
   if (b.dataset.linie) { linieWahl = +b.dataset.linie === linieWahl ? null : +b.dataset.linie; }
   if (b.id === "busPlus" || b.id === "busMinus") { const L = linien.get(linieWahl); if (L) { L.takt = klemme((L.takt || 40) + (b.id === "busPlus" ? -10 : 10), 10, 180); L.busse = busseFuer(L); speichernBald(); zeigeWerte(); tipp("⏱️ Linie " + L.nr + ": alle " + L.takt + " s ein Fahrzeug (" + L.busse + " unterwegs)", 2200); } }
@@ -3344,7 +3397,7 @@ function fachKlick(e) {
   if (b.id === "busModell") { const L = linien.get(linieWahl); if (L) { const ks = Object.keys(BUS_MODELLE), i = ks.indexOf(L.modell || "mix"); L.modell = ks[(i + 1) % ks.length]; for (const f of fahrzeuge) if (f.linie === L.id) fahrzeugWeg(f); fahrzeuge = fahrzeuge.filter((f) => !f.weg); tipp("Linie " + L.nr + ": " + BUS_MODELLE[L.modell], 2000); speichernBald(); } }
   if (b.id === "linieLoeschen") { const L = linien.get(linieWahl); if (L) { merkeRueck(); linieWeg(L); linieWahl = null; busRechnen(); speichernBald(); } }
   if (b.dataset.dkat) { dienstKat = b.dataset.dkat; dienstWahl = Object.keys(DIENSTE).find((k) => DIENSTE[k].kat === dienstKat); vorschauWeg(); frageZu(); }
-  if (b.dataset.dienst) { const k = b.dataset.dienst, D = DIENSTE[k]; if (!dienstFrei(k)) { tipp("🔒 " + D.name + " gibt es ab " + MEILEN[D.ab].name + " (" + zahl(MEILEN[D.ab].ab) + " Einwohner).", 3500); return; } dienstWahl = k; if (werkzeug === "verkehr") busModus = "bau"; vorschauWeg(); frageZu(); tipp(D.em + " " + D.name + ": " + D.text, 3500); }
+  if (b.dataset.dienst) { const k = b.dataset.dienst, D = DIENSTE[k]; if (!dienstFrei(k)) { tipp("🔒 " + D.name + " gibt es ab " + MEILEN[D.ab].name + " (" + zahl(MEILEN[D.ab].ab) + " XP).", 3500); return; } dienstWahl = k; if (werkzeug === "verkehr") busModus = "bau"; vorschauWeg(); frageZu(); tipp(D.em + " " + D.name + ": " + D.text, 3500); }
   unterleiste();
 }
 /* Info-Ansichten (oben rechts) */
@@ -3662,7 +3715,7 @@ function gebietAntippen(e) {
   let ziel = null; const t = strahl.intersectObjects(preisSchilder.children); if (t.length) ziel = t[0].object.userData;
   if (!ziel) { const p = bodenPunkt(e); if (p) { const [i, j] = kachelVon(p.x, p.z); if (kaufbar(i, j)) ziel = { i, j }; } }
   if (!ziel) { tipp("Du kannst nur Gebiete kaufen, die an dein Land grenzen.", 2200); return; }
-  if (gekauft >= MEILEN[meilenstein].gebiete) { const n = MEILEN.find((x) => x.gebiete > gekauft); frage("🔒 Mehr Gebiete gibt es ab " + (n ? n.name + " (" + zahl(n.ab) + " Einwohner)" : "–"), false, null); return; }
+  if (gekauft >= gebieteErlaubt()) { const n = MS.find((x) => x.gebiete > gekauft) && { name: MS.find((x) => x.gebiete > gekauft).name, ab: MS.find((x) => x.gebiete > gekauft).xp }; frage("🔒 Mehr Gebiete gibt es ab " + (n ? n.name + " (" + zahl(n.ab) + " XP)" : "–"), false, null); return; }
   const preis = GEBIET_PREIS(gekauft);
   if (geld < preis) { frage("Das Gebiet kostet " + euro(preis) + " – dir fehlen noch " + euro(preis - geld), false, null); return; }
   frage("Gebiet kaufen für " + euro(preis) + "?", true, () => {
@@ -3676,7 +3729,7 @@ function gebietAntippen(e) {
 
 /* Zeitleiste und Menü */
 function zeitKnoepfe() { document.querySelectorAll("#zeitleiste button").forEach((b) => b.setAttribute("aria-pressed", String(+b.dataset.t === tempo))); }
-$("zeitleiste").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; tempo = +b.dataset.t; zeitKnoepfe(); if (!tempo) tipp("⏸️ Pause – du kannst trotzdem bauen.", 2000); });
+$("zeitleiste").addEventListener("click", (e) => { const b = e.target.closest("button[data-t]"); if (!b) return; tempo = +b.dataset.t; zeitKnoepfe(); if (!tempo) tipp("⏸️ Pause – du kannst trotzdem bauen.", 2000); });
 $("kopf").onclick = () => { if ($("budget").hidden) budgetZeigen(); else $("budget").hidden = true; };
 const menue = $("menue");
 $("menueKnopf").onclick = () => { $("ansichten").hidden = true; menue.hidden = !menue.hidden; $("menueKnopf").setAttribute("aria-expanded", String(!menue.hidden)); };
@@ -3888,7 +3941,7 @@ function starten(n, daten, neueKarte) {
   platz = n; $("hauptmenue").hidden = true; $("laden").classList.remove("weg");
   setTimeout(() => {
     grossKarte = daten ? !!daten.gross : true; weltBauen(daten ? (daten.karte || "insel") : neueKarte);
-    if (daten) zustandRein(daten);
+    if (daten) { zustandRein(daten); if (!daten.fortschritt) maxEinw = kennzahlen().e; }
     else { geld = KARTEN[karte].geld; netzGeaendert(); gebieteZeichnen(); bedarfBerechnen(); zeigeWerte(); datumZeigen(); }
     if (!aussenKnoten) aussenBauen(); aussenGleisBauen();
     spielLaeuft = true; document.body.classList.add("laeuft"); if (matchMedia("(pointer:coarse)").matches) vollbildQuer(); speichernBald(); unterleiste(); zeitKnoepfe(); menueKnoepfe();

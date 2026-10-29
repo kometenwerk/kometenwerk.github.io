@@ -42,6 +42,19 @@ button:disabled{opacity:.4;cursor:not-allowed}
 #zeitleiste{display:flex;align-items:center;gap:2px;padding:4px}
 #zeitleiste button{border:0;background:transparent;border-radius:9px;min-width:36px;min-height:36px;font-size:.95rem}
 #zeitleiste button[aria-pressed=true]{background:var(--f);color:#14082a}
+#xp{border:0;background:transparent;display:grid;gap:3px;padding:2px 8px 2px 2px;text-align:left;font-size:.68rem;color:var(--leise);white-space:nowrap}
+#xp i{display:block;width:92px;height:5px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}
+#xp b{display:block;height:100%;width:0;background:linear-gradient(90deg,#a66bff,#ffd23d);border-radius:3px}
+.ebaeume{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.ebaum{display:grid;gap:4px;align-content:start;background:rgba(255,255,255,.04);border-radius:12px;padding:8px}
+.ebaum>b{font-size:.82rem}
+.eknoten{border:1px solid var(--linie);background:rgba(255,255,255,.05);border-radius:10px;padding:6px 8px;text-align:left;display:grid;gap:1px;font-size:.76rem}
+.eknoten small{color:var(--leise);font-size:.68rem}
+.eknoten.an{background:rgba(61,220,107,.16);border-color:rgba(61,220,107,.5)}
+.eknoten[data-zu]{opacity:.55}
+.mliste{display:grid;gap:2px;font-size:.78rem}
+.mliste div{display:flex;justify-content:space-between;padding:2px 4px;border-radius:6px}
+.mliste .an{color:var(--leise)}
 #datum{font-size:.78rem;color:var(--leise);padding:0 8px 0 4px;font-variant-numeric:tabular-nums;white-space:nowrap}
 #vollKnopf{position:fixed;top:max(8px,env(safe-area-inset-top));right:calc(max(8px,env(safe-area-inset-right)) + 108px);width:46px;height:46px;border-radius:14px;z-index:6;font-size:1.2rem}
 #drehen{position:fixed;inset:0;z-index:20;display:none;place-items:center;text-align:center;padding:24px;background:#0b1020;color:var(--text)}
@@ -179,7 +192,7 @@ body.baut #fach{display:none!important}
   #ansichten,#menue{top:calc(max(8px,env(safe-area-inset-top)) + 52px);max-height:calc(100vh - 64px)}
 }
 @media (max-width:560px){#kopf img{display:none}#kopf .kz.jobs{display:none}.kz small{display:none}#kopf{gap:10px}}
-@media (max-width:440px){#datum{display:none}#werkzeug button{width:44px}.kk{width:84px;min-height:84px}.kz b{font-size:.9rem}#kopf{gap:8px;padding:5px 8px}#bedarf{gap:2px;padding-left:3px}#bedarf .saeule{width:7px}#trend{font-size:.66rem}}
+@media (max-width:440px){#datum{display:none}#xp i{width:60px}#werkzeug button{width:44px}.kk{width:84px;min-height:84px}.kz b{font-size:.9rem}#kopf{gap:8px;padding:5px 8px}#bedarf{gap:2px;padding-left:3px}#bedarf .saeule{width:7px}#trend{font-size:.66rem}}
 </style>
 <script type="importmap">{"imports":{"three":"../../shared/vendor/three-0.160.0/three.module.min.js","three/addons/":"../../shared/vendor/three-0.160.0/"}}</script>
 </head>
@@ -197,7 +210,7 @@ body.baut #fach{display:none!important}
     <div class="kz"><small>Zufrieden</small><b id="wFroh">😊 –</b></div>
     <div class="kz"><small>Versorgung</small><b id="versorgungKopf" class="vkopf"></b></div>
     <div id="bedarf" title="Bedarf: Wohnen, Gewerbe, Büros, Industrie"><span style="--c:var(--w)"><span class="saeule"><i></i></span><em>W</em></span><span style="--c:var(--l)"><span class="saeule"><i></i></span><em>G</em></span><span style="--c:#3fd6c9"><span class="saeule"><i></i></span><em>B</em></span><span style="--c:var(--i)"><span class="saeule"><i></i></span><em>I</em></span></div></button>
-  <div id="zeitleiste" class="glas"><button type="button" data-t="0" aria-label="Pause">⏸️</button><button type="button" data-t="1" aria-label="Normal">▶️</button><button type="button" data-t="2" aria-label="Schnell">⏩</button><button type="button" data-t="3" aria-label="Sehr schnell">⏭️</button><span id="datum"></span></div>
+  <div id="zeitleiste" class="glas"><button type="button" data-t="0" aria-label="Pause">⏸️</button><button type="button" data-t="1" aria-label="Normal">▶️</button><button type="button" data-t="2" aria-label="Schnell">⏩</button><button type="button" data-t="3" aria-label="Sehr schnell">⏭️</button><span id="datum"></span><button type="button" id="xp" aria-label="Fortschritt"><span id="xpName"></span><i><b id="xpBalken"></b></i></button></div>
 </div>
 <button id="vollKnopf" class="glas" type="button" aria-label="Vollbild" title="Vollbild">⛶</button>
 <button id="ansichtKnopf" class="glas" type="button" aria-label="Info-Ansichten" aria-pressed="false" title="Info-Ansichten">🔍</button>
