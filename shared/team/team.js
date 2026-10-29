@@ -336,6 +336,7 @@
       var extra = r ? '<span class="badge">KI</span><span class="rolle">' + esc(r.rolle) + (r.firma !== FIRMA ? " · " + esc(T.firmen[r.firma].name) : "") + "</span>" : "";
       var akt = "";
       if (m.plan) akt = '<div class="aktionen"><button class="knopf klein haupt" type="button" data-freigabe="' + esc(m.id) + '">111 · Freigeben</button><button class="knopf klein" type="button" data-kopie="' + esc(m.id) + '">Plan kopieren</button><button class="knopf klein" type="button" data-zuaufgaben="' + esc(m.id) + '">In Aufgaben</button></div>';
+      else if (istWerbung(r) && !m.system && String(m.text).indexOf("📺") !== 0) akt = '<div class="aktionen"><button class="knopf klein" type="button" data-yt="' + esc(m.id) + '">📺 Auf YouTube hochladen</button></div>';
       h += '<div class="msg' + (folge ? " folge" : "") + (m.plan ? " plan" : "") + (m.system ? " system" : "") + '">' + av +
         '<div style="min-width:0"><div class="msg-kopf"><b>' + esc(name) + "</b>" + extra + "<time>" + uhr(m.t) + '</time></div><div class="text">' + textHtml(m.text) + "</div>" + akt + "</div></div>";
       vorher = { wer: wer, t: m.t };
@@ -349,6 +350,7 @@
     if (b.dataset.freigabe) senden("111");
     else if (b.dataset.kopie) { var t = m(b.dataset.kopie).text; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { toast("Plan kopiert."); }).catch(function () { toast("Kopieren ging nicht – markiere den Text von Hand."); }); }
     else if (b.dataset.zuaufgaben) planZuAufgaben(m(b.dataset.zuaufgaben));
+    else if (b.dataset.yt) YT.oeffnen(m(b.dataset.yt));
   });
 
   /* ---------- Schreiben ---------- */
@@ -391,6 +393,7 @@
   function tippsZeichnen() {
     var l = rolle(F.leitung);
     var t = [["@" + l.name + " ", "@" + l.name + " fragen"], ["Auftrag: ", "🧩 Auftrag planen"], ["@Kai ", "@Kai testen lassen"]];
+    if (rolle("tim")) t.push(["@Tim Plane ein kurzes YouTube-Video über ", "📺 @Tim Video planen"]);
     $("tipps").innerHTML = t.map(function (x) { return '<button type="button" data-t="' + esc(x[0]) + '">' + esc(x[1]) + "</button>"; }).join("");
   }
 
@@ -440,7 +443,8 @@
         (r.achtet && r.achtet.length ? "Du achtest besonders auf: " + r.achtet.join("; ") + ". " : "") +
         "Der Chef von OMNIVIA ist ein junger Gründer; sprich ihn mit du an. Antworte auf Deutsch, freundlich und konkret, in höchstens 5 kurzen Sätzen. " +
         "Regeln: OMNIVIA ist sicher, ehrlich und werbefrei. Alles soll kostenlos bleiben (GitHub Pages, Firebase Spark). Erfinde keine Fakten, Preise oder Testergebnisse; sag ehrlich, wenn du etwas nicht weißt. " +
-        "Keine Geheimnisse, Passwörter oder Schlüssel in den Chat. Du bist eine KI und gibst dich nicht als Mensch aus. Bleib in deinem Fachgebiet und nenne sonst, wer zuständig ist. " + (zusatz || "");
+        "Keine Geheimnisse, Passwörter oder Schlüssel in den Chat. Du bist eine KI und gibst dich nicht als Mensch aus. Bleib in deinem Fachgebiet und nenne sonst, wer zuständig ist. " +
+        (r.abt === "Werbung" ? "Wenn es um ein Video für YouTube geht, schreib am Ende drei eigene Zeilen: 'Titel: …' (höchstens 70 Zeichen), 'Beschreibung: …' (2 ehrliche Sätze) und 'Tags: …' (5 Wörter mit Komma). Der Chef lädt das Video selbst hoch, es ist zuerst privat. " : "") + (zusatz || "");
     }
     function steckbriefAntwort(r, frage, zusatz) {
       var a = r.achtet || [];
@@ -689,7 +693,8 @@
   /* ---------- Fenster: Steckbrief, neue KI, Team ---------- */
   var dlg = $("fenster");
   function fenster(html) { $("fensterInhalt").innerHTML = html; if (!dlg.open) dlg.showModal(); }
-  dlg.addEventListener("click", function (e) { if (e.target === dlg || e.target.closest("[data-zu]")) dlg.close(); });
+  dlg.addEventListener("click", function (e) { if (YT.laeuft()) return; if (e.target === dlg || e.target.closest("[data-zu]")) dlg.close(); });
+  dlg.addEventListener("cancel", function (e) { if (YT.laeuft()) { e.preventDefault(); toast("Warte, bis das Video fertig hochgeladen ist."); } });
   function steckbrief(id) {
     var r = rolle(id); if (!r) return;
     var fr = T.firmen[r.firma];
@@ -742,10 +747,21 @@
     var t = lade("omni-team-tempo", "gruendlich"), aus = lade("omni-team-ki-aus", false);
     h += '<div class="gruppe" style="margin:0">Browser-KI</div><div class="feld"><label for="kiTempo">Wie soll die KI antworten?</label><select id="kiTempo"><option value="gruendlich"' + (t === "gruendlich" && !aus ? " selected" : "") + '>Gründlich (besser, braucht ca. 1 GB Download)</option><option value="schnell"' + (t === "schnell" && !aus ? " selected" : "") + '>Schnell (kleiner, ca. 400 MB)</option><option value="aus"' + (aus ? " selected" : "") + '>Aus (Antworten nur aus den Steckbriefen)</option></select></div>' +
       (lade("omni-team-kein-gpu", false) ? '<p class="hinweis">Dieses Gerät kann die Browser-KI nicht ausführen (es fehlt WebGPU). Am besten klappt es am PC mit einem aktuellen Chrome oder Edge.</p>' : "");
+    h += '<div class="gruppe" style="margin:0">YouTube</div><div class="feld"><label for="ytClientE">Google-Client-ID (Webanwendung)</label><input id="ytClientE" placeholder="123…-abc….apps.googleusercontent.com" autocomplete="off" spellcheck="false" value="' + esc(YT.clientId()) + '"></div>' +
+      '<p class="hinweis">Damit lädt die Werbe-KI Videos auf deinen Kanal – immer erst <b>privat</b>. Die Client-ID ist nicht geheim und bleibt auf diesem Gerät. Ein Client-Secret oder API-Schlüssel gehört hier nie rein.</p>' +
+      '<div class="reihe"><button class="knopf klein" type="button" id="ytJetzt">📺 Video hochladen</button></div>';
     h += '<div class="feld"><label for="meinName">Dein Name</label><input id="meinName" maxlength="30" value="' + esc(ich.name) + '"></div>';
     h += '<div class="reihe">' + (DEMO ? '<button class="knopf gefahr" type="button" id="demoReset">Demo zurücksetzen</button>' : "") + '<span style="flex:1"></span><button class="knopf haupt" type="button" id="teamOk">Fertig</button></div></div>';
     fenster(h);
+    var ytSpeichern = function () {
+      var id = $("ytClientE").value.trim();
+      if (id === YT.clientId()) return true;
+      if (!YT.setzeClientId(id)) { toast("Das sieht nicht wie eine Client-ID aus. Sie endet auf „.apps.googleusercontent.com“."); $("ytClientE").focus(); return false; }
+      toast(id ? "YouTube-Client-ID gespeichert." : "YouTube-Client-ID entfernt."); return true;
+    };
+    $("ytJetzt").onclick = function () { if (ytSpeichern()) YT.oeffnen(null); };
     $("teamOk").onclick = function () {
+      if (!ytSpeichern()) return;
       var n = $("meinName").value.trim(), v = $("kiTempo").value;
       if (v === "aus") merke("omni-team-ki-aus", true); else { merke("omni-team-ki-aus", false); merke("omni-team-tempo", v); }
       if (n && n !== ich.name) B.set("team/members/" + uid, { name: n, rolle: ich.rolle }).catch(fehlerToast);
@@ -758,6 +774,194 @@
       if (b.dataset.nein) B.weg("team/requests/" + b.dataset.nein).then(teamFenster).catch(fehlerToast);
     };
   }
+
+  /* ================================================================
+     YouTube: Videos der Werbe-KI direkt aus dem Chat hochladen
+     - Google-Anmeldung im Browser, Erlaubnis NUR für youtube.upload
+     - Der Zugangs-Token bleibt nur im Speicher dieser Seite (kein localStorage, keine Datenbank)
+     - Jedes Video landet IMMER als „privat“ – veröffentlichen tust du selbst im YouTube Studio
+     - Client-ID (nicht geheim) steht unter „Team & Einstellungen“ und bleibt auf diesem Gerät
+     ================================================================ */
+  var YT = (function () {
+    var SCOPE = "https://www.googleapis.com/auth/youtube.upload";
+    var GSI = "https://accounts.google.com/gsi/client";
+    var CLIENT_KEY = "omni-team-yt-client";
+    var token = null, tokenBis = 0, gsiLaden = null, laeuft = false;
+
+    function clientId() { return lade(CLIENT_KEY, ""); }
+    function gueltig(id) { return /^\d+-[a-z0-9]+\.apps\.googleusercontent\.com$/i.test(String(id || "").trim()); }
+    function setzeClientId(id) { id = String(id || "").trim(); if (id && !gueltig(id)) return false; merke(CLIENT_KEY, id); token = null; return true; }
+    function googleBereit() { return !!(window.google && google.accounts && google.accounts.oauth2); }
+    function gsiVorladen() {
+      if (googleBereit()) return Promise.resolve();
+      if (!gsiLaden) gsiLaden = ladeSkript(GSI).catch(function () { gsiLaden = null; throw new Error("Die Google-Anmeldung konnte nicht geladen werden. Bist du online?"); });
+      return gsiLaden;
+    }
+
+    // Muss direkt im Klick passieren, sonst blockt der Browser das Google-Fenster.
+    function anmelden(weiter, fehler) {
+      if (token && Date.now() < tokenBis - 60000) { weiter(); return; }
+      if (!googleBereit()) { fehler(new Error("Die Google-Anmeldung lädt noch – tipp gleich nochmal.")); gsiVorladen().catch(function () {}); return; }
+      var c = google.accounts.oauth2.initTokenClient({
+        client_id: clientId(), scope: SCOPE,
+        callback: function (r) {
+          if (r && r.access_token && google.accounts.oauth2.hasGrantedAllScopes(r, SCOPE)) { token = r.access_token; tokenBis = Date.now() + (+r.expires_in || 3600) * 1000; weiter(); }
+          else fehler(new Error(r && r.error === "access_denied" ? "Du hast den Zugriff bei Google abgelehnt." : "Bei Google fehlt die Erlaubnis zum Hochladen. Bitte nochmal anmelden und das Häkchen setzen."));
+        },
+        error_callback: function (e) {
+          var t = e && e.type;
+          fehler(new Error(t === "popup_closed" ? "Das Google-Fenster wurde geschlossen." : t === "popup_failed_to_open" ? "Das Google-Fenster wurde blockiert – erlaube Pop-ups für diese Seite." : "Die Google-Anmeldung hat nicht geklappt."));
+        }
+      });
+      c.requestAccessToken({ prompt: "" });
+    }
+    function abmelden() {
+      if (token && googleBereit()) try { google.accounts.oauth2.revoke(token, function () {}); } catch (e) { /* egal */ }
+      token = null; tokenBis = 0;
+    }
+
+    // Verständliche Fehlermeldungen statt Google-Fachchinesisch
+    function fehlerText(status, body) {
+      var grund = "", nachricht = "";
+      try { var j = JSON.parse(body); var e0 = (j.error && j.error.errors && j.error.errors[0]) || {}; grund = e0.reason || (j.error && j.error.status) || ""; nachricht = (j.error && j.error.message) || ""; } catch (e) { /* kein JSON */ }
+      if (status === 401) { token = null; return "Die Google-Anmeldung ist abgelaufen. Tipp nochmal auf Hochladen."; }
+      if (/youtubeSignupRequired/i.test(grund)) return "Dieses Google-Konto hat noch keinen YouTube-Kanal. Leg zuerst auf youtube.com einen Kanal an.";
+      if (/accessNotConfigured|SERVICE_DISABLED/i.test(grund) || /has not been used|is disabled/i.test(nachricht)) return "Die „YouTube Data API v3“ ist im Google-Cloud-Projekt noch nicht aktiviert.";
+      if (/quotaExceeded|uploadLimitExceeded|rateLimitExceeded/i.test(grund)) return "Das Tageslimit für Uploads ist erreicht. Versuch es morgen wieder.";
+      if (/invalidTitle/i.test(grund)) return "YouTube mag den Titel nicht. Prüf ihn (höchstens 100 Zeichen, keine < >).";
+      if (/invalidDescription/i.test(grund)) return "YouTube mag die Beschreibung nicht (zu lang oder mit < >).";
+      if (/invalidTags/i.test(grund)) return "Die Tags sind zu lang. Nimm weniger oder kürzere.";
+      if (status === 403) return "Google erlaubt das Hochladen nicht" + (nachricht ? " (" + nachricht + ")" : "") + ". Ist dein Konto als Testnutzer eingetragen?";
+      return "YouTube meldet einen Fehler (" + status + ")" + (nachricht ? ": " + nachricht : "") + ".";
+    }
+
+    function hochladen(datei, metadaten, fortschritt) {
+      var basis = "https://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status&uploadType=";
+      var typ = datei.type || "application/octet-stream";
+      var kopf = { "Authorization": "Bearer " + token, "Content-Type": "application/json; charset=UTF-8", "X-Upload-Content-Length": String(datei.size) };
+      if (datei.type) kopf["X-Upload-Content-Type"] = datei.type;
+      function xhr(methode, url, typHeader, inhalt) {
+        return new Promise(function (ok, nein) {
+          var x = new XMLHttpRequest();
+          x.open(methode, url);
+          x.setRequestHeader("Authorization", "Bearer " + token);
+          if (typHeader) x.setRequestHeader("Content-Type", typHeader);
+          x.upload.onprogress = function (e) { if (e.lengthComputable) fortschritt(e.loaded / e.total); };
+          x.onload = function () {
+            if (x.status >= 200 && x.status < 300) { try { ok(JSON.parse(x.responseText)); } catch (e) { nein(new Error("Die Antwort von YouTube war nicht lesbar.")); } }
+            else nein(new Error(fehlerText(x.status, x.responseText)));
+          };
+          x.onerror = function () { nein(new Error("Die Verbindung ist abgebrochen. Prüf dein Internet und versuch es nochmal.")); };
+          x.send(inhalt);
+        });
+      }
+      // 1. Upload-Sitzung anlegen (große Dateien, mit Fortschritt)
+      return fetch(basis + "resumable", { method: "POST", headers: kopf, body: JSON.stringify(metadaten) }).then(function (r) {
+        if (!r.ok) return r.text().then(function (t) { throw new Error(fehlerText(r.status, t)); });
+        var ort = r.headers.get("Location");
+        if (ort) return xhr("PUT", ort, typ, datei);
+        // 2. Falls der Browser die Upload-Adresse nicht lesen darf: alles in einem Rutsch schicken
+        var grenze = "omni" + Math.random().toString(36).slice(2);
+        var koerper = new Blob(["--" + grenze + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" + JSON.stringify(metadaten) + "\r\n--" + grenze + "\r\nContent-Type: " + typ + "\r\n\r\n", datei, "\r\n--" + grenze + "--"]);
+        return xhr("POST", basis + "multipart", "multipart/related; boundary=" + grenze, koerper);
+      });
+    }
+
+    // Titel / Beschreibung / Tags aus der KI-Nachricht holen
+    function ausNachricht(text) {
+      text = String(text || "");
+      if (/Browser-KI hier nicht aktiv/.test(text)) text = ""; // Steckbrief-Antwort ist keine Videobeschreibung
+      var feld = function (n) { var m = text.match(new RegExp("(?:^|\\n)\\s*\\**" + n + "\\**\\s*:\\s*\\**([^\\n]+)", "i")); return m ? m[1].replace(/\*\*/g, "").replace(/^["„“]|["“”]$/g, "").trim() : ""; };
+      var titel = feld("Titel"), beschr = feld("Beschreibung"), tags = feld("Tags");
+      if (!titel) { var z = text.split("\n").map(function (x) { return x.replace(/\*\*/g, "").replace(/^[#>\-\s]+/, "").trim(); }).filter(Boolean)[0] || ""; titel = z; }
+      if (!beschr) beschr = text.replace(/\*\*/g, "");
+      return { titel: sauber(titel).slice(0, 100), beschreibung: sauber(beschr).slice(0, 4800), tags: tags.replace(/#/g, "") };
+    }
+    function sauber(s) { return String(s || "").replace(/[<>]/g, "").trim(); }
+    function tagsListe(s) {
+      var l = [], laenge = 0;
+      String(s || "").split(/[,;\n]/).map(function (t) { return sauber(t).replace(/#/g, ""); }).filter(Boolean).forEach(function (t) { if (laenge + t.length + 3 <= 480) { l.push(t); laenge += t.length + 3; } });
+      return l;
+    }
+
+    function zaehler(id, max) { var el = $(id), z = $(id + "Z"); var f = function () { z.textContent = el.value.length + " / " + max; }; el.addEventListener("input", f); f(); }
+
+    function oeffnen(nachricht) {
+      var r = nachricht && nachricht.rolle ? rolle(nachricht.rolle) : rolle("tim") || rolle(F.leitung);
+      var v = ausNachricht(nachricht ? nachricht.text : "");
+      var link = "https://kometenwerk.github.io";
+      if (v.beschreibung.indexOf("kometenwerk.github.io") < 0) v.beschreibung = (v.beschreibung ? v.beschreibung + "\n\n" : "") + "Mehr von " + F.voll + ": " + link;
+      var ohneId = !gueltig(clientId()) && !DEMO;
+      fenster('<form class="fenster" id="ytForm"><h3>📺 Video auf YouTube hochladen</h3>' +
+        (DEMO ? '<p class="hinweis">Demo-Modus: Der Upload wird nur nachgespielt. Nichts geht an YouTube.</p>' : "") +
+        (ohneId ? '<div class="feld"><label for="ytClient">Google-Client-ID (Webanwendung)</label><input id="ytClient" placeholder="123…-abc….apps.googleusercontent.com" autocomplete="off" spellcheck="false"><span class="hinweis">Einmal eintragen – sie wird auf diesem Gerät gespeichert. Du findest sie in der Google Cloud Console unter „Clients“. Die Client-ID ist nicht geheim, das <b>Client-Secret</b> gehört aber nie hier rein.</span></div>' : "") +
+        '<div class="feld"><label for="ytDatei">Videodatei</label><input id="ytDatei" type="file" accept="video/*" required></div>' +
+        '<div class="feld"><label for="ytTitel">Titel <small id="ytTitelZ" style="float:right"></small></label><input id="ytTitel" required maxlength="100" placeholder="z. B. Kometen-Quiz: Vokabeln lernen in 30 Sekunden" value="' + esc(v.titel) + '"></div>' +
+        '<div class="feld"><label for="ytBeschr">Beschreibung <small id="ytBeschrZ" style="float:right"></small></label><textarea id="ytBeschr" rows="6" maxlength="4800">' + esc(v.beschreibung) + '</textarea></div>' +
+        '<div class="feld"><label for="ytTags">Tags (mit Komma getrennt)</label><input id="ytTags" maxlength="480" value="' + esc(v.tags) + '" placeholder="z. B. App, Programmieren, OMNIVIA"></div>' +
+        '<fieldset class="feld yt-wahl"><legend>Ist das Video speziell für Kinder gemacht?</legend>' +
+        '<label><input type="radio" name="ytKind" value="nein" required> Nein, für alle</label><label><input type="radio" name="ytKind" value="ja"> Ja, speziell für Kinder</label>' +
+        '<small>Das verlangt YouTube bei jedem Video. Bei „Ja“ sind z. B. Kommentare aus.</small></fieldset>' +
+        '<label class="yt-check"><input type="checkbox" id="ytKi" checked> Mit KI erstellt oder verändert (YouTube zeigt dann einen Hinweis)</label>' +
+        '<p class="hinweis">🔒 Das Video wird <b>immer privat</b> hochgeladen. Schau es dir im YouTube Studio an und stell es dort selbst auf „öffentlich“. Die Anmeldung bei Google erlaubt nur das Hochladen.</p>' +
+        '<div class="yt-fortschritt" id="ytFort" hidden><div class="balken"><i id="ytBalken"></i></div><span id="ytProzent">0 %</span></div>' +
+        '<p class="hinweis" id="ytStatus" role="status" hidden></p>' +
+        '<div class="reihe"><button class="knopf" type="button" data-zu id="ytZu">Schließen</button><span style="flex:1"></span>' +
+        (!DEMO && token ? '<button class="knopf klein" type="button" id="ytAbmelden">Google abmelden</button>' : "") +
+        '<button class="knopf haupt" type="submit" id="ytLos">' + (DEMO ? "Upload testen" : "Bei Google anmelden &amp; hochladen") + "</button></div></form>");
+      zaehler("ytTitel", 100); zaehler("ytBeschr", 4800);
+      if (!DEMO) gsiVorladen().catch(function (e) { status(e.message, true); });
+      if ($("ytAbmelden")) $("ytAbmelden").onclick = function () { abmelden(); this.remove(); status("Von Google abgemeldet."); };
+      $("ytForm").onsubmit = function (e) {
+        e.preventDefault();
+        if (laeuft) return;
+        if ($("ytClient")) { if (!setzeClientId($("ytClient").value)) { status("Das sieht nicht wie eine Client-ID aus. Sie endet auf „.apps.googleusercontent.com“.", true); $("ytClient").focus(); return; } }
+        var datei = $("ytDatei").files[0];
+        if (!datei) { status("Wähl zuerst eine Videodatei aus.", true); return; }
+        var kind = (document.querySelector('input[name="ytKind"]:checked') || {}).value;
+        var titel = sauber($("ytTitel").value);
+        if (!titel) { status("Der Titel fehlt.", true); return; }
+        var metadaten = {
+          snippet: { title: titel, description: sauber($("ytBeschr").value), tags: tagsListe($("ytTags").value), categoryId: "28", defaultLanguage: "de", defaultAudioLanguage: "de" },
+          status: { privacyStatus: "private", selfDeclaredMadeForKids: kind === "ja", containsSyntheticMedia: $("ytKi").checked }
+        };
+        var los = function () { starte(datei, metadaten, r); };
+        if (DEMO) { los(); return; }
+        status("Google-Anmeldung …");
+        anmelden(los, function (err) { status(err.message, true); });
+      };
+    }
+
+    function status(t, schlecht) { var s = $("ytStatus"); if (!s) return; s.hidden = !t; s.textContent = t; s.style.borderColor = schlecht ? "var(--schlecht)" : ""; }
+    function balken(p) { var f = $("ytFort"); if (!f) return; f.hidden = false; $("ytBalken").style.width = Math.round(p * 100) + "%"; $("ytProzent").textContent = Math.round(p * 100) + " %"; }
+    function sperren(an) { laeuft = an; ["ytLos", "ytZu", "ytDatei"].forEach(function (id) { if ($(id)) $(id).disabled = an; }); }
+
+    function starte(datei, metadaten, r) {
+      sperren(true); balken(0);
+      status("Video wird hochgeladen … bitte das Fenster offen lassen.");
+      var job = DEMO ? demoUpload(balken) : hochladen(datei, metadaten, balken);
+      job.then(function (video) {
+        sperren(false); balken(1);
+        var studio = "https://studio.youtube.com/video/" + encodeURIComponent(video.id) + "/edit";
+        status("✅ Fertig! Das Video ist privat auf YouTube.");
+        $("ytLos").outerHTML = '<a class="knopf haupt" href="' + esc(studio) + '" target="_blank" rel="noopener">Im YouTube Studio öffnen</a>';
+        if (!aktiv || ansicht !== "chat") return;
+        var wer = r || rolle(F.leitung);
+        return B.push("team/msgs/" + aktiv, { uid: uid, name: wer.name, rolle: wer.id, ki: true, t: B.zeit(),
+          text: "📺 Das Video „" + metadaten.snippet.title + "“ ist " + (DEMO ? "(Demo) " : "") + "privat auf YouTube hochgeladen." +
+            "\nSchau es dir im YouTube Studio an und stell es erst auf „öffentlich“, wenn alles passt:\n" + studio });
+      }).catch(function (e) {
+        sperren(false);
+        status(e && e.message || "Das Hochladen hat nicht geklappt.", true);
+      });
+    }
+    function demoUpload(f) {
+      return new Promise(function (ok) { var p = 0, t = setInterval(function () { p += 0.1; f(Math.min(1, p)); if (p >= 1) { clearInterval(t); ok({ id: "DEMO" + Date.now().toString(36) }); } }, 150); });
+    }
+
+    return { oeffnen: oeffnen, laeuft: function () { return laeuft; }, clientId: clientId, setzeClientId: setzeClientId, gueltig: gueltig, abmelden: abmelden };
+  })();
+  function istWerbung(r) { return r && r.abt === "Werbung"; }
 
   /* ---------- Los ---------- */
   tippsZeichnen();

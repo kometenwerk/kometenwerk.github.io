@@ -1,5 +1,7 @@
 # Lokaler YouTube-Uploadhelfer
 
+> **Neu:** Der Upload geht jetzt auch direkt im Team-Chat – unter einer Nachricht der Werbe-KI auf „📺 Auf YouTube hochladen“ tippen (Client-ID vom Typ *Webanwendung* unter „Team & Einstellungen“ eintragen). Dieser lokale Helfer bleibt als Reserve.
+
 Der Helfer läuft auf `http://localhost:4390` und lädt ausgewählte Videos mit YouTube Data API v3 **immer privat** hoch. Er stellt keinen öffentlich erreichbaren Server bereit. OAuth-Datei und Tokens liegen außerhalb des Repositorys in `%LOCALAPPDATA%\Kometenwerk\YouTube\`.
 
 ## Einmalige Einrichtung
