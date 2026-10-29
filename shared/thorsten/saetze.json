@@ -1,76 +1,613 @@
 {
   "info": "Thorstens Sprüche für das Video-Studio. Ändern oder ergänzen und auf GitHub speichern – der Ablauf „Thorstens Stimme“ spricht neue Sätze automatisch ein (shared/thorsten/ton). Die id muss eindeutig sein; die gruppe sagt dem Studio, wann der Satz passt.",
-  "stimme": { "modell": "de_DE-thorsten-high", "tempo": 0.92, "schneller": 1.0 },
+  "stimme": {
+    "modell": "de_DE-thorsten-high",
+    "tempo": 0.92,
+    "schneller": 1.0
+  },
   "saetze": [
-    { "id": "intro-1", "gruppe": "intro", "text": "Hey Leute, Thorsten hier, eure Lieblings-KI! Heute wird im Krawallzoo gekracht. Los geht's!" },
-    { "id": "intro-2", "gruppe": "intro", "text": "Servus und willkommen! Ich bin Thorsten, der KI-Youtuber von Omnivia. Und heute zocke ich Krawallzoo!" },
-    { "id": "intro-3", "gruppe": "intro", "text": "Hallo zusammen! Hier ist Thorsten, eine KI mit viel zu viel Energie. Ab in den Krawallzoo!" },
-    { "id": "short-1", "gruppe": "short_intro", "text": "Thorsten hier. Schaut euch das an!" },
-    { "id": "short-2", "gruppe": "short_intro", "text": "Krawallzoo, eine Runde, volle Action. Los!" },
-    { "id": "short-3", "gruppe": "short_intro", "text": "Achtung, jetzt wird's wild!" },
-
-    { "id": "los-1", "gruppe": "los", "text": "Und los!" },
-    { "id": "los-2", "gruppe": "los", "text": "Drei, zwei, eins, Krawall!" },
-    { "id": "los-3", "gruppe": "los", "text": "Okay, Konzentration. Jetzt geht's los!" },
-    { "id": "los-4", "gruppe": "los", "text": "Neue Runde, neues Glück!" },
-
-    { "id": "treffer-1", "gruppe": "ko_treffer", "text": "Ja! Erwischt!" },
-    { "id": "treffer-2", "gruppe": "ko_treffer", "text": "Den hab ich umgehauen!" },
-    { "id": "treffer-3", "gruppe": "ko_treffer", "text": "Boom! Der ist raus!" },
-    { "id": "treffer-4", "gruppe": "ko_treffer", "text": "Einer weniger, weiter so!" },
-    { "id": "treffer-5", "gruppe": "ko_treffer", "text": "Sauber! Das war mein Moment!" },
-    { "id": "treffer-6", "gruppe": "ko_treffer", "text": "Haha, damit hat er nicht gerechnet!" },
-
-    { "id": "raus-1", "gruppe": "ko_raus", "text": "Nein! Mein Tier ist raus!" },
-    { "id": "raus-2", "gruppe": "ko_raus", "text": "Autsch. Das hat wehgetan." },
-    { "id": "raus-3", "gruppe": "ko_raus", "text": "Okay, das war nicht mein bester Moment." },
-    { "id": "raus-4", "gruppe": "ko_raus", "text": "Wer hat mich da bitte erwischt?" },
-    { "id": "raus-5", "gruppe": "ko_raus", "text": "Uff. Kurze Pause für mein Fell." },
-
-    { "id": "andere-1", "gruppe": "ko_andere", "text": "Und da kippt der Nächste um!" },
-    { "id": "andere-2", "gruppe": "ko_andere", "text": "Oh, das war ein Volltreffer!" },
-    { "id": "andere-3", "gruppe": "ko_andere", "text": "Uiuiui, das ging schnell." },
-    { "id": "andere-4", "gruppe": "ko_andere", "text": "Hier wird ordentlich aufgeräumt!" },
-    { "id": "andere-5", "gruppe": "ko_andere", "text": "Gut, dass das nicht ich war." },
-
-    { "id": "super-ich-1", "gruppe": "super_ich", "text": "Spezialattacke, jetzt!" },
-    { "id": "super-ich-2", "gruppe": "super_ich", "text": "Zeit für meine Geheimwaffe!" },
-    { "id": "super-ich-3", "gruppe": "super_ich", "text": "Und jetzt die ganze Power!" },
-    { "id": "super-ich-4", "gruppe": "super_ich", "text": "Achtung, aus dem Weg!" },
-    { "id": "super-andere-1", "gruppe": "super_andere", "text": "Vorsicht, Spezialattacke!" },
-    { "id": "super-andere-2", "gruppe": "super_andere", "text": "Woah, was war das denn?" },
-    { "id": "super-andere-3", "gruppe": "super_andere", "text": "Ohhh, die sah gefährlich aus!" },
-
-    { "id": "item-herz", "gruppe": "item_herz", "text": "Ein Herz! Das kommt gerade richtig." },
-    { "id": "item-blitz", "gruppe": "item_blitz", "text": "Turbo! Jetzt wird's schnell." },
-    { "id": "item-kristall", "gruppe": "item_kristall", "text": "Power-Kristall! Gleich gibt's Ärger." },
-    { "id": "item-schild", "gruppe": "item_schild", "text": "Schild an. Kommt doch her!" },
-
-    { "id": "nebel-1", "gruppe": "nebel", "text": "Der Nebel kommt! Ab in die Mitte!" },
-    { "id": "nebel-2", "gruppe": "nebel", "text": "Es wird eng. Jetzt bloß nicht im Nebel stehen!" },
-    { "id": "runde-1", "gruppe": "runde", "text": "Nächste Runde! Jetzt aber richtig." },
-    { "id": "runde-2", "gruppe": "runde", "text": "Weiter geht's, Runde zwei!" },
-    { "id": "entscheidung-1", "gruppe": "entscheidung", "text": "Entscheidungsrunde! Jetzt zählt jeder Treffer!" },
-
-    { "id": "sieg-1", "gruppe": "sieg", "text": "Ja! Gewonnen! Was für eine Runde!" },
-    { "id": "sieg-2", "gruppe": "sieg", "text": "Sieg! Ich wusste es. Okay, ich hab's gehofft." },
-    { "id": "sieg-3", "gruppe": "sieg", "text": "Wir haben gewonnen! Tanzpause!" },
-    { "id": "sieg-4", "gruppe": "sieg", "text": "Und das, liebe Leute, nennt man Krawall!" },
-    { "id": "platz-1", "gruppe": "platz", "text": "Nicht ganz der Sieg, aber ein richtig guter Platz!" },
-    { "id": "platz-2", "gruppe": "platz", "text": "Knapp vorbei. Nächstes Mal schnappe ich mir den ersten Platz!" },
-    { "id": "verloren-1", "gruppe": "niederlage", "text": "Verloren. Aber hey, das Fell wächst nach!" },
-    { "id": "verloren-2", "gruppe": "niederlage", "text": "Das war nix. Revanche, sofort!" },
-    { "id": "verloren-3", "gruppe": "niederlage", "text": "Okay, die anderen waren heute besser. Respekt!" },
-
-    { "id": "fuell-1", "gruppe": "fuell", "text": "Wer gewinnt das hier wohl? Schreibt mir euren Tipp in die Kommentare!" },
-    { "id": "fuell-2", "gruppe": "fuell", "text": "Welches Tier ist euer Liebling? Ich bin gespannt!" },
-    { "id": "fuell-3", "gruppe": "fuell", "text": "Übrigens: Krawallzoo könnt ihr kostenlos im Browser spielen." },
-    { "id": "fuell-4", "gruppe": "fuell", "text": "Ich bin eine KI, aber nervös bin ich trotzdem." },
-    { "id": "fuell-5", "gruppe": "fuell", "text": "Puh, hier ist ganz schön was los." },
-    { "id": "fuell-6", "gruppe": "fuell", "text": "Achtet mal auf die Power-ups, die fallen einfach vom Himmel!" },
-
-    { "id": "outro-1", "gruppe": "outro", "text": "Das war's für heute! Spielt Krawallzoo selbst, auf kometenwerk punkt github punkt io. Bleibt krawallig, tschüss!" },
-    { "id": "outro-2", "gruppe": "outro", "text": "Danke fürs Zuschauen! Wenn's euch gefallen hat, lasst gern ein Like da. Bleibt krawallig!" },
-    { "id": "outro-short", "gruppe": "short_outro", "text": "Bleibt krawallig!" }
+    {
+      "id": "intro-1",
+      "gruppe": "intro",
+      "text": "Hey Leute, Thorsten hier, eure Lieblings-KI! Heute wird im Krawallzoo gekracht. Los geht's!"
+    },
+    {
+      "id": "intro-2",
+      "gruppe": "intro",
+      "text": "Servus und willkommen! Ich bin Thorsten, der KI-Youtuber von Omnivia. Und heute zocke ich Krawallzoo!"
+    },
+    {
+      "id": "intro-3",
+      "gruppe": "intro",
+      "text": "Hallo zusammen! Hier ist Thorsten, eine KI mit viel zu viel Energie. Ab in den Krawallzoo!"
+    },
+    {
+      "id": "short-1",
+      "gruppe": "short_intro",
+      "text": "Thorsten hier. Schaut euch das an!"
+    },
+    {
+      "id": "short-2",
+      "gruppe": "short_intro",
+      "text": "Krawallzoo, eine Runde, volle Action. Los!"
+    },
+    {
+      "id": "short-3",
+      "gruppe": "short_intro",
+      "text": "Achtung, jetzt wird's wild!"
+    },
+    {
+      "id": "los-1",
+      "gruppe": "los",
+      "text": "Und los!"
+    },
+    {
+      "id": "los-2",
+      "gruppe": "los",
+      "text": "Drei, zwei, eins, Krawall!"
+    },
+    {
+      "id": "los-3",
+      "gruppe": "los",
+      "text": "Okay, Konzentration. Jetzt geht's los!"
+    },
+    {
+      "id": "los-4",
+      "gruppe": "los",
+      "text": "Neue Runde, neues Glück!"
+    },
+    {
+      "id": "treffer-1",
+      "gruppe": "ko_treffer",
+      "text": "Ja! Erwischt!"
+    },
+    {
+      "id": "treffer-2",
+      "gruppe": "ko_treffer",
+      "text": "Den hab ich umgehauen!"
+    },
+    {
+      "id": "treffer-3",
+      "gruppe": "ko_treffer",
+      "text": "Boom! Der ist raus!"
+    },
+    {
+      "id": "treffer-4",
+      "gruppe": "ko_treffer",
+      "text": "Einer weniger, weiter so!"
+    },
+    {
+      "id": "treffer-5",
+      "gruppe": "ko_treffer",
+      "text": "Sauber! Das war mein Moment!"
+    },
+    {
+      "id": "treffer-6",
+      "gruppe": "ko_treffer",
+      "text": "Haha, damit hat er nicht gerechnet!"
+    },
+    {
+      "id": "raus-1",
+      "gruppe": "ko_raus",
+      "text": "Nein! Mein Tier ist raus!"
+    },
+    {
+      "id": "raus-2",
+      "gruppe": "ko_raus",
+      "text": "Autsch. Das hat wehgetan."
+    },
+    {
+      "id": "raus-3",
+      "gruppe": "ko_raus",
+      "text": "Okay, das war nicht mein bester Moment."
+    },
+    {
+      "id": "raus-4",
+      "gruppe": "ko_raus",
+      "text": "Wer hat mich da bitte erwischt?"
+    },
+    {
+      "id": "raus-5",
+      "gruppe": "ko_raus",
+      "text": "Uff. Kurze Pause für mein Fell."
+    },
+    {
+      "id": "andere-1",
+      "gruppe": "ko_andere",
+      "text": "Und da kippt der Nächste um!"
+    },
+    {
+      "id": "andere-2",
+      "gruppe": "ko_andere",
+      "text": "Oh, das war ein Volltreffer!"
+    },
+    {
+      "id": "andere-3",
+      "gruppe": "ko_andere",
+      "text": "Uiuiui, das ging schnell."
+    },
+    {
+      "id": "andere-4",
+      "gruppe": "ko_andere",
+      "text": "Hier wird ordentlich aufgeräumt!"
+    },
+    {
+      "id": "andere-5",
+      "gruppe": "ko_andere",
+      "text": "Gut, dass das nicht ich war."
+    },
+    {
+      "id": "super-ich-1",
+      "gruppe": "super_ich",
+      "text": "Spezialattacke, jetzt!"
+    },
+    {
+      "id": "super-ich-2",
+      "gruppe": "super_ich",
+      "text": "Zeit für meine Geheimwaffe!"
+    },
+    {
+      "id": "super-ich-3",
+      "gruppe": "super_ich",
+      "text": "Und jetzt die ganze Power!"
+    },
+    {
+      "id": "super-ich-4",
+      "gruppe": "super_ich",
+      "text": "Achtung, aus dem Weg!"
+    },
+    {
+      "id": "super-andere-1",
+      "gruppe": "super_andere",
+      "text": "Vorsicht, Spezialattacke!"
+    },
+    {
+      "id": "super-andere-2",
+      "gruppe": "super_andere",
+      "text": "Woah, was war das denn?"
+    },
+    {
+      "id": "super-andere-3",
+      "gruppe": "super_andere",
+      "text": "Ohhh, die sah gefährlich aus!"
+    },
+    {
+      "id": "item-herz",
+      "gruppe": "item_herz",
+      "text": "Ein Herz! Das kommt gerade richtig."
+    },
+    {
+      "id": "item-blitz",
+      "gruppe": "item_blitz",
+      "text": "Turbo! Jetzt wird's schnell."
+    },
+    {
+      "id": "item-kristall",
+      "gruppe": "item_kristall",
+      "text": "Power-Kristall! Gleich gibt's Ärger."
+    },
+    {
+      "id": "item-schild",
+      "gruppe": "item_schild",
+      "text": "Schild an. Kommt doch her!"
+    },
+    {
+      "id": "nebel-1",
+      "gruppe": "nebel",
+      "text": "Der Nebel kommt! Ab in die Mitte!"
+    },
+    {
+      "id": "nebel-2",
+      "gruppe": "nebel",
+      "text": "Es wird eng. Jetzt bloß nicht im Nebel stehen!"
+    },
+    {
+      "id": "runde-1",
+      "gruppe": "runde",
+      "text": "Nächste Runde! Jetzt aber richtig."
+    },
+    {
+      "id": "runde-2",
+      "gruppe": "runde",
+      "text": "Weiter geht's, Runde zwei!"
+    },
+    {
+      "id": "entscheidung-1",
+      "gruppe": "entscheidung",
+      "text": "Entscheidungsrunde! Jetzt zählt jeder Treffer!"
+    },
+    {
+      "id": "sieg-1",
+      "gruppe": "sieg",
+      "text": "Ja! Gewonnen! Was für eine Runde!"
+    },
+    {
+      "id": "sieg-2",
+      "gruppe": "sieg",
+      "text": "Sieg! Ich wusste es. Okay, ich hab's gehofft."
+    },
+    {
+      "id": "sieg-3",
+      "gruppe": "sieg",
+      "text": "Wir haben gewonnen! Tanzpause!"
+    },
+    {
+      "id": "sieg-4",
+      "gruppe": "sieg",
+      "text": "Und das, liebe Leute, nennt man Krawall!"
+    },
+    {
+      "id": "platz-1",
+      "gruppe": "platz",
+      "text": "Nicht ganz der Sieg, aber ein richtig guter Platz!"
+    },
+    {
+      "id": "platz-2",
+      "gruppe": "platz",
+      "text": "Knapp vorbei. Nächstes Mal schnappe ich mir den ersten Platz!"
+    },
+    {
+      "id": "verloren-1",
+      "gruppe": "niederlage",
+      "text": "Verloren. Aber hey, das Fell wächst nach!"
+    },
+    {
+      "id": "verloren-2",
+      "gruppe": "niederlage",
+      "text": "Das war nix. Revanche, sofort!"
+    },
+    {
+      "id": "verloren-3",
+      "gruppe": "niederlage",
+      "text": "Okay, die anderen waren heute besser. Respekt!"
+    },
+    {
+      "id": "fuell-1",
+      "gruppe": "fuell",
+      "text": "Wer gewinnt das hier wohl? Schreibt mir euren Tipp in die Kommentare!"
+    },
+    {
+      "id": "fuell-2",
+      "gruppe": "fuell",
+      "text": "Welches Tier ist euer Liebling? Ich bin gespannt!"
+    },
+    {
+      "id": "fuell-3",
+      "gruppe": "fuell",
+      "text": "Übrigens: Krawallzoo könnt ihr kostenlos im Browser spielen."
+    },
+    {
+      "id": "fuell-4",
+      "gruppe": "fuell",
+      "text": "Ich bin eine KI, aber nervös bin ich trotzdem."
+    },
+    {
+      "id": "fuell-5",
+      "gruppe": "fuell",
+      "text": "Puh, hier ist ganz schön was los."
+    },
+    {
+      "id": "fuell-6",
+      "gruppe": "fuell",
+      "text": "Achtet mal auf die Power-ups, die fallen einfach vom Himmel!"
+    },
+    {
+      "id": "outro-1",
+      "gruppe": "outro",
+      "text": "Das war's für heute! Spielt Krawallzoo selbst, auf kometenwerk punkt github punkt io. Bleibt krawallig, tschüss!"
+    },
+    {
+      "id": "outro-2",
+      "gruppe": "outro",
+      "text": "Danke fürs Zuschauen! Wenn's euch gefallen hat, lasst gern ein Like da. Bleibt krawallig!"
+    },
+    {
+      "id": "outro-short",
+      "gruppe": "short_outro",
+      "text": "Bleibt krawallig!"
+    },
+    {
+      "id": "hz-intro-zeigen-1",
+      "gruppe": "hz_intro_zeigen",
+      "text": "Hey Leute, Thorsten hier! Heute zeige ich euch meine Stadt in Horizonte. Kommt mit auf einen Rundflug!"
+    },
+    {
+      "id": "hz-intro-zeigen-2",
+      "gruppe": "hz_intro_zeigen",
+      "text": "Servus! Thorsten hier, eure Lieblings-KI. Heute gibt's eine Stadtführung von oben!"
+    },
+    {
+      "id": "hz-intro-bauen-1",
+      "gruppe": "hz_intro_bauen",
+      "text": "Hey Leute, Thorsten hier! Heute baue ich eine ganze Stadt. Aus dem Nichts. Los geht's!"
+    },
+    {
+      "id": "hz-intro-bauen-2",
+      "gruppe": "hz_intro_bauen",
+      "text": "Hallo zusammen! Leeres Land, viel Geld und eine KI mit Plänen. Was kann da schon schiefgehen?"
+    },
+    {
+      "id": "hz-short-1",
+      "gruppe": "hz_short_intro",
+      "text": "Thorsten hier. Schaut euch diese Stadt an!"
+    },
+    {
+      "id": "hz-short-2",
+      "gruppe": "hz_short_intro",
+      "text": "Eine Stadt im Zeitraffer. Los!"
+    },
+    {
+      "id": "hz-uebersicht-1",
+      "gruppe": "hz_uebersicht",
+      "text": "Das ist sie, meine Stadt. Von hier oben sieht alles so ordentlich aus."
+    },
+    {
+      "id": "hz-uebersicht-2",
+      "gruppe": "hz_uebersicht",
+      "text": "Erst mal ein Überblick. Hier wohnen, arbeiten und stauen sich meine Leute."
+    },
+    {
+      "id": "hz-hochhaus-1",
+      "gruppe": "hz_hochhaus",
+      "text": "Schaut mal, wie hoch das Ding ist! Da will ich ganz oben wohnen."
+    },
+    {
+      "id": "hz-hochhaus-2",
+      "gruppe": "hz_hochhaus",
+      "text": "Hier stehen die großen Häuser. Meine kleine Skyline!"
+    },
+    {
+      "id": "hz-haeuser-1",
+      "gruppe": "hz_haeuser",
+      "text": "Gemütliche Häuschen, kleine Gärten. Richtig schön hier."
+    },
+    {
+      "id": "hz-haeuser-2",
+      "gruppe": "hz_haeuser",
+      "text": "Hier wohnen die Leute. Und ja, jedes Haus ist echt gewachsen."
+    },
+    {
+      "id": "hz-bahnhof-1",
+      "gruppe": "hz_bahnhof",
+      "text": "Der Bahnhof! Wenn ihr Glück habt, fährt gleich ein Zug ein."
+    },
+    {
+      "id": "hz-bahnhof-2",
+      "gruppe": "hz_bahnhof",
+      "text": "Hier halten die Züge. Pünktlicher als im echten Leben, versprochen."
+    },
+    {
+      "id": "hz-hafen-1",
+      "gruppe": "hz_hafen",
+      "text": "Ahoi! Am Hafen ist immer was los."
+    },
+    {
+      "id": "hz-hafen-2",
+      "gruppe": "hz_hafen",
+      "text": "Schiffe, Kräne, Wasser. Ich liebe den Hafen."
+    },
+    {
+      "id": "hz-flughafen-1",
+      "gruppe": "hz_flughafen",
+      "text": "Und hier der Flughafen. Gleich hebt ein Flieger ab!"
+    },
+    {
+      "id": "hz-flughafen-2",
+      "gruppe": "hz_flughafen",
+      "text": "Bitte anschnallen, wir sind am Flughafen!"
+    },
+    {
+      "id": "hz-bus-1",
+      "gruppe": "hz_bus",
+      "text": "Der Bus bringt alle zur Arbeit. Hoffentlich ohne Stau."
+    },
+    {
+      "id": "hz-auto-1",
+      "gruppe": "hz_auto",
+      "text": "Ich hänge mich mal an ein Auto dran. Mal sehen, wo es hinfährt."
+    },
+    {
+      "id": "hz-auto-2",
+      "gruppe": "hz_auto",
+      "text": "Wir fahren mit! Bitte nicht zu schnell, liebe Fahrerin."
+    },
+    {
+      "id": "hz-nacht-1",
+      "gruppe": "hz_nacht",
+      "text": "Und jetzt wird's Nacht. Schaut euch diese Lichter an!"
+    },
+    {
+      "id": "hz-nacht-2",
+      "gruppe": "hz_nacht",
+      "text": "Bei Nacht ist meine Stadt am schönsten. Überall leuchten die Fenster."
+    },
+    {
+      "id": "hz-land-1",
+      "gruppe": "hz_land",
+      "text": "Hier ist noch nichts. Nur Gras und Bäume. Noch!"
+    },
+    {
+      "id": "hz-land-2",
+      "gruppe": "hz_land",
+      "text": "Leeres Land. Hier wird gleich gebaut."
+    },
+    {
+      "id": "hz-strassen-1",
+      "gruppe": "hz_strassen",
+      "text": "Zuerst die Straßen. Ohne Straßen keine Stadt."
+    },
+    {
+      "id": "hz-strassen-2",
+      "gruppe": "hz_strassen",
+      "text": "Straße hier, Straße da. Ich bin quasi Bauarbeiter."
+    },
+    {
+      "id": "hz-strom-1",
+      "gruppe": "hz_strom",
+      "text": "Windräder für den Strom. Sauber und leise."
+    },
+    {
+      "id": "hz-wasser-1",
+      "gruppe": "hz_wasser",
+      "text": "Ein Wasserturm, damit niemand durstig bleibt."
+    },
+    {
+      "id": "hz-muell-1",
+      "gruppe": "hz_muell",
+      "text": "Und eine Deponie. Irgendwo muss der Müll ja hin."
+    },
+    {
+      "id": "hz-dienste-1",
+      "gruppe": "hz_dienste",
+      "text": "Feuerwehr, Polizei und ein Arzt. Sicherheit geht vor!"
+    },
+    {
+      "id": "hz-schule-1",
+      "gruppe": "hz_schule",
+      "text": "Eine Schule! Auch in meiner Stadt wird gelernt."
+    },
+    {
+      "id": "hz-park-1",
+      "gruppe": "hz_park",
+      "text": "Ein Park und ein Spielplatz. Für gute Laune."
+    },
+    {
+      "id": "hz-zonen-1",
+      "gruppe": "hz_zonen",
+      "text": "Jetzt male ich die Zonen. Grün heißt wohnen, blau heißt einkaufen."
+    },
+    {
+      "id": "hz-zonen-2",
+      "gruppe": "hz_zonen",
+      "text": "Zonen malen. Ab hier dürfen die Leute selbst bauen."
+    },
+    {
+      "id": "hz-wachsen-1",
+      "gruppe": "hz_wachsen",
+      "text": "Und jetzt: Zeitraffer! Schaut, wie die Häuser wachsen!"
+    },
+    {
+      "id": "hz-wachsen-2",
+      "gruppe": "hz_wachsen",
+      "text": "Die ersten Leute ziehen ein. Willkommen in meiner Stadt!"
+    },
+    {
+      "id": "hz-busbau-1",
+      "gruppe": "hz_bus",
+      "text": "Jetzt noch eine Buslinie, damit nicht jeder mit dem Auto fährt."
+    },
+    {
+      "id": "hz-erweiterung-1",
+      "gruppe": "hz_erweiterung",
+      "text": "Die Stadt ist zu klein. Wir brauchen mehr Platz!"
+    },
+    {
+      "id": "hz-erweiterung-2",
+      "gruppe": "hz_erweiterung",
+      "text": "Neues Viertel, größere Häuser. Jetzt wird's ernst."
+    },
+    {
+      "id": "hz-zonen2-1",
+      "gruppe": "hz_zonen2",
+      "text": "Diesmal mit Hochhäusern, Läden und Büros."
+    },
+    {
+      "id": "hz-wachsen2-1",
+      "gruppe": "hz_wachsen2",
+      "text": "Und wieder Zeitraffer. Aus dem Dorf wird eine richtige Stadt!"
+    },
+    {
+      "id": "hz-wachsen2-2",
+      "gruppe": "hz_wachsen2",
+      "text": "Seht ihr die Kräne? Da entsteht gerade was Großes."
+    },
+    {
+      "id": "hz-einw-25",
+      "gruppe": "hz_einwohner",
+      "text": "Die ersten fünfundzwanzig Einwohner!",
+      "zahl": 25
+    },
+    {
+      "id": "hz-einw-60",
+      "gruppe": "hz_einwohner",
+      "text": "Schon sechzig Leute wohnen hier!",
+      "zahl": 60
+    },
+    {
+      "id": "hz-einw-120",
+      "gruppe": "hz_einwohner",
+      "text": "Über hundert Einwohner! Das ist schon ein Dorf.",
+      "zahl": 120
+    },
+    {
+      "id": "hz-einw-250",
+      "gruppe": "hz_einwohner",
+      "text": "Zweihundertfünfzig Einwohner! Es läuft.",
+      "zahl": 250
+    },
+    {
+      "id": "hz-einw-500",
+      "gruppe": "hz_einwohner",
+      "text": "Fünfhundert Einwohner! Meine Stadt wird groß.",
+      "zahl": 500
+    },
+    {
+      "id": "hz-einw-1000",
+      "gruppe": "hz_einwohner",
+      "text": "Tausend Einwohner! Party im Rathaus!",
+      "zahl": 1000
+    },
+    {
+      "id": "hz-einw-2000",
+      "gruppe": "hz_einwohner",
+      "text": "Zweitausend Leute! Ich bin stolz auf euch.",
+      "zahl": 2000
+    },
+    {
+      "id": "hz-einw-5000",
+      "gruppe": "hz_einwohner",
+      "text": "Fünftausend Einwohner! Das ist eine richtige Stadt.",
+      "zahl": 5000
+    },
+    {
+      "id": "hz-fuell-1",
+      "gruppe": "hz_fuell",
+      "text": "Wie würdet ihr eure Stadt nennen? Schreibt's in die Kommentare!"
+    },
+    {
+      "id": "hz-fuell-2",
+      "gruppe": "hz_fuell",
+      "text": "Horizonte könnt ihr übrigens kostenlos im Browser spielen."
+    },
+    {
+      "id": "hz-fuell-3",
+      "gruppe": "hz_fuell",
+      "text": "Ich frage mich, wo all die Autos eigentlich hinfahren."
+    },
+    {
+      "id": "hz-fuell-4",
+      "gruppe": "hz_fuell",
+      "text": "Was soll ich als Nächstes bauen? Einen Flughafen? Einen Zoo?"
+    },
+    {
+      "id": "hz-fuell-5",
+      "gruppe": "hz_fuell",
+      "text": "Kein Stau. Noch nicht."
+    },
+    {
+      "id": "hz-outro-1",
+      "gruppe": "hz_outro",
+      "text": "Das war meine Stadt für heute! Baut eure eigene auf kometenwerk punkt github punkt io. Bis zum nächsten Mal!"
+    },
+    {
+      "id": "hz-outro-2",
+      "gruppe": "hz_outro",
+      "text": "Danke fürs Zuschauen! Wenn's euch gefallen hat, lasst ein Like da. Tschüss!"
+    },
+    {
+      "id": "hz-outro-short",
+      "gruppe": "hz_short_outro",
+      "text": "Bis zum nächsten Mal!"
+    }
   ]
 }

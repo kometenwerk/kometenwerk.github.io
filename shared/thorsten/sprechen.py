@@ -83,7 +83,7 @@ def main():
         ziel = TON / f"{s['id']}.mp3"
         vorher = alt.get(s["id"])
         if vorher and vorher.get("hash") == h and ziel.exists():
-            fertig.append(vorher)
+            fertig.append(dict(vorher, **{k: s[k] for k in ("gruppe", "text", "zahl") if k in s}))
             continue
         conf = SynthesisConfig(length_scale=grund * tempo, noise_scale=0.667, noise_w_scale=0.8,
                                normalize_audio=True, **({"speaker_id": sprecher} if sprecher is not None else {}))
@@ -110,8 +110,11 @@ def main():
             dauer = round(float(q.stdout.strip()), 2)
         except ValueError:
             dauer = round(len(roh) / 2 / rate / schneller, 2)
-        fertig.append({"id": s["id"], "gruppe": s["gruppe"], "text": s["text"], "datei": f"ton/{s['id']}.mp3",
-                       "dauer": dauer, "hash": h})
+        eintrag = {"id": s["id"], "gruppe": s["gruppe"], "text": s["text"], "datei": f"ton/{s['id']}.mp3",
+                   "dauer": dauer, "hash": h}
+        if "zahl" in s:
+            eintrag["zahl"] = s["zahl"]
+        fertig.append(eintrag)
         neu += 1
         log(f"  {s['id']}: {dauer} s")
 

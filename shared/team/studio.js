@@ -13,7 +13,13 @@
   var MODI = [["ffa", "Zoo-Chaos (alle gegen alle)"], ["duel", "Krawall-Duell (1 gegen 1)"], ["gem", "Futterjagd (3 gegen 3)"], ["ball", "Zoo-Ball (3 gegen 3)"], ["steal", "Waffenklau (3 gegen 3)"], ["heist", "Gehege knacken (3 gegen 3)"]];
   var LAENGEN = { breit: [[60, "1 Minute"], [180, "3 Minuten"], [300, "5 Minuten"], [600, "10 Minuten"]], hoch: [[30, "30 Sekunden"], [45, "45 Sekunden"], [58, "58 Sekunden"]] };
   var FORMATE = { breit: { w: 1280, h: 720, name: "YouTube-Video (16:9)" }, hoch: { w: 1080, h: 1920, name: "Short (hochkant)" } };
-  function ein() { return A.lade("omni-studio", { format: "breit", laenge: 180, modus: "ffa", stimme: true, spielton: true, hoeren: true }); }
+  var SPIELE = {
+    krawallzoo: { name: "🎮 Krawallzoo – Thorsten zockt", titel: "THORSTEN ZOCKT", spiel: "Krawallzoo", marke: "FLARESSA", url: "Krawallzoo/?zuschauer=1&modus=" },
+    zeigen: { name: "🏙️ Horizonte – Thorsten zeigt seine Stadt", titel: "THORSTEN ZEIGT", spiel: "Horizonte", marke: "FLARESSA", url: "spiele/inselstadt/?zuschauer=1&art=zeigen" },
+    bauen: { name: "🏗️ Horizonte – Thorsten baut eine Stadt", titel: "THORSTEN BAUT", spiel: "Horizonte", marke: "FLARESSA", url: "spiele/inselstadt/?zuschauer=1&art=bauen" }
+  };
+  function ein() { var e = A.lade("omni-studio", { spiel: "krawallzoo", format: "breit", laenge: 180, modus: "ffa", stimme: true, spielton: true, hoeren: true }); if (!SPIELE[e.spiel]) e.spiel = "krawallzoo"; return e; }
+  function hz() { return Z && Z.spiel !== "krawallzoo"; }
 
   /* ---------------- Zustand ---------------- */
   var Z = null; // läuft gerade: { aufnahme, start, dauer, ... }
@@ -32,14 +38,16 @@
     var laengen = LAENGEN[e.format] || LAENGEN.breit;
     box.innerHTML =
       '<div class="studio">' +
-      '<p class="hinweis">🎮 <b>Thorsten zockt Krawallzoo.</b> Die Tiere spielen als Bots, eins davon ist Thorstens Tier. Thorsten kommentiert, was passiert. Du schaust zu – am Ende bekommst du das fertige Video.</p>' +
-      '<div class="st-bild" id="stBild"><iframe id="stSpiel" title="Krawallzoo im Zuschauer-Modus" tabindex="-1" aria-hidden="true"></iframe><canvas id="stLeinwand"></canvas>' +
+      '<p class="hinweis" id="stErklaer"></p>' +
+      '<div class="st-entscheidet"><button class="knopf" type="button" id="stWuerfel">🎲 Thorsten, was machen wir heute?</button><p class="hinweis" id="stWahl" hidden></p></div>' +
+      '<div class="st-bild" id="stBild"><iframe id="stSpiel" title="Spiel im Zuschauer-Modus" tabindex="-1" aria-hidden="true"></iframe><canvas id="stLeinwand"></canvas>' +
       '<div class="st-leer" id="stLeer"><div class="gross">🎬</div><b>Noch nichts zu sehen</b><span>Tipp auf „Vorschau“, um zu testen, oder direkt auf „Aufnahme starten“.</span></div></div>' +
       '<div class="st-leiste"><span class="st-rec" id="stRec" hidden>● REC</span><span id="stZeit">–</span><span id="stInfo" class="st-info"></span></div>' +
       '<form class="st-einst" id="stForm">' +
+      '<div class="feld st-voll"><label for="stSpielWahl">Was macht Thorsten?</label><select id="stSpielWahl">' + Object.keys(SPIELE).map(function (k) { return '<option value="' + k + '"' + (e.spiel === k ? " selected" : "") + ">" + SPIELE[k].name + "</option>"; }).join("") + "</select></div>" +
       '<div class="feld"><label for="stFormat">Format</label><select id="stFormat">' + Object.keys(FORMATE).map(function (k) { return '<option value="' + k + '"' + (e.format === k ? " selected" : "") + ">" + FORMATE[k].name + "</option>"; }).join("") + "</select></div>" +
       '<div class="feld"><label for="stLaenge">Länge</label><select id="stLaenge">' + laengen.map(function (l) { return '<option value="' + l[0] + '"' + (+e.laenge === l[0] ? " selected" : "") + ">" + l[1] + "</option>"; }).join("") + "</select></div>" +
-      '<div class="feld"><label for="stModus">Spielmodus</label><select id="stModus">' + MODI.map(function (m) { return '<option value="' + m[0] + '"' + (e.modus === m[0] ? " selected" : "") + ">" + m[1] + "</option>"; }).join("") + "</select></div>" +
+      '<div class="feld" id="stModusFeld"><label for="stModus">Spielmodus</label><select id="stModus">' + MODI.map(function (m) { return '<option value="' + m[0] + '"' + (e.modus === m[0] ? " selected" : "") + ">" + m[1] + "</option>"; }).join("") + "</select></div>" +
       '<div class="st-haken"><label><input type="checkbox" id="stStimme"' + (e.stimme ? " checked" : "") + "> Thorsten spricht</label>" +
       '<label><input type="checkbox" id="stSpielton"' + (e.spielton ? " checked" : "") + "> Spielsound im Video</label>" +
       '<label><input type="checkbox" id="stHoeren"' + (e.hoeren ? " checked" : "") + "> Ich höre mit</label></div>" +
@@ -55,6 +63,9 @@
       merken();
     };
     ["stLaenge", "stModus", "stStimme", "stSpielton", "stHoeren"].forEach(function (id) { $(id).onchange = merken; });
+    $("stSpielWahl").onchange = function () { merken(); spielAnzeige(); };
+    $("stWuerfel").onclick = entscheiden;
+    spielAnzeige();
     $("stHoeren").addEventListener("change", function () { if (Z) hoeren(this.checked); });
     var bild = $("stBild"), passen = function () { bild.style.setProperty("--sk", (bild.clientWidth / 1280).toFixed(4)); };
     if (window.ResizeObserver) new ResizeObserver(passen).observe(bild); passen();
@@ -64,8 +75,37 @@
     tonVorladen();
     if (ergebnis) ergebnisZeigen();
   }
+  function spielAnzeige() {
+    var k = $("stSpielWahl").value;
+    $("stModusFeld").hidden = k !== "krawallzoo";
+    $("stErklaer").innerHTML = {
+      krawallzoo: "🎮 <b>Thorsten zockt Krawallzoo.</b> Die Tiere spielen als Bots, eins davon ist Thorstens Tier. Thorsten kommentiert, was passiert.",
+      zeigen: "🏙️ <b>Thorsten zeigt seine Stadt.</b> Kameraflug durch Horizonte: Häuser, Bahnhof, Hafen, Verkehr und Nacht. Hast du auf diesem Gerät einen Horizonte-Spielstand, zeigt er <b>deine</b> Stadt.",
+      bauen: "🏗️ <b>Thorsten baut eine Stadt.</b> Auf leerem Land: Straßen, Strom, Wasser, Zonen – dann wächst die Stadt im Zeitraffer. Jedes Mal etwas anders."
+    }[k] + " Du schaust zu – am Ende bekommst du das fertige Video.";
+  }
+  // „Thorsten entscheidet“: Abwechslung nach einem kleinen Wochenplan
+  function entscheiden() {
+    var verlauf = A.lade("omni-studio-verlauf", []), letzte = verlauf.slice(-3), tag = new Date().getDay();
+    var plan = { 0: ["zeigen", "breit"], 1: ["krawallzoo", "hoch"], 2: ["bauen", "hoch"], 3: ["krawallzoo", "breit"], 4: ["zeigen", "hoch"], 5: ["krawallzoo", "hoch"], 6: ["bauen", "breit"] }[tag];
+    var spiel = plan[0], format = plan[1], grund = [];
+    var zaehle = function (sp) { return letzte.filter(function (v) { return v.spiel === sp; }).length; };
+    if (zaehle(spiel) >= 2) { var andere = Object.keys(SPIELE).filter(function (k) { return k !== spiel; }).sort(function (a, b) { return zaehle(a) - zaehle(b); }); spiel = andere[0]; grund.push("die letzten Videos waren oft dasselbe – Abwechslung muss sein"); }
+    else grund.push(["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"][tag] + " ist bei mir " + (spiel === "krawallzoo" ? "Krawall-Tag" : spiel === "bauen" ? "Bau-Tag" : "Stadtrundflug-Tag"));
+    var letzt = verlauf[verlauf.length - 1];
+    if (letzt && letzt.format === format && Math.random() < 0.5) { format = format === "hoch" ? "breit" : "hoch"; grund.push("zur Abwechslung mal " + (format === "hoch" ? "ein Short" : "ein längeres Video")); }
+    var laenge = format === "hoch" ? (spiel === "bauen" ? 58 : [45, 58][Math.floor(Math.random() * 2)]) : spiel === "krawallzoo" ? [180, 300][Math.floor(Math.random() * 2)] : spiel === "bauen" ? 180 : 120;
+    var modi = MODI.map(function (m) { return m[0]; }).filter(function (m) { return !letzte.some(function (v) { return v.modus === m; }); });
+    var modus = modi[Math.floor(Math.random() * modi.length)] || "ffa";
+    $("stSpielWahl").value = spiel; $("stFormat").value = format; $("stFormat").onchange();
+    if (![].some.call($("stLaenge").options, function (o) { return +o.value === laenge; })) $("stLaenge").innerHTML += '<option value="' + laenge + '">' + zeitText(laenge) + " Minuten</option>";
+    $("stLaenge").value = String(laenge); $("stModus").value = modus;
+    merken(); spielAnzeige();
+    var w = $("stWahl"); w.hidden = false;
+    w.innerHTML = "🤖 <b>Thorsten:</b> „Heute mache ich " + (format === "hoch" ? "ein Short" : "ein Video") + ": <b>" + SPIELE[spiel].name.replace(/^\S+\s/, "") + "</b>" + (spiel === "krawallzoo" ? " im Modus " + MODI.filter(function (m) { return m[0] === modus; })[0][1] : "") + ", " + zeitText(laenge) + " lang. Warum? " + grund.join(", ") + ".“ <br><small>Passt es? Dann tipp auf „Aufnahme starten“ – oder stell selbst etwas anderes ein.</small>";
+  }
   function merken() {
-    A.merke("omni-studio", { format: $("stFormat").value, laenge: +$("stLaenge").value, modus: $("stModus").value, stimme: $("stStimme").checked, spielton: $("stSpielton").checked, hoeren: $("stHoeren").checked });
+    A.merke("omni-studio", { spiel: $("stSpielWahl").value, format: $("stFormat").value, laenge: +$("stLaenge").value, modus: $("stModus").value, stimme: $("stStimme").checked, spielton: $("stSpielton").checked, hoeren: $("stHoeren").checked });
   }
   function verlassen() { if (Z && !Z.aufnahme) stoppen(false); }
   function info(t) { var el = $("stInfo"); if (el) el.textContent = t || ""; }
@@ -91,9 +131,9 @@
   }
   var puffer = {}; // id -> AudioBuffer
   function satzPuffer(ctx, s) {
-    if (puffer[s.id]) return Promise.resolve(puffer[s.id]);
-    return fetch(wurzel + "shared/thorsten/" + s.datei).then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
-      .then(function (b) { return ctx.decodeAudioData(b); }).then(function (ab) { puffer[s.id] = ab; return ab; });
+    var k = s.id + "|" + (s.hash || ""); if (puffer[k]) return Promise.resolve(puffer[k]);
+    return fetch(wurzel + "shared/thorsten/" + s.datei + "?v=" + encodeURIComponent(s.hash || ""), { cache: "no-cache" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      .then(function (b) { return ctx.decodeAudioData(b); }).then(function (ab) { puffer[k] = ab; return ab; });
   }
 
   /* ================================================================
@@ -116,20 +156,20 @@
     stimmeGain.connect(analyser); analyser.connect(ziel); spielGain.connect(ziel);
     var mithoeren = ctx.createGain(); mithoeren.gain.value = e.hoeren ? 1 : 0; analyser.connect(mithoeren); mithoeren.connect(ctx.destination);
 
-    Z = { aufnahme: aufnahme, format: e.format, F: F, dauer: aufnahme ? +e.laenge : 1e9, modus: e.modus, stimme: e.stimme, ctx: ctx, ziel: ziel, spielGain: spielGain, spielGainZiel: spielGain.gain.value,
+    Z = { aufnahme: aufnahme, spiel: e.spiel, S: SPIELE[e.spiel], format: e.format, F: F, dauer: aufnahme ? +e.laenge : 1e9, modus: e.modus, stimme: e.stimme, ctx: ctx, ziel: ziel, spielGain: spielGain, spielGainZiel: spielGain.gain.value,
       stimmeGain: stimmeGain, analyser: analyser, mithoeren: mithoeren, lw: lw, g: lw.getContext("2d"), start: 0, t: 0, bereit: false,
       spricht: null, letzterSatz: -99, benutzt: {}, warteschlange: [], untertitel: null, outro: false,
-      stats: { runden: 0, siege: 0, kos: 0, raus: 0, tiere: [], highlight: null, letzterSieger: null }, tier: "", modusName: "", vorschauBild: null, vorschauGrund: 0,
+      stats: { runden: 0, siege: 0, kos: 0, raus: 0, tiere: [], highlight: null, letzterSieger: null, einwohner: 0, momente: [] }, tier: "", modusName: "", vorschauBild: null, vorschauGrund: 0,
       blink: 0, staunen: 0 };
     ctx.resume().catch(function () {});
     // Spiel laden
     var fr = $("stSpiel");
-    fr.src = wurzel + "Krawallzoo/?zuschauer=1&modus=" + encodeURIComponent(e.modus) + "&v=" + Date.now();
+    fr.src = wurzel + Z.S.url + (e.spiel === "krawallzoo" ? encodeURIComponent(e.modus) : "&dauer=" + (aufnahme ? +e.laenge : 180)) + "&v=" + Date.now();
     knoepfe();
     info(aufnahme ? "Spiel wird geladen …" : "Vorschau – es wird nichts aufgenommen.");
     $("stZeit").textContent = aufnahme ? "0:00 / " + zeitText(Z.dauer) : "Vorschau";
     addEventListener("message", nachricht);
-    Z.ladeTimer = setTimeout(function () { if (Z && !Z.bereit) { A.toast("Krawallzoo lädt nicht. Bist du online?"); stoppen(false); } }, 20000);
+    Z.ladeTimer = setTimeout(function () { if (Z && !Z.bereit) { A.toast(Z.S.spiel + " lädt nicht. Bist du online? (Horizonte braucht einen Browser mit 3D.)"); stoppen(false); } }, 30000);
     Z.raf = requestAnimationFrame(zeichnen);
     if (A.seiteNeu) A.seiteNeu();
   }
@@ -148,7 +188,7 @@
     if (Z.aufnahme) aufnahmeStarten();
     info(Z.aufnahme ? "Aufnahme läuft …" : "Vorschau läuft.");
     // Begrüßung
-    setTimeout(function () { sag(Z && Z.format === "hoch" ? "short_intro" : "intro", 9); }, 600);
+    setTimeout(function () { if (!Z) return; sag(Z.spiel === "krawallzoo" ? (Z.format === "hoch" ? "short_intro" : "intro") : (Z.format === "hoch" ? "hz_short_intro" : "hz_intro_" + Z.spiel), 9); }, 600);
   }
   function aufnahmeStarten() {
     var spur = Z.lw.captureStream(30);
@@ -197,7 +237,7 @@
     if (!$("stAufnahme")) return;
     $("stVorschau").hidden = an; $("stAufnahme").hidden = an; $("stStopp").hidden = !an;
     $("stStopp").textContent = Z && Z.aufnahme ? "■ Aufnahme beenden" : "■ Vorschau beenden";
-    ["stFormat", "stLaenge", "stModus", "stStimme", "stSpielton"].forEach(function (id) { $(id).disabled = an; });
+    ["stSpielWahl", "stFormat", "stLaenge", "stModus", "stStimme", "stSpielton", "stWuerfel"].forEach(function (id) { $(id).disabled = an; });
   }
 
   /* ================================================================
@@ -210,6 +250,17 @@
     if (d.type === "bereit") { bereit(); return; }
     if (!Z.bereit) bereit();
     var s = Z.stats;
+    if (hz()) {
+      if (d.type === "start") { Z.tier = d.name || ""; Z.modusName = d.name || ""; Z.hzQuelle = d.quelle; s.einwohner = d.einwohner || 0; }
+      else if (d.type === "shot" || d.type === "bau") {
+        var g = "hz_" + d.was;
+        if (d.einwohner) s.einwohner = Math.max(s.einwohner || 0, d.einwohner);
+        if (ton && ton[g]) sag(g, d.was === "nacht" ? 6 : 5);
+        if (/nacht|hochhaus|wachsen2|flughafen|hafen/.test(d.was)) setTimeout(function () { merkeMoment(d.was === "nacht" ? 4 : 3, { nacht: "BEI NACHT!", hochhaus: "HOCH HINAUS!", wachsen2: "SIE WÄCHST!", flughafen: "ABHEBEN!", hafen: "AHOI!" }[d.was]); }, 3500);
+        if (s.momente.indexOf(d.was) < 0) s.momente.push(d.was);
+      } else if (d.type === "einwohner") { s.einwohner = Math.max(s.einwohner || 0, d.zahl); Z.einwText = d.zahl; sag("hz_einwohner", 4); merkeMoment(2, d.zahl + " EINWOHNER!"); }
+      return;
+    }
     switch (d.type) {
       case "start": Z.tier = d.tier; Z.modusName = d.modusName; s.runden++; if (s.tiere.indexOf(d.tier) < 0) s.tiere.push(d.tier); break;
       case "los": if (Z.t > 4) sag("los", 3); break;
@@ -235,7 +286,7 @@
   }
   // Satz aus einer Gruppe sprechen – mit Vorrang, damit Thorsten sich nicht selbst unterbricht
   function sag(gruppe, prio) {
-    if (!Z || Z.outro && gruppe !== "outro" && gruppe !== "short_outro") return;
+    if (!Z || Z.outro && !/outro$/.test(gruppe)) return;
     var jetzt = Z.t;
     if (Z.spricht) {
       if (prio >= 7 && prio > Z.spricht.prio) { Z.warteschlange = [{ g: gruppe, p: prio }]; }
@@ -246,6 +297,7 @@
     if (!liste || !liste.length) return untertitelOhneTon(gruppe, prio);
     var frei = liste.filter(function (s) { return !Z.benutzt[s.id] || jetzt - Z.benutzt[s.id] > 90; });
     var s = (frei.length ? frei : liste)[Math.floor(Math.random() * (frei.length || liste.length))];
+    if (gruppe === "hz_einwohner" && Z.einwText) { var passend = liste.filter(function (x) { return x.zahl === Z.einwText; })[0]; if (passend) s = passend; }
     Z.benutzt[s.id] = jetzt;
     if (!Z.stimme) { Z.untertitel = { text: s.text, bis: jetzt + Math.max(1.6, s.dauer || 2) }; Z.letzterSatz = jetzt + (s.dauer || 2); return; }
     var z = Z;
@@ -314,12 +366,12 @@
     // Titel-Einblendung nach der ersten Action (Leitfaden: erst Ergebnis, dann kurz das Intro)
     if (t > 2.2 && t < 6.2 && Z.bereit) titelKarte(g, W, H, t - 2.2);
     // Füllsätze, wenn es zu ruhig ist
-    if (Z.bereit && !Z.spricht && !Z.outro && Z.format !== "hoch" && t - Z.letzterSatz > 15 && t > 10) sag("fuell", 1);
+    if (Z.bereit && !Z.spricht && !Z.outro && Z.format !== "hoch" && t - Z.letzterSatz > 15 && t > 10) sag(hz() ? "hz_fuell" : "fuell", 1);
     // Schluss
     if (Z.aufnahme && Z.bereit) {
       var rest = Z.dauer - t;
       var schluss = Z.format === "hoch" ? 3 : 7;
-      if (rest < schluss + 0.6 && !Z.outro) { Z.outro = true; if (Z.spricht) { try { Z.spricht.quelle.stop(); } catch (e) { /* egal */ } } Z.spricht = null; Z.letzterSatz = -99; sag(Z.format === "hoch" ? "short_outro" : "outro", 10); }
+      if (rest < schluss + 0.6 && !Z.outro) { Z.outro = true; if (Z.spricht) { try { Z.spricht.quelle.stop(); } catch (e) { /* egal */ } } Z.spricht = null; Z.letzterSatz = -99; sag(hz() ? (Z.format === "hoch" ? "hz_short_outro" : "hz_outro") : (Z.format === "hoch" ? "short_outro" : "outro"), 10); }
       if (rest < schluss) schlussKarte(g, W, H, 1 - rest / schluss, Z.mund, t);
       var el = $("stZeit"); if (el) el.textContent = zeitText(t) + " / " + zeitText(Z.dauer);
       if (rest <= 0) { stoppen(true); return; }
@@ -338,8 +390,8 @@
     }
     // Titel oben
     g.textAlign = "center"; g.textBaseline = "middle";
-    g.font = "800 92px 'Space Grotesk', Arial, sans-serif"; schrift(g, "THORSTEN ZOCKT", W / 2, 140, "#ffcf33", 12);
-    g.font = "600 52px 'Space Grotesk', Arial, sans-serif"; schrift(g, "Krawallzoo" + (Z.tier ? " · " + Z.tier : ""), W / 2, 228, "#ffffff", 9);
+    g.font = "800 92px 'Space Grotesk', Arial, sans-serif"; schrift(g, Z.S.titel, W / 2, 140, "#ffcf33", 12);
+    g.font = "600 52px 'Space Grotesk', Arial, sans-serif"; schrift(g, Z.S.spiel + (Z.tier ? " · " + Z.tier : ""), W / 2, 228, "#ffffff", 9);
   }
 
   /* ---------- Bausteine ---------- */
@@ -386,7 +438,8 @@
     g.font = "700 22px 'Space Grotesk', Arial, sans-serif"; g.fillStyle = "#fff"; g.fillText("THORSTEN", 12, 1);
     g.fillStyle = "#ff8a3c"; rund(g, w + 22, -11, kw, 22, 7); g.fill();
     g.fillStyle = "#1a0d02"; g.font = "700 13px 'Space Grotesk', Arial, sans-serif"; g.fillText("KI-STIMME", w + 29, 1);
-    if (Z && Z.tier) { g.fillStyle = "rgba(10,12,22,.7)"; g.font = "500 16px 'Space Grotesk', Arial, sans-serif"; var tw = g.measureText("spielt: " + Z.tier).width; rund(g, 0, 24, tw + 24, 28, 9); g.fill(); g.fillStyle = "#cfd6e6"; g.fillText("spielt: " + Z.tier, 12, 38); }
+    var zeile2 = Z && Z.tier ? (hz() ? "🏙️ " : "spielt: ") + Z.tier : "";
+    if (zeile2) { g.fillStyle = "rgba(10,12,22,.7)"; g.font = "500 16px 'Space Grotesk', Arial, sans-serif"; var tw = g.measureText(zeile2).width; rund(g, 0, 24, tw + 24, 28, 9); g.fill(); g.fillStyle = "#cfd6e6"; g.fillText(zeile2, 12, 38); }
     g.restore();
   }
   function untertitel(g, W, H, text) {
@@ -413,8 +466,8 @@
     g.fillStyle = "rgba(10,12,22,.86)"; rund(g, x, y, 410, 92, 18); g.fill();
     g.fillStyle = "#ff8a3c"; rund(g, x, y, 10, 92, 5); g.fill();
     g.textAlign = "left"; g.textBaseline = "alphabetic";
-    g.font = "800 36px 'Space Grotesk', Arial, sans-serif"; g.fillStyle = "#ffcf33"; g.fillText("THORSTEN ZOCKT", x + 28, y + 46);
-    g.font = "500 20px 'Space Grotesk', Arial, sans-serif"; g.fillStyle = "#e6eaf3"; g.fillText("Krawallzoo · " + (Z.modusName || "") + " · FLARESSA", x + 28, y + 76);
+    g.font = "800 36px 'Space Grotesk', Arial, sans-serif"; g.fillStyle = "#ffcf33"; g.fillText(Z.S.titel, x + 28, y + 46);
+    g.font = "500 20px 'Space Grotesk', Arial, sans-serif"; g.fillStyle = "#e6eaf3"; g.fillText(Z.S.spiel + (Z.modusName ? " · " + Z.modusName : "") + " · FLARESSA", x + 28, y + 76);
     g.restore();
   }
   function schlussKarte(g, W, H, p, mund, t) {
@@ -425,8 +478,8 @@
     var hoch = Z.format === "hoch", s = hoch ? 330 : 210, cx = W / 2;
     avatar(g, cx - s / 2, hoch ? 520 : 90, s, mund, t, false);
     g.textAlign = "center"; g.textBaseline = "middle";
-    g.font = "800 " + (hoch ? 96 : 64) + "px 'Space Grotesk', Arial, sans-serif"; schrift(g, "Bleibt krawallig! 👋", cx, hoch ? 1020 : 380, "#ffcf33", 10);
-    g.font = "500 " + (hoch ? 46 : 30) + "px 'Space Grotesk', Arial, sans-serif"; g.fillStyle = "#e6eaf3"; g.fillText("Krawallzoo kostenlos spielen:", cx, hoch ? 1150 : 460);
+    g.font = "800 " + (hoch ? 96 : 64) + "px 'Space Grotesk', Arial, sans-serif"; schrift(g, hz() ? "Bis zum nächsten Mal! 👋" : "Bleibt krawallig! 👋", cx, hoch ? 1020 : 380, "#ffcf33", 10);
+    g.font = "500 " + (hoch ? 46 : 30) + "px 'Space Grotesk', Arial, sans-serif"; g.fillStyle = "#e6eaf3"; g.fillText(Z.S.spiel + " kostenlos spielen:", cx, hoch ? 1150 : 460);
     g.font = "700 " + (hoch ? 58 : 40) + "px 'Space Grotesk', Arial, sans-serif"; g.fillStyle = "#fff"; g.fillText("kometenwerk.github.io", cx, hoch ? 1230 : 512);
     g.font = "500 " + (hoch ? 32 : 20) + "px 'Space Grotesk', Arial, sans-serif"; g.fillStyle = "#9aa7bd"; g.fillText("FLARESSA Gaming · OMNIVIA Group · Thorsten ist eine KI-Figur", cx, hoch ? 1340 : 580);
     g.restore();
@@ -443,19 +496,35 @@
     var st = z.stats, kurz = z.format === "hoch";
     var datum = new Date().toISOString().slice(0, 10);
     var tier = st.tiere[0] || "Zufallstier";
-    var titel = kurz
+    var titel, beschreibung, tags, dateiName = "thorsten-zockt-";
+    if (z.spiel !== "krawallzoo") {
+      var stadt = z.tier || "Horizonte", ew = st.einwohner || 0, bau = z.spiel === "bauen";
+      dateiName = bau ? "thorsten-baut-" : "thorsten-zeigt-";
+      titel = kurz
+        ? (bau ? "Eine Stadt in " + Math.round(z.dauer) + " Sekunden bauen 🏗️ #Shorts" : st.momente.indexOf("nacht") >= 0 ? "Meine Stadt bei Nacht 🌃 #Shorts" : "Rundflug über meine Stadt 🏙️ #Shorts")
+        : bau ? "Thorsten baut eine Stadt in Horizonte – von leerem Land" + (ew ? " zu " + ew + " Einwohnern" : " zur Stadt") + "! (KI-Städtebau)"
+          : "Thorsten zeigt seine Stadt in Horizonte – " + (st.momente.indexOf("nacht") >= 0 ? "Rundflug bei Tag und Nacht" : "der große Rundflug") + " (KI-Städtebau)";
+      beschreibung = "Thorsten – der KI-YouTuber von OMNIVIA – " + (bau ? "baut eine Stadt in Horizonte, von leerem Land bis zur lebendigen Stadt im Zeitraffer" : "zeigt seine Stadt „" + stadt + "“ in Horizonte") + ".\n" +
+        (ew ? "Einwohner am Ende: " + ew + ".\n" : "") +
+        "\n🏙️ Horizonte kostenlos im Browser spielen: https://kometenwerk.github.io/spiele/horizonte/\n🌐 Mehr von OMNIVIA: https://kometenwerk.github.io\n\n" +
+        "ℹ️ Thorsten ist eine KI-Figur, kein echter Mensch. Seine Stimme ist eine Computerstimme (Piper-Sprachmodell „Thorsten“ von Thorsten-Voice, CC0). " +
+        (bau ? "Gebaut wird nach einem automatischen Bauplan. " : "") + "Horizonte ist ein Spiel von FLARESSA Gaming (OMNIVIA Group).";
+      tags = "Horizonte, Städtebau, City Builder, Thorsten, KI, Browserspiel, OMNIVIA, FLARESSA" + (kurz ? ", Shorts" : "");
+    } else {
+    titel = kurz
       ? (st.siege ? "Thorsten gewinnt mit dem " + tier + "! 🏆 #Shorts" : st.kos ? "Erwischt! Thorstens " + tier + " räumt auf 😂 #Shorts" : "Krawallzoo-Chaos in " + Math.round(z.dauer) + " Sekunden 😂 #Shorts")
       : "Thorsten zockt Krawallzoo – " + (z.modusName || "Zoo-Chaos") + (st.siege ? ", " + st.siege + (st.siege === 1 ? " Sieg" : " Siege") + "!" : " mit dem " + tier + "!") + " (KI-Let's-Play)";
-    var beschreibung =
+    beschreibung =
       "Thorsten – der KI-YouTuber von OMNIVIA – zockt " + (z.modusName || "Krawallzoo") + " in Krawallzoo.\n" +
       (st.runden ? "In diesem Video: " + st.runden + (st.runden === 1 ? " Runde" : " Runden") + ", " + st.siege + (st.siege === 1 ? " Sieg" : " Siege") + " und " + st.kos + " K.O.s von Thorstens " + (st.tiere.length > 1 ? "Tieren (" + st.tiere.join(", ") + ")" : tier) + ".\n" : "") +
       "\n🎮 Krawallzoo kostenlos im Browser spielen: https://kometenwerk.github.io/Krawallzoo/\n🌐 Mehr von OMNIVIA: https://kometenwerk.github.io\n\n" +
       "ℹ️ Thorsten ist eine KI-Figur, kein echter Mensch. Seine Stimme ist eine Computerstimme (Piper-Sprachmodell „Thorsten“ von Thorsten-Voice, CC0). " +
       "Alle Tiere werden von Computer-Gegnern (Bots) gesteuert. Krawallzoo ist ein Spiel von FLARESSA Gaming (OMNIVIA Group).";
-    var tags = "Krawallzoo, Lets Play, Thorsten, KI, Browserspiel, Tiere, OMNIVIA, FLARESSA" + (kurz ? ", Shorts" : "");
+    tags = "Krawallzoo, Lets Play, Thorsten, KI, Browserspiel, Tiere, OMNIVIA, FLARESSA" + (kurz ? ", Shorts" : "");
+    }
     vorschaubild(z).then(function (bild) {
       if (ergebnis) { URL.revokeObjectURL(ergebnis.url); if (ergebnis.vorschauUrl) URL.revokeObjectURL(ergebnis.vorschauUrl); }
-      ergebnis = { blob: blob, url: URL.createObjectURL(blob), name: "thorsten-zockt-" + datum + "." + endung, vorschau: bild, vorschauUrl: bild ? URL.createObjectURL(bild) : null,
+      ergebnis = { blob: blob, url: URL.createObjectURL(blob), name: dateiName + datum + "." + endung, vorschau: bild, vorschauUrl: bild ? URL.createObjectURL(bild) : null,
         titel: titel, beschreibung: beschreibung, tags: tags, kurz: kurz, dauer: z.dauer };
       aufraeumen();
       ergebnisZeigen();
@@ -472,12 +541,12 @@
     avatar(g, 860, 250, 380, 0.9, 0.5, true);
     g.textAlign = "left"; g.textBaseline = "alphabetic";
     g.save(); g.translate(60, 300); g.rotate(-0.06);
-    g.font = "900 150px 'Space Grotesk', Arial, sans-serif"; schrift(g, z.vorschauText || "KRAWALL!", 0, 0, "#ffcf33", 22);
+    g.font = "900 150px 'Space Grotesk', Arial, sans-serif"; schrift(g, z.vorschauText || (z.spiel === "krawallzoo" ? "KRAWALL!" : z.spiel === "bauen" ? "NEUE STADT!" : "MEINE STADT!"), 0, 0, "#ffcf33", 22);
     g.restore();
     g.font = "800 70px 'Space Grotesk', Arial, sans-serif"; schrift(g, "THORSTEN", 70, 470, "#ffffff", 14);
-    g.font = "800 70px 'Space Grotesk', Arial, sans-serif"; schrift(g, "ZOCKT", 70, 550, "#ff8a3c", 14);
-    g.font = "800 26px 'Space Grotesk', Arial, sans-serif"; var bw = g.measureText("KI-LET'S-PLAY").width + 28;
-    g.fillStyle = "#ff8a3c"; rund(g, 70, 600, bw, 46, 12); g.fill(); g.fillStyle = "#1a0d02"; g.fillText("KI-LET'S-PLAY", 84, 632);
+    g.font = "800 70px 'Space Grotesk', Arial, sans-serif"; schrift(g, z.S.titel.replace("THORSTEN ", ""), 70, 550, "#ff8a3c", 14);
+    g.font = "800 26px 'Space Grotesk', Arial, sans-serif"; var etikett = z.spiel === "krawallzoo" ? "KI-LET'S-PLAY" : "KI-STÄDTEBAU", bw = g.measureText(etikett).width + 28;
+    g.fillStyle = "#ff8a3c"; rund(g, 70, 600, bw, 46, 12); g.fill(); g.fillStyle = "#1a0d02"; g.fillText(etikett, 84, 632);
     return new Promise(function (ok) { c.toBlob(function (b) { ok(b); }, "image/png"); });
   }
   function ergebnisZeigen() {

@@ -9,6 +9,9 @@ import { mergeGeometries } from "three/addons/BufferGeometryUtils.js";
 const $ = (id) => document.getElementById(id);
 const lade = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
 const merke = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
+/* Zuschauer-Modus fürs Video-Studio (?zuschauer=1&art=zeigen|bauen) – Thorsten zeigt oder baut eine Stadt.
+   Es wird nichts gespeichert. Ereignisse gehen an die Seite, die das Spiel eingebettet hat. */
+const ZU = /[?&]zuschauer=1\b/.test(location.search);
 function zufall(seed) { let a = seed >>> 0; return function () { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const farbe = (h) => new THREE.Color(h);
 const glatt = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -107,7 +110,7 @@ if (!STUFEN[stufe]) stufe = "mittel";
 
 /* ---------- Renderer, Szene, Kamera ---------- */
 let renderer;
-try { renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" }); }
+try { renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance", preserveDrawingBuffer: ZU }); }
 catch (e) { $("fehler").style.display = "grid"; $("hauptmenue").hidden = true; throw e; }
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -4769,6 +4772,7 @@ function schleife() {
   rauchZeichnen(); fahrzeugeZeichnen(); geparkteZeichnen(); halleZeichnen(); menschenZeichnen(); signaleZeichnen(); ampelnZeichnen(); toreZeichnen(dt); fussgaengerTakt(dt, kz.e); hochZeichnen(); warnZeichnen(); drehZeichnen(); if (linienNeu) linienZeichnen(); zugTakt(dt * (tempo || 0)); bahnHafenZeichnen(dt * (tempo || 0)); wasserLuftZeichnen(dt * (tempo || 0)); schrankenZeichnen(dt); if (ansicht && ansicht !== "verkehr" && jetztS - wertZeit > 2) wertZeichnen();
   boote.forEach((b) => { b.w += b.v * dt; b.g.position.set(b.mx + Math.cos(b.w) * b.rad, WASSER + 0.02 + Math.sin(t * 1.6 + b.ph) * 0.05, b.mz + Math.sin(b.w) * b.rad); b.g.rotation.set(Math.sin(t * 1.3 + b.ph) * 0.05, -b.w + (b.v > 0 ? -Math.PI / 2 : Math.PI / 2), 0); });
   if (leuchtturm) leuchtturm.userData.strahl.rotation.y = t * 0.8;
+  if (ZU) zuTakt(dt);
   if (spieler.an) fahrenTakt(dt);
   else if (folgen) folgenTakt(dt);
   else {
@@ -4781,9 +4785,173 @@ function schleife() {
   fpsBilder++; fpsZeit += dt; if (fpsZeit >= 0.5) { $("fps").textContent = Math.round(fpsBilder / fpsZeit) + " FPS"; fpsBilder = 0; fpsZeit = 0; }
 }
 
+/* ================================================================
+   Zuschauer-Modus fürs Video-Studio
+   ================================================================ */
+const ZU_ART = new URLSearchParams(location.search).get("art") === "bauen" ? "bauen" : "zeigen";
+let zuT = 0, zuShots = [], zuIdx = -1, zuShotEnde = 0, zuSchuss = null, zuSchnell = 0, zuWachsT = 0, zuEinwT = 0, zuBauFertig = false, zuMitte = null;
+const ZU_STUFEN = [25, 60, 120, 250, 500, 1000, 2000, 5000, 10000];
+function zuEvent(type, d) { if (!ZU) return; try { parent.postMessage(Object.assign({ kz: "zu", type }, d || {}), location.origin); } catch (e) { /* egal */ } }
+function stadtMitte() {
+  const H = [...haeuser.values()];
+  if (!H.length) { const t = zuMitte || steuerung.target; return { x: t.x, z: t.z, r: 18 }; }
+  let x = 0, z = 0; for (const h of H) { x += h.x; z += h.z; } x /= H.length; z /= H.length;
+  const ab = H.map((h) => Math.hypot(h.x - x, h.z - z)).sort((a, b) => a - b);
+  return { x, z, r: Math.max(12, ab[Math.floor(ab.length * 0.85)] || 12) };
+}
+// Kameraflug: weich zur neuen Position gleiten, danach langsam kreisen
+function zuKamera(x, z, dist, hoch, winkel, dauer, kreisen) {
+  steuerung.autoRotate = false;
+  zuSchuss = { von: { tx: steuerung.target.x, tz: steuerung.target.z, cx: kamera.position.x, cy: kamera.position.y, cz: kamera.position.z },
+    x, z, dist, hoch, w: winkel == null ? Math.random() * Math.PI * 2 : winkel, t: 0, d: dauer || 2.4, kreisen: kreisen == null ? 0.07 : kreisen };
+}
+function zuKameraTakt(dt) {
+  const s = zuSchuss; if (!s || folgen) return;
+  s.t += dt; s.w += s.kreisen * dt;
+  const zx = s.x + s.dist * Math.sin(s.w), zz = s.z + s.dist * Math.cos(s.w), zy = Math.max(3, s.dist * s.hoch);
+  const k = Math.min(1, s.t / s.d), e = k * k * (3 - 2 * k);
+  steuerung.target.set(s.von.tx + (s.x - s.von.tx) * e, 0.3, s.von.tz + (s.z - s.von.tz) * e);
+  kamera.position.set(s.von.cx + (zx - s.von.cx) * e, s.von.cy + (zy - s.von.cy) * e, s.von.cz + (zz - s.von.cz) * e);
+}
+function zuNaechster() {
+  const alt = zuShots[zuIdx]; if (alt && alt.ende) { try { alt.ende(); } catch (e) { console.warn(e); } }
+  if (zuIdx + 1 >= zuShots.length) { if (ZU_ART === "bauen" && !zuBauFertig) zuBauFertig = true; zuShots = zuTour(); zuIdx = -1; }
+  zuIdx++;
+  const s = zuShots[zuIdx];
+  try { s.f(); } catch (e) { console.warn("Zuschauer", e); }
+  zuShotEnde = zuT + s.d;
+  if (s.was) zuEvent(s.ev || "shot", { was: s.was, einwohner: kennzahlen().e });
+}
+let zuLetzt = 0;
+function zuTakt(dt) {
+  // Echte Zeit statt Spielzeit: der Ablauf passt so auch bei ruckelnder Grafik zur Videolänge
+  const jetzt = performance.now() / 1000; dt = zuLetzt ? Math.min(0.5, jetzt - zuLetzt) : dt; zuLetzt = jetzt;
+  zuT += dt;
+  if (zuT >= zuShotEnde) zuNaechster();
+  zuKameraTakt(dt);
+  if (zuSchnell > 0) { zuWachsT += dt; while (zuWachsT > 0.12) { zuWachsT -= 0.12; for (let i = 0; i < zuSchnell; i++) wachsTakt(); } }
+  zuEinwT += dt;
+  if (zuEinwT > 1) {
+    zuEinwT = 0; const e = kennzahlen().e;
+    while (ZU_STUFEN.length && e >= ZU_STUFEN[0]) { const z = ZU_STUFEN.shift(); if (ZU_ART === "bauen") zuEvent("einwohner", { zahl: z }); }
+  }
+}
+// Rundflug durch eine fertige Stadt
+function zuTour() {
+  const M = stadtMitte(), D = [...dienste.values()], finde = (re) => D.filter((d) => re.test(d.typ));
+  const S = [];
+  S.push({ was: "uebersicht", d: 11, f: () => { zeitZiel = ZEITEN.tag; zuKamera(M.x, M.z, M.r * 1.7 + 14, 0.72, null, 3.2, 0.06); } });
+  const hoch = [...haeuser.values()].sort((a, b) => (b.hoehe || 0) - (a.hoehe || 0))[0];
+  if (hoch) S.push({ was: (hoch.hoehe || 0) > 3 ? "hochhaus" : "haeuser", d: 9, f: () => zuKamera(hoch.x, hoch.z, 7 + (hoch.hoehe || 1) * 1.6, 0.42, null, 2.8, 0.13) });
+  const bhf = finde(/^(bahnhof|hauptbahnhof|haltepunkt|gueterbahnhof)$/)[0]; if (bhf) S.push({ was: "bahnhof", d: 9, f: () => zuKamera(bhf.x, bhf.z, 13, 0.5, null, 2.8, 0.1) });
+  const hafen = finde(/hafen|faehre|containerterminal/)[0]; if (hafen) S.push({ was: "hafen", d: 9, f: () => zuKamera(hafen.x, hafen.z, 16, 0.5, null, 2.8, 0.09) });
+  const flug = finde(/^flughafen$/)[0]; if (flug) S.push({ was: "flughafen", d: 10, f: () => zuKamera(flug.x, flug.z, 22, 0.5, null, 3, 0.08) });
+  const bus = finde(/depot/)[0]; if (!bhf && bus && Math.random() < 0.5) S.push({ was: "bus", d: 8, f: () => zuKamera(bus.x, bus.z, 10, 0.5, null, 2.6, 0.12) });
+  S.push({ was: "auto", d: 9, f: () => {
+    const F = fahrzeuge.filter((f) => f.pos && !f.parkt && f.name && f.v > 0.05);
+    const f = F[Math.floor(Math.random() * F.length)];
+    if (f) { zuSchuss = null; folgenStart(f); const l = $("folgenLeiste"); if (l) l.hidden = true; }
+    else zuKamera(M.x, M.z, M.r + 8, 0.35, null, 2.6, 0.15);
+  }, ende: () => { if (folgen) folgenEnde(); } });
+  S.push({ was: "nacht", d: 13, f: () => { zeitZiel = ZEITEN.nacht; zuKamera(M.x, M.z, M.r * 1.3 + 12, 0.55, null, 3.2, 0.07); }, ende: () => { zeitZiel = ZEITEN.tag; } });
+  return S;
+}
+// Bau-Autopilot: Straßen, Versorgung, Zonen, Wachstum, Bus, Erweiterung – Schritt für Schritt
+function zuBauPlan() {
+  const n = knoten.get(aussenKnoten); if (!n) return zuTour();
+  const l = Math.hypot(n.x, n.z) || 1, dx = n.x / l, dz = n.z / l;
+  const innen = naechsterKnoten({ x: dx * 17, z: dz * 17 }, 3); if (!innen) return zuTour();
+  strTyp = "klein";
+  const A = { art: "knoten", id: innen.id, x: innen.x, z: innen.z }, inx = -dx, inz = -dz, px = -dz, pz = dx;
+  const r = Math.random, breit = 10 + Math.floor(r() * 4), tief = 20 + Math.floor(r() * 7), st = rasterAbst(), m = Math.max(1, Math.round(tief / st));
+  const mitte = { x: innen.x + inx * tief * 0.55, z: innen.z + inz * tief * 0.55 }; zuMitte = mitte;
+  const blick = Math.atan2(-inx, -inz) + (r() - 0.5) * 1.2;
+  const kam = (q, d, h, dauer, kr) => () => zuKamera(q.x, q.z, d, h, blick, dauer || 2.6, kr);
+  const S = [];
+  const strassen = (P, br, ti, was) => {
+    const L = []; for (const sg of [1, -1]) { const B = { x: P.x + px * br * sg, z: P.z + pz * br * sg }, C = { x: P.x + inx * ti, z: P.z + inz * ti }; L.push(...rasterLinien(P, B, C)); }
+    L.forEach(([a, b], i) => S.push({ was: i === 0 ? was : null, ev: "bau", d: 0.42, f: () => { const pl = planen(fangOderFrei(a), lerp(a, b, 0.5), fangOderFrei(b), strTyp, 0); if (pl.ok) bauen(pl); } }));
+    S.push({ d: 0.3, f: () => { netzGeaendert(); } });
+  };
+  const kandidaten = (Q, rad) => { const out = []; for (const k of kanten.values()) { if (!autoKante(k) || k.aussen) continue; for (const t of [0.3, 0.7]) { const q = punktBei(k, k.len * t); if (abst(q, Q) > rad) continue; for (const sg of [1, -1]) out.push({ x: q.x - q.tz * 2 * sg, z: q.z + q.tx * 2 * sg }); } } return out; };
+  const setze = (typ, aussen, Q, rad) => { const L = kandidaten(Q, rad).sort((a, b) => aussen ? abst(b, Q) - abst(a, Q) : abst(a, Q) - abst(b, Q)); for (const q of L) { const pl = dienstPlan(q, typ); if (pl.ok && !pl.haeuser) { const d = dienstBauen(pl); if (d) return d; } } return null; };
+  const zonen = (Q, rad, wahl, was) => {
+    let liste = null;
+    S.push({ was, ev: "bau", d: 0.2, f: () => { liste = [...zellen.values()].filter((c) => !c.haus && !c.zone && abst(c, Q) < rad).sort((a, b) => abst(a, Q) - abst(b, Q)); } });
+    for (let i = 0; i < 14; i++) S.push({ d: 0.16, f: () => { if (!liste) return; const teil = liste.splice(0, Math.ceil(liste.length / (14 - i)) || 0); for (const c of teil) c.zone = wahl(c); zellenNeu = true; } });
+  };
+  // 1. Leeres Land
+  S.push({ was: "land", ev: "bau", d: 4.5, f: kam(mitte, 42, 0.85, 2.4, 0.04) });
+  // 2. Straßen
+  S.push({ d: 0.2, f: kam(mitte, 30, 0.8, 3, 0.03) });
+  strassen(A, breit, tief, "strassen");
+  // 3. Versorgung und Dienste
+  const dienstListe = [["windrad", "strom", true], ["windrad", null, true], ["wasserturm", "wasser", true], ["klaer", null, true], ["deponie", "muell", true], ["feuerklein", "dienste", false], ["polizei", null, false], ["arzt", null, false], ["grundschule", "schule", false], ["park", "park", false], ["spielplatz", null, false]];
+  for (const [t, was, aussen] of dienstListe) S.push({ was, ev: "bau", d: 1.1, f: () => { setze(t, aussen, mitte, tief + breit); versorgungRechnen(); } });
+  // 4. Zonen malen
+  S.push({ d: 0.2, f: kam(mitte, 24, 0.75, 2.4, 0.05) });
+  const ez = (c) => { const ex = c.x - innen.x, ezz = c.z - innen.z, ti = ex * inx + ezz * inz, qu = ex * px + ezz * pz; return ti < 5 ? 3 : ti > tief - 6 && qu > 3 ? 6 : 1; };
+  zonen(mitte, tief + 4, ez, "zonen");
+  // 5. Wachsen
+  S.push({ was: "wachsen", ev: "bau", d: 20, f: () => { versorgungRechnen(); busRechnen(); bedarfBerechnen(); tempo = 4; zuSchnell = 2; kam(mitte, 17, 0.55, 3, 0.1)(); } });
+  // 6. Bus
+  S.push({ was: "bus", ev: "bau", d: 8, f: () => {
+    const depot = setze("busdepot", true, mitte, tief + breit); if (!depot) return;
+    const ks = [...kanten.values()].filter((k) => autoKante(k) && !k.aussen && k.len > 4 && abst(punktBei(k, k.len / 2), mitte) < tief).sort((a, b) => Math.atan2(punktBei(a, a.len / 2).z - mitte.z, punktBei(a, a.len / 2).x - mitte.x) - Math.atan2(punktBei(b, b.len / 2).z - mitte.z, punktBei(b, b.len / 2).x - mitte.x));
+    const ids = []; for (let i = 0; i < ks.length && ids.length < 5; i += Math.max(1, Math.floor(ks.length / 5))) { const hh = neueHalte({ k: ks[i].id, s: ks[i].len / 2 }); if (hh) ids.push(hh.id); }
+    if (ids.length >= 3) { const bm = busModus; busModus = "linie"; linieBau = ids; linieFertig(); busModus = bm; lfZeigen(null); const L = [...linien.values()].pop(); if (L) L.name = "Thorsten-Bus"; }
+    kam(depot, 11, 0.5, 2.6, 0.12)();
+  } });
+  // 7. Erweiterung: größere Häuser, Büros und Läden
+  const A2 = { x: A.x + inx * m * st, z: A.z + inz * m * st }, tief2 = 16 + Math.floor(r() * 6), mitte2 = { x: A2.x + inx * tief2 * 0.5, z: A2.z + inz * tief2 * 0.5 };
+  S.push({ was: "erweiterung", ev: "bau", d: 1.5, f: () => { meilenstein = Math.max(meilenstein, 3); zuSchnell = 1; kam({ x: (mitte.x + mitte2.x) / 2, z: (mitte.z + mitte2.z) / 2 }, 44, 0.8, 3, 0.03)(); } });
+  strassen(A2, breit + 2, tief2, null);
+  S.push({ d: 0.6, f: () => { setze("feuerklein", false, mitte2, tief2); setze("park", false, mitte2, tief2); versorgungRechnen(); } });
+  zonen(mitte2, tief2 + 4, (c) => { const v = Math.random(); return v < 0.45 ? 2 : v < 0.7 ? 4 : v < 0.88 ? 5 : 1; }, "zonen2");
+  S.push({ was: "wachsen2", ev: "bau", d: 22, f: () => { versorgungRechnen(); busRechnen(); bedarfBerechnen(); tempo = 4; zuSchnell = 2; kam(mitte2, 20, 0.5, 3, 0.1)(); } });
+  // 8. Nacht und Abschluss
+  S.push({ was: "nacht", ev: "bau", d: 14, f: () => { zuSchnell = 1; zeitZiel = ZEITEN.nacht; const M = stadtMitte(); zuKamera(M.x, M.z, M.r * 1.4 + 12, 0.6, null, 3, 0.07); }, ende: () => { zeitZiel = ZEITEN.tag; } });
+  return S;
+}
+function zuStart() {
+  $("hauptmenue").hidden = true; const ld = $("laden"); if (ld) ld.classList.add("weg");
+  // Für das Video nur die 3D-Welt zeigen – keine Knöpfe, Leisten oder Hinweise
+  const stil = document.createElement("style"); stil.textContent = "body.zuschauer > *:not(canvas){display:none!important}"; document.head.appendChild(stil); document.body.classList.add("zuschauer");
+  renderer.setPixelRatio(1); renderer.setSize(innerWidth, innerHeight);
+  zeitModus = "tag"; zeit = ZEITEN.tag; zeitZiel = null; steuerung.enabled = false; steuerung.autoRotate = false;
+  let name = null, quelle = "neu", kname = null;
+  if (ZU_ART === "zeigen") {
+    const nr = letzterStand(), d = nr && platzLaden(nr);
+    if (d) {
+      try { grossKarte = !!d.gross; weltBauen(d.karte || "insel"); zustandRein(d); if (!aussenKnoten) aussenBauen(); aussenGleisBauen(); name = (d.meta && d.meta.name) || (KARTEN[d.karte] || KARTEN.insel).name; quelle = "spielstand"; }
+      catch (e) { console.warn("Spielstand", e); quelle = "neu"; }
+    }
+  }
+  if (quelle === "neu") {
+    const kk = Object.keys(KARTEN); kname = ZU_ART === "bauen" ? kk[Math.floor(Math.random() * kk.length)] : "kueste";
+    grossKarte = true; weltBauen(kname); netzGeaendert(); if (!aussenKnoten) aussenBauen(); aussenGleisBauen();
+    for (let i = 0; i < KN; i++) for (let j = 0; j < KN; j++) besitz.add(i + "," + j); gebieteZeichnen();
+    geld = 1e9;
+    if (ZU_ART === "zeigen") { spielModus = "leicht"; dorfBauen(); for (let i = 0; i < 420; i++) wachsTakt(); zuSchnell = 1; for (const h of haeuser.values()) { if (h.bau) { h.bau = null; h.bauT = null; } h.geboren = -100; } haeuserNeu = true; name = "Thorstens Dorf"; }
+    else { spielModus = "normal"; name = KARTEN[kname].name; }
+  }
+  geld = 1e9; tempo = 1;
+  const M = stadtMitte(); steuerung.target.set(M.x, 0.3, M.z); kamera.position.set(M.x + 30, 28, M.z + 30); steuerung.update();
+  renderer.setAnimationLoop(schleife);
+  window.KZ_ZU = { canvas: renderer.domElement, ton: () => null, lautsprecher: () => {}, stopp: () => {}, neu: () => {} };
+  zuEvent("start", { spiel: "horizonte", art: ZU_ART, name, quelle, einwohner: kennzahlen().e });
+  zuEvent("bereit");
+  zuShots = ZU_ART === "bauen" ? zuBauPlan() : zuTour();
+  // Bauplan an die Videolänge anpassen (Schluss-Karte am Ende abziehen)
+  const dauer = +new URLSearchParams(location.search).get("dauer") || 0;
+  if (dauer && ZU_ART === "bauen") { const summe = zuShots.reduce((a, x) => a + x.d, 0), f = Math.min(3, Math.max(0.3, (dauer - 9) / summe)); zuShots.forEach((x) => { x.d *= f; }); }
+  zuIdx = -1; zuNaechster();
+}
+
 /* Los geht's */
 qualitaet(stufe);
 (function los() {
+  if (ZU) { try { zuStart(); } catch (e) { console.error("Zuschauer-Start", e); } return; }
   let st = null; try { st = JSON.parse(sessionStorage.getItem("horizonte-start") || "null"); sessionStorage.removeItem("horizonte-start"); } catch (e) { st = null; }
   if (st && st.n) { if (st.laden) { const d = platzLaden(st.n); if (d) { starten(st.n, d); return; } } else { starten(st.n, null, st.karte, st.modus); return; } }
   hauptmenue(); demoStarten();
