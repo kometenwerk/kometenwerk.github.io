@@ -44,6 +44,7 @@ def main():
     modell = st.get("modell", "de_DE-mls-medium")
     sprecher = int(st.get("sprecher", 162))
     tempo = float(st.get("tempo", 0.9))
+    schneller = float(st.get("schneller", 1.0))  # zusätzlich beschleunigen, ohne dass die Stimme höher klingt
     saetze = daten["saetze"]
 
     ids = [s["id"] for s in saetze]
@@ -77,7 +78,7 @@ def main():
     neu, fertig = 0, []
     for s in saetze:
         text = sprechbar(s["text"])
-        h = hashlib.sha1(f"{modell}|{sprecher}|{tempo}|{text}".encode("utf8")).hexdigest()[:12]
+        h = hashlib.sha1(f"{modell}|{sprecher}|{tempo}|{schneller}|{text}".encode("utf8")).hexdigest()[:12]
         ziel = TON / f"{s['id']}.mp3"
         vorher = alt.get(s["id"])
         if vorher and vorher.get("hash") == h and ziel.exists():
@@ -86,16 +87,28 @@ def main():
         conf = SynthesisConfig(length_scale=grund * tempo, noise_scale=0.667, noise_w_scale=0.8,
                                normalize_audio=True, speaker_id=sprecher)
         roh = b"".join(c.audio_int16_bytes for c in voice.synthesize(text, conf))
-        pause = b"\x00\x00" * int(rate * 0.08)
+        # Stille vorn und hinten weg, dann beschleunigen (atempo verändert die Tonhöhe nicht)
+        tempi, rest = [], schneller
+        while rest > 2.0:
+            tempi.append("atempo=2.0"); rest /= 2.0
+        if abs(rest - 1.0) > 0.01:
+            tempi.append(f"atempo={rest:.3f}")
+        filter_ = ",".join(["silenceremove=start_periods=1:start_threshold=-42dB:start_silence=0.04",
+                            "areverse", "silenceremove=start_periods=1:start_threshold=-42dB:start_silence=0.12", "areverse"]
+                           + tempi + ["highpass=f=80", "acompressor=threshold=-20dB:ratio=3:attack=8:release=180",
+                                      "loudnorm=I=-15:TP=-1.5:LRA=11", "alimiter=limit=0.97", "adelay=60"])
         p = subprocess.run(
             ["ffmpeg", "-y", "-loglevel", "error", "-f", "s16le", "-ar", str(rate), "-ac", "1", "-i", "pipe:0",
-             "-af", "highpass=f=80,acompressor=threshold=-20dB:ratio=3:attack=8:release=180,"
-                    "loudnorm=I=-15:TP=-1.5:LRA=11,alimiter=limit=0.97",
-             "-c:a", "libmp3lame", "-b:a", "80k", str(ziel)],
-            input=pause + roh + pause, capture_output=True, timeout=120)
+             "-af", filter_, "-ar", "44100", "-c:a", "libmp3lame", "-b:a", "80k", str(ziel)],
+            input=roh, capture_output=True, timeout=120)
         if p.returncode != 0 or not ziel.exists():
             sys.exit("ffmpeg-Fehler: " + p.stderr.decode("utf8", "ignore")[:300])
-        dauer = round((len(roh) // 2 + 2 * len(pause) // 2) / rate, 2)
+        q = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(ziel)],
+                           capture_output=True, text=True)
+        try:
+            dauer = round(float(q.stdout.strip()), 2)
+        except ValueError:
+            dauer = round(len(roh) / 2 / rate / schneller, 2)
         fertig.append({"id": s["id"], "gruppe": s["gruppe"], "text": s["text"], "datei": f"ton/{s['id']}.mp3",
                        "dauer": dauer, "hash": h})
         neu += 1

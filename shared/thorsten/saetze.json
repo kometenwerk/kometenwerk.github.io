@@ -1,6 +1,6 @@
 {
   "info": "Thorstens Sprüche für das Video-Studio. Ändern oder ergänzen und auf GitHub speichern – der Ablauf „Thorstens Stimme“ spricht neue Sätze automatisch ein (shared/thorsten/ton). Die id muss eindeutig sein; die gruppe sagt dem Studio, wann der Satz passt.",
-  "stimme": { "modell": "de_DE-mls-medium", "sprecher": 162, "tempo": 0.9 },
+  "stimme": { "modell": "de_DE-mls-medium", "sprecher": 162, "tempo": 0.75, "schneller": 1.55 },
   "saetze": [
     { "id": "intro-1", "gruppe": "intro", "text": "Hey Leute, Thorsten hier, eure Lieblings-KI! Heute wird im Krawallzoo gekracht. Los geht's!" },
     { "id": "intro-2", "gruppe": "intro", "text": "Servus und willkommen! Ich bin Thorsten, der KI-Youtuber von Omnivia. Und heute zocke ich Krawallzoo!" },
@@ -14,14 +14,14 @@
     { "id": "los-3", "gruppe": "los", "text": "Okay, Konzentration. Jetzt geht's los!" },
     { "id": "los-4", "gruppe": "los", "text": "Neue Runde, neues Glück!" },
 
-    { "id": "treffer-1", "gruppe": "ko_treffer", "text": "Jaaa! Erwischt!" },
+    { "id": "treffer-1", "gruppe": "ko_treffer", "text": "Ja! Erwischt!" },
     { "id": "treffer-2", "gruppe": "ko_treffer", "text": "Den hab ich umgehauen!" },
     { "id": "treffer-3", "gruppe": "ko_treffer", "text": "Boom! Der ist raus!" },
     { "id": "treffer-4", "gruppe": "ko_treffer", "text": "Einer weniger, weiter so!" },
     { "id": "treffer-5", "gruppe": "ko_treffer", "text": "Sauber! Das war mein Moment!" },
     { "id": "treffer-6", "gruppe": "ko_treffer", "text": "Haha, damit hat er nicht gerechnet!" },
 
-    { "id": "raus-1", "gruppe": "ko_raus", "text": "Neeein! Mein Tier ist raus!" },
+    { "id": "raus-1", "gruppe": "ko_raus", "text": "Nein! Mein Tier ist raus!" },
     { "id": "raus-2", "gruppe": "ko_raus", "text": "Autsch. Das hat wehgetan." },
     { "id": "raus-3", "gruppe": "ko_raus", "text": "Okay, das war nicht mein bester Moment." },
     { "id": "raus-4", "gruppe": "ko_raus", "text": "Wer hat mich da bitte erwischt?" },
@@ -52,7 +52,7 @@
     { "id": "runde-2", "gruppe": "runde", "text": "Weiter geht's, Runde zwei!" },
     { "id": "entscheidung-1", "gruppe": "entscheidung", "text": "Entscheidungsrunde! Jetzt zählt jeder Treffer!" },
 
-    { "id": "sieg-1", "gruppe": "sieg", "text": "Jaaa! Gewonnen! Was für eine Runde!" },
+    { "id": "sieg-1", "gruppe": "sieg", "text": "Ja! Gewonnen! Was für eine Runde!" },
     { "id": "sieg-2", "gruppe": "sieg", "text": "Sieg! Ich wusste es. Okay, ich hab's gehofft." },
     { "id": "sieg-3", "gruppe": "sieg", "text": "Wir haben gewonnen! Tanzpause!" },
     { "id": "sieg-4", "gruppe": "sieg", "text": "Und das, liebe Leute, nennt man Krawall!" },

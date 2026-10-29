@@ -219,8 +219,13 @@
   }
   function ungelesen(k) { return (letzte[k] || 0) > (gelesen[k] || 0) && k !== aktiv; }
 
+  function studioBesetzt() {
+    if (ansicht === "studio" && window.OMNI_STUDIO && OMNI_STUDIO.laeuft()) { toast("Das Studio nimmt gerade auf. Stopp die Aufnahme zuerst."); return true; }
+    if (ansicht === "studio" && window.OMNI_STUDIO) OMNI_STUDIO.verlassen();
+    return false;
+  }
   function oeffne(k) {
-    if (!k) return;
+    if (!k || studioBesetzt()) return;
     ansicht = "chat"; aktiv = k; merke("omni-team-zuletzt-" + FIRMA, k);
     if (abmelden) abmelden();
     msgs = []; verlaufZeichnen(true);
@@ -245,6 +250,7 @@
     var t = "", u = "";
     if (ansicht === "aufgaben") { t = "✓ Aufgaben"; u = offeneAufgaben() + " offen"; }
     else if (ansicht === "kunden") { t = "📥 Anfragen"; u = neueKunden() + " neu · von der Kunden-Seite"; }
+    else if (ansicht === "studio") { t = "🎬 Video-Studio"; u = "Thorsten zockt Krawallzoo"; }
     else if (istKiChat(aktiv)) { var r = kiAusKey(aktiv); t = r ? r.em + " " + r.name : "KI"; u = r ? r.rolle + " · " + T.firmen[r.firma].name : ""; }
     else if (aktiv && kanaele[aktiv]) { t = "# " + kanaele[aktiv].name; u = F.voll; }
     $("kopfTitel").textContent = t; $("kopfUnter").textContent = u;
@@ -264,6 +270,7 @@
     h += '<button class="eintrag" type="button" data-a="aufgaben"' + (ansicht === "aufgaben" ? ' aria-current="true"' : "") + '><span class="hash">✓</span><span class="name">Aufgaben</span>' + (oa ? '<span class="zahl">' + oa + "</span>" : "") + "</button>";
     var nk = neueKunden();
     h += '<button class="eintrag" type="button" data-a="kunden"' + (ansicht === "kunden" ? ' aria-current="true"' : "") + '><span class="hash">📥</span><span class="name">Anfragen</span>' + (nk ? '<span class="zahl">' + nk + "</span>" : "") + "</button>";
+    h += '<button class="eintrag" type="button" data-a="studio"' + (ansicht === "studio" ? ' aria-current="true"' : "") + '><span class="hash">🎬</span><span class="name">Video-Studio</span>' + (window.OMNI_STUDIO && OMNI_STUDIO.laeuft() ? '<span class="neu" aria-label="nimmt auf"></span>' : "") + "</button>";
     var na = Object.keys(anfragen).length;
     h += '<button class="eintrag" type="button" data-a="team"><span class="hash">👥</span><span class="name">Team &amp; Einstellungen</span>' + (istAdmin() && na ? '<span class="zahl">' + na + "</span>" : "") + "</button>";
     // KI-Team
@@ -291,6 +298,7 @@
     else if (b.dataset.abt != null) { offeneAbt[b.dataset.abt] = b.getAttribute("aria-expanded") !== "true"; merke("omni-team-abt-" + FIRMA, offeneAbt); seiteZeichnen(); }
     else if (b.dataset.a === "aufgaben") aufgabenOeffnen();
     else if (b.dataset.a === "kunden") kundenOeffnen();
+    else if (b.dataset.a === "studio") studioOeffnen();
     else if (b.dataset.a === "team") teamFenster();
     else if (b.dataset.a === "neueKi") neueKiFenster();
     else if (b.dataset.a === "neuKanal") neuerKanal();
@@ -545,7 +553,7 @@
   }
 
   /* ---------- Aufgaben ---------- */
-  function aufgabenOeffnen() { ansicht = "aufgaben"; $("verlauf").hidden = true; $("eingabe").hidden = true; $("aufgabenAnsicht").hidden = false; aufgabenZeichnen(); kopfZeichnen(); seiteZeichnen(); schliesseMenue(); }
+  function aufgabenOeffnen() { if (studioBesetzt()) return; ansicht = "aufgaben"; $("verlauf").hidden = true; $("eingabe").hidden = true; $("aufgabenAnsicht").hidden = false; aufgabenZeichnen(); kopfZeichnen(); seiteZeichnen(); schliesseMenue(); }
   function aufgabenZeichnen() {
     var l = Object.keys(aufgaben).map(function (k) { var a = aufgaben[k]; a.id = k; return a; }).filter(function (a) { return a && a.text; })
       .sort(function (a, b) { return (a.erledigt ? 1 : 0) - (b.erledigt ? 1 : 0) || (a.t || 0) - (b.t || 0); });
@@ -571,6 +579,18 @@
   });
 
 
+  /* ---------- Video-Studio (Code in shared/team/studio.js, wird erst bei Bedarf geladen) ---------- */
+  var studioLaden = null;
+  function studioOeffnen() {
+    if (ansicht === "studio") { schliesseMenue(); return; }
+    ansicht = "studio"; $("verlauf").hidden = true; $("eingabe").hidden = true; $("aufgabenAnsicht").hidden = false;
+    $("aufgabenAnsicht").innerHTML = '<div class="leer"><div class="spinner" aria-hidden="true"></div><b>Studio wird geladen …</b></div>';
+    kopfZeichnen(); seiteZeichnen(); schliesseMenue();
+    if (!studioLaden) studioLaden = window.OMNI_STUDIO ? Promise.resolve() : ladeSkript(BASIS + "team/studio.js").catch(function (e) { studioLaden = null; throw e; });
+    studioLaden.then(function () { if (ansicht === "studio") OMNI_STUDIO.zeigen($("aufgabenAnsicht"), API); })
+      .catch(function () { $("aufgabenAnsicht").innerHTML = '<div class="leer"><div class="gross">🎬</div><b>Das Studio konnte nicht geladen werden.</b><span>Bist du online? Lade die Seite neu.</span></div>'; });
+  }
+
   /* ---------- Kunden-Anfragen (von der Kunden-Seite der Website) ---------- */
   var STATUS = { neu: ["Neu", 0], angenommen: ["Angenommen", 1], fertig: ["Fertig", 2], abgelehnt: ["Abgelehnt", 3] };
   function stat(a) { return STATUS[a.status] ? a.status : "neu"; }
@@ -586,7 +606,7 @@
       B.set("anfragen/demo2", { firma: "fidelia", anliegen: "Kleine Web-App", paket: "App", bausteine: "Angebot, Preise oder Speisekarte, Öffnungszeiten", name: "Café Sonne (Beispiel)", kontakt: "0123 456789", alt: "www.cafe-sonne.example", text: "Eine Speisekarte, die wir selbst ändern können.", gespraech: "Persönliches Treffen", gefunden: "Google-Suche", zeit: jetzt - 26 * 3600e3 });
     });
   }
-  function kundenOeffnen() { ansicht = "kunden"; $("verlauf").hidden = true; $("eingabe").hidden = true; $("aufgabenAnsicht").hidden = false; kundenZeichnen(); kopfZeichnen(); seiteZeichnen(); schliesseMenue(); }
+  function kundenOeffnen() { if (studioBesetzt()) return; ansicht = "kunden"; $("verlauf").hidden = true; $("eingabe").hidden = true; $("aufgabenAnsicht").hidden = false; kundenZeichnen(); kopfZeichnen(); seiteZeichnen(); schliesseMenue(); }
   function datum(t) { var d = new Date(t || Date.now()); return tagText(t) + ", " + d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }); }
   function milaStatistik(l) {
     var z = {}, n = 0; l.forEach(function (a) { if (a.gefunden) { z[a.gefunden] = (z[a.gefunden] || 0) + 1; n++; } });
@@ -886,16 +906,22 @@
 
     function zaehler(id, max) { var el = $(id), z = $(id + "Z"); var f = function () { z.textContent = el.value.length + " / " + max; }; el.addEventListener("input", f); f(); }
 
-    function oeffnen(nachricht) {
+    function oeffnen(nachricht, vorgabe) {
+      vorgabe = vorgabe || {};
       var r = nachricht && nachricht.rolle ? rolle(nachricht.rolle) : rolle("tim") || rolle(F.leitung);
       var v = ausNachricht(nachricht ? nachricht.text : "");
+      if (vorgabe.titel) v.titel = sauber(vorgabe.titel).slice(0, 100);
+      if (vorgabe.beschreibung) v.beschreibung = sauber(vorgabe.beschreibung).slice(0, 4800);
+      if (vorgabe.tags) v.tags = vorgabe.tags;
+      var fertigeDatei = vorgabe.datei || null;
       var link = "https://kometenwerk.github.io";
       if (v.beschreibung.indexOf("kometenwerk.github.io") < 0) v.beschreibung = (v.beschreibung ? v.beschreibung + "\n\n" : "") + "Mehr von " + F.voll + ": " + link;
       var ohneId = !gueltig(clientId()) && !DEMO;
       fenster('<form class="fenster" id="ytForm"><h3>📺 Video auf YouTube hochladen</h3>' +
         (DEMO ? '<p class="hinweis">Demo-Modus: Der Upload wird nur nachgespielt. Nichts geht an YouTube.</p>' : "") +
         (ohneId ? '<div class="feld"><label for="ytClient">Google-Client-ID (Webanwendung)</label><input id="ytClient" placeholder="123…-abc….apps.googleusercontent.com" autocomplete="off" spellcheck="false"><span class="hinweis">Einmal eintragen – sie wird auf diesem Gerät gespeichert. Du findest sie in der Google Cloud Console unter „Clients“. Die Client-ID ist nicht geheim, das <b>Client-Secret</b> gehört aber nie hier rein.</span></div>' : "") +
-        '<div class="feld"><label for="ytDatei">Videodatei</label><input id="ytDatei" type="file" accept="video/*" required></div>' +
+        (fertigeDatei ? '<p class="hinweis">🎞️ Video aus dem Studio: <b>' + esc(fertigeDatei.name) + "</b> (" + (fertigeDatei.size / 1048576).toFixed(1) + " MB)" + (vorgabe.vorschau ? " · mit Vorschaubild" : "") + "</p>"
+          : '<div class="feld"><label for="ytDatei">Videodatei</label><input id="ytDatei" type="file" accept="video/*" required></div>') +
         '<div class="feld"><label for="ytTitel">Titel <small id="ytTitelZ" style="float:right"></small></label><input id="ytTitel" required maxlength="100" placeholder="z. B. Kometen-Quiz: Vokabeln lernen in 30 Sekunden" value="' + esc(v.titel) + '"></div>' +
         '<div class="feld"><label for="ytBeschr">Beschreibung <small id="ytBeschrZ" style="float:right"></small></label><textarea id="ytBeschr" rows="6" maxlength="4800">' + esc(v.beschreibung) + '</textarea></div>' +
         '<div class="feld"><label for="ytTags">Tags (mit Komma getrennt)</label><input id="ytTags" maxlength="480" value="' + esc(v.tags) + '" placeholder="z. B. App, Programmieren, OMNIVIA"></div>' +
@@ -916,7 +942,7 @@
         e.preventDefault();
         if (laeuft) return;
         if ($("ytClient")) { if (!setzeClientId($("ytClient").value)) { status("Das sieht nicht wie eine Client-ID aus. Sie endet auf „.apps.googleusercontent.com“.", true); $("ytClient").focus(); return; } }
-        var datei = $("ytDatei").files[0];
+        var datei = fertigeDatei || ($("ytDatei") && $("ytDatei").files[0]);
         if (!datei) { status("Wähl zuerst eine Videodatei aus.", true); return; }
         var kind = (document.querySelector('input[name="ytKind"]:checked') || {}).value;
         var titel = sauber($("ytTitel").value);
@@ -925,7 +951,7 @@
           snippet: { title: titel, description: sauber($("ytBeschr").value), tags: tagsListe($("ytTags").value), categoryId: "28", defaultLanguage: "de", defaultAudioLanguage: "de" },
           status: { privacyStatus: "private", selfDeclaredMadeForKids: kind === "ja", containsSyntheticMedia: $("ytKi").checked }
         };
-        var los = function () { starte(datei, metadaten, r); };
+        var los = function () { starte(datei, metadaten, r, vorgabe.vorschau || null); };
         if (DEMO) { los(); return; }
         status("Google-Anmeldung …");
         anmelden(los, function (err) { status(err.message, true); });
@@ -936,7 +962,11 @@
     function balken(p) { var f = $("ytFort"); if (!f) return; f.hidden = false; $("ytBalken").style.width = Math.round(p * 100) + "%"; $("ytProzent").textContent = Math.round(p * 100) + " %"; }
     function sperren(an) { laeuft = an; ["ytLos", "ytZu", "ytDatei"].forEach(function (id) { if ($(id)) $(id).disabled = an; }); }
 
-    function starte(datei, metadaten, r) {
+    function vorschaubildSetzen(id, bild) {
+      return fetch("https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=" + encodeURIComponent(id), { method: "POST", headers: { "Authorization": "Bearer " + token, "Content-Type": bild.type || "image/png" }, body: bild })
+        .then(function (r) { return r.ok; }).catch(function () { return false; });
+    }
+    function starte(datei, metadaten, r, vorschau) {
       sperren(true); balken(0);
       status("Video wird hochgeladen … bitte das Fenster offen lassen.");
       var job = DEMO ? demoUpload(balken) : hochladen(datei, metadaten, balken);
@@ -944,6 +974,9 @@
         sperren(false); balken(1);
         var studio = "https://studio.youtube.com/video/" + encodeURIComponent(video.id) + "/edit";
         status("✅ Fertig! Das Video ist privat auf YouTube.");
+        if (vorschau && !DEMO) vorschaubildSetzen(video.id, vorschau).then(function (ok) {
+          status(ok ? "✅ Fertig! Video und Vorschaubild sind privat auf YouTube." : "✅ Video ist privat auf YouTube. Das Vorschaubild ging nicht automatisch – lad es im YouTube Studio hoch (dafür muss dein Kanal per Telefon bestätigt sein).");
+        });
         $("ytLos").outerHTML = '<a class="knopf haupt" href="' + esc(studio) + '" target="_blank" rel="noopener">Im YouTube Studio öffnen</a>';
         if (!aktiv || ansicht !== "chat") return;
         var wer = r || rolle(F.leitung);
@@ -962,6 +995,13 @@
     return { oeffnen: oeffnen, laeuft: function () { return laeuft; }, clientId: clientId, setzeClientId: setzeClientId, gueltig: gueltig, abmelden: abmelden };
   })();
   function istWerbung(r) { return r && r.abt === "Werbung"; }
+
+  /* ---------- Schnittstelle für das Video-Studio ---------- */
+  var API = {
+    toast: toast, fenster: fenster, esc: esc, lade: lade, merke: merke, YT: YT, F: F, FIRMA: FIRMA,
+    wurzel: BASIS.replace(/shared\/$/, ""), demo: function () { return DEMO; },
+    seiteNeu: function () { seiteZeichnen(); }
+  };
 
   /* ---------- Los ---------- */
   tippsZeichnen();

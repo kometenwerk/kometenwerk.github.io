@@ -65,7 +65,7 @@ window.OMNI_TEAM = {
 "kanaele": [
 "allgemein",
 "rover",
-"jugend-forscht",
+"doku",
 "bauteile",
 "versuche"
 ]
@@ -420,7 +420,7 @@ window.OMNI_TEAM = {
 "Fristen notieren",
 "Was braucht die Bewerbung?"
 ],
-"stich": "wettbewerb|förder|preis|jugend forscht|bewerb"
+"stich": "wettbewerb|förder|preis|bewerb"
 },
 {
 "id": "jana",
@@ -1225,14 +1225,14 @@ window.OMNI_TEAM = {
 "name": "Kaja",
 "firma": "kometenwerk",
 "abt": "Leitung",
-"rolle": "Leitung Robotik und Jugend forscht",
+"rolle": "Leitung Robotik",
 "em": "🚩",
 "achtet": [
 "Passt alles zur Forschungsfrage?",
-"Zeitplan bis zum Wettbewerb",
-"Was ist für die Jury wichtig?"
+"Zeitplan bis zum nächsten Test",
+"Ist es für Zuschauer verständlich?"
 ],
-"stich": "rover|jugend forscht|projekt|zeitplan|robot"
+"stich": "rover|projekt|zeitplan|robot|forschung"
 },
 {
 "id": "mats",
@@ -1420,29 +1420,29 @@ window.OMNI_TEAM = {
 "id": "rosa",
 "name": "Rosa",
 "firma": "kometenwerk",
-"abt": "Jugend forscht",
-"rolle": "Schriftliche Arbeit",
+"abt": "Doku & Vorführung",
+"rolle": "Dokumentation",
 "em": "📝",
 "achtet": [
-"Höchstens 15 Seiten",
-"Forschungsfrage, Methode, Ergebnis, Diskussion",
+"Was haben wir gebaut und getestet?",
+"Ergebnisse ehrlich festhalten",
 "Quellen angeben, KI-Hilfe offen nennen"
 ],
-"stich": "arbeit|schriftlich|bericht|seiten|dokumentation"
+"stich": "doku|bericht|dokumentation|protokoll"
 },
 {
 "id": "fiete",
 "name": "Fiete",
 "firma": "kometenwerk",
-"abt": "Jugend forscht",
-"rolle": "Messestand",
+"abt": "Doku & Vorführung",
+"rolle": "Vorführung und Videos",
 "em": "🎪",
 "achtet": [
 "Was zeigen wir live?",
 "Wie erklären wir es in einer Minute?",
-"Plakat mit Forschungsfrage im Mittelpunkt"
+"Gute Bilder für Website und Videos"
 ],
-"stich": "messe|stand|plakat|präsentation|jury"
+"stich": "vorführ|präsentation|zeigen|plakat|demo"
 },
 {
 "id": "nina",
