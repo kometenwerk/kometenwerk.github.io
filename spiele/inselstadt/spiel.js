@@ -848,7 +848,7 @@ function baukasten(T, r, W, D, vorn, variante, DS) {
   const baum = (lx, lz, g, y) => add("garten", lx, lz, g, g, g, null, { rund: true, ly: y || 0 });
   const zyl = (lx, lz, d, hh, c, ex) => add("zyl", lx, lz, d, hh, d, c, ex);
   const flaeche = (lx, lz, w, d, c, y) => add("flach", lx, lz, w, 0.008, d, c, { ly: y == null ? 0.003 : y });
-  const auto = (lx, lz, quer, i) => add("flach", lx, lz, quer ? 0.24 : 0.13, 0.1, quer ? 0.13 : 0.24, PAL.auto[(variante + (i || 0) * 3) % PAL.auto.length], { ly: 0.01 });
+  const auto = (lx, lz, quer, i, ly) => { (T.plaetze = T.plaetze || []).push({ lx, lz, rot: quer ? 0 : Math.PI / 2, ly: ly || 0 }); if (DS >= 1) add("flach", lx, lz, quer ? 0.3 : 0.16, 0.003, quer ? 0.16 : 0.3, 0x6d7178, { ly: (ly || 0) + 0.004 }); };
 
   /* --- Dächer --- */
   function attika(lx, lz, w, d, y, c) { if (DS < 1) return; const t = 0.025, hh = 0.055; add("flach", lx, lz + d / 2 - t / 2, w, hh, t, c, { ly: y }); add("flach", lx, lz - d / 2 + t / 2, w, hh, t, c, { ly: y }); add("flach", lx - w / 2 + t / 2, lz, t, hh, d - 2 * t, c, { ly: y }); add("flach", lx + w / 2 - t / 2, lz, t, hh, d - 2 * t, c, { ly: y }); }
@@ -942,7 +942,7 @@ function baukasten(T, r, W, D, vorn, variante, DS) {
   }
   function terrasse(x, z, w, d) { klein("flach", x, z, w, 0.014, d, 0xc9b79c, { ly: 0.003 }); fein("flach", x + w * 0.25, z, 0.1, 0.07, 0.1, 0xf2f0ea, { ly: 0.017 }); }
   function pool(x, z, w, d) { add("flach", x, z, w + 0.06, 0.014, d + 0.06, 0xe8e4dc, { ly: 0.002 }); add("flach", x, z, w, 0.016, d, 0x4fc3e8, { ly: 0.003 }); }
-  function parkplatz(x, z, w, d, n, quer) { if (!T.park) T.park = { lx: x + w * 0.3, lz: z }; flaeche(x, z, w, d, 0x55595f); for (let k = 0; k < n; k++) if (r() < 0.8) auto(x - w / 2 + (k + 0.5) * w / n, z, quer, k); }
+  function parkplatz(x, z, w, d, n, quer) { if (!T.park) T.park = { lx: x + w * 0.3, lz: z }; flaeche(x, z, w, d, 0x55595f); for (let k = 0; k < n; k++) { auto(x - w / 2 + (k + 0.5) * w / n, z, quer, k); if (DS >= 1 && k) add("flach", x - w / 2 + k * w / n, z, 0.012, 0.004, quer ? 0.12 : 0.3, 0xe8e8e8, { ly: 0.012 }); } }
   function vorplatz(c) { flaeche(0, vorn - 0.12, W * 0.96, 0.3, c == null ? 0xc9c3b6 : c); }
   function fahrraeder(x, z, n) { if (DS < 2) return; for (let k = 0; k < n; k++) add("flach", x + k * 0.07, z, 0.02, 0.06, 0.12, pk([0x3f7fe8, 0xe8493f, 0x2c2f36, 0x4fbf7a]), { ly: 0.005 }); }
   function bank(x, z) { klein("flach", x, z, 0.16, 0.05, 0.05, 0x8b5a2b, { ly: 0.02 }); }
@@ -1118,20 +1118,21 @@ function hausTeile(h) {
   };
   const stufen = L[h.zone], liste = stufen[Math.min(h.stufe, stufen.length) - 1];
   h.name = liste[h.variante % liste.length]();
+  if (h.zone === 1 && !(T.plaetze && T.plaetze.length)) { add("flach", 0, vorn - 0.06, Math.min(W * 0.8, 0.62), 0.006, 0.17, 0xa7a49c, { ly: 0.002 }); auto(0, vorn - 0.06, true, 0); if (!T.park) T.park = { lx: 0, lz: vorn - 0.06 }; }
   if (!T.park) {
-    if ([2, 4, 5].includes(h.zone) && W >= 1.5) { const x = W / 2 - 0.17; add("flach", x, vorn - 0.04, 0.2, 0.012, 0.16, 0x3a3e46, { ly: 0.004 }); klein("flach", x, vorn - 0.1, 0.24, 0.03, 0.06, 0xd8dade, { ly: 0.2 }); klein("flach", x, vorn + 0.02, 0.2, 0.004, 0.02, 0xf2c14e, { ly: 0.017 }); T.park = { lx: x, lz: vorn - 0.12, tief: true }; }
+    if ([2, 4, 5].includes(h.zone) && W >= 1.5) { const x = W / 2 - 0.17; add("flach", x, vorn - 0.04, 0.2, 0.012, 0.16, 0x3a3e46, { ly: 0.004 }); klein("flach", x, vorn - 0.1, 0.24, 0.03, 0.06, 0xd8dade, { ly: 0.2 }); klein("flach", x, vorn + 0.02, 0.2, 0.004, 0.02, 0xf2c14e, { ly: 0.017 }); T.park = { lx: x, lz: vorn - 0.12, tief: true }; T.plaetze = T.plaetze || []; const n = h.zone === 2 ? 4 + h.stufe * 2 : 4 + h.stufe; for (let i = 0; i < n; i++) T.plaetze.push({ lx: x, lz: vorn - 0.12, rot: Math.PI / 2, tief: true }); }
     else T.park = { lx: h.zone >= 6 ? 0 : W * 0.3, lz: vorn - (h.zone >= 6 ? 0.25 : 0.06) };
   }
   return T;
 }
 const KATALOG_ANZAHL = () => 145;
 
-function hausWeg(h) { if (!h) return; for (const id of h.zellen) { const z = zellen.get(id); if (z) z.haus = null; } haeuser.delete(h.id); haeuserNeu = zellenNeu = true; if (ZONEN[h.zone].gruppe === "i") dreckZeichnen(); }
+function hausWeg(h) { if (!h) return; parkenWeg(h); for (const id of h.zellen) { const z = zellen.get(id); if (z) z.haus = null; } haeuser.delete(h.id); haeuserNeu = zellenNeu = true; if (ZONEN[h.zone].gruppe === "i") dreckZeichnen(); }
 function neuesHaus(d, alt) {
   const h = Object.assign({ id: d.id || hId++, geboren: alt ? -100 : jetztS, simGeboren: alt ? -100 : simZeit, ab: 0, zug: null }, d); hId = Math.max(hId, h.id + 1);
   let x = 0, z = 0, sx = 0, sz = 0; h.zellen.forEach((id) => { const c = zellen.get(id); c.haus = h.id; x += c.x; z += c.z; sx += Math.sin(c.rot); sz += Math.cos(c.rot); });
   h.x = x / h.zellen.length; h.z = z / h.zellen.length; h.rot = Math.atan2(sx, sz);
-  h.teile = hausTeile(h); h.box = null; h.hoehe = hoeheVon(h); haeuser.set(h.id, h); haeuserNeu = zellenNeu = true;
+  h.teile = hausTeile(h); h.box = null; h.hoehe = hoeheVon(h); haeuser.set(h.id, h); haeuserNeu = zellenNeu = true; parkenNeu(h);
   const rr = Math.max(h.w, h.d) * 0.62 + 0.2; baeumeFaellen({ x0: h.x - rr, x1: h.x + rr, z0: h.z - rr, z1: h.z + rr }, (bx, bz) => Math.hypot(bx - h.x, bz - h.z) < rr);
   return h;
 }
@@ -1426,6 +1427,8 @@ const DIENST_NEU = (function () {
     rathaus(K, o, X) { const { bau, dach, add, zyl, flaeche } = K, { W, D, vorn, DS } = o, c = 0xe9dcc4, d = 0.9, lz = vorn - d / 2 - 0.3; const y = bau({ lz, w: W * 0.84, d, n: 3, art: "altbau", c, dach: "mansard", dc: 0x5d6470, gesims: true, baender: true, eingang: "portal", gauben: 4 }); const ty = bau({ lz: lz + 0.05, w: 0.4, d: 0.4, n: 8, art: "altbau", c, dach: false, eingang: false, gesims: true }); if (DS >= 1) for (const s of [1]) { zyl(0, lz + 0.26, 0.2, 0.012, 0xf6f4ee, { ly: ty - 0.32, rx: Math.PI / 2 }); add("flach", 0, lz + 0.262, 0.012, 0.08, 0.004, 0x2a2d33, { ly: ty - 0.4 }); } dach("zelt", 0, lz + 0.05, 0.42, 0.42, ty, 0x5f8f7a, { h: 0.5, ue: 0.02 }); flaeche(0, vorn - 0.14, W * 0.7, 0.3, 0xd8cbb0); zyl(W * 0.28, vorn - 0.14, 0.26, 0.06, 0xb9b4a8); zyl(W * 0.28, vorn - 0.14, 0.2, 0.005, 0x5fc8e8, { ly: 0.06 }); for (const s of [-1, 1]) X.fahne(s * W * 0.42, vorn - 0.1, s < 0 ? 0xf2c14e : 0x2f8f6f); return c; },
     museum(K, o, X) { const { bau, flaeche } = K, { W, D, vorn } = o, c = 0xf2efe8, d = 1.1, lz = vorn - d / 2 - 0.35; bau({ lz, w: W * 0.84, d, n: 2, hh: 0.95, art: "altbau", c, dach: "flach", gesims: true, eingang: "portal", attika: false }); X.saeulen(0, lz + d / 2, W * 0.5, 0.88, 0xf6f2e6, 6); bau({ lz: lz - 0.1, w: W * 0.3, d: 0.5, n: 1, art: "glas", c: 0x9fc0d2, ly: 0.95, dach: "flach", eingang: false }); flaeche(0, vorn - 0.14, W * 0.8, 0.3, 0xd8cbb0); K.bank(-W * 0.3, vorn - 0.1); K.bank(W * 0.3, vorn - 0.1); return c; },
     schwimmbad(K, o, X) { const { bau, add, flaeche, pool } = K, { W, D, vorn } = o; bau({ lx: W * 0.22, lz: vorn - 0.45, w: W * 0.5, d: 0.75, n: 1, hh: 0.6, art: "glas", c: 0x9fd0e0, dach: "sattel", dc: 0xd8dade, dachH: 0.18, quer: true, eingang: "glas" }); pool(-W * 0.18, -D * 0.05, W * 0.48, D * 0.45); for (let k = 0; k < 3; k++) add("flach", -W * 0.18 - W * 0.16 + k * W * 0.16, -D * 0.05, 0.004, 0.003, D * 0.45, 0xffffff, { ly: 0.02 }); flaeche(-W * 0.18, -D * 0.38, W * 0.5, 0.25, 0x7fc463); for (let k = 0; k < 5; k++) add("flach", -W * 0.38 + k * 0.18, -D * 0.38, 0.08, 0.02, 0.16, [0xe8493f, 0x3f7fe8, 0xf2c14e][k % 3], { ly: 0.01 }); return 0x9fd0e0; },
+    parkplatz(K, o, X) { const { flaeche, add, baum } = K, { W, D, vorn, DS } = o; flaeche(0, 0, W * 0.96, D * 0.96, 0x55585e); for (let rz = 0; rz < 2; rz++) K.parkplatz(0, vorn - 0.45 - rz * 0.85, W * 0.9, 0.36, 6, false); if (DS >= 1) add("flach", 0, vorn - 0.87, W * 0.9, 0.004, 0.04, 0xe8e8e8, { ly: 0.012 }); baum(-W * 0.44, -D * 0.44, 0.35); baum(W * 0.44, -D * 0.44, 0.35); add("flach", W * 0.42, vorn - 0.08, 0.03, 0.3, 0.03, 0x9aa0a8); add("flach", W * 0.42, vorn - 0.08, 0.14, 0.14, 0.02, 0x1f4fbf, { ly: 0.3 }); return 0x55585e; },
+    parkhaus(K, o, X) { const { add, flaeche } = K, { W, D, vorn } = o, w = W * 0.86, dd = D * 0.8, lz = vorn - dd / 2 - 0.04; flaeche(0, 0, W * 0.96, D * 0.96, 0x8c8f94); for (let e = 0; e < 4; e++) { add("haus", 0, lz, w, 0.05, dd, 0xb8bcc2, { ly: e * 0.38 }); for (const sx of [-1, 0, 1]) for (const sz of [-1, 1]) add("flach", sx * w * 0.45, lz + sz * dd * 0.45, 0.05, 0.38, 0.05, 0x9aa0a8, { ly: e * 0.38 }); for (const sz of [-1, 1]) add("flach", 0, lz + sz * (dd / 2 - 0.01), w, 0.09, 0.02, 0xd8dade, { ly: e * 0.38 + 0.05 }); for (let k = 0; k < 4; k++) for (const sz of [-0.2, 0.2]) K.auto(-w * 0.36 + k * w * 0.24, lz + sz, false, k, e * 0.38 + 0.05); } add("haus", 0, lz, w, 0.06, dd, 0x9aa0a8, { ly: 1.52 }); add("flach", w / 2 - 0.12, lz + dd / 2 + 0.01, 0.22, 0.22, 0.02, 0x1f4fbf, { ly: 1.1 }); add("flach", -w * 0.3, vorn - 0.05, 0.02, 0.1, 0.25, 0xe8493f, { ly: 0.1 }); return 0xb8bcc2; },
     busdepot(K, o, X) { return DIENST_NEU.depot(K, o, X, false); }, tramdepot(K, o, X) { return DIENST_NEU.depot(K, o, X, true); },
     depot(K, o, X, tram) { const { bau, add, flaeche } = K, { W, D, vorn, DS } = o, c = tram ? 0xa9533b : 0xc4c9cc, hw = W * 0.86, hd = D * 0.55, hz = -D / 2 + hd / 2 + 0.06; bau({ lz: hz, w: hw, d: hd, n: 1, hh: 0.62, art: tram ? "altbau" : "haus", c, dach: "sattel", dc: 0x5d6470, dachH: 0.14, quer: false, eingang: false }); const n = 4; for (let k = 0; k < n; k++) X.tor(-hw / 2 + hw / n * (k + 0.5), hz + hd / 2, hw / n * 0.75, 0.46, tram ? 0x6d4a3a : 0x8a9099); flaeche(0, vorn - (vorn - hz - hd / 2) / 2, W * 0.9, vorn - hz - hd / 2, 0x6d7178); if (tram && DS >= 1) for (let k = 0; k < n; k++) for (const s of [-0.05, 0.05]) add("flach", -hw / 2 + hw / n * (k + 0.5) + s, vorn - 0.3, 0.012, 0.004, 0.6, 0x9aa0a8, { ly: 0.012 }); for (let k = 0; k < 2; k++) add("flach", -W * 0.2 + k * W * 0.4, vorn - 0.25, tram ? 0.2 : 0.2, 0.24, tram ? 0.8 : 0.6, LINIEN_FARBEN[k], { ly: 0.01 }); bau({ lx: W * 0.36, lz: vorn - 0.2, w: 0.3, d: 0.25, n: 2, art: "buero", c: 0xe9e4da, dach: "flach", eingang: "glas" }); return c; }
   };
@@ -1468,8 +1471,6 @@ function dienstTeile(d) {
     case "busdepot": case "tramdepot": { const tr = d.typ === "tramdepot"; boden(0x9a9a92); box("haus", 0, -0.2, W * 0.86, 0.75, D * 0.6, tr ? 0xd8c3a5 : 0xc4c9cc); box("dach", 0, -0.2, W * 0.9, 0.25, D * 0.64, 0x5d6470, { ly: 0.75 }); for (let k = 0; k < 4; k++) box("flach", -W * 0.32 + k * W * 0.21, -0.2 + D * 0.3 + 0.006, W * 0.16, 0.5, 0.01, 0x2a2d33); for (let k = 0; k < 3; k++) box("flach", -W * 0.25 + k * W * 0.25, vorn - 0.25, 0.22, 0.28, tr ? 0.9 : 0.6, LINIEN_FARBEN[k], { ly: 0.01 }); break; }
     case "bahnhof": boden(0xb5b3ad); box("haus", 0, vorn - 0.45, W * 0.8, 0.75, 0.75, 0xd8c3a5); box("dach", 0, vorn - 0.45, W * 0.84, 0.3, 0.8, 0x5d6470, { ly: 0.75 }); box("haus", 0, vorn - 0.06, 0.4, 1.15, 0.2, 0xd8c3a5); box("flach", 0, vorn + 0.05, 0.22, 0.22, 0.02, 0xf4f4f4, { ly: 0.8 }); box("flach", 0, -D * 0.2, W * 0.9, 0.04, D * 0.5, 0x6d737a, { ly: 0.55 }); for (const sx of [-1, 1]) for (const sz of [-0.38, 0]) box("flach", sx * W * 0.4, sz, 0.05, 0.55, 0.05, 0x6d737a); flach(0, -D * 0.2, W * 0.86, D * 0.5, 0x9a9a92); break;
     case "hafen": boden(0x8c8a84); for (let k = 0; k < 6; k++) box("flach", -W * 0.32 + (k % 3) * 0.5, vorn - 0.6 - Math.floor(k / 3) * 0.32, 0.42, 0.14 * (1 + (k % 2)), 0.24, CONTAINER[(d.id + k) % CONTAINER.length]); box("haus", W * 0.33, vorn - 0.4, 0.6, 0.45, 0.5, 0xd9d4c7); for (const sx of [-0.25, 0.35]) { box("flach", sx * W, -D * 0.38, 0.06, 1.3, 0.06, 0xf2c14e); box("flach", sx * W, -D * 0.38 - 0.25, 0.06, 0.06, 0.8, 0xf2c14e, { ly: 1.25 }); } box("flach", 0, -D / 2 + 0.08, W * 0.98, 0.1, 0.2, 0x7a7a72); break;
-    case "parkplatz": { boden(0x55585e); for (let rz = 0; rz < 2; rz++) { const lz = vorn - 0.45 - rz * 0.85; for (let k = 0; k < 6; k++) { const lx = -W * 0.4 + k * W * 0.16; box("flach", lx - W * 0.08, lz, 0.015, 0.002, 0.42, 0xf2f2f2, { ly: 0.01 }); if (r() < 0.75) box("flach", lx, lz, 0.17, 0.12, 0.32, PAL.auto[(d.id + k + rz * 3) % PAL.auto.length], { ly: 0.01 }); } } baum(-W * 0.42, -D * 0.42, 0.4); baum(W * 0.42, -D * 0.42, 0.4); break; }
-    case "parkhaus": { boden(0x8c8f94); const w = W * 0.86, dd = D * 0.8, lz = vorn - dd / 2 - 0.04; for (let e = 0; e < 4; e++) { box("haus", 0, lz, w, 0.06, dd, 0xb8bcc2, { ly: e * 0.38 }); for (const sx of [-1, 0, 1]) box("flach", sx * w * 0.45, lz, 0.06, 0.38, 0.06, 0x9aa0a8, { ly: e * 0.38 }); for (let k = 0; k < 4; k++) if (r() < 0.7) box("flach", -w * 0.36 + k * w * 0.24, lz + (k % 2 ? 0.2 : -0.2), 0.16, 0.11, 0.3, PAL.auto[(d.id + k + e) % PAL.auto.length], { ly: e * 0.38 + 0.06 }); } box("haus", 0, lz, w, 0.08, dd, 0x9aa0a8, { ly: 1.52 }); box("flach", w / 2 - 0.12, lz + dd / 2 + 0.01, 0.2, 0.2, 0.02, 0x1f4fbf, { ly: 1.1 }); break; }
     case "spielplatz": boden(0x7fc463); flach(-0.15, 0.1, 0.35, 0.35, 0xe8d39a); box("flach", 0.2, -0.15, 0.04, 0.3, 0.04, 0xe8493f); box("flach", 0.2, 0.05, 0.08, 0.02, 0.4, 0xf2c14e, { ly: 0.15, rx: 0.5 }); box("flach", -0.25, -0.25, 0.4, 0.03, 0.03, 0x3f7fe8, { ly: 0.28 }); box("flach", -0.43, -0.25, 0.03, 0.28, 0.03, 0x3f7fe8); box("flach", -0.07, -0.25, 0.03, 0.28, 0.03, 0x3f7fe8); baum(0.3, 0.32, 0.4); break;
     case "park": boden(0x6fbf55); flach(0, 0, 0.18, D * 0.95, 0xd8c7a0); flach(0, 0, W * 0.95, 0.18, 0xd8c7a0); for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) baum(a * W * 0.27, b * D * 0.27, 0.55 + r() * 0.25); box("flach", 0.2, 0.12, 0.2, 0.05, 0.06, 0x8b5a2b, { ly: 0.05 }); break;
     case "brunnen": boden(0xd8d0c0); zyl(0, 0, 0.75, 0.1, 0xb9b4a8); zyl(0, 0, 0.65, 0.01, 0x5fc8e8, { ly: 0.1 }); zyl(0, 0, 0.08, 0.3, 0xb9b4a8); zyl(0, 0, 0.22, 0.04, 0x5fc8e8, { ly: 0.3 }); for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) baum(a * W * 0.38, b * D * 0.38, 0.45); break;
@@ -1516,11 +1517,11 @@ function inDienst(x, z, rand) {
 function hoeheVon(h) { let y = 0; for (const t of h.teile) if (!t.fest) y = Math.max(y, (t.ly || 0) + t.sy); return y; }
 function neuerDienst(o, alt) {
   const D = DIENSTE[o.typ], d = { id: o.id || dId++, typ: o.typ, x: o.x, z: o.z, rot: o.rot, w: D.w, d: D.d, ausbau: o.ausbau || 0, variante: (o.id || dId) * 7919, geboren: alt ? -100 : jetztS, ab: 0, zug: null, dienst: true, timer: 2 + Math.random() * 4 };
-  dId = Math.max(dId, d.id + 1); d.teile = dienstTeile(d); d.hoehe = hoeheVon(d); dienste.set(d.id, d); haeuserNeu = true; versorgungZeit = -99;
+  dId = Math.max(dId, d.id + 1); d.teile = dienstTeile(d); parkenNeu(d); d.hoehe = hoeheVon(d); dienste.set(d.id, d); haeuserNeu = true; versorgungZeit = -99;
   const rr = Math.max(D.w, D.d) * 0.72; baeumeFaellen({ x0: d.x - rr, x1: d.x + rr, z0: d.z - rr, z1: d.z + rr }, (bx, bz) => !!inDienst(bx, bz, 0.15));
   return d;
 }
-function dienstWeg(d) {
+function dienstWeg(d) { parkenWeg(d);
   dienste.delete(d.id); haeuserNeu = true; versorgungZeit = -99; if (d.typ === "bahnhof") bahnGleiseZeichnen();
   const e = naechsteKante(d, 5, (k) => TYP[k.typ].zellen); if (e) { zellenFuer(e.k); }
   dreckZeichnen(); speichernBald();
@@ -1819,6 +1820,7 @@ function dienstInfo(d) {
   const D = DIENSTE[d.typ];
   let leistung = "";
   const balken = (q) => `<div class="leiste" style="margin:4px 0 2px"><i style="width:${Math.min(100, q * 100)}%;background:${q > 1 ? "#ff6b6b" : q > 0.9 ? "#ffd23d" : "#4fd27a"}"></i></div><small>Auslastung ${Math.round(q * 100)} %</small>`;
+  if (d.slots && d.slots.length && (d.typ === "parkplatz" || d.typ === "parkhaus")) { const bel = d.slots.filter((q) => q.auto).length; leistung += `<br>🅿️ ${bel} von ${d.slots.length} Plätzen belegt${balken(bel / d.slots.length)}`; }
   for (const r of ["strom", "wasser", "abwasser", "muell"]) if (D[r]) { const v = versorgung[r]; leistung += `<br>${RESSOURCEN[r].em} ${RESSOURCEN[r].name}: ${zahl(leistungVon(d, r))} · Stadt: ${zahl(v[1])} von ${zahl(v[0])} gebraucht${balken(v[0] ? v[1] / v[0] : 0)}`; }
   if (D.kap) leistung += `<br>👥 Kapazität: ${zahl(d.genutzt || 0)} von ${zahl(kapVon(d))}${D.zuege ? " · 🚒 " + Math.round(D.zuege * ausbauFak(d)) + " Löschzüge" : ""}${balken(d.last || 0)}`;
   if (D.radius) leistung += STRASSEN_DIENST.has(D.kat) && !D.luft ? `<br>🛣️ Reichweite: ca. ${Math.round(reichVon(d) * 2)} Felder über die Straßen (Hauptstraßen weiter)` : `<br>⭕ Wirkungskreis: ${Math.round(D.luft ? reichVon(d) : D.radius)} Felder`;
@@ -2135,7 +2137,7 @@ function wachsTakt() {
   }
   const liste = [...haeuser.values()].filter((h) => { const Z = ZONEN[h.zone]; return !h.verlassen && !(h.problem && h.problem !== "krimi" && h.problem !== "krank") && stufeBildungOk(h) && h.stufe < Z.max && simZeit - (h.simGeboren || 0) > 25 && bedarf[Z.gruppe] > 5 && (h.wert || 0) >= (BODENWERT_FUER[Z.gruppe][h.stufe + 1] || 0); });
   if (liste.length && Math.random() < 0.18) {
-    const h = liste[Math.floor(Math.random() * liste.length)]; h.stufe++; h.geboren = jetztS; h.simGeboren = simZeit; h.ab = 0.35; h.teile = hausTeile(h); h.box = null; haeuserNeu = true;
+    const h = liste[Math.floor(Math.random() * liste.length)]; h.stufe++; h.geboren = jetztS; h.simGeboren = simZeit; h.ab = 0.35; h.teile = hausTeile(h); h.box = null; haeuserNeu = true; parkenNeu(h);
     h.hoehe = hoeheVon(h); hochZeigen(h, h.hoehe);
     if (gruppe(h) === "i") dreckZeichnen();
   }
@@ -2576,6 +2578,88 @@ function autobahnBauen(dx, dz) {
   const ab = naechsterKnoten({ x: mx, z: mz }, 1.5); if (ab) ab.abfahrt = true;
 }
 const pkwTyp = () => wahl(rv, PKW_TYPEN);
+/* Echtes Parken: jedes Auto gehört einem Haus, steht sichtbar auf einem Stellplatz und fährt von dort los */
+const autos = new Map(); let autoId = 1, parkNeu = true;
+const PARK_TYPEN = ["klein", "klein", "limo", "kombi", "kombi", "suv", "suv", "pickup", "sport"];
+const stunde = () => ((zeit + 0.25) % 1) * 24, SEK_PRO_STUNDE = 15;
+function parkenNeu(b) {
+  const alt = (b.slots || []).filter((q) => q.auto).map((q) => q.auto);
+  b.slots = (b.teile.plaetze || []).map((p, i) => { const w = hausPunkt(b, p); return { b, i, x: w.x, z: w.z, rot: b.rot + p.rot, ly: p.ly || 0, tief: !!p.tief, auto: null, res: null }; });
+  for (const a of alt) { const q = b.slots.find((x) => !x.auto && !x.res); if (q) { q.auto = a; a.wo = q; if (a.heim === b.id) a.heimSlot = q; } else autoHeimholen(a.id); }
+  if (!b.dienst && haeuser.has(b.id) && gruppe(b) === "w") {
+    const soll = Math.min(b.slots.length, b.zone === 1 ? b.slots.length : Math.ceil(leute(b) / 5)); let ist = 0; for (const a of autos.values()) if (a.heim === b.id) ist++;
+    for (const q of b.slots) { if (ist >= soll) break; if (q.auto || q.res) continue; const a = { id: autoId++, typ: wahl(Math.random, PARK_TYPEN), farbe: wahl(Math.random, PAL.auto), heim: b.id, wo: q, heimSlot: q, bis: Infinity }; q.auto = a; autos.set(a.id, a); ist++; }
+  }
+  parkNeu = true;
+}
+function parkenWeg(b) {
+  const slots = b.slots || []; b.slots = [];
+  for (const q of slots) { const a = q.auto; q.auto = null; if (a && a.heim !== b.id) { a.wo = null; autoHeimholen(a.id); } }
+  for (const a of [...autos.values()]) if (a.heim === b.id) { autos.delete(a.id); if (a.wo) a.wo.auto = null; }
+  parkNeu = true;
+}
+function autoHeimholen(id) {
+  const a = autos.get(id); if (!a) return; if (a.wo && a.wo.auto === a) a.wo.auto = null;
+  const h = haeuser.get(a.heim), S = h && h.slots;
+  const q = S && (a.heimSlot && S.includes(a.heimSlot) && (!a.heimSlot.auto || a.heimSlot.auto === a) ? a.heimSlot : S.find((x) => !x.auto && (!x.res || x.res === a.id)));
+  if (!q) { autos.delete(id); parkNeu = true; return; }
+  q.auto = a; q.res = null; a.wo = q; a.heimSlot = q; a.bis = Infinity; parkNeu = true;
+}
+const slotFrei = (q) => !q.auto && !q.res;
+function zielPlatz(nach) {
+  const eigen = (nach.slots || []).find(slotFrei); if (eigen) return eigen;
+  let best = null, bd = 7; for (const d of dienste.values()) { if (d.typ !== "parkplatz" && d.typ !== "parkhaus") continue; const e = Math.hypot(d.x - nach.x, d.z - nach.z); if (e < bd) { const q = (d.slots || []).find(slotFrei); if (q) { best = q; bd = e; } } }
+  if (best) return best;
+  const z = zufahrt(nach); if (z) { const k = kanten.get(z.k); if (k && k.slots) { let b2 = null, bd2 = 3; for (const q of k.slots) if (slotFrei(q) && Math.abs(q.s - z.S) < bd2) { bd2 = Math.abs(q.s - z.S); b2 = q; } if (b2) return b2; } }
+  return null;
+}
+const slotZiel = (q) => ({ x: q.x, z: q.z, rot: q.rot, ly: q.ly, tief: q.tief });
+const slotStart = (q, b) => q && !q.tief ? { x: q.x, z: q.z } : hausPunkt(b, (b.teile && b.teile.park) || { lx: 0, lz: 0 });
+function autoLosfahren(a, von, nach, zweck) {
+  const ziel = zielPlatz(nach), zb = ziel && ziel.b && ziel.b !== nach && ziel.b.dienst ? zufahrt(ziel.b) : zufahrt(nach), za = zufahrt(von); if (!za || !zb) return false;
+  const weg = wegSuchen(za, zb); if (!weg) { von.keinWeg = true; return false; }
+  const start = a.wo; const f = fahrzeugAusWeg(weg, a.typ, null, hausName(von), hausName(nach), "haus", { vonP: slotStart(start, von), nachP: ziel ? slotZiel(ziel) : null });
+  if (!f) return false;
+  f.farbe = a.farbe; f.autoId = a.id; f.zielSlot = ziel; f.zweck = zweck; if (ziel) ziel.res = a.id;
+  if (start) { start.auto = null; if (start === a.heimSlot) start.res = a.id; } a.wo = null; parkNeu = true; return f;
+}
+function autoAngekommen(f) {
+  const a = autos.get(f.autoId); if (!a) return; const q = f.zielSlot;
+  if (q && (q.res === a.id || !q.auto) && (q.b ? (q.b.slots || []).includes(q) : true)) { q.auto = a; q.res = null; a.wo = q; } else { autoHeimholen(a.id); return; }
+  const daheim = q.b && q.b.id === a.heim && !q.b.dienst, h = stunde();
+  a.bis = daheim ? Infinity : simZeit + (f.zweck === "arbeit" ? Math.max(2, h < 17 ? 17 - h : 2 + Math.random() * 2) : 0.7 + Math.random() * 1.6) * SEK_PRO_STUNDE;
+  parkNeu = true;
+}
+let rueckZeit = 0;
+function rueckTakt() {
+  if (simZeit - rueckZeit < 0.7) return; rueckZeit = simZeit; let n = 0;
+  for (const a of autos.values()) {
+    if (n >= 2) break; const w = a.wo; if (!w || a.bis > simZeit || a.heim == null) continue; if (w.b && w.b.id === a.heim && !w.b.dienst) continue;
+    const h = haeuser.get(a.heim); if (!h) { autos.delete(a.id); w.auto = null; continue; }
+    if (w.kante && !kanten.has(w.k)) { autoHeimholen(a.id); continue; }
+    const b = w.kante ? null : w.b, za = w.kante ? { k: w.k, S: w.s } : zufahrt(b), zb = zufahrt(h); if (!za || !zb) { a.bis = simZeit + 5; continue; }
+    const weg = wegSuchen(za, zb); if (!weg) { a.bis = simZeit + 8; continue; }
+    const hq = a.heimSlot && h.slots.includes(a.heimSlot) ? a.heimSlot : h.slots.find((x) => !x.auto && (!x.res || x.res === a.id));
+    const f = fahrzeugAusWeg(weg, a.typ, null, b ? hausName(b) : "Parkstreifen", hausName(h), "haus", { vonP: w.kante ? { x: w.x, z: w.z } : slotStart(w, b), nachP: hq ? slotZiel(hq) : null });
+    if (!f) { a.bis = simZeit + 2; continue; }
+    f.farbe = a.farbe; f.autoId = a.id; f.zielSlot = hq; f.zweck = "heim"; if (hq) hq.res = a.id; w.auto = null; a.wo = null; n++; parkNeu = true;
+  }
+}
+const parkFz = {}, PARK_MAX = 900; let parkRaeder = null;
+function geparkteZeichnen() {
+  if (!parkNeu) return; parkNeu = false;
+  if (!parkRaeder) { for (const k of new Set(PARK_TYPEN)) parkFz[k] = becken(FZ[k].geo, AUTO_MAT, PARK_MAX, true); parkRaeder = becken(G_RAD, fzRaeder.material, PARK_MAX * 4, false); }
+  const n = {}; for (const k in parkFz) n[k] = 0; let ri = 0; const up = new THREE.Vector3(0, 1, 0);
+  const alle = []; for (const b of haeuser.values()) if (b.slots) alle.push(...b.slots); for (const b of dienste.values()) if (b.slots) alle.push(...b.slots); for (const k of kanten.values()) if (k.slots) alle.push(...k.slots);
+  for (const q of alle) {
+    const a = q.auto; if (!a || q.tief) continue; const P = parkFz[a.typ]; if (!P || n[a.typ] >= PARK_MAX) continue; const D = FZ[a.typ];
+    _q.setFromAxisAngle(up, q.rot); _m.compose(_v.set(q.x, G + 0.02 + q.ly, q.z), _q, _s.set(1, 1, 1)); P.setMatrixAt(n[a.typ], _m); P.setColorAt(n[a.typ]++, _farbe.setHex(a.farbe));
+    if (ri < PARK_MAX * 4 - 4) for (const ax of [D.achsen[0], D.achsen[D.achsen.length - 1]]) for (const rz of [D.B / 2 - 0.012, -D.B / 2 + 0.012]) { _l.compose(_v.set(ax, D.rad, rz), _q0, _s.set(D.rad, D.rad, 1)); parkRaeder.setMatrixAt(ri++, _l.premultiply(_m)); }
+  }
+  for (const k in parkFz) { const P = parkFz[k]; P.count = n[k]; P.instanceMatrix.needsUpdate = true; if (P.instanceColor) P.instanceColor.needsUpdate = true; }
+  parkRaeder.count = ri; parkRaeder.instanceMatrix.needsUpdate = true;
+}
+
 const lkwWahl = () => { const r = rv(); return r < 0.45 ? "lkw" : r < 0.85 ? "lkw2" : "kipper"; }, mitAuflieger = (t) => t === "lkw" || t === "lkw2";
 function hausName(h) { return h.name || ZONEN[h.zone].name; }
 function auflieger(von, nach) { const q = von || nach; if (q && q.zone === 7) return "getreide"; if (q && q.zone === 8) return "holz"; if (karte === "wald" && rv() < 0.15) return "holz"; return nach && gruppe(nach) === "g" ? (rv() < 0.5 ? "kuehl" : "container") : wahl(rv, ["container", "container", "tank"]); }
@@ -2597,7 +2681,14 @@ function fahrtStarten() {
   }
   if (!wohnListe.length || !arbeitListe.length) return false;
   if (r < 0.38 && industrieListe.length && ladenListe.length) { von = gewichtet(industrieListe, jobs); nach = gewichtet(ladenListe, jobs); typ = rv() < 0.55 ? lkwWahl() : "liefer"; if (mitAuflieger(typ)) anh = auflieger(von, nach); }
-  else { von = gewichtet(wohnListe, leute); nach = rv() < 0.25 && ladenListe.length ? gewichtet(ladenListe, jobs) : gewichtet(arbeitListe, jobs); typ = pkwTyp(); if (rv() < 0.5) [von, nach] = [nach, von]; }
+  else {
+    const h = stunde(), anteilArbeit = h >= 5 && h < 10 ? 0.85 : h < 16 ? 0.35 : h < 21 ? 0.15 : 0.3;
+    von = gewichtet(wohnListe, leute); const arbeit = rv() < anteilArbeit || !ladenListe.length; nach = arbeit ? gewichtet(arbeitListe, jobs) : gewichtet(ladenListe, jobs);
+    const a = [...autos.values()].find((x) => x.heim === von.id && x.wo && x.wo.b === von);
+    if (a) return autoLosfahren(a, von, nach, arbeit ? "arbeit" : "einkauf");
+    if ([...autos.values()].some((x) => x.heim === von.id)) return false;
+    typ = pkwTyp(); if (rv() < 0.5) [von, nach] = [nach, von];
+  }
   const za = zufahrt(von), zb = zufahrt(nach); if (!za || !zb) return false;
   const weg = wegSuchen(za, zb); if (!weg) { von.keinWeg = true; return false; }
   von.keinWeg = false;
@@ -2714,7 +2805,7 @@ function uebergangStarten(f, k, st, nx) {
   f.off = spurAbstand(k.typ, f.spur); f.offV = 0;
   f.modus = "knoten"; f.von = k.id; f.trT = 0; g.n.drin.add(f);
 }
-function fahrzeugWeg(f) { for (const id of [f.tr && f.tr.knoten, f.reserviert]) { const n = id != null && knoten.get(id); if (n) n.drin.delete(f); } f.weg = true; }
+function fahrzeugWeg(f) { if (f.autoId && !f.weg) autoHeimholen(f.autoId); for (const id of [f.tr && f.tr.knoten, f.reserviert]) { const n = id != null && knoten.get(id); if (n) n.drin.delete(f); } f.weg = true; }
 const _e = new THREE.Euler(0, 0, 0, "YZX");
 /* Kurvenradius aus drei Punkten → sicheres Tempo (Fliehkraft) */
 const QUER = 1.6;   // höchste Querbeschleunigung (Einheiten/s²)
@@ -2751,6 +2842,7 @@ function verkehrTakt(dt, ziel) {
   if (dt <= 0) return;
   blockadenMessen();
   for (let i = 0; i < 3 && fahrzeuge.length < ziel; i++) fahrtStarten();
+  if (fahrzeuge.length < ziel + 10) rueckTakt();
   const spuren = new Map();
   for (const n of knoten.values()) { n.naht = []; n.vorrang = null; }
   for (const f of fahrzeuge) {
@@ -2774,7 +2866,7 @@ function verkehrTakt(dt, ziel) {
       let stop = false; if (h.raus && h.t > 0.4) for (const g of fahrzeuge) if (g !== f && g.pos && !g.parkt && Math.abs(g.pos.x - h.p2.x) < 0.6 && Math.abs(g.pos.z - h.p2.z) < 0.6 && Math.hypot(g.pos.x - h.p2.x, g.pos.z - h.p2.z) < 0.55 + g.L / 2) { stop = true; break; }
       if (stop) { f.v = 0; f.warte += dt; if (f.warte > 25) fahrzeugWeg(f); continue; } f.warte = 0;
       h.t = Math.min(1, h.t + f.v * dt / h.len);
-      if (h.t >= 1) { if (h.raus) { f.modus = "kante"; f.hof = null; f.ausparken = true; } else { f.parkt = 1.0; f.blink = 0; } }
+      if (h.t >= 1) { if (h.raus) { f.modus = "kante"; f.hof = null; f.ausparken = true; } else if (f.autoId && f.zielSlot) { autoAngekommen(f); f.autoId = null; fahrzeugWeg(f); } else { f.parkt = 1.0; f.blink = 0; } }
       continue;
     }
     if (f.modus === "kante" && f.halt > 0) { f.halt -= dt; f.v = 0; f.bremst = true; f.blink = 1; if (f.halt <= 0) busWeiter(f); continue; }
@@ -2823,7 +2915,7 @@ function verkehrTakt(dt, ziel) {
       f.blink = f.weicht && !f.alarm ? 2 : f.ausparken ? -1 : f.ist !== f.spur ? (f.spur < f.ist ? -1 : 1) : nx && (ab === "links" || ab === "rechts") && rest < 4.5 ? (ab === "links" ? -1 : 1) : letzte && rest < 3 ? 1 : 0;
       if (f.s >= e) {
         if (letzte && f.linie) { f.s = e; f.v = 0; f.halt = haltestelleBedienen(f); continue; }
-        if (letzte) { f.s = e; f.parkt = 0.001; f.blink = 0; if (f.beiAnkunft) { const cb = f.beiAnkunft; f.beiAnkunft = null; cb(f); }
+        if (letzte) { f.s = e; f.parkt = 0.001; f.blink = 0; if (f.beiAnkunft) { const cb = f.beiAnkunft; f.beiAnkunft = null; cb(f); } if (f.autoId && !f.nachP) { autoHeimholen(f.autoId); f.autoId = null; }
           const nh = f.nachHaus, zielP = f.nachP || (nh && haeuser.has(nh.id) && nh.teile && nh.teile.park ? hausPunkt(nh, nh.teile.park) : null); if (zielP) { const p0 = spurPunkt(kk, st.dir, f.s, f.off), c = spurPunkt(kk, st.dir, Math.min(kk.len, f.s + 0.35), TYP[kk.typ].fahr + 0.02); f.hof = hofKurve(p0, c, zielP); f.hof.raus = false; f.modus = "hof"; f.parkt = 0; f.v = Math.max(0.2, Math.min(f.v, 0.5)); }
           continue; }
         if (f.frei) { uebergangStarten(f, kk, st, nx); f.frei = false; } else f.s = e;
@@ -3233,16 +3325,15 @@ function moebelZeichnen() {
   moebel.count = i; moebel.instanceMatrix.needsUpdate = true; if (moebel.instanceColor) moebel.instanceColor.needsUpdate = true;
 }
 function parkenZeichnen() {
-  let i = 0;
   for (const k of kanten.values()) {
-    if (!k.parken) continue; const T = TYP[k.typ], r = zufall(k.id * 31 + 7);
-    for (const sei of [1, -1]) for (let s = 1.0; s < k.len - 1.0 && i < 2500; s += 0.55) {
-      if (r() < 0.4) continue; const p = punktBei(k, s), off = (T.fahr + 0.04) * sei, x = p.x - p.tz * off, z = p.z + p.tx * off, rot = Math.atan2(-p.tz, p.tx), y = G + ebeneY(k, s);
-      _o.position.set(x, y + 0.02, z); _o.rotation.set(0, rot, 0); _o.scale.set(0.34, 0.08, 0.17); _o.updateMatrix(); parkAuto.setMatrixAt(i, _o.matrix); parkAuto.setColorAt(i, _farbe.setHex(PAL.auto[Math.floor(r() * PAL.auto.length)]));
-      _o.position.set(x, y + 0.1, z); _o.scale.set(0.18, 0.055, 0.15); _o.updateMatrix(); parkDach.setMatrixAt(i, _o.matrix); i++;
-    }
+    if (!k.parken) { if (k.slots) { for (const q of k.slots) if (q.auto) { const a = q.auto; q.auto = null; a.wo = null; if (a.heim != null) autoHeimholen(a.id); else autos.delete(a.id); } k.slots = null; } continue; }
+    if (k.slots && k.slotsLen === k.len) continue;
+    const alt = k.slots || [], T = TYP[k.typ], r = zufall(k.id * 31 + 7), neu = [];
+    for (const sei of [1, -1]) for (let s2 = 1.0; s2 < k.len - 1.0; s2 += 0.6) { const p = punktBei(k, s2), off = (T.fahr + 0.06) * sei; neu.push({ kante: true, k: k.id, s: s2, x: p.x - p.tz * off, z: p.z + p.tx * off, rot: Math.atan2(-p.tz, p.tx) + (sei < 0 ? Math.PI : 0), ly: ebeneY(k, s2), auto: null, res: null }); }
+    for (const q of neu) { const o = alt.find((x) => x.auto && Math.abs(x.s - q.s) < 0.3 && Math.sign(x.rot - q.rot) === Math.sign(0)); if (o) { q.auto = o.auto; q.auto.wo = q; } else if (!alt.length && r() < 0.35) { const a = { id: autoId++, typ: wahl(r, PARK_TYPEN), farbe: wahl(r, PAL.auto), heim: null, wo: q, bis: Infinity }; q.auto = a; autos.set(a.id, a); } }
+    k.slots = neu; k.slotsLen = k.len;
   }
-  for (const m of [parkAuto, parkDach]) { m.count = i; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
+  parkNeu = true; parkAuto.count = parkDach.count = 0;
 }
 const ZONEN_TEXT = {
   1: "Einfamilienhäuser und Villen – wird bei hohem Bodenwert immer schöner (5 Stufen).",
@@ -3748,7 +3839,7 @@ $("neuAnfangen").onclick = () => {
   speichernAus = true; clearTimeout(speicherTimer); try { localStorage.removeItem(platzKey(platz)); } catch (x) { /* egal */ } location.href = location.pathname;
 };
 function qualitaet(neu) {
-  const alt = stufe; stufe = neu; merke("inselstadt-qualitaet", stufe); if (alt !== neu) { for (const h of haeuser.values()) { h.teile = hausTeile(h); h.box = null; } for (const d of dienste.values()) { d.teile = dienstTeile(d); d.box = null; } } const q = STUFEN[stufe]; U.uDetail.value = q.details; aoMesh.visible = !!q.details; haeuserNeu = true;
+  const alt = stufe; stufe = neu; merke("inselstadt-qualitaet", stufe); if (alt !== neu) { for (const h of haeuser.values()) { h.teile = hausTeile(h); h.box = null; parkenNeu(h); } for (const d of dienste.values()) { d.teile = dienstTeile(d); d.box = null; parkenNeu(d); } } const q = STUFEN[stufe]; U.uDetail.value = q.details; aoMesh.visible = !!q.details; haeuserNeu = true;
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, q.pr));
   const vorher = renderer.shadowMap.enabled;
   renderer.shadowMap.enabled = q.schatten > 0; sonne.castShadow = q.schatten > 0;
@@ -3952,7 +4043,7 @@ function starten(n, daten, neueKarte) {
     setTimeout(() => $("laden").classList.add("weg"), 200);
   }, 60);
 }
-window.inselstadt = { warnDebug: () => warnSprites.filter((x) => x.visible).slice(0, 3).map((x) => [x.position.x, x.position.y, x.position.z, x.scale.x, x.scale.y, x.material.map.image.width]), alarmTest: (dtyp, ftyp) => { const d = [...dienste.values()].find((q) => q.typ === dtyp); if (!d) return 'kein dienst'; const hs = [...haeuser.values()].sort((a, b) => Math.hypot(b.x - d.x, b.z - d.z) - Math.hypot(a.x - d.x, a.z - d.z)); const f = einsatz(d, hs[0], ftyp, null, true); return f ? [f.id, f.modus, !!f.alarm] : 'kein fz'; }, dienstTest: () => { const f = []; for (const typ in DIENSTE) for (const a of [0, 2]) { try { const T = dienstTeile({ typ, id: 7, ausbau: a }); for (const t of T) if (![t.lx, t.lz, t.sx, t.sy, t.sz, t.ly || 0].every(Number.isFinite) || !B[t.b]) { f.push(typ + ' ' + t.b); break; } } catch (e) { f.push(typ + ' ' + e.message); } } return f; }, katalogTest: () => { const fehler = [], namen = new Set(); let teile = 0; for (const z of [1, 2, 3, 4, 5, 6, 7, 8]) for (let st = 1; st <= ZONEN[z].max; st++) for (let v = 0; v < 12; v++) for (const [w, d] of [[1, 2], [2, 2], [2, 3], [3, 4], [4, 4]]) { try { const h = { zone: z, stufe: st, variante: v, w, d }; const T = hausTeile(h); teile = Math.max(teile, T.length); namen.add(z + ":" + h.name); for (const t of T) if (![t.lx, t.lz, t.sx, t.sy, t.sz, t.ly || 0].every(Number.isFinite) || !B[t.b]) { fehler.push(z + "/" + st + "/" + h.name + " " + t.b); break; } } catch (e) { fehler.push(z + "/" + st + "/" + v + " " + e.message); } } return { namen: namen.size, teile, fehler: [...new Set(fehler)].slice(0, 20) }; }, hausStufe: (f) => { for (const h of haeuser.values()) { const r = f(h); if (r) { h.stufe = r[0]; if (r[1] != null) h.variante = r[1]; h.teile = hausTeile(h); h.box = null; h.hoehe = hoeheVon(h); } } haeuserNeu = true; }, zustandHolen: () => zustand(), kreiselGroesse: (i) => { kreiselGr = i; }, rasterTest: (A, B, C, t) => { strTyp = t || "klein"; const ls = rasterLinien(A, B, C); let n = 0; for (const [a, b] of ls) { const pl = planen(fangOderFrei(a), lerp(a, b, 0.5), fangOderFrei(b), strTyp, 0); if (pl.ok && bauen(pl).length) n++; else if (!pl.ok) console.log("raster", pl.grund); } return [ls.length, n]; }, ersetzen: (p, t) => { strTyp = t; ersetzenTippen(p); }, parken: (p) => parkenTippen(p), autoBruecke: (A, B) => { const pl = planen(fangen(A), lerp(A, B, 0.5), fangen(B), "klein", 0); if (!pl.ok && pl.wasser && pl.pts.some((q) => abstand(q.x, q.z) < 0.3)) { const p2 = planen(fangen(A), lerp(A, B, 0.5), fangen(B), "klein", 1); return [pl.grund, p2.ok, p2.grund]; } return [pl.ok, pl.grund]; }, bildschirm: (x, z) => { const v = new THREE.Vector3(x, G, z).project(kamera), r = renderer.domElement.getBoundingClientRect(); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; }, linienListe: () => [...linien.values()].map((L) => ({ nr: L.nr, art: L.art, halte: L.halte.length, busse: L.busse, keinDepot: L.keinDepot })), gleisPlanen, gleisBauen, bahnhofPlan, gKanten, gKnoten, zuege: () => zuege, zuglinien, uebergaenge: () => uebergaenge, gleisModus: (m) => { gleisModus = m; }, zuglinieBau: (ids) => { zuglinieBau = ids; }, zuglinieFertig, schienenUmschalten, aussenGleisBauen, zugTakt, modellTest: () => { const ks = Object.keys(FZ); let n = 0; for (const k of kanten.values()) { if (!autoKante(k) || k.aussen || k.len < 8) continue; for (let s = 1.5; s < k.len - 1.5 && n < ks.length; s += 2.2) { const f = fahrzeugAusWeg({ route: [{ k: k.id, dir: 1 }], s0: s, s1: k.len - 0.5 }, ks[n], mitAuflieger(ks[n]) ? "container" : null, "Test", "Test", "aussen"); if (f) { f.farbe = PAL.auto[n % PAL.auto.length]; f.v = 0; n++; } } } return n; }, allesBesitzen: () => { for (let i = 0; i < KN; i++) for (let j = 0; j < KN; j++) besitz.add(i + "," + j); gebieteZeichnen(); }, kameraAuf: (x, z, d) => { steuerung.target.set(x, 0, z); kamera.position.set(x + d * 0.55, d * 0.75, z + d * 0.65); steuerung.update(); }, dbgF: (id) => { const f = fahrzeuge.find((x) => x.id === id); if (!f || f.modus !== "kante") return null; const st = f.route[f.ri], k = kanten.get(st.k), nx = f.route[f.ri + 1]; if (!nx) return "letzte"; const n = endKnoten(k, st.dir), k2 = kanten.get(nx.k), s2 = anfang(k2, nx.dir); return { rest: +(ende(k, st.dir) - f.s).toFixed(2), frei: f.frei, darf: darfEinfahren(f, k, st, nx), k2: k2.id + (k2.ring ? "R" : ""), platz: fahrzeuge.filter((g) => g !== f && g.modus === "kante" && g.route[g.ri].k === k2.id && g.route[g.ri].dir === nx.dir && g.s < s2 + g.hintenL + f.vorneL + 0.35).map((g) => g.id + ":" + g.s.toFixed(2) + ":w" + g.warte.toFixed(0)), drin: [...n.drin].map((g) => g.id + (g.tr ? "t" + g.tr.t.toFixed(2) : "res") + " von" + g.von), naht: n.naht.map((g) => g.id), luecke: f.block }; }, kreiselBauen, einbahnUmschalten, strModus: (m) => { strModus = m; }, halte, linien, neueHalte, busTippen, linieFertig, busRechnen, busModus: (m) => { busModus = m; }, linieBau: (ids) => { linieBau = ids; }, abstand: (x, z) => abstand(x, z), dienstPlan, dienstBauen, dienste, versorgung: () => versorgung, versorgungRechnen, dienstTakt, ansichtSetzen, sim: (sek, ziel) => { const ev = new Map(); let tk = 0; for (let t = 0; t < sek; t += 0.05) { simZeit += 0.05; jetztS += 0.05; if (++tk % 10 === 0) dienstTakt(0.5); verkehrTakt(0.05, ziel || 60); fahrzeugeZeichnen(); const F = fahrzeuge.filter((f) => f.pos && f.skala > 0.9 && !f.parkt); for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) { const A = F[i], Bf = F[j]; let hit = false; for (let q = 0; q <= 6 && !hit; q++) { const o = Bf.vorneL - (Bf.vorneL + Bf.hintenL) * q / 6, dx = Bf.pos.x + Bf.pos.tx * o - A.pos.x, dz = Bf.pos.z + Bf.pos.tz * o - A.pos.z, lx = dx * A.pos.tx + dz * A.pos.tz, lz = Math.abs(-dx * A.pos.tz + dz * A.pos.tx); if (lx < A.vorneL * 0.8 && lx > -A.hintenL * 0.8 && lz < (A.B + Bf.B) / 2 * 0.7) hit = true; } if (hit) { const key = A.id + "-" + Bf.id; if (!ev.has(key)) { const d = (f) => f.modus === "hof" ? "HOF" + (f.hof && f.hof.raus ? "raus" : "rein") : f.modus === "kante" ? f.route[f.ri].k + "/" + f.route[f.ri].dir + "/sp" + f.spur + "/off" + f.off.toFixed(2) + "/s" + f.s.toFixed(2) + (f.ausparken ? "/AUS" : "") + (f.frei ? "/FREI" : "") : "KN" + f.tr.knoten + "/t" + f.tr.t.toFixed(2) + "/von" + f.von + "->" + f.route[f.ri + 1].k; ev.set(key, [A.typ, d(A), "blk" + (A.block == null ? "-" : A.block.toFixed(2)) + "w" + A.warte.toFixed(1), Bf.typ, d(Bf), "blk" + (Bf.block == null ? "-" : Bf.block.toFixed(2)) + "w" + Bf.warte.toFixed(1), "t" + t.toFixed(1)]); } } } } return [fahrzeuge.length, ev.size, [...ev.values()].slice(0, 12)]; }, fahrtStarten: () => { try { return fahrtStarten(); } catch (e) { return "FEHLER " + e.message + e.stack; } }, folgen: (f) => folgenStart(f), baeume: () => baeume.length, stufenTest: (st) => { let i = 0; for (const h of haeuser.values()) { h.stufe = Math.min(ZONEN[h.zone].max, st || 1 + (i++ % 5)); h.teile = hausTeile(h); } haeuserNeu = true; }, meilenstein: (m) => { meilenstein = m; unterleiste(); }, zoneWahl: (z) => { zoneWahl = z; }, malen: (a, b) => malen(a, b), werteAuffrischen, hausTeile, bedarf: () => bedarf, wertAnsicht: (v) => { wertAnsicht = v; wertZeichnen(); }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
+window.inselstadt = { parkInfo: () => { const st = { autos: autos.size, daheim: 0, weg: 0, fahrend: 0, aufParkplatz: 0, strasse: 0 }; for (const a of autos.values()) { if (!a.wo) st.fahrend++; else if (a.wo.kante) st.strasse++; else if (a.wo.b && a.wo.b.dienst) st.aufParkplatz++; else if (a.wo.b && a.wo.b.id === a.heim) st.daheim++; else st.weg++; } st.stunde = Math.round(stunde()); return st; }, zeitSetzen: (z) => { zeit = z; }, warnDebug: () => warnSprites.filter((x) => x.visible).slice(0, 3).map((x) => [x.position.x, x.position.y, x.position.z, x.scale.x, x.scale.y, x.material.map.image.width]), alarmTest: (dtyp, ftyp) => { const d = [...dienste.values()].find((q) => q.typ === dtyp); if (!d) return 'kein dienst'; const hs = [...haeuser.values()].sort((a, b) => Math.hypot(b.x - d.x, b.z - d.z) - Math.hypot(a.x - d.x, a.z - d.z)); const f = einsatz(d, hs[0], ftyp, null, true); return f ? [f.id, f.modus, !!f.alarm] : 'kein fz'; }, dienstTest: () => { const f = []; for (const typ in DIENSTE) for (const a of [0, 2]) { try { const T = dienstTeile({ typ, id: 7, ausbau: a }); for (const t of T) if (![t.lx, t.lz, t.sx, t.sy, t.sz, t.ly || 0].every(Number.isFinite) || !B[t.b]) { f.push(typ + ' ' + t.b); break; } } catch (e) { f.push(typ + ' ' + e.message); } } return f; }, katalogTest: () => { const fehler = [], namen = new Set(); let teile = 0; for (const z of [1, 2, 3, 4, 5, 6, 7, 8]) for (let st = 1; st <= ZONEN[z].max; st++) for (let v = 0; v < 12; v++) for (const [w, d] of [[1, 2], [2, 2], [2, 3], [3, 4], [4, 4]]) { try { const h = { zone: z, stufe: st, variante: v, w, d }; const T = hausTeile(h); teile = Math.max(teile, T.length); namen.add(z + ":" + h.name); for (const t of T) if (![t.lx, t.lz, t.sx, t.sy, t.sz, t.ly || 0].every(Number.isFinite) || !B[t.b]) { fehler.push(z + "/" + st + "/" + h.name + " " + t.b); break; } } catch (e) { fehler.push(z + "/" + st + "/" + v + " " + e.message); } } return { namen: namen.size, teile, fehler: [...new Set(fehler)].slice(0, 20) }; }, hausStufe: (f) => { for (const h of haeuser.values()) { const r = f(h); if (r) { h.stufe = r[0]; if (r[1] != null) h.variante = r[1]; h.teile = hausTeile(h); h.box = null; h.hoehe = hoeheVon(h); } } haeuserNeu = true; }, zustandHolen: () => zustand(), kreiselGroesse: (i) => { kreiselGr = i; }, rasterTest: (A, B, C, t) => { strTyp = t || "klein"; const ls = rasterLinien(A, B, C); let n = 0; for (const [a, b] of ls) { const pl = planen(fangOderFrei(a), lerp(a, b, 0.5), fangOderFrei(b), strTyp, 0); if (pl.ok && bauen(pl).length) n++; else if (!pl.ok) console.log("raster", pl.grund); } return [ls.length, n]; }, ersetzen: (p, t) => { strTyp = t; ersetzenTippen(p); }, parken: (p) => parkenTippen(p), autoBruecke: (A, B) => { const pl = planen(fangen(A), lerp(A, B, 0.5), fangen(B), "klein", 0); if (!pl.ok && pl.wasser && pl.pts.some((q) => abstand(q.x, q.z) < 0.3)) { const p2 = planen(fangen(A), lerp(A, B, 0.5), fangen(B), "klein", 1); return [pl.grund, p2.ok, p2.grund]; } return [pl.ok, pl.grund]; }, bildschirm: (x, z) => { const v = new THREE.Vector3(x, G, z).project(kamera), r = renderer.domElement.getBoundingClientRect(); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; }, linienListe: () => [...linien.values()].map((L) => ({ nr: L.nr, art: L.art, halte: L.halte.length, busse: L.busse, keinDepot: L.keinDepot })), gleisPlanen, gleisBauen, bahnhofPlan, gKanten, gKnoten, zuege: () => zuege, zuglinien, uebergaenge: () => uebergaenge, gleisModus: (m) => { gleisModus = m; }, zuglinieBau: (ids) => { zuglinieBau = ids; }, zuglinieFertig, schienenUmschalten, aussenGleisBauen, zugTakt, modellTest: () => { const ks = Object.keys(FZ); let n = 0; for (const k of kanten.values()) { if (!autoKante(k) || k.aussen || k.len < 8) continue; for (let s = 1.5; s < k.len - 1.5 && n < ks.length; s += 2.2) { const f = fahrzeugAusWeg({ route: [{ k: k.id, dir: 1 }], s0: s, s1: k.len - 0.5 }, ks[n], mitAuflieger(ks[n]) ? "container" : null, "Test", "Test", "aussen"); if (f) { f.farbe = PAL.auto[n % PAL.auto.length]; f.v = 0; n++; } } } return n; }, allesBesitzen: () => { for (let i = 0; i < KN; i++) for (let j = 0; j < KN; j++) besitz.add(i + "," + j); gebieteZeichnen(); }, kameraAuf: (x, z, d) => { steuerung.target.set(x, 0, z); kamera.position.set(x + d * 0.55, d * 0.75, z + d * 0.65); steuerung.update(); }, dbgF: (id) => { const f = fahrzeuge.find((x) => x.id === id); if (!f || f.modus !== "kante") return null; const st = f.route[f.ri], k = kanten.get(st.k), nx = f.route[f.ri + 1]; if (!nx) return "letzte"; const n = endKnoten(k, st.dir), k2 = kanten.get(nx.k), s2 = anfang(k2, nx.dir); return { rest: +(ende(k, st.dir) - f.s).toFixed(2), frei: f.frei, darf: darfEinfahren(f, k, st, nx), k2: k2.id + (k2.ring ? "R" : ""), platz: fahrzeuge.filter((g) => g !== f && g.modus === "kante" && g.route[g.ri].k === k2.id && g.route[g.ri].dir === nx.dir && g.s < s2 + g.hintenL + f.vorneL + 0.35).map((g) => g.id + ":" + g.s.toFixed(2) + ":w" + g.warte.toFixed(0)), drin: [...n.drin].map((g) => g.id + (g.tr ? "t" + g.tr.t.toFixed(2) : "res") + " von" + g.von), naht: n.naht.map((g) => g.id), luecke: f.block }; }, kreiselBauen, einbahnUmschalten, strModus: (m) => { strModus = m; }, halte, linien, neueHalte, busTippen, linieFertig, busRechnen, busModus: (m) => { busModus = m; }, linieBau: (ids) => { linieBau = ids; }, abstand: (x, z) => abstand(x, z), dienstPlan, dienstBauen, dienste, versorgung: () => versorgung, versorgungRechnen, dienstTakt, ansichtSetzen, sim: (sek, ziel) => { const ev = new Map(); let tk = 0; for (let t = 0; t < sek; t += 0.05) { simZeit += 0.05; jetztS += 0.05; if (++tk % 10 === 0) dienstTakt(0.5); verkehrTakt(0.05, ziel || 60); fahrzeugeZeichnen(); const F = fahrzeuge.filter((f) => f.pos && f.skala > 0.9 && !f.parkt); for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) { const A = F[i], Bf = F[j]; let hit = false; for (let q = 0; q <= 6 && !hit; q++) { const o = Bf.vorneL - (Bf.vorneL + Bf.hintenL) * q / 6, dx = Bf.pos.x + Bf.pos.tx * o - A.pos.x, dz = Bf.pos.z + Bf.pos.tz * o - A.pos.z, lx = dx * A.pos.tx + dz * A.pos.tz, lz = Math.abs(-dx * A.pos.tz + dz * A.pos.tx); if (lx < A.vorneL * 0.8 && lx > -A.hintenL * 0.8 && lz < (A.B + Bf.B) / 2 * 0.7) hit = true; } if (hit) { const key = A.id + "-" + Bf.id; if (!ev.has(key)) { const d = (f) => f.modus === "hof" ? "HOF" + (f.hof && f.hof.raus ? "raus" : "rein") : f.modus === "kante" ? f.route[f.ri].k + "/" + f.route[f.ri].dir + "/sp" + f.spur + "/off" + f.off.toFixed(2) + "/s" + f.s.toFixed(2) + (f.ausparken ? "/AUS" : "") + (f.frei ? "/FREI" : "") : "KN" + f.tr.knoten + "/t" + f.tr.t.toFixed(2) + "/von" + f.von + "->" + f.route[f.ri + 1].k; ev.set(key, [A.typ, d(A), "blk" + (A.block == null ? "-" : A.block.toFixed(2)) + "w" + A.warte.toFixed(1), Bf.typ, d(Bf), "blk" + (Bf.block == null ? "-" : Bf.block.toFixed(2)) + "w" + Bf.warte.toFixed(1), "t" + t.toFixed(1)]); } } } } return [fahrzeuge.length, ev.size, [...ev.values()].slice(0, 12)]; }, fahrtStarten: () => { try { return fahrtStarten(); } catch (e) { return "FEHLER " + e.message + e.stack; } }, folgen: (f) => folgenStart(f), baeume: () => baeume.length, stufenTest: (st) => { let i = 0; for (const h of haeuser.values()) { h.stufe = Math.min(ZONEN[h.zone].max, st || 1 + (i++ % 5)); h.teile = hausTeile(h); } haeuserNeu = true; }, meilenstein: (m) => { meilenstein = m; unterleiste(); }, zoneWahl: (z) => { zoneWahl = z; }, malen: (a, b) => malen(a, b), werteAuffrischen, hausTeile, bedarf: () => bedarf, wertAnsicht: (v) => { wertAnsicht = v; wertZeichnen(); }, kanten, knoten, zellen, haeuser, planen, bauen, fangen, wachsTakt, werkzeugWaehlen, fahrzeuge: () => fahrzeuge, kennzahlen, starten, setzeGeld: (g) => { geld = g; zeigeWerte(); }, fahrenStarten, fahrenBeenden, spieler, tempo: (t) => { tempo = t; zeitKnoepfe(); } };
 
 /* ================================================================
    Hauptschleife
@@ -3977,7 +4068,7 @@ function schleife() {
   if (zellenNeu) zellenZeichnen();
   if (haeuserNeu) haeuserZeichnen();
   document.body.classList.toggle("baut", (istBau() && bau.punkte.length > 0) || !!dienstPlanAktuell || linieBau.length > 0 || zuglinieBau.length > 0);
-  rauchZeichnen(); fahrzeugeZeichnen(); ampelnZeichnen(); toreZeichnen(dt); fussgaengerTakt(dt, kz.e); hochZeichnen(); warnZeichnen(); drehZeichnen(); if (linienNeu) linienZeichnen(); zugTakt(dt * (tempo || 0)); bahnHafenZeichnen(dt * (tempo || 0)); schrankenZeichnen(dt); if (ansicht && ansicht !== "verkehr" && jetztS - wertZeit > 2) wertZeichnen();
+  rauchZeichnen(); fahrzeugeZeichnen(); geparkteZeichnen(); ampelnZeichnen(); toreZeichnen(dt); fussgaengerTakt(dt, kz.e); hochZeichnen(); warnZeichnen(); drehZeichnen(); if (linienNeu) linienZeichnen(); zugTakt(dt * (tempo || 0)); bahnHafenZeichnen(dt * (tempo || 0)); schrankenZeichnen(dt); if (ansicht && ansicht !== "verkehr" && jetztS - wertZeit > 2) wertZeichnen();
   boote.forEach((b) => { b.w += b.v * dt; b.g.position.set(b.mx + Math.cos(b.w) * b.rad, WASSER + 0.02 + Math.sin(t * 1.6 + b.ph) * 0.05, b.mz + Math.sin(b.w) * b.rad); b.g.rotation.set(Math.sin(t * 1.3 + b.ph) * 0.05, -b.w + (b.v > 0 ? -Math.PI / 2 : Math.PI / 2), 0); });
   if (leuchtturm) leuchtturm.userData.strahl.rotation.y = t * 0.8;
   if (spieler.an) fahrenTakt(dt);
