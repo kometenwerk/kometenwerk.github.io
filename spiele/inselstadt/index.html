@@ -3,10 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Inselstadt · FLARESSA</title>
+<title>Horizonte · FLARESSA Gaming</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#0b1020">
-<link rel="icon" href="../../shared/marken/flaressa-zeichen.webp" type="image/webp">
+<link rel="icon" href="bilder/horizonte-zeichen.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="bilder/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="bilder/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -155,6 +157,28 @@ body.baut #fach{display:none!important}
 .leiste{height:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
 .leiste i{display:block;height:100%;background:var(--f);border-radius:inherit}
 /* Hauptmenü */
+body.demo>:not(#hauptmenue):not(canvas):not(script){display:none!important}
+#hauptmenue.demo{background:linear-gradient(90deg,rgba(9,12,26,.94) 0,rgba(9,12,26,.78) 34%,rgba(9,12,26,.12) 70%,rgba(9,12,26,0) 100%);place-items:center start;padding-left:max(20px,6vw)}
+@media (max-width:700px){#hauptmenue.demo{background:linear-gradient(180deg,rgba(9,12,26,.55),rgba(9,12,26,.92) 55%);place-items:end center;padding:16px}}
+.hm-logo{display:flex;align-items:center;gap:16px}.hm-logo>img{width:84px;height:84px;filter:drop-shadow(0 8px 24px rgba(255,138,60,.35))}
+.hm-wort{font-size:2.6rem;font-weight:700;letter-spacing:.14em;line-height:1;margin:0;background:linear-gradient(90deg,#ffd36a,#ff8a3c 45%,#e85b9a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hm-marke{display:flex;align-items:center;gap:6px;margin-top:6px;color:var(--leise);font-size:.82rem;letter-spacing:.08em;text-transform:uppercase}.hm-marke img{width:18px;height:18px}
+.hm-knoepfe{display:grid;gap:8px;width:min(340px,100%)}
+.hm-k{display:flex;align-items:center;gap:12px;min-height:52px;padding:10px 16px;border-radius:14px;border:1px solid var(--linie);background:rgba(255,255,255,.06);backdrop-filter:blur(8px);color:inherit;font:inherit;font-weight:600;text-align:left;cursor:pointer}
+.hm-k:hover,.hm-k:focus-visible{border-color:#ff8a3c;outline:none;background:rgba(255,138,60,.12)}
+.hm-k .em{font-size:1.3rem;width:26px;text-align:center}.hm-k small{display:block;font-weight:400;color:var(--leise);font-size:.75rem}
+.hm-k.haupt{background:linear-gradient(90deg,#ff8a3c,#e85b9a);border:0;color:#1a0d22}.hm-k.haupt small{color:rgba(26,13,34,.75)}
+.hm-seite{width:min(620px,100%);display:grid;gap:14px;max-height:calc(100vh - 40px);overflow:auto;padding:4px}
+.hm-seite h2{margin:0;font-size:1.3rem}
+.kvorschau{width:100%;aspect-ratio:1;border-radius:12px;display:block;background:#123}
+.karten.mitbild .karte{padding:10px}
+.stand{display:grid;grid-template-columns:120px 1fr;gap:12px;padding:10px;border-radius:14px;border:1px solid var(--linie);background:rgba(255,255,255,.05);align-items:center}
+.stand img,.stand .leer{width:120px;height:68px;border-radius:10px;object-fit:cover;background:#16203a;display:grid;place-items:center;font-size:1.6rem}
+.stand .reihe{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.stand input{width:100%;font:inherit;font-weight:600;padding:4px 8px;border-radius:8px;border:1px solid var(--linie);background:rgba(255,255,255,.08);color:inherit}
+.hm-chips{display:flex;gap:6px;flex-wrap:wrap}.hm-chips button{border:1px solid var(--linie);background:rgba(255,255,255,.05);border-radius:999px;padding:8px 14px;color:inherit;font:inherit}.hm-chips button.an{border-color:#ff8a3c;background:rgba(255,138,60,.18)}
+.hm-text{color:var(--leise);line-height:1.5;margin:0}.hm-text b{color:inherit}
+@media (max-height:520px){.hm-logo>img{width:46px;height:46px}.hm-wort{font-size:1.6rem}.hm-marke{margin-top:3px}.hm-knoepfe{gap:5px}.hm-k{min-height:38px;padding:6px 12px}.hm-k small{display:none}#hmBox>div{gap:10px!important}#hauptmenue.demo{place-items:center start;padding-top:8px;padding-bottom:8px}}
+@media (max-width:520px){.stand{grid-template-columns:90px 1fr}.stand img,.stand .leer{width:90px;height:52px}.hm-wort{font-size:2rem}.hm-logo>img{width:64px;height:64px}}
 #hauptmenue{position:fixed;inset:0;z-index:9;display:grid;place-items:center;padding:16px;background:radial-gradient(80vmax 50vmax at 50% 0%,rgba(166,107,255,.22),transparent 70%),#0b1020;overflow:auto}
 #hauptmenue .box{width:min(560px,100%);display:grid;gap:16px}
 #hauptmenue .titel{display:flex;align-items:center;gap:12px}
@@ -209,9 +233,9 @@ body.baut #fach{display:none!important}
 <script type="importmap">{"imports":{"three":"../../shared/vendor/three-0.160.0/three.module.min.js","three/addons/":"../../shared/vendor/three-0.160.0/"}}</script>
 </head>
 <body>
-<div id="drehen"><div><span class="dreh">📱</span><h2 style="margin:12px 0 6px">Bitte dreh dein Handy</h2><p style="color:var(--leise);margin:0">Inselstadt spielt man im Querformat.</p><button type="button" id="drehVoll">⛶ Vollbild & quer</button></div></div>
+<div id="drehen"><div><span class="dreh">📱</span><h2 style="margin:12px 0 6px">Bitte dreh dein Handy</h2><p style="color:var(--leise);margin:0">Horizonte spielt man im Querformat.</p><button type="button" id="drehVoll">⛶ Vollbild & quer</button></div></div>
 <div id="hauptmenue"><div class="box" id="hmBox"></div></div>
-<div id="laden" class="weg"><div><b>🏝️ Inselstadt</b>Die Karte wird gebaut …</div></div>
+<div id="laden" class="weg"><div><img src="bilder/horizonte-zeichen.svg" alt="" width="64" height="64" style="display:block;margin:0 auto 10px"><b>Horizonte</b>Die Karte wird gebaut …</div></div>
 <div id="fehler"><div><b>Das klappt auf diesem Gerät leider nicht.</b><p>Dein Browser kann kein 3D (WebGL). Probier es mit einem aktuellen Chrome, Safari oder Firefox.</p></div></div>
 
 <div id="oben">

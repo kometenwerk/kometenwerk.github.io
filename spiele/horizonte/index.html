@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Horizonte – Städtebau-Spiel im Browser | FLARESSA Gaming</title>
+<meta name="description" content="Horizonte ist ein kostenloses Städtebau-Spiel im Browser: Straßen, Zonen, Busse, Züge, Häfen und Flughafen. Mit leichtem Modus und fertigem Dorf. Ohne Werbung, ohne Konto.">
+<meta name="theme-color" content="#0a0b10">
+<link rel="canonical" href="https://kometenwerk.github.io/spiele/horizonte/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="OMNIVIA Group">
+<meta property="og:title" content="Horizonte – Städtebau-Spiel im Browser | FLARESSA Gaming">
+<meta property="og:description" content="Horizonte ist ein kostenloses Städtebau-Spiel im Browser: Straßen, Zonen, Busse, Züge, Häfen und Flughafen. Mit leichtem Modus und fertigem Dorf. Ohne Werbung, ohne Konto.">
+<meta property="og:url" content="https://kometenwerk.github.io/spiele/horizonte/">
+<meta property="og:locale" content="de_DE">
+<meta property="og:image" content="https://kometenwerk.github.io/spiele/horizonte/bilder/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../inselstadt/bilder/horizonte-zeichen.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../inselstadt/bilder/apple-touch-icon.png">
+<link rel="stylesheet" href="../../shared/fonts/fonts.css">
+<link rel="stylesheet" href="../../shared/nav.css">
+<link rel="stylesheet" href="../../shared/site.css">
+<link rel="stylesheet" href="../../shared/ueber.css">
+<link rel="stylesheet" href="../../shared/omnivia.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Horizonte","url":"https://kometenwerk.github.io/spiele/horizonte/","image":"https://kometenwerk.github.io/spiele/horizonte/bilder/og.jpg","description":"Kostenloses Städtebau-Spiel im Browser mit Verkehr, Bussen, Zügen, Häfen und Flughafen.","genre":["Städtebau","Simulation"],"gamePlatform":["Webbrowser"],"applicationCategory":"Game","operatingSystem":"Webbrowser","inLanguage":"de","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@type":"Organization","name":"FLARESSA Gaming","parentOrganization":{"@type":"Organization","name":"OMNIVIA Group"}}}</script>
+<style>
+.hz-hero{position:relative;overflow:hidden;padding:clamp(28px,6vw,72px) 0;background:#0b1020}
+.hz-hero .bild{position:absolute;inset:0;background:url(bilder/dorf.webp) center/cover;opacity:.55}
+.hz-hero .bild::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#0b1020 0,rgba(11,16,32,.8) 42%,rgba(11,16,32,.15) 100%)}
+.hz-hero .wrap{position:relative;display:grid;gap:18px;max-width:1100px}
+.hz-logo{display:flex;align-items:center;gap:18px}.hz-logo img{width:clamp(72px,12vw,120px);height:auto;filter:drop-shadow(0 10px 30px rgba(255,138,60,.35))}
+.hz-wort{margin:0;font-size:clamp(2.4rem,7vw,4.4rem);letter-spacing:.12em;line-height:1;background:linear-gradient(90deg,#ffd36a,#ff8a3c 45%,#e85b9a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hz-hero .lead{max-width:560px;color:#d5dcea}
+.hz-galerie{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.hz-galerie figure{margin:0;border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--line)}
+.hz-galerie button{display:block;width:100%;padding:0;border:0;background:none;cursor:zoom-in}
+.hz-galerie img{display:block;width:100%;height:auto!important;aspect-ratio:16/9;object-fit:cover}
+.hz-galerie figcaption{padding:10px 12px;font-size:.9rem}
+.hz-merk{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.hz-merk article{padding:18px;border-radius:16px;background:var(--card);border:1px solid var(--line)}
+.hz-merk h3{margin:6px 0;font-size:1.05rem}.hz-merk p{margin:0;color:var(--muted);line-height:1.5}.hz-merk .em{font-size:1.6rem}
+dialog.hz-gross{padding:0;border:0;border-radius:14px;max-width:min(1280px,94vw);background:#000}dialog.hz-gross img{display:block;width:100%;height:auto}dialog.hz-gross::backdrop{background:rgba(0,0,0,.8)}
+dialog.hz-gross button{position:absolute;top:8px;right:8px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:1.2rem}
+</style>
+</head>
+<body class="marken-seite" style="--c:var(--flaressa)">
+<a class="skip" href="#inhalt">Zum Inhalt springen</a>
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="../../" aria-label="OMNIVIA Group – zur Startseite"><img src="../../shared/marken/omnivia-zeichen.webp" alt="" width="64" height="34"><span class="omni">OMNIVIA<small>GROUP</small></span></a>
+    <button class="burger" type="button" aria-label="Menü" aria-expanded="false" aria-controls="menue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <nav aria-label="Hauptmenü"><ul class="nav-links" id="menue"><li><a href="../../">Über uns</a></li><li><a href="../" aria-current="page"><span class="m-dot" style="--d:var(--flaressa)" aria-hidden="true"></span>Spiele</a></li><li><a href="../../apps/"><span class="m-dot" style="--d:var(--fidelia)" aria-hidden="true"></span>Apps</a></li><li><a href="../../lab/"><span class="m-dot" style="--d:var(--aoris)" aria-hidden="true"></span>Lab</a></li><li><a href="../../robotics/"><span class="m-dot" style="--d:var(--robotics)" aria-hidden="true"></span>Robotics</a></li><li><a href="../../kunden/">Kunden</a></li><li><a class="icon-link" href="../../suche/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>Suche</span></a></li><li><a class="nav-cta" href="../../kunden/#planer">Projekt anfragen</a></li></ul></nav>
+  </div>
+</header>
+<main id="inhalt">
+<section class="hz-hero" aria-labelledby="titel"><div class="bild" aria-hidden="true"></div><div class="wrap">
+  <a class="zurueck-omni" href="../"><img src="../../shared/marken/flaressa-zeichen.webp" alt="" width="20" height="20"> FLARESSA Gaming</a>
+  <div class="hz-logo"><img src="../inselstadt/bilder/horizonte-zeichen.svg" alt="" width="120" height="120"><div><h1 id="titel" class="hz-wort">HORIZONTE</h1><p class="kicker" style="margin:8px 0 0">Städtebau im Browser</p></div></div>
+  <p class="lead">Bau aus einem leeren Stück Land eine lebendige Stadt: Straßen, Wohngebiete, Läden, Strom und Wasser – dann Busse, Züge, Häfen und ein Flughafen. Kostenlos, ohne Werbung, direkt im Browser.</p>
+  <div class="btns"><a class="btn farbe" href="../inselstadt/">🌅 Jetzt spielen</a><a class="btn ghost" href="#bilder">Bilder ansehen</a></div>
+</div></section>
+<section class="sec" id="bilder"><div class="wrap">
+  <div class="center reveal"><p class="kicker">Bilder aus dem Spiel</p><h2 class="h2">So sieht Horizonte aus</h2><p class="lead">Alle Bilder sind echte Aufnahmen aus dem Spiel. Tipp ein Bild an, um es groß zu sehen.</p></div>
+  <div class="hz-galerie"><figure class="reveal"><button type="button" data-gross="bilder/dorf.webp" aria-label="Bild groß ansehen: Leichter Modus: Du startest mit einem fertigen Dorf."><img src="bilder/dorf-klein.webp" alt="Leichter Modus: Du startest mit einem fertigen Dorf." width="640" height="360" loading="lazy"></button><figcaption>Leichter Modus: Du startest mit einem fertigen Dorf.</figcaption></figure><figure class="reveal"><button type="button" data-gross="bilder/stadt.webp" aria-label="Bild groß ansehen: Aus dem Dorf wird eine Großstadt mit Hochhäusern."><img src="bilder/stadt-klein.webp" alt="Aus dem Dorf wird eine Großstadt mit Hochhäusern." width="640" height="360" loading="lazy"></button><figcaption>Aus dem Dorf wird eine Großstadt mit Hochhäusern.</figcaption></figure><figure class="reveal"><button type="button" data-gross="bilder/hafen.webp" aria-label="Bild groß ansehen: Containerterminal, Fähren, Yacht- und Fischereihafen."><img src="bilder/hafen-klein.webp" alt="Containerterminal, Fähren, Yacht- und Fischereihafen." width="640" height="360" loading="lazy"></button><figcaption>Containerterminal, Fähren, Yacht- und Fischereihafen.</figcaption></figure><figure class="reveal"><button type="button" data-gross="bilder/bahnhof.webp" aria-label="Bild groß ansehen: Hauptbahnhof mit eigenen Gleisen, Weichen und Signalen."><img src="bilder/bahnhof-klein.webp" alt="Hauptbahnhof mit eigenen Gleisen, Weichen und Signalen." width="640" height="360" loading="lazy"></button><figcaption>Hauptbahnhof mit eigenen Gleisen, Weichen und Signalen.</figcaption></figure><figure class="reveal"><button type="button" data-gross="bilder/flughafen.webp" aria-label="Bild groß ansehen: Flugzeuge landen, rollen zum Gate und starten wieder."><img src="bilder/flughafen-klein.webp" alt="Flugzeuge landen, rollen zum Gate und starten wieder." width="640" height="360" loading="lazy"></button><figcaption>Flugzeuge landen, rollen zum Gate und starten wieder.</figcaption></figure><figure class="reveal"><button type="button" data-gross="bilder/nacht.webp" aria-label="Bild groß ansehen: Nachts leuchten Fenster, Laternen und Schaufenster."><img src="bilder/nacht-klein.webp" alt="Nachts leuchten Fenster, Laternen und Schaufenster." width="640" height="360" loading="lazy"></button><figcaption>Nachts leuchten Fenster, Laternen und Schaufenster.</figcaption></figure><figure class="reveal"><button type="button" data-gross="bilder/startmenue.webp" aria-label="Bild groß ansehen: Das Startmenü fliegt über ein Beispiel-Dorf."><img src="bilder/startmenue-klein.webp" alt="Das Startmenü fliegt über ein Beispiel-Dorf." width="640" height="360" loading="lazy"></button><figcaption>Das Startmenü fliegt über ein Beispiel-Dorf.</figcaption></figure></div>
+</div></section>
+<section class="sec alt"><div class="wrap">
+  <div class="center reveal"><p class="kicker">Was dich erwartet</p><h2 class="h2">Alles für deine Stadt</h2></div>
+  <div class="hz-merk"><article class="reveal"><span class="em" aria-hidden="true">🛣️</span><h3>21 Straßenarten</h3><p>Von der Gasse bis zum Boulevard mit Straßenbahn. Mit Vorschaubildern wie in Cities: Skylines, Kreisverkehren, Ampeln und Brücken.</p></article><article class="reveal"><span class="em" aria-hidden="true">🏘️</span><h3>145 verschiedene Häuser</h3><p>Häuser wachsen auf Baustellen mit Kran und Gerüst. Altbauten, Fachwerk, Hochhäuser – und Autos, die wirklich parken.</p></article><article class="reveal"><span class="em" aria-hidden="true">🚒</span><h3>Wachen mit echten Fahrzeugen</h3><p>Feuerwehr, Polizei und Krankenhaus haben Hallen. Das Fahrzeug fährt raus, die Halle ist leer, bis es zurück ist. Mit Rettungsgasse.</p></article><article class="reveal"><span class="em" aria-hidden="true">🚌</span><h3>Nahverkehr wie im Großen</h3><p>Buslinien und Straßenbahnen mit eigenem Linienfenster: Takt, Fahrzeuge, Fahrgäste, Kosten und Einnahmen.</p></article><article class="reveal"><span class="em" aria-hidden="true">🚆</span><h3>Züge, S-Bahn und U-Bahn</h3><p>Bahnhöfe mit eingebauten Gleisen, Doppelgleise, Signale, ICE, Güterzüge und U-Bahn-Tunnel.</p></article><article class="reveal"><span class="em" aria-hidden="true">⚓</span><h3>Häfen und Flughafen</h3><p>Fähren, Kreuzfahrtschiffe, Containerkräne, Segelboote mit Kielwasser – und ein Flughafen mit startenden Flugzeugen.</p></article><article class="reveal"><span class="em" aria-hidden="true">🟢</span><h3>Leicht oder Normal</h3><p>Im leichten Modus startest du mit einem fertigen Dorf. Im normalen baust du alles selbst – mit Gründerbonus am Anfang.</p></article><article class="reveal"><span class="em" aria-hidden="true">🔒</span><h3>Fair und sicher</h3><p>Kostenlos, ohne Werbung, ohne Konto. Deine Spielstände bleiben auf deinem Gerät.</p></article></div>
+</div></section>
+<section class="sec"><div class="wrap center reveal">
+  <h2 class="h2">Bereit für deine eigene Stadt?</h2><p class="lead">Läuft am besten am Computer oder Tablet in Chrome, Edge, Safari oder Firefox. Am Handy spielst du quer.</p>
+  <div class="btns" style="justify-content:center"><a class="btn farbe" href="../inselstadt/">🌅 Horizonte spielen</a><a class="btn" href="../">Alle Spiele</a></div>
+</div></section>
+<dialog class="hz-gross" id="hzGross" aria-label="Bild groß"><img src="" alt=""><button type="button" aria-label="Schließen">✕</button></dialog>
+<script>
+(function(){const d=document.getElementById("hzGross"),img=d.querySelector("img");document.querySelectorAll("[data-gross]").forEach(b=>b.addEventListener("click",()=>{img.src=b.dataset.gross;img.alt=b.querySelector("img").alt;d.showModal();}));d.addEventListener("click",()=>d.close());})();
+</script>
+</main>
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a class="brand" href="../../" aria-label="OMNIVIA Group – zur Startseite"><img src="../../shared/marken/omnivia-zeichen.webp" alt="" width="64" height="34"><span class="omni">OMNIVIA<small>GROUP</small></span></a>
+        <p>Eine Marken-Familie aus Deutschland: Spiele, Apps, KI-Forschung und Robotik. Sicher. Ehrlich. Werbefrei.</p>
+        <div class="marken-zeile"><a href="../../spiele/" style="--d:var(--flaressa)">Flaressa</a><a href="../../apps/" style="--d:var(--fidelia)">Fidelia</a><a href="../../lab/" style="--d:var(--aoris)">Aoris</a><a href="../../robotics/" style="--d:var(--robotics)">Kometenwerk</a></div>
+      </div>
+      <div><h2>Entdecken</h2><ul>
+        <li><a href="../../">Über uns</a></li><li><a href="../../#team">Unser Team</a></li><li><a href="../../apps/">Alle Apps</a></li><li><a href="../../suche/">Suche</a></li></ul></div>
+      <div><h2>Beliebt</h2><ul>
+        <li><a href="../../Krawallzoo/">Krawallzoo</a></li><li><a href="../../ND/">Nachrichten-Heft</a></li><li><a href="../../planer/">FIDELIA Planer</a></li><li><a href="../../robotics/">Unser Rover</a></li></ul></div>
+      <div><h2>Kontakt</h2><ul>
+        <li><a href="../../kunden/">Für Kunden</a></li><li><a href="../../kunden/#planer">Projekt planen</a></li><li><a href="../../hilfe/">Hilfe &amp; Kontakt</a></li><li><a href="https://github.com/kometenwerk" rel="noopener">GitHub</a></li></ul></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span data-jahr>2026</span> OMNIVIA Group · Sicher. Ehrlich. Werbefrei.</span>
+      <span><a href="../../impressum/">Impressum</a> · <a href="../../datenschutz/">Datenschutz</a></span>
+    </div>
+  </div>
+</footer>
+<script src="../../shared/site.js" defer></script>
+</body>
+</html>

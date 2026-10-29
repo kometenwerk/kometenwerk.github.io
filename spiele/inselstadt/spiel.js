@@ -2623,7 +2623,7 @@ const SCHIFF_GEO = {
 const schiffPool = {}; for (const [k, n] of [["container", 8], ["frachter", 12], ["faehre", 12], ["kreuz", 8], ["fischer", 24], ["segel", 40], ["motor", 40]]) schiffPool[k] = becken(SCHIFF_GEO[k], AUTO_MAT, n, true);
 const FLUGZEUG = mergeGeometries([kiste(0, 0.13, 0, 1.3, 0.15, 0.15, 0xf6f6f6), kiste(0.7, 0.13, 0, 0.12, 0.11, 0.11, 0xf6f6f6), kiste(0.62, 0.17, 0, 0.1, 0.04, 0.12, 0x2a3644), kiste(0.02, 0.1, 0, 0.32, 0.025, 1.3, 0xe9ecef), kiste(-0.58, 0.27, 0, 0.18, 0.24, 0.02, 0x1f4fbf), kiste(-0.6, 0.15, 0, 0.15, 0.02, 0.46, 0xe9ecef), ...[-0.34, 0.34].map((z) => kiste(0.12, 0.05, z, 0.22, 0.08, 0.08, 0x8a8f96)), kiste(0, 0.12, 0, 1.24, 0.02, 0.152, 0x1f4fbf)]);
 const flugPool = becken(FLUGZEUG, AUTO_MAT, 24, true);
-const wellenPool = becken(G_BOX_UNTEN, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55, depthWrite: false }), 600, false);
+const wellenPool = becken(G_BOX_UNTEN, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7, depthWrite: false, toneMapped: false }), 600, false);
 const kranPool = becken(G_BOX_UNTEN, M.flach, 400, true);
 let wi2 = 0, ki2 = 0, spi = {};
 function schiffSetzen(art, x, z, a, v, L, B, schaukeln) {
@@ -2822,6 +2822,7 @@ function stationZiele(d) {
   if (istStation(d)) return [...gKanten.values()].filter((k) => k.station === d.id && k.bahnsteig != null).map((k) => ({ k: k.id, ende: true }));
   return d.gk != null && gKanten.has(d.gk) ? [{ k: d.gk, S: d.gs }] : [];
 }
+function stationWeg(a, b, zugId) { const Z = stationZiele(a).sort((x, y) => (gRes.has(x.k) ? 1 : 0) - (gRes.has(y.k) ? 1 : 0)); for (const z of Z) { const k = gKanten.get(z.k), st = { k: z.k, S: z.S != null ? z.S : k.len / 2 }, w = gleisWeg2(st, stationZiele(b), zugId); if (w) return w; } return null; }
 function stationStart(d) { const Z = stationZiele(d); for (const z of Z) if (!gRes.has(z.k)) { const k = gKanten.get(z.k); return { k: z.k, S: z.S != null ? z.S : k.len / 2 }; } const z = Z[0]; return z ? { k: z.k, S: z.S != null ? z.S : gKanten.get(z.k).len / 2 } : null; }
 function doppelMitte(P) { if (!P || P.art !== "gknoten") return P; const n = gKnoten.get(P.id); if (!n || n.kanten.size !== 1) return P; const k = gKanten.get([...n.kanten][0]); if (!k || k.station || !k.einbahn) return P; const o = [...gKnoten.values()].find((q) => q !== n && q.kanten.size === 1 && abst(q, n) > 0.6 && abst(q, n) < 1.0); return o ? { art: "frei", x: (n.x + o.x) / 2, z: (n.z + o.z) / 2 } : P; }
 function doppelPlaene(plan) {
@@ -2920,7 +2921,7 @@ function zugTakt(dt) {
   const hbf = bh.filter((d) => d.typ === "hauptbahnhof"), fernZiele = hbf.length ? hbf : bh.filter((d) => d.typ !== "haltepunkt"), gb = [...dienste.values()].filter((d) => d.typ === "gueterbahnhof"), gueterZiele = gb.length ? gb : bh;
   if (randPunkt && fernZiele.length && fernZeit <= 0 && zuege.filter((z) => z.art === "fern").length < Math.min(4, fernZiele.length * 2)) { fernZeit = 30; const d = wahl(Math.random, fernZiele), w = gleisWeg2(randPunkt, stationZiele(d), -1); if (w) zugStarten("fern", w, d, { zurueck: true }); }
   if (randPunkt && gueterZiele.length && gueterZeit <= 0 && (industrieListe.length || anzahlTyp("hafen") || gb.length) && zuege.filter((z) => z.art === "gueter").length < 2 + gb.length) { gueterZeit = 55; const d = wahl(Math.random, gueterZiele), w = gleisWeg2(randPunkt, stationZiele(d), -1); if (w) zugStarten("gueter", w, d, { zurueck: true }); }
-  for (const L of zuglinien.values()) { const da = zuege.filter((z) => z.linie === L.id).length, soll = L.zuege || 2; if (da < soll && L.st.length >= 2 && (!L.letzterStart || simZeit - L.letzterStart > 12)) { const i = (da * Math.max(1, Math.floor(L.st.length / soll))) % L.st.length, a = dienste.get(L.st[i]), b = dienste.get(L.st[(i + 1) % L.st.length]), st = a && stationStart(a); if (st && b) { const w = gleisWeg2(st, stationZiele(b), -1); if (w) { zugStarten("linie", w, b, { linie: L.id, i: (i + 1) % L.st.length, farbe: L.farbe, modell: L.modell || "regio" }); L.letzterStart = simZeit; } } } else if (da > soll) { const z = zuege.find((q) => q.linie === L.id && q.halt > 0); if (z) z.weg = true; } }
+  for (const L of zuglinien.values()) { const da = zuege.filter((z) => z.linie === L.id).length, soll = L.zuege || 2; if (da < soll && L.st.length >= 2 && (!L.letzterStart || simZeit - L.letzterStart > 12)) { const i = (da * Math.max(1, Math.floor(L.st.length / soll))) % L.st.length, a = dienste.get(L.st[i]), b = dienste.get(L.st[(i + 1) % L.st.length]); if (a && b) { const w = stationWeg(a, b, -1); if (w) { zugStarten("linie", w, b, { linie: L.id, i: (i + 1) % L.st.length, farbe: L.farbe, modell: L.modell || "regio" }); L.letzterStart = simZeit; } } } else if (da > soll) { const z = zuege.find((q) => q.linie === L.id && q.halt > 0); if (z) z.weg = true; } }
   const lebt = new Set(zuege.filter((z) => !z.weg).map((z) => z.id));
   for (const z of zuege) {
     if (z.weg) continue;
@@ -2997,7 +2998,7 @@ function gleisTippen(p) {
 }
 function zuglinieFertig() {
   if (zuglinieBau.length < 2) return;
-  for (let i = 0; i < zuglinieBau.length; i++) { const a = dienste.get(zuglinieBau[i]), b = dienste.get(zuglinieBau[(i + 1) % zuglinieBau.length]), st = stationStart(a); if (!st || !gleisWeg2(st, stationZiele(b), -1)) { tipp("⚠️ Zwischen diesen Bahnhöfen gibt es kein Gleis.", 3000); return; } }
+  for (let i = 0; i < zuglinieBau.length; i++) { const a = dienste.get(zuglinieBau[i]), b = dienste.get(zuglinieBau[(i + 1) % zuglinieBau.length]); if (!a || !b || !stationWeg(a, b, -1)) { tipp("⚠️ Zwischen diesen Bahnhöfen gibt es kein Gleis.", 3000); return; } }
   merkeRueck(); const nr = Math.max(0, ...[...zuglinien.values()].map((L) => L.nr)) + 1, uB = zuglinieBau.some((id) => dienste.get(id) && dienste.get(id).typ === "ubahnhof"), L = { id: zlId++, nr, farbe: LINIEN_FARBEN[(nr + 3) % LINIEN_FARBEN.length], st: zuglinieBau.slice(), modell: uB ? "sbahn" : "regio", zuege: 2 };
   zuglinien.set(L.id, L); zuglinieBau = []; zuglinieWahl = L.id; frageZu(); gleisModus = "gerade"; busRechnen(); speichernBald(); unterleiste(); lfZeigen("zug", L.id); tipp("🚆 Zuglinie " + nr + " fährt!", 2500);
 }
@@ -3688,7 +3689,7 @@ function zustand() {
   const r = (v) => Math.round(v * 1000) / 1000, k = kennzahlen();
   return {
     v: 3, zonenV: 2, modus: spielModus, fortschritt: { xp: Math.round(xp), ms, maxEinw, ep, entw: [...entw], kredite, monatXp }, karte, kn: KN, gross: grossKarte ? 1 : 0, geld: Math.round(geld), besitz: [...besitz], gekauft, steuern, meilenstein, tage: Math.round(tage * 100) / 100, ids: { n: nId, k: kId, z: zId, g: gId, h: hId, d: dId, hs: haltId, l: linieId },
-    meta: { einwohner: k.e, gespeichert: Date.now() },
+    meta: { einwohner: k.e, gespeichert: Date.now(), name: stadtName || null },
     knoten: [...knoten.values()].map((n) => [n.id, r(n.x), r(n.z), n.manuell ? (n.ampel ? 1 : 0) : -1, n.aussen ? 1 : 0]),
     kanten: [...kanten.values()].map((k) => [k.id, k.a, k.b, r(k.c.x), r(k.c.z), k.typ, k.aussen ? 1 : 0, k.einbahn || 0, k.ebene || 0, k.ring ? 1 : 0, k.busspur ? 1 : 0, k.schienen ? 1 : 0, k.parken ? 1 : 0]), kreisel,
     zellen: [...zellen.values()].map((z) => [z.id, r(z.x), r(z.z), r(z.rot), z.zone, z.g, z.seite, z.i, z.r]),
@@ -3707,8 +3708,9 @@ function allesLeeren() {
   aussenKnoten = null; kreisel.length = 0; for (const k of gKanten.values()) { szene.remove(k.mesh); k.mesh.geometry.dispose(); } gKanten.clear(); gKnoten.clear(); zuege = []; zuglinien.clear(); uebergaenge = []; uebergangNachKante = new Map(); hochListe.length = 0; dienste.clear(); bahnGleiseZeichnen(); warteListe = []; halte.clear(); linien.clear(); linieBau = []; linieWahl = null; dreckMesh.count = 0; kanten.clear(); knoten.clear(); zellen.clear(); zellIndex.clear(); raster.clear(); haeuser.clear(); fahrzeuge = []; leuteListe = [];
   for (const b of baeume) if (b.weg) { b.weg = false; baumSetzen(b); }
 }
+let stadtName = null;
 function zustandRein(d) {
-  spielModus = d.modus || "normal"; geld = d.geld; besitz = new Set(d.kn ? d.besitz : d.besitz.map((t) => { const [i, j] = t.split(",").map(Number), o = (KN - 5) / 2; return (i + o) + "," + (j + o); })); gekauft = d.gekauft || 0; meilenstein = d.meilenstein || 0; tage = d.tage || 0;
+  stadtName = (d.meta && d.meta.name) || null; spielModus = d.modus || "normal"; geld = d.geld; besitz = new Set(d.kn ? d.besitz : d.besitz.map((t) => { const [i, j] = t.split(",").map(Number), o = (KN - 5) / 2; return (i + o) + "," + (j + o); })); gekauft = d.gekauft || 0; meilenstein = d.meilenstein || 0; tage = d.tage || 0;
   if (d.fortschritt) { const f = d.fortschritt; xp = f.xp || 0; ms = f.ms || 0; maxEinw = f.maxEinw || 0; ep = f.ep || 0; entw = new Set(f.entw || []); kredite = f.kredite || []; monatXp = f.monatXp || 0; }
   else { const st = d.meilenstein || 0; ms = Math.max(0, MS.findIndex((x) => x.stufe === st)); xp = MS[ms].xp; ep = MS.slice(1, ms + 1).reduce((a, x) => a + x.ep, 0); maxEinw = (d.haeuser || []).length * 10; }
   if (d.steuern) steuern = d.steuern.w != null ? Object.assign({ w: 9, g: 9, b: 9, i: 9 }, d.steuern) : { w: d.steuern[1] || 9, g: d.steuern[2] || 9, b: 9, i: d.steuern[3] || 9 };
@@ -4416,7 +4418,9 @@ $("kopf").onclick = () => { if ($("budget").hidden) budgetZeigen(); else $("budg
 const menue = $("menue");
 $("menueKnopf").onclick = () => { $("ansichten").hidden = true; menue.hidden = !menue.hidden; $("menueKnopf").setAttribute("aria-expanded", String(!menue.hidden)); };
 $("budgetKnopf").onclick = () => { menue.hidden = true; budgetZeigen(); };
-$("hauptmenueKnopf").onclick = () => { if (spielLaeuft) { clearTimeout(speicherTimer); merke(platzKey(platz), zustand()); } location.href = location.pathname; };
+function standBildMerken() { try { renderer.render(szene, kamera); const c = document.createElement("canvas"); c.width = 240; c.height = 135; const g = c.getContext("2d"), q = renderer.domElement, r = Math.max(240 / q.width, 135 / q.height), w = q.width * r, hh = q.height * r; g.drawImage(q, (240 - w) / 2, (135 - hh) / 2, w, hh); merke(platzKey(platz) + "-bild", c.toDataURL("image/jpeg", 0.7)); } catch (e) { /* egal */ } }
+setInterval(() => { if (spielLaeuft && !demoAn) standBildMerken(); }, 120000);
+$("hauptmenueKnopf").onclick = () => { if (spielLaeuft) { clearTimeout(speicherTimer); const alt = platzLaden(platz); const z = zustand(); if (alt && alt.meta && alt.meta.name) z.meta.name = alt.meta.name; merke(platzKey(platz), z); standBildMerken(); } location.href = location.pathname; };
 function menueKnoepfe() {
   document.querySelectorAll("#zeiten button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.zeit === zeitModus)));
   document.querySelectorAll("#grafik button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.q === stufe)));
@@ -4600,27 +4604,76 @@ function folgenTakt(dt) {
    ================================================================ */
 function platzLaden(n) { const d = lade(platzKey(n), null); return d && d.v === 3 ? d : null; }
 (function altenStandUebernehmen() { if (platzLaden(1)) return; const alt = lade("inselstadt-v2", null); if (alt && alt.v === 2) { alt.v = 3; alt.karte = "insel"; alt.meta = { einwohner: 0, gespeichert: Date.now() }; merke(platzKey(1), alt); } })();
+/* Startmenü: Horizonte */
+const VERSION = "2.0";
+const standBild = (n) => lade(platzKey(n) + "-bild", null);
+function kartenVorschau(typ) {
+  const c = document.createElement("canvas"), N = 96; c.width = c.height = N; const g = c.getContext("2d"), f = kartenFunktion(typ), img = g.createImageData(N, N);
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const x = (i / N - 0.5) * 2 * HALB, z = (j / N - 0.5) * 2 * HALB, d = f(x, z), o = (j * N + i) * 4; const col = d < -4 ? [26, 74, 140] : d < 0 ? [52, 140, 200] : d < 1.4 ? [226, 206, 150] : typ === "wald" && ((i * 7 + j * 13) % 5) ? [52, 120, 60] : [110, 176, 84]; img.data[o] = col[0]; img.data[o + 1] = col[1]; img.data[o + 2] = col[2]; img.data[o + 3] = 255; }
+  g.putImageData(img, 0, 0); const k = N / KN; g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = 1.5; g.strokeRect(Math.floor(KN / 2) * k, Math.floor(KN / 2) * k, k, k); return c.toDataURL();
+}
+const vorschauCache = {};
+function letzterStand() { let best = null, bt = -1; for (let n = 1; n <= 3; n++) { const d = platzLaden(n); const t = d && d.meta ? d.meta.gespeichert || 0 : d ? 1 : -1; if (t > bt) { bt = t; best = d ? n : best; } } return best; }
+function spielWaehlen(o) { if (demoAn) { try { sessionStorage.setItem("horizonte-start", JSON.stringify(o)); } catch (e) { /* egal */ } location.reload(); return; } if (o.laden) starten(o.n, platzLaden(o.n)); else starten(o.n, null, o.karte, o.modus); }
 function hauptmenue(ansicht) {
-  const box = $("hmBox"); const kopf = `<div class="titel"><img src="../../shared/marken/flaressa-zeichen.webp" alt=""><div><h1>Inselstadt</h1><p>Baue deine eigene Stadt – ein Spiel von FLARESSA Gaming</p></div></div>`;
-  if (ansicht && ansicht.neu) {
-    const m = ansicht.modus || "leicht";
-    box.innerHTML = kopf + `<h3>Neue Stadt auf Platz ${ansicht.neu}</h3><div class="modi"><button type="button" class="modus${m === "leicht" ? " an" : ""}" data-modus="leicht"><span class="em">🟢</span><b>Leicht</b><small>Du startest mit einem fertigen kleinen Dorf – Straßen, Häuser, Läden, Strom, Wasser, Feuerwehr, Schule und Buslinie sind schon da. Doppeltes Startgeld, günstiger Unterhalt, geduldige Bürger.</small></button><button type="button" class="modus${m === "normal" ? " an" : ""}" data-modus="normal"><span class="em">⚪</span><b>Normal</b><small>Leere Karte – du baust alles selbst. Die ersten 8 Wochen gibt es einen Gründerbonus (halber Unterhalt).</small></button></div><h3>Wähle eine Karte</h3><div class="karten">${Object.keys(KARTEN).map((k) => `<button class="karte" type="button" data-karte="${k}"><span class="em">${KARTEN[k].em}</span><b>${KARTEN[k].name}</b><small>${KARTEN[k].text}</small><small>Startgeld: ${euro(KARTEN[k].geld * (m === "leicht" ? 2 : 1))}</small></button>`).join("")}</div><button class="zurueck" type="button" id="hmZurueck">‹ Zurück</button>`;
-    box.querySelectorAll("[data-modus]").forEach((b) => { b.onclick = () => hauptmenue({ neu: ansicht.neu, modus: b.dataset.modus }); });
-    box.querySelectorAll("[data-karte]").forEach((b) => { b.onclick = () => starten(ansicht.neu, null, b.dataset.karte, m); });
-    $("hmZurueck").onclick = () => hauptmenue();
-    return;
+  const box = $("hmBox"), menue = $("hauptmenue"); ansicht = ansicht || {};
+  const kopf = `<div class="hm-logo"><img src="bilder/horizonte-zeichen.svg" alt=""><div><h1 class="hm-wort">HORIZONTE</h1><div class="hm-marke"><img src="../../shared/marken/flaressa-zeichen.webp" alt="">FLARESSA Gaming</div></div></div>`;
+  const zurueck = `<button class="zurueck" type="button" id="hmZurueck">‹ Zurück</button>`;
+  const fertig = () => { const z = $("hmZurueck"); if (z) z.onclick = () => hauptmenue(); };
+  if (ansicht.neu) {
+    const m = ansicht.modus || "leicht", frei = [1, 2, 3].filter((n) => !platzLaden(n)), platz = ansicht.platz || frei[0] || null;
+    const platzWahl = frei.length ? `<p class="hm-text">Wird gespeichert auf <b>Platz ${platz}</b>.</p>` : `<p class="hm-text">Alle Plätze sind belegt. Welcher Spielstand soll <b>überschrieben</b> werden?</p><div class="hm-chips">${[1, 2, 3].map((n) => `<button type="button" data-platz="${n}" class="${platz === n ? "an" : ""}">Platz ${n}</button>`).join("")}</div>`;
+    box.innerHTML = `<div class="hm-seite">${kopf}<h2>Neues Spiel</h2>${platzWahl}<div class="modi"><button type="button" class="modus${m === "leicht" ? " an" : ""}" data-modus="leicht"><span class="em">🟢</span><b>Leicht</b><small>Du startest mit einem fertigen kleinen Dorf – Straßen, Häuser, Läden, Strom, Wasser, Feuerwehr, Schule und Buslinie sind schon da. Doppeltes Startgeld, günstiger Unterhalt, geduldige Bürger.</small></button><button type="button" class="modus${m === "normal" ? " an" : ""}" data-modus="normal"><span class="em">⚪</span><b>Normal</b><small>Leere Karte – du baust alles selbst. Die ersten 8 Wochen gibt es einen Gründerbonus (halber Unterhalt).</small></button></div><h2>Karte</h2><div class="karten mitbild">${Object.keys(KARTEN).map((k) => `<button class="karte" type="button" data-karte="${k}"${platz ? "" : " disabled"}><img class="kvorschau" src="${vorschauCache[k] || (vorschauCache[k] = kartenVorschau(k))}" alt="Vorschau ${KARTEN[k].name}"><b>${KARTEN[k].em} ${KARTEN[k].name}</b><small>${KARTEN[k].text}</small><small>Startgeld: ${euro(KARTEN[k].geld * (m === "leicht" ? 2 : 1))}</small></button>`).join("")}</div>${zurueck}</div>`;
+    box.querySelectorAll("[data-modus]").forEach((b) => { b.onclick = () => hauptmenue({ neu: 1, modus: b.dataset.modus, platz }); });
+    box.querySelectorAll("[data-platz]").forEach((b) => { b.onclick = () => hauptmenue({ neu: 1, modus: m, platz: +b.dataset.platz }); });
+    box.querySelectorAll("[data-karte]").forEach((b) => { b.onclick = () => { if (!platz) return; if (platzLaden(platz)) { try { localStorage.removeItem(platzKey(platz)); localStorage.removeItem(platzKey(platz) + "-bild"); } catch (e) { /* egal */ } } spielWaehlen({ n: platz, karte: b.dataset.karte, modus: m }); }; });
+    fertig(); return;
   }
-  let h = kopf + "<h3>Deine Städte</h3>";
-  for (let n = 1; n <= 3; n++) {
-    const d = platzLaden(n);
-    if (d) { const K = KARTEN[d.karte] || KARTEN.insel, w = Math.floor((d.tage || 0) / 7) + 1; h += `<div class="platz glas"><span class="em">${K.em}</span><div class="was"><b>${K.name}</b><small>👥 ${zahl(d.meta ? d.meta.einwohner : 0)} Einwohner · Woche ${w} · ${MEILEN[d.meilenstein || 0].name}</small></div><button class="weg" type="button" data-weg="${n}" aria-label="Löschen">🗑️</button><button class="los" type="button" data-los="${n}">Weiterspielen</button></div>`; }
-    else h += `<div class="platz glas"><span class="em">➕</span><div class="was"><b>Freier Platz ${n}</b><small>Starte eine neue Stadt</small></div><button class="los" type="button" data-neu="${n}">Neue Stadt</button></div>`;
+  if (ansicht.staende) {
+    let h = `<div class="hm-seite">${kopf}<h2>Spielstände</h2>`;
+    for (let n = 1; n <= 3; n++) {
+      const d = platzLaden(n), bild = standBild(n);
+      if (d) { const K = KARTEN[d.karte] || KARTEN.insel, w = Math.floor((d.tage || 0) / 7) + 1, name = (d.meta && d.meta.name) || K.name, wann = d.meta && d.meta.gespeichert ? new Date(d.meta.gespeichert).toLocaleDateString("de-DE") : ""; h += `<div class="stand">${bild ? `<img src="${bild}" alt="">` : `<div class="leer">${K.em}</div>`}<div><b data-name="${n}">${name.replace(/</g, "&lt;")}</b><br><small style="color:var(--leise)">${d.modus === "leicht" ? "🟢 Leicht" : "⚪ Normal"} · 👥 ${zahl(d.meta ? d.meta.einwohner : 0)} · Woche ${w} · ${MEILEN[d.meilenstein || 0].name}${wann ? " · " + wann : ""}</small><div class="reihe"><button class="chip" type="button" data-los="${n}">▶ Spielen</button><button class="chip" type="button" data-umben="${n}">✏️ Umbenennen</button><button class="chip gefahr" type="button" data-weg="${n}">🗑️ Löschen</button></div></div></div>`; }
+      else h += `<div class="stand"><div class="leer">➕</div><div><b>Freier Platz ${n}</b><br><small style="color:var(--leise)">Hier ist noch keine Stadt.</small><div class="reihe"><button class="chip" type="button" data-neu="${n}">Neue Stadt</button></div></div></div>`;
+    }
+    box.innerHTML = h + `<p class="hm-text" style="font-size:.85rem">Alles wird automatisch auf diesem Gerät gespeichert.</p>${zurueck}</div>`;
+    box.querySelectorAll("[data-los]").forEach((b) => { b.onclick = () => spielWaehlen({ n: +b.dataset.los, laden: true }); });
+    box.querySelectorAll("[data-neu]").forEach((b) => { b.onclick = () => hauptmenue({ neu: 1, platz: +b.dataset.neu }); });
+    box.querySelectorAll("[data-umben]").forEach((b) => { b.onclick = () => { const n = +b.dataset.umben, el = box.querySelector(`[data-name="${n}"]`), d = platzLaden(n); if (!el || !d) return; const inp = document.createElement("input"); inp.value = el.textContent; inp.maxLength = 30; inp.setAttribute("aria-label", "Name der Stadt"); el.replaceWith(inp); inp.focus(); inp.select(); const ok = () => { d.meta = d.meta || {}; d.meta.name = inp.value.trim().slice(0, 30) || null; merke(platzKey(n), d); hauptmenue({ staende: 1 }); }; inp.onkeydown = (e) => { if (e.key === "Enter") ok(); if (e.key === "Escape") hauptmenue({ staende: 1 }); }; inp.onblur = ok; }; });
+    box.querySelectorAll("[data-weg]").forEach((b) => { let bereit = 0; b.onclick = () => { if (Date.now() - bereit > 3000) { bereit = Date.now(); b.textContent = "Wirklich löschen?"; return; } try { localStorage.removeItem(platzKey(+b.dataset.weg)); localStorage.removeItem(platzKey(+b.dataset.weg) + "-bild"); } catch (e) { /* egal */ } hauptmenue({ staende: 1 }); }; });
+    fertig(); return;
   }
-  h += `<p style="font-size:.85rem">Tipp: Alles wird automatisch auf diesem Gerät gespeichert. Steuerung: zwei Finger drehen und zoomen.</p>`;
-  box.innerHTML = h;
-  box.querySelectorAll("[data-los]").forEach((b) => { b.onclick = () => { const n = +b.dataset.los; starten(n, platzLaden(n)); }; });
-  box.querySelectorAll("[data-neu]").forEach((b) => { b.onclick = () => hauptmenue({ neu: +b.dataset.neu }); });
-  box.querySelectorAll("[data-weg]").forEach((b) => { let bereit = 0; b.onclick = () => { if (Date.now() - bereit > 3000) { bereit = Date.now(); b.textContent = "Sicher?"; return; } try { localStorage.removeItem(platzKey(+b.dataset.weg)); } catch (e) { /* egal */ } hauptmenue(); }; });
+  if (ansicht.einstellungen) {
+    box.innerHTML = `<div class="hm-seite">${kopf}<h2>Einstellungen</h2><div><b>🖥️ Grafik</b><p class="hm-text">Niedrig läuft auch auf älteren Handys flüssig, Hoch sieht am schönsten aus.</p><div class="hm-chips">${[["niedrig", "Niedrig"], ["mittel", "Mittel"], ["hoch", "Hoch"]].map(([k, n]) => `<button type="button" data-qual="${k}" class="${stufe === k ? "an" : ""}">${n}</button>`).join("")}</div></div><div><b>🌗 Tageszeit</b><p class="hm-text">Automatisch läuft ein ganzer Tag mit Nacht und Lichtern.</p><div class="hm-chips">${[["auto", "Automatisch"], ["tag", "Immer Tag"], ["abend", "Abend"], ["nacht", "Nacht"]].map(([k, n]) => `<button type="button" data-zeitw="${k}" class="${zeitModus === k ? "an" : ""}">${n}</button>`).join("")}</div></div>${zurueck}</div>`;
+    box.querySelectorAll("[data-qual]").forEach((b) => { b.onclick = () => { qualitaet(b.dataset.qual); hauptmenue({ einstellungen: 1 }); }; });
+    box.querySelectorAll("[data-zeitw]").forEach((b) => { b.onclick = () => { zeitModus = b.dataset.zeitw; merke("inselstadt-zeit", zeitModus); zeitZiel = zeitModus === "auto" ? null : ZEITEN[zeitModus]; hauptmenue({ einstellungen: 1 }); }; });
+    fertig(); return;
+  }
+  if (ansicht.hilfe) {
+    box.innerHTML = `<div class="hm-seite">${kopf}<h2>So spielst du</h2><ol class="hm-text" style="padding-left:20px;display:grid;gap:6px"><li><b>🛣️ Straßen</b> bauen: Anfang antippen, Ende antippen, ✓.</li><li><b>🏘️ Zonen</b> neben die Straßen malen: Wohnen, Gewerbe, Büros, Industrie. Häuser wachsen von selbst.</li><li><b>🏛️ Dienste</b> bauen: Strom, Wasser, Abwasser und Müll. Polizei, Feuerwehr, Ärzte und Schulen machen die Leute glücklich.</li><li><b>🚌 Nahverkehr</b>: Haltestellen bauen, dann eine Linie anlegen. Mit 🛤️ Gleisen und Bahnhöfen fahren Züge.</li><li><b>💶 Geld</b>: Tipp oben auf dein Geld für Steuern und Budget. Macht die Stadt Verlust, sagt dir das Spiel, woran es liegt.</li><li><b>📈 Fortschritt</b>: Mit Erfahrung erreichst du Meilensteine und schaltest Neues frei.</li></ol><p class="hm-text"><b>Steuerung:</b> Mit der Maus ziehen verschiebt die Karte, rechts ziehen dreht, das Mausrad zoomt. Am Handy: ein Finger schiebt, zwei Finger drehen und zoomen. Bahnhöfe drehst du mit R.</p>${zurueck}</div>`;
+    fertig(); return;
+  }
+  if (ansicht.ueber) {
+    box.innerHTML = `<div class="hm-seite">${kopf}<h2>Über Horizonte</h2><p class="hm-text">Horizonte ist ein Städtebau-Spiel von <b>FLARESSA Gaming</b>, der Spiele-Marke der OMNIVIA Group. Du baust aus einem leeren Stück Land eine lebendige Stadt – mit Verkehr, Bussen, Zügen, Häfen und einem Flughafen.</p><p class="hm-text">Es läuft direkt im Browser, ohne Werbung und ohne Konto. Deine Spielstände bleiben auf diesem Gerät.</p><p class="hm-text" style="font-size:.85rem">Version ${VERSION} · 3D mit three.js · Schrift: Space Grotesk</p><div class="hm-chips"><a class="chip" href="../horizonte/">Zur Spiele-Seite</a><a class="chip" href="../">FLARESSA Gaming</a></div>${zurueck}</div>`;
+    fertig(); return;
+  }
+  const letzt = letzterStand(), ld = letzt && platzLaden(letzt), K = ld && (KARTEN[ld.karte] || KARTEN.insel);
+  box.innerHTML = `<div style="display:grid;gap:22px">${kopf}<div class="hm-knoepfe">${ld ? `<button class="hm-k haupt" type="button" id="hmWeiter"><span class="em">▶</span><span>Weiterspielen<small>${((ld.meta && ld.meta.name) || K.name).replace(/</g, "&lt;")} · 👥 ${zahl(ld.meta ? ld.meta.einwohner : 0)}</small></span></button>` : ""}<button class="hm-k${ld ? "" : " haupt"}" type="button" id="hmNeu"><span class="em">✚</span><span>Neues Spiel<small>Karte und Schwierigkeit wählen</small></span></button><button class="hm-k" type="button" id="hmStaende"><span class="em">💾</span>Spielstände</button><button class="hm-k" type="button" id="hmEinst"><span class="em">⚙️</span>Einstellungen</button><button class="hm-k" type="button" id="hmHilfe"><span class="em">❓</span>Hilfe</button><button class="hm-k" type="button" id="hmUeber"><span class="em">ℹ️</span>Über</button></div></div>`;
+  if (ld) $("hmWeiter").onclick = () => spielWaehlen({ n: letzt, laden: true });
+  $("hmNeu").onclick = () => hauptmenue({ neu: 1 }); $("hmStaende").onclick = () => hauptmenue({ staende: 1 }); $("hmEinst").onclick = () => hauptmenue({ einstellungen: 1 }); $("hmHilfe").onclick = () => hauptmenue({ hilfe: 1 }); $("hmUeber").onclick = () => hauptmenue({ ueber: 1 });
+  menue.hidden = false;
+}
+/* Hintergrund im Menü: Kameraflug über ein Beispiel-Dorf */
+let demoAn = false;
+function demoStarten() {
+  if (stufe === "niedrig" || matchMedia("(prefers-reduced-motion: reduce)").matches || /demo=0/.test(location.search)) return;
+  setTimeout(() => {
+    try {
+      grossKarte = true; weltBauen("kueste"); netzGeaendert(); if (!aussenKnoten) aussenBauen(); spielModus = "leicht"; dorfBauen(); geld = 0; zeit = ZEITEN.abend - 0.12; zeitZiel = null;
+      demoAn = true; document.body.classList.add("demo"); $("hauptmenue").classList.add("demo"); steuerung.autoRotate = true; steuerung.autoRotateSpeed = 0.45; steuerung.enableZoom = false; steuerung.enablePan = false;
+      const t = steuerung.target; kamera.position.set(t.x + 12, 9, t.z + 15); steuerung.update(); tempo = 1; renderer.setAnimationLoop(schleife);
+    } catch (e) { console.warn("Demo", e); }
+  }, 80);
 }
 /* Leichter Modus: ein fertiges kleines Dorf am Ende der Zufahrt */
 function dorfBauen() {
@@ -4654,8 +4707,8 @@ function starten(n, daten, neueKarte, modus) {
     if (!aussenKnoten) aussenBauen(); aussenGleisBauen();
     if (!daten && leicht()) { try { dorfBauen(); } catch (e) { console.warn("Dorf", e); } }
     spielLaeuft = true; document.body.classList.add("laeuft"); if (matchMedia("(pointer:coarse)").matches) vollbildQuer(); speichernBald(); unterleiste(); zeitKnoepfe(); menueKnoepfe();
-    if (!daten && leicht()) { $("info").hidden = true; infoZeigen(`<b>🟢 Willkommen in deinem Dorf!</b>Alles Wichtige steht schon: Strom, Wasser, Müll, Feuerwehr, Polizei, Arzt, Schule und eine Buslinie.<br>Bau einfach weiter: 🛣️ neue Straßen, 🏘️ Zonen daneben malen – das Dorf wächst zur Stadt.`, 12000); werkzeugWaehlen("ansehen"); }
-    else if (!daten) { $("info").hidden = true; infoZeigen(`<b>${KARTEN[karte].em} Willkommen in deiner neuen Stadt!</b>1. 🛣️ Straßen: Anfang antippen, Ende antippen, ✓<br>2. 🏘️ Zonen: Felder neben der Straße anmalen<br>3. Zuschauen: Häuser wachsen, Autos fahren, Steuern bringen Geld<br><small>Tipp oben auf dein Geld für Budget &amp; Steuern.</small>`, 12000); werkzeugWaehlen("strasse"); }
+    if (!daten && leicht()) { $("info").hidden = true; infoZeigen(`<b>🌅 Willkommen bei Horizonte!</b>Dein Dorf steht schon. Alles Wichtige steht schon: Strom, Wasser, Müll, Feuerwehr, Polizei, Arzt, Schule und eine Buslinie.<br>Bau einfach weiter: 🛣️ neue Straßen, 🏘️ Zonen daneben malen – das Dorf wächst zur Stadt.`, 12000); werkzeugWaehlen("ansehen"); }
+    else if (!daten) { $("info").hidden = true; infoZeigen(`<b>🌅 Willkommen bei Horizonte!</b>1. 🛣️ Straßen: Anfang antippen, Ende antippen, ✓<br>2. 🏘️ Zonen: Felder neben der Straße anmalen<br>3. Zuschauen: Häuser wachsen, Autos fahren, Steuern bringen Geld<br><small>Tipp oben auf dein Geld für Budget &amp; Steuern.</small>`, 12000); werkzeugWaehlen("strasse"); }
     else tipp("Willkommen zurück!", 2500);
     renderer.setAnimationLoop(schleife);
     setTimeout(() => $("laden").classList.add("weg"), 200);
@@ -4703,4 +4756,8 @@ function schleife() {
 
 /* Los geht's */
 qualitaet(stufe);
-hauptmenue();
+(function los() {
+  let st = null; try { st = JSON.parse(sessionStorage.getItem("horizonte-start") || "null"); sessionStorage.removeItem("horizonte-start"); } catch (e) { st = null; }
+  if (st && st.n) { if (st.laden) { const d = platzLaden(st.n); if (d) { starten(st.n, d); return; } } else { starten(st.n, null, st.karte, st.modus); return; } }
+  hauptmenue(); demoStarten();
+})();

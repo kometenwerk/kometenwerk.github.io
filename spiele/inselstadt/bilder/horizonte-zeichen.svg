@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Horizonte">
+  <defs>
+    <linearGradient id="himmel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b2a8f"/><stop offset=".55" stop-color="#c2489a"/><stop offset="1" stop-color="#ff9a3c"/></linearGradient>
+    <linearGradient id="sonne" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#ff8a3c"/></linearGradient>
+    <linearGradient id="see" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f5fa8"/><stop offset="1" stop-color="#0e2a55"/></linearGradient>
+    <clipPath id="rund"><rect x="8" y="8" width="240" height="240" rx="58"/></clipPath>
+  </defs>
+  <g clip-path="url(#rund)">
+    <rect x="0" y="0" width="256" height="256" fill="url(#himmel)"/>
+    <circle cx="128" cy="150" r="58" fill="url(#sonne)"/>
+    <circle cx="74" cy="62" r="2.4" fill="#fff" opacity=".85"/><circle cx="196" cy="48" r="1.8" fill="#fff" opacity=".7"/><circle cx="168" cy="80" r="1.4" fill="#fff" opacity=".6"/>
+    <path fill="#1a1440" d="M0 150 H30 V122 H48 V136 H60 V100 H82 V130 H94 V116 H104 V84 L114 74 L124 84 V150 H132 V108 H150 V126 H160 V92 H184 V134 H196 V118 H214 V140 H226 V128 H256 V160 H0 Z"/>
+    <g fill="#ffd36a" opacity=".9"><rect x="66" y="108" width="4" height="5"/><rect x="74" y="108" width="4" height="5"/><rect x="66" y="118" width="4" height="5"/><rect x="110" y="94" width="4" height="5"/><rect x="110" y="104" width="4" height="5"/><rect x="166" y="100" width="4" height="5"/><rect x="176" y="100" width="4" height="5"/><rect x="166" y="112" width="4" height="5"/><rect x="138" y="116" width="4" height="5"/></g>
+    <rect x="0" y="158" width="256" height="98" fill="url(#see)"/>
+    <rect x="0" y="156" width="256" height="4" fill="#ffd36a"/>
+    <g stroke="#ffb86a" stroke-linecap="round" opacity=".85"><path d="M92 178 H164" stroke-width="6"/><path d="M104 196 H152" stroke-width="5"/><path d="M114 212 H142" stroke-width="4"/><path d="M122 226 H134" stroke-width="3"/></g>
+    <path d="M40 196 q8 -6 16 0 t16 0" fill="none" stroke="#7fb8ff" stroke-width="2.5" opacity=".6"/><path d="M186 214 q8 -6 16 0 t16 0" fill="none" stroke="#7fb8ff" stroke-width="2.5" opacity=".6"/>
+  </g>
+</svg>
