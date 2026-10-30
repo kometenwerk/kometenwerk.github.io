@@ -227,7 +227,8 @@
     // Begrüßung – nach dem Kanal-Intro
     var z = Z;
     if (Z.format !== "hoch") setTimeout(function () { if (Z === z) sag("kanal_intro", 10); }, 1300);
-    if (!wb()) setTimeout(function () { if (Z !== z) return; z.letzterSatz = -99; sag(Z.spiel === "krawallzoo" ? (Z.format === "hoch" ? "short_intro" : "intro") : (Z.format === "hoch" ? "hz_short_intro" : "hz_intro_" + Z.spiel), 9); }, Z.intro * 1000 + 300);
+    if (!wb()) setTimeout(function () { if (Z !== z) return; z.letzterSatz = -99; sag(Z.spiel === "krawallzoo" ? (Z.format === "hoch" ? "short_intro" : "intro") : (Z.format === "hoch" ? "hz_short_intro" : "hz_intro_" + Z.spiel), 9);
+      if (Z.spiel === "bauen") { var warte = function () { if (Z !== z) return; if (z.spricht) return setTimeout(warte, 300); ideeSagen(); }; setTimeout(warte, 800); } }, Z.intro * 1000 + 300);
   }
   function aufnahmeStarten() {
     var spur = Z.lw.captureStream(30);
@@ -306,7 +307,12 @@
       } else if (d.type === "loesung") {
         if (d.ok) s.geloest.push(d.art);
         sag(d.ok ? "hz_loesung_" + d.art : "hz_loesung_nicht", 9) || (d.ok && sag("hz_loesung", 9));
-      } else if (d.type === "einwohner") { s.einwohner = Math.max(s.einwohner || 0, d.zahl); Z.einwText = d.zahl; sag("hz_einwohner", 4); merkeMoment(2, d.zahl + " EINWOHNER!"); }
+      } else if (d.type === "idee") {
+        Z.idee = d; s.idee = d;
+        if (Z.t > Z.intro + 6) ideeSagen();
+      } else if (d.type === "bedarf") { sag("hz_bedarf_" + d.art, 7); }
+      else if (d.type === "extra") { Z.staunen = 1; sag("hz_extra_" + d.art, 7); merkeMoment(3, { riesenrad: "RIESENRAD!", schwimmbad: "PLATSCH!", hafen: "AHOI!", park: "SO GRÜN!", sport: "TOOOR!" }[d.art] || "WOW!"); }
+      else if (d.type === "einwohner") { s.einwohner = Math.max(s.einwohner || 0, d.zahl); Z.einwText = d.zahl; sag("hz_einwohner", 4); merkeMoment(2, d.zahl + " EINWOHNER!"); }
       return;
     }
     switch (d.type) {
@@ -341,6 +347,13 @@
         s.letzterSieger = d.sieger;
         break;
     }
+  }
+  // Thorsten verrät seine Bau-Idee: Form, Schwerpunkt, Mut – nacheinander
+  function ideeSagen() {
+    var d = Z && Z.idee; if (!d || Z.ideeGesagt) return; Z.ideeGesagt = true;
+    var folge = [{ g: "hz_fokus_" + d.fokus, p: 8 }, { g: "hz_mut_" + d.mut, p: 8 }];
+    var f = function () { if (!Z) return; var n = folge.shift(); if (n) Z.warteschlange.push(n); };
+    Z.letzterSatz = -99; Z.spricht = null; sag("hz_idee_" + d.form, 9); Z.warteschlange = []; f(); f();
   }
   // Satz aus einer Gruppe sprechen – mit Vorrang, damit Thorsten sich nicht selbst unterbricht
   function sag(gruppe, prio) {
