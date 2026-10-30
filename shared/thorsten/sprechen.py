@@ -47,6 +47,8 @@ def main():
     tempo = float(st.get("tempo", 0.9))
     schneller = float(st.get("schneller", 1.0))  # zusätzlich beschleunigen, ohne dass die Stimme höher klingt
     saetze = daten["saetze"]
+    gefuehle = {k: v for k, v in (st.get("gefuehle") or {}).items() if isinstance(v, dict)}
+    gruppen_gefuehl = st.get("gruppen_gefuehl") or {}
 
     ids = [s["id"] for s in saetze]
     if len(ids) != len(set(ids)):
@@ -79,13 +81,20 @@ def main():
     neu, fertig = 0, []
     for s in saetze:
         text = sprechbar(s["text"])
-        h = hashlib.sha1(f"{modell}|{sprecher}|{tempo}|{schneller}|{text}".encode("utf8")).hexdigest()[:12]
+        gf_name = s.get("gefuehl") or gruppen_gefuehl.get(s["gruppe"])
+        gf = gefuehle.get(gf_name) or {}
+        g_tempo = tempo * float(gf.get("tempo", 1.0))
+        hoehe = float(gf.get("hoehe", 1.0))
+        laut = float(gf.get("laut", -15))
+        ausdruck = float(gf.get("ausdruck", 0.667))
+        extra_h = f"|{gf_name}|{g_tempo}|{hoehe}|{laut}|{ausdruck}" if gf else ""
+        h = hashlib.sha1(f"{modell}|{sprecher}|{tempo}|{schneller}|{text}{extra_h}".encode("utf8")).hexdigest()[:12]
         ziel = TON / f"{s['id']}.mp3"
         vorher = alt.get(s["id"])
         if vorher and vorher.get("hash") == h and ziel.exists():
-            fertig.append(dict(vorher, **{k: s[k] for k in ("gruppe", "text", "zahl", "nr") if k in s}))
+            fertig.append(dict(vorher, **{k: s[k] for k in ("gruppe", "text", "zahl", "nr") if k in s}, **({"gefuehl": gf_name} if gf_name else {})))
             continue
-        conf = SynthesisConfig(length_scale=grund * tempo, noise_scale=0.667, noise_w_scale=0.8,
+        conf = SynthesisConfig(length_scale=grund * g_tempo, noise_scale=ausdruck, noise_w_scale=0.8,
                                normalize_audio=True, **({"speaker_id": sprecher} if sprecher is not None else {}))
         roh = b"".join(c.audio_int16_bytes for c in voice.synthesize(text, conf))
         # Stille vorn und hinten weg, dann beschleunigen (atempo verändert die Tonhöhe nicht)
@@ -94,10 +103,12 @@ def main():
             tempi.append("atempo=2.0"); rest /= 2.0
         if abs(rest - 1.0) > 0.01:
             tempi.append(f"atempo={rest:.3f}")
-        filter_ = ",".join(["silenceremove=start_periods=1:start_threshold=-42dB:start_silence=0.04",
+        # Tonhöhe fürs Gefühl: höher abspielen, Tempo wieder ausgleichen
+        hoch = [f"asetrate={int(rate * hoehe)}", f"aresample={rate}", f"atempo={1 / hoehe:.4f}"] if abs(hoehe - 1) > 0.005 else []
+        filter_ = ",".join(hoch + ["silenceremove=start_periods=1:start_threshold=-42dB:start_silence=0.04",
                             "areverse", "silenceremove=start_periods=1:start_threshold=-42dB:start_silence=0.12", "areverse"]
                            + tempi + ["highpass=f=80", "acompressor=threshold=-20dB:ratio=3:attack=8:release=180",
-                                      "loudnorm=I=-15:TP=-1.5:LRA=11", "alimiter=limit=0.97", "adelay=60"])
+                                      f"loudnorm=I={laut}:TP=-1.5:LRA=11", "alimiter=limit=0.97", "adelay=60"])
         p = subprocess.run(
             ["ffmpeg", "-y", "-loglevel", "error", "-f", "s16le", "-ar", str(rate), "-ac", "1", "-i", "pipe:0",
              "-af", filter_, "-ar", "44100", "-c:a", "libmp3lame", "-b:a", "80k", str(ziel)],
@@ -115,6 +126,8 @@ def main():
         for extra in ("zahl", "nr"):
             if extra in s:
                 eintrag[extra] = s[extra]
+        if gf_name:
+            eintrag["gefuehl"] = gf_name
         fertig.append(eintrag)
         neu += 1
         log(f"  {s['id']}: {dauer} s")

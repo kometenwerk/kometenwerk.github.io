@@ -2212,7 +2212,7 @@ function updateGem(dt){
   const c=[0,0];for(const f of G.fighters)if(!f.dead)c[f.team]+=f.gems;G.gemCount=c;
   const lead=c[0]>=10&&c[0]>c[1]?0:c[1]>=10&&c[1]>c[0]?1:null;
   if(lead===null){if(G.gemLead!==null)banner('Countdown gestoppt!',1.4);G.gemLead=null;}
-  else if(G.gemLead!==lead){G.gemLead=lead;G.gemCD=15;banner(lead===G.p.team?'Haltet die Früchte 15 Sekunden!':'Die Gegner haben 10 Früchte!',2);}
+  else if(G.gemLead!==lead){G.gemLead=lead;G.gemCD=15;banner(lead===G.p.team?'Haltet die Früchte 15 Sekunden!':'Die Gegner haben 10 Früchte!',2);zuEvent('fuehrung',{fuerMich:lead===G.p.team});}
   else{G.gemCD-=dt;if(G.gemCD<=0){finishMatch({winner:lead});return;}}
   if(G.time<=0)finishMatch(c[0]===c[1]?{draw:true}:{winner:c[0]>c[1]?0:1});
 }
@@ -2239,6 +2239,7 @@ function scoreGoal(team){
   const b=G.ball;b.vx=b.vy=0;b.carrier=null;
   for(let i=0;i<40;i++)G.parts.push({x:b.x,y:b.y-20,vx:rnd(-400,400),vy:rnd(-500,100),g:500,life:rnd(0.6,1.2),max:1.2,r:rnd(3,6),color:['#ffcf33','#3ef2ff','#ff3d8b','#9be15d'][i%4]});
   banner(team===G.p.team?'TOR für dein Team!':'Gegentor!',2);G.hype=2;G.flash=0.2;
+  if(ZU){const ich=G.score[G.p.team],du=G.score[1-G.p.team];zuEvent('tor',{fuerMich:team===G.p.team,selbst:G.ball&&G.ball.last===G.p,stand:ich+':'+du,ausgleich:ich===du,fuehrung:ich>du});}
   addFeed(team===G.p.team?'Euer Team hat getroffen!':'Die Gegner haben getroffen!',team===G.p.team?'#4fb8ff':'#ff4a6b');
   if(G.score[team]>=2)finishMatch({winner:team});else G.resetT=2.2;
 }

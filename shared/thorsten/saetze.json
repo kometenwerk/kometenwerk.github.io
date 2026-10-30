@@ -3,7 +3,53 @@
   "stimme": {
     "modell": "de_DE-thorsten-high",
     "tempo": 0.92,
-    "schneller": 1.0
+    "schneller": 1.0,
+    "gefuehle": {
+      "info": "So klingt Thorsten je nach Gefühl. tempo < 1 = schneller, hoehe > 1 = höher, laut = Lautstärke in dB (Ziel -15).",
+      "wut": {
+        "tempo": 0.84,
+        "hoehe": 1.03,
+        "laut": -12.5,
+        "ausdruck": 0.85
+      },
+      "jubel": {
+        "tempo": 0.83,
+        "hoehe": 1.07,
+        "laut": -12.5,
+        "ausdruck": 0.85
+      },
+      "schock": {
+        "tempo": 0.86,
+        "hoehe": 1.05,
+        "laut": -13.5,
+        "ausdruck": 0.8
+      },
+      "trauer": {
+        "tempo": 1.1,
+        "hoehe": 0.95,
+        "laut": -17.5,
+        "ausdruck": 0.6
+      },
+      "frech": {
+        "tempo": 0.9,
+        "hoehe": 1.02,
+        "laut": -14.5,
+        "ausdruck": 0.75
+      }
+    },
+    "gruppen_gefuehl": {
+      "ko_raus": "wut",
+      "kz_frueh_raus": "wut",
+      "kz_pech": "wut",
+      "niederlage": "trauer",
+      "sieg": "jubel",
+      "kz_endlich": "jubel",
+      "ko_treffer": "frech",
+      "kz_knapp": "schock",
+      "hz_problem_brand": "schock",
+      "hz_problem": "schock",
+      "hz_loesung_nicht": "trauer"
+    }
   },
   "saetze": [
     {
@@ -1266,6 +1312,288 @@
       "id": "hz-extra-sport",
       "gruppe": "hz_extra_sport",
       "text": "Ein Sportplatz! Wer kommt zum Kicken?"
+    },
+    {
+      "id": "emo-gekillt-1",
+      "gruppe": "emo_gekillt",
+      "text": "Nein, nein, nein! Wer war das?!",
+      "gefuehl": "wut"
+    },
+    {
+      "id": "emo-gekillt-2",
+      "gruppe": "emo_gekillt",
+      "text": "Was?! Das gibt's doch nicht! Ich war fast weg!",
+      "gefuehl": "wut"
+    },
+    {
+      "id": "emo-gekillt-3",
+      "gruppe": "emo_gekillt",
+      "text": "Ahhh! Das war unfair! Komplett unfair!",
+      "gefuehl": "wut"
+    },
+    {
+      "id": "emo-gekillt-4",
+      "gruppe": "emo_gekillt",
+      "text": "Neeein! Ich komme wieder, versprochen!",
+      "gefuehl": "wut"
+    },
+    {
+      "id": "emo-gekillt-5",
+      "gruppe": "emo_gekillt",
+      "text": "Wie bitte?! Von hinten? Echt jetzt?!",
+      "gefuehl": "wut"
+    },
+    {
+      "id": "emo-gekillt-6",
+      "gruppe": "emo_gekillt",
+      "text": "Boah! Das zahle ich dir heim!",
+      "gefuehl": "wut"
+    },
+    {
+      "id": "tor-gegen-1",
+      "gruppe": "tor_gegen",
+      "text": "Nein! Das darf doch nicht wahr sein! Wer verteidigt hier eigentlich?!",
+      "gefuehl": "wut"
+    },
+    {
+      "id": "tor-gegen-2",
+      "gruppe": "tor_gegen",
+      "text": "Gegentor?! Ich glaub's nicht! Wo war die Abwehr?!",
+      "gefuehl": "wut"
+    },
+    {
+      "id": "tor-gegen-3",
+      "gruppe": "tor_gegen",
+      "text": "Ahhh! Der Ball war doch schon draußen! ... Oder?",
+      "gefuehl": "wut"
+    },
+    {
+      "id": "tor-gegen-4",
+      "gruppe": "tor_gegen",
+      "text": "Nein, nein, nein! Das war ein Fehler. Mein Fehler. Leider.",
+      "gefuehl": "wut"
+    },
+    {
+      "id": "tor-rueckstand-1",
+      "gruppe": "tor_rueckstand",
+      "text": "Okay, eins zu null für die. Kein Problem. Gar kein Problem. ... Doch, ein bisschen Problem!",
+      "gefuehl": "wut"
+    },
+    {
+      "id": "tor-rueckstand-2",
+      "gruppe": "tor_rueckstand",
+      "text": "Wir liegen hinten! Jetzt aber Gas geben, Leute!",
+      "gefuehl": "wut"
+    },
+    {
+      "id": "tor-rueckstand-3",
+      "gruppe": "tor_rueckstand",
+      "text": "Rückstand! Na warte, das holen wir auf!",
+      "gefuehl": "wut"
+    },
+    {
+      "id": "tor-ausgleich-gegen-1",
+      "gruppe": "tor_ausgleich_gegen",
+      "text": "Was?! Ausgleich?! Wir hatten das doch schon!",
+      "gefuehl": "schock"
+    },
+    {
+      "id": "tor-ausgleich-gegen-2",
+      "gruppe": "tor_ausgleich_gegen",
+      "text": "Eins zu eins! Jetzt wird's richtig spannend. Und ich hab Angst!",
+      "gefuehl": "schock"
+    },
+    {
+      "id": "tor-ausgleich-gegen-3",
+      "gruppe": "tor_ausgleich_gegen",
+      "text": "Ausgleich für die anderen! Mein Herz! Also, mein Prozessor!",
+      "gefuehl": "schock"
+    },
+    {
+      "id": "tor-eigen-1",
+      "gruppe": "tor_eigen",
+      "text": "Tor! Tor! Tor! Habt ihr das gesehen?!",
+      "gefuehl": "jubel"
+    },
+    {
+      "id": "tor-eigen-2",
+      "gruppe": "tor_eigen",
+      "text": "Jaaa! Drin ist das Ding!",
+      "gefuehl": "jubel"
+    },
+    {
+      "id": "tor-eigen-3",
+      "gruppe": "tor_eigen",
+      "text": "Tooor! Was für ein Schuss!",
+      "gefuehl": "jubel"
+    },
+    {
+      "id": "tor-eigen-4",
+      "gruppe": "tor_eigen",
+      "text": "Ja! Genau so! Weiter so, Team!",
+      "gefuehl": "jubel"
+    },
+    {
+      "id": "tor-selbst-1",
+      "gruppe": "tor_selbst",
+      "text": "Ich! Ich hab's gemacht! Tor von Thorsten!",
+      "gefuehl": "jubel"
+    },
+    {
+      "id": "tor-selbst-2",
+      "gruppe": "tor_selbst",
+      "text": "Jaaa! Was für ein Schuss von mir! Ich bin ein Genie!",
+      "gefuehl": "jubel"
+    },
+    {
+      "id": "tor-selbst-3",
+      "gruppe": "tor_selbst",
+      "text": "Thorsten trifft! Das kommt in die Highlights!",
+      "gefuehl": "jubel"
+    },
+    {
+      "id": "tor-ausgleich-1",
+      "gruppe": "tor_ausgleich",
+      "text": "Ausgleich! Jaaa! Wir sind wieder da!",
+      "gefuehl": "jubel"
+    },
+    {
+      "id": "tor-ausgleich-2",
+      "gruppe": "tor_ausgleich",
+      "text": "Eins zu eins! Jetzt geht's richtig los!",
+      "gefuehl": "jubel"
+    },
+    {
+      "id": "tor-ausgleich-3",
+      "gruppe": "tor_ausgleich",
+      "text": "Ausgleich! Ich wusste es! Ich wusste es!",
+      "gefuehl": "jubel"
+    },
+    {
+      "id": "kz-fuehrung-ich-1",
+      "gruppe": "kz_fuehrung_ich",
+      "text": "Wir haben zehn Früchte! Jetzt nur noch festhalten!",
+      "gefuehl": "jubel"
+    },
+    {
+      "id": "kz-fuehrung-ich-2",
+      "gruppe": "kz_fuehrung_ich",
+      "text": "Führung! Bitte, bitte nicht wieder verlieren!",
+      "gefuehl": "jubel"
+    },
+    {
+      "id": "kz-fuehrung-gegen-1",
+      "gruppe": "kz_fuehrung_gegen",
+      "text": "Oh nein, die haben zehn Früchte! Schnell, holt sie euch!",
+      "gefuehl": "schock"
+    },
+    {
+      "id": "kz-fuehrung-gegen-2",
+      "gruppe": "kz_fuehrung_gegen",
+      "text": "Die anderen führen! Alarm! Alarm!",
+      "gefuehl": "schock"
+    },
+    {
+      "id": "laune-genervt-1",
+      "gruppe": "laune_genervt",
+      "text": "Okay, jetzt reicht's mir! Ab jetzt wird zurückgeschlagen!",
+      "gefuehl": "wut"
+    },
+    {
+      "id": "laune-genervt-2",
+      "gruppe": "laune_genervt",
+      "text": "Leute, ich bin ein bisschen sauer. Nur ein bisschen. Sehr.",
+      "gefuehl": "wut"
+    },
+    {
+      "id": "laune-genervt-3",
+      "gruppe": "laune_genervt",
+      "text": "Heute ist echt nicht mein Tag. Aber aufgeben? Niemals!",
+      "gefuehl": "wut"
+    },
+    {
+      "id": "laune-genervt-4",
+      "gruppe": "laune_genervt",
+      "text": "Ich bin ruhig. Ich bin ganz ruhig. ... Nein, bin ich nicht!",
+      "gefuehl": "wut"
+    },
+    {
+      "id": "laune-super-1",
+      "gruppe": "laune_super",
+      "text": "Leute, ich bin heute einfach nicht zu stoppen!",
+      "gefuehl": "jubel"
+    },
+    {
+      "id": "laune-super-2",
+      "gruppe": "laune_super",
+      "text": "Läuft bei mir! Läuft richtig gut!",
+      "gefuehl": "jubel"
+    },
+    {
+      "id": "laune-super-3",
+      "gruppe": "laune_super",
+      "text": "Ich glaube, ich bin der beste Krawallzoo-Spieler der Welt! Na gut, fast.",
+      "gefuehl": "jubel"
+    },
+    {
+      "id": "emo-traurig-1",
+      "gruppe": "emo_traurig",
+      "text": "Oh nein. Das war's. Ich bin traurig.",
+      "gefuehl": "trauer"
+    },
+    {
+      "id": "emo-traurig-2",
+      "gruppe": "emo_traurig",
+      "text": "Verloren. Ich brauche jetzt kurz eine Pause. ... Okay, schon vorbei.",
+      "gefuehl": "trauer"
+    },
+    {
+      "id": "emo-traurig-3",
+      "gruppe": "emo_traurig",
+      "text": "Schnief. Das tut weh. Aber nächste Runde wird besser.",
+      "gefuehl": "trauer"
+    },
+    {
+      "id": "hz-emo-brand-1",
+      "gruppe": "hz_emo_brand",
+      "text": "Feuer! Feuer! Ruft die Feuerwehr! Ach, das bin ja ich!",
+      "gefuehl": "schock"
+    },
+    {
+      "id": "hz-emo-brand-2",
+      "gruppe": "hz_emo_brand",
+      "text": "Es brennt! Oh nein, oh nein, oh nein!",
+      "gefuehl": "schock"
+    },
+    {
+      "id": "hz-emo-brand-3",
+      "gruppe": "hz_emo_brand",
+      "text": "Was?! Da brennt ein Haus! Schnell, schnell!",
+      "gefuehl": "schock"
+    },
+    {
+      "id": "hz-emo-1000-1",
+      "gruppe": "hz_emo_1000",
+      "text": "Tausend Einwohner! Tausend! Jaaa! Party in der ganzen Stadt!",
+      "gefuehl": "jubel"
+    },
+    {
+      "id": "hz-emo-1000-2",
+      "gruppe": "hz_emo_1000",
+      "text": "Wir haben die Tausend geknackt! Ich bin so stolz!",
+      "gefuehl": "jubel"
+    },
+    {
+      "id": "hz-emo-geschafft-1",
+      "gruppe": "hz_emo_geschafft",
+      "text": "Problem gelöst. Wie immer. Ich bin einfach gut.",
+      "gefuehl": "frech"
+    },
+    {
+      "id": "hz-emo-geschafft-2",
+      "gruppe": "hz_emo_geschafft",
+      "text": "Repariert! Ganz locker. Hat jemand gezweifelt?",
+      "gefuehl": "frech"
     }
   ]
 }

@@ -189,12 +189,13 @@
     stimmeGain.connect(analyser); analyser.connect(ziel); spielGain.connect(ziel);
     var mithoeren = ctx.createGain(); mithoeren.gain.value = e.hoeren ? 1 : 0; analyser.connect(mithoeren); mithoeren.connect(ctx.destination);
     var musikGain = ctx.createGain(); musikGain.gain.value = 0.3; musikGain.connect(spielGain); musikGain.connect(mithoeren);
+    var sfxGain = ctx.createGain(); sfxGain.gain.value = 0.55; sfxGain.connect(ziel); sfxGain.connect(mithoeren);
 
     Z = { auto: !!(vorgabe && vorgabe.auto), musikGain: musikGain, intro: e.format === "hoch" ? 1.6 : 3.4, aufnahme: aufnahme, spiel: e.spiel, S: SPIELE[e.spiel], format: e.format, F: F, dauer: aufnahme ? +e.laenge : 1e9, modus: e.modus, stimme: e.stimme, ctx: ctx, ziel: ziel, spielGain: spielGain, spielGainZiel: spielGain.gain.value,
       stimmeGain: stimmeGain, analyser: analyser, mithoeren: mithoeren, lw: lw, g: lw.getContext("2d"), start: 0, t: 0, bereit: false,
       spricht: null, letzterSatz: -99, benutzt: {}, warteschlange: [], untertitel: null, outro: false,
       stats: { runden: 0, siege: 0, kos: 0, raus: 0, tiere: [], highlight: null, letzterSieger: null, einwohner: 0, momente: [], probleme: [], geloest: [], serie: 0, wechsel: 0 }, tier: "", modusName: "", vorschauBild: null, vorschauGrund: 0,
-      blink: 0, staunen: 0 };
+      blink: 0, staunen: 0, sfxGain: sfxGain, gefuehl: null, laune: 0, launeSatz: -99, teilchen: [], wackeln: 0, blitz: null };
     ctx.resume().catch(function () {});
     // Spiel laden
     var fr = $("stSpiel");
@@ -301,18 +302,24 @@
         if (/nacht|hochhaus|wachsen2|flughafen|hafen/.test(d.was)) setTimeout(function () { merkeMoment(d.was === "nacht" ? 4 : 3, { nacht: "BEI NACHT!", hochhaus: "HOCH HINAUS!", wachsen2: "SIE WÄCHST!", flughafen: "ABHEBEN!", hafen: "AHOI!" }[d.was]); }, 3500);
         if (s.momente.indexOf(d.was) < 0) s.momente.push(d.was);
       } else if (d.type === "problem") {
-        s.probleme.push(d.art); Z.staunen = 1; Z.problemSeit = Z.t;
-        if (!sag("hz_problem_" + d.art, 9)) sag("hz_problem", 9);
+        s.probleme.push(d.art); Z.staunen = 1; Z.problemSeit = Z.t; laune(-0.7);
+        fuehlen("schock", d.art === "brand" ? 1.2 : 0.8, d.art === "brand" ? ["🔥", "🚒", "😱"] : null);
+        if (!(d.art === "brand" && Math.random() < 0.6 && sag("hz_emo_brand", 9)) && !sag("hz_problem_" + d.art, 9)) sag("hz_problem", 9);
         merkeMoment(3.5, { brand: "ES BRENNT!", stau: "STAU!", strom: "STROMAUSFALL!", wasser: "KEIN WASSER!", wegzug: "SIE ZIEHEN WEG!" }[d.art] || "OH NEIN!");
       } else if (d.type === "loesung") {
-        if (d.ok) s.geloest.push(d.art);
-        sag(d.ok ? "hz_loesung_" + d.art : "hz_loesung_nicht", 9) || (d.ok && sag("hz_loesung", 9));
+        if (d.ok) { s.geloest.push(d.art); laune(0.8); fuehlen("frech", 0.8, ["✨", "🔧", "😎"]); }
+        else { laune(-0.8); fuehlen("trauer", 0.9); }
+        if (!(d.ok && Math.random() < 0.3 && sag("hz_emo_geschafft", 9))) sag(d.ok ? "hz_loesung_" + d.art : "hz_loesung_nicht", 9) || (d.ok && sag("hz_loesung", 9));
       } else if (d.type === "idee") {
         Z.idee = d; s.idee = d;
         if (Z.t > Z.intro + 6) ideeSagen();
       } else if (d.type === "bedarf") { sag("hz_bedarf_" + d.art, 7); }
-      else if (d.type === "extra") { Z.staunen = 1; sag("hz_extra_" + d.art, 7); merkeMoment(3, { riesenrad: "RIESENRAD!", schwimmbad: "PLATSCH!", hafen: "AHOI!", park: "SO GRÜN!", sport: "TOOOR!" }[d.art] || "WOW!"); }
-      else if (d.type === "einwohner") { s.einwohner = Math.max(s.einwohner || 0, d.zahl); Z.einwText = d.zahl; sag("hz_einwohner", 4); merkeMoment(2, d.zahl + " EINWOHNER!"); }
+      else if (d.type === "extra") { Z.staunen = 1; fuehlen("jubel", 0.5); sag("hz_extra_" + d.art, 7); merkeMoment(3, { riesenrad: "RIESENRAD!", schwimmbad: "PLATSCH!", hafen: "AHOI!", park: "SO GRÜN!", sport: "TOOOR!" }[d.art] || "WOW!"); }
+      else if (d.type === "einwohner") {
+        s.einwohner = Math.max(s.einwohner || 0, d.zahl); Z.einwText = d.zahl;
+        if (d.zahl >= 1000 && !Z.tausend) { Z.tausend = true; laune(1.5); fuehlen("jubel", 1.4, ["🎉", "🏙️", "🥳"]); merkeMoment(4, d.zahl + " EINWOHNER!"); sag("hz_emo_1000", 9) || sag("hz_einwohner", 6); }
+        else { if (d.zahl >= 500) fuehlen("jubel", 0.5); sag("hz_einwohner", 4); merkeMoment(2, d.zahl + " EINWOHNER!"); }
+      }
       return;
     }
     switch (d.type) {
@@ -326,11 +333,28 @@
         else if (Z.kzBleib) { Z.kzBleib = false; sag("kz_bleib", 5); }
         else if (Z.t > 4) sag("los", 3);
         break;
-      case "nebel_ich": sag("kz_nebel_ich", 5); break;
-      case "knapp": Z.staunen = 1; sag("kz_knapp", 6); break;
+      case "nebel_ich": fuehlen("schock", 0.5); sag("kz_nebel_ich", 5); break;
+      case "knapp": Z.staunen = 1; fuehlen("schock", 0.6); sag("kz_knapp", 6); break;
+      case "tor":
+        if (d.fuerMich) {
+          laune(1); fuehlen("jubel", 1); merkeMoment(4, d.selbst ? "THORSTEN TRIFFT!" : "TOOOR!");
+          if (!(d.selbst && sag("tor_selbst", 9))) sag(d.ausgleich ? "tor_ausgleich" : "tor_eigen", 9);
+        } else {
+          laune(-1); fuehlen(d.ausgleich ? "schock" : "wut", 1); merkeMoment(3, "GEGENTOR!");
+          sag(d.ausgleich ? "tor_ausgleich_gegen" : !d.fuehrung && d.stand === "0:1" ? (Math.random() < 0.5 ? "tor_rueckstand" : "tor_gegen") : "tor_gegen", 9);
+        }
+        launeSagen();
+        break;
+      case "fuehrung":
+        if (d.fuerMich) { fuehlen("jubel", 0.6); sag("kz_fuehrung_ich", 7); } else { fuehlen("schock", 0.7); sag("kz_fuehrung_gegen", 7); }
+        break;
       case "ko":
-        if (d.thorstenTrifft) { s.kos++; Z.staunen = 1; merkeMoment(3, "K.O.!"); sag("ko_treffer", 6); }
-        else if (d.thorstenRaus) { s.raus++; Z.staunen = 1; if (Z.rundeStart != null && Z.t - Z.rundeStart < 7) sag("kz_frueh_raus", 8); else sag("ko_raus", 7); }
+        if (d.thorstenTrifft) { s.kos++; laune(0.4); fuehlen("frech", 0.5); merkeMoment(3, "K.O.!"); sag("ko_treffer", 6); }
+        else if (d.thorstenRaus) {
+          s.raus++; laune(-1); fuehlen("wut", 1); merkeMoment(3, "ERWISCHT!");
+          if (Z.rundeStart != null && Z.t - Z.rundeStart < 7) sag("kz_frueh_raus", 8); else if (Math.random() < 0.6) sag("emo_gekillt", 8) || sag("ko_raus", 7); else sag("ko_raus", 7);
+          launeSagen();
+        }
         else { if (Math.random() < 0.55) sag("ko_andere", 2); merkeMoment(1, "K.O.!"); }
         break;
       case "super":
@@ -341,13 +365,108 @@
       case "nebel": sag("nebel", 4); break;
       case "runde": sag(d.entscheidung ? "entscheidung" : "runde", 6); break;
       case "ende":
-        if (d.gewonnen) { if (s.serie >= 2) { s.siege++; s.serie = 0; Z.staunen = 1; merkeMoment(5, "ENDLICH!"); sag("kz_endlich", 9); s.highlight = s.highlight || ("Sieg nach Pechsträhne"); break; } s.serie = 0; s.siege++; Z.staunen = 1; merkeMoment(5, "SIEG!"); sag("sieg", 8); s.highlight = s.highlight || ("Sieg mit dem " + d.tier); }
-        else if (d.modus === "ffa" && d.platz && d.platz <= 3) sag("platz", 8);
-        else { s.serie++; sag(s.serie >= 2 ? "kz_pech" : "niederlage", 8); }
+        if (d.gewonnen) { laune(1.5); fuehlen("jubel", 1.4); if (s.serie >= 2) { s.siege++; s.serie = 0; merkeMoment(5, "ENDLICH!"); sag("kz_endlich", 9); s.highlight = s.highlight || ("Sieg nach Pechsträhne"); break; } s.serie = 0; s.siege++; merkeMoment(5, "SIEG!"); sag("sieg", 8); s.highlight = s.highlight || ("Sieg mit dem " + d.tier); launeSagen(true); }
+        else if (d.modus === "ffa" && d.platz && d.platz <= 3) { fuehlen("frech", 0.6); sag("platz", 8); }
+        else { s.serie++; laune(-1.5); if (s.serie >= 2 || Z.laune <= -3) { fuehlen("wut", 1.3); sag("kz_pech", 8); } else { fuehlen("trauer", 1.2); sag(Math.random() < 0.4 ? "emo_traurig" : "niederlage", 8) || sag("niederlage", 8); } launeSagen(true); }
         s.letzterSieger = d.sieger;
         break;
     }
   }
+  /* ---------- Gefühle ---------- */
+  var EMO = {
+    wut: { regen: ["💢", "😤", "😡"], blitz: "255,40,40", ton: "buh", wackeln: 1 },
+    trauer: { regen: ["😭", "💧", "💔"], blitz: "40,90,200", ton: "wahwah", wackeln: 0 },
+    schock: { regen: ["😱", "❗", "⚠️"], blitz: "255,255,255", ton: "schock", wackeln: 0.6 },
+    jubel: { regen: ["🎉", "⭐", "🥳", "⚽"], blitz: "255,207,51", ton: "jubel", wackeln: 0.3 },
+    frech: { regen: null, blitz: null, ton: "pling", wackeln: 0 }
+  };
+  // staerke: 0.5 = nur Gesicht, ab 1 = mit Effekten, Zoom und Geräusch
+  function fuehlen(art, staerke, regen) {
+    if (!Z || Z.outro || wb() || !EMO[art]) return;
+    var e = EMO[art], jetzt = Z.t, gross = staerke >= 1;
+    // ein stärkeres Gefühl wird nicht von einem schwachen überschrieben
+    if (Z.gefuehl && jetzt < Z.gefuehl.bis - 1 && Z.gefuehl.staerke > staerke + 0.3) return;
+    Z.gefuehl = { art: art, ab: jetzt, bis: jetzt + 2.2 + staerke * 1.6, staerke: staerke, zoom: gross };
+    if (gross) {
+      Z.wackeln = Math.max(Z.wackeln, e.wackeln * Math.min(1.4, staerke));
+      if (e.blitz) Z.blitz = { farbe: e.blitz, ab: jetzt, st: art === "wut" ? 0.42 : 0.3 };
+      var r = regen || e.regen;
+      if (r) regnen(r, Math.round(14 + staerke * 10));
+      geraeusch(e.ton);
+    } else if (art === "frech" || staerke >= 0.8) { if (regen) regnen(regen, 8); geraeusch(art === "frech" ? "pling" : "zisch"); }
+  }
+  function laune(n) { if (Z) Z.laune = Math.max(-4, Math.min(4, Z.laune + n)); }
+  // bei sehr schlechter oder sehr guter Laune ein Extra-Satz hinterher
+  function launeSagen(sofort) {
+    if (!Z || Z.t - Z.launeSatz < 50) return;
+    var g = Z.laune <= -3 ? "laune_genervt" : Z.laune >= 3 ? "laune_super" : null;
+    if (!g || !(ton && ton[g])) return;
+    Z.launeSatz = Z.t;
+    if (Z.spricht || !sofort) Z.warteschlange.push({ g: g, p: 7 }); else sag(g, 7);
+  }
+  function regnen(liste, n) {
+    var W = Z.F.w, H = Z.F.h, k = Z.format === "hoch" ? 1.6 : 1;
+    for (var i = 0; i < n; i++) Z.teilchen.push({ e: liste[i % liste.length], x: Math.random() * W, y: -40 - Math.random() * H * 0.5, vx: (Math.random() - 0.5) * 60, vy: (220 + Math.random() * 260) * k, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 4, gr: (34 + Math.random() * 30) * k, ab: Z.t });
+    if (Z.teilchen.length > 90) Z.teilchen.splice(0, Z.teilchen.length - 90);
+  }
+  function zeichneTeilchen(g, dt) {
+    var H = Z.F.h;
+    g.textAlign = "center"; g.textBaseline = "middle";
+    Z.teilchen = Z.teilchen.filter(function (p) {
+      p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+      if (p.y > H + 60) return false;
+      g.save(); g.translate(p.x, p.y); g.rotate(p.rot * 0.3); g.font = Math.round(p.gr) + "px 'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif"; g.fillText(p.e, 0, 0); g.restore();
+      return true;
+    });
+  }
+  // Selbst erzeugte Geräusche (keine fremden Dateien)
+  function geraeusch(art) {
+    if (!Z || !Z.ctx) return;
+    var c = Z.ctx, t0 = c.currentTime + 0.02, aus = Z.sfxGain;
+    function rauschen(dauer) { var b = c.createBuffer(1, Math.ceil(c.sampleRate * dauer), c.sampleRate), d = b.getChannelData(0); for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; var q = c.createBufferSource(); q.buffer = b; return q; }
+    function ton(typ, f1, f2, ab, dauer, laut, ziel) {
+      var o = c.createOscillator(), gg = c.createGain(); o.type = typ;
+      o.frequency.setValueAtTime(f1, ab); if (f2) o.frequency.exponentialRampToValueAtTime(f2, ab + dauer);
+      gg.gain.setValueAtTime(0.0001, ab); gg.gain.exponentialRampToValueAtTime(laut, ab + 0.03); gg.gain.setValueAtTime(laut, ab + dauer * 0.7); gg.gain.exponentialRampToValueAtTime(0.0001, ab + dauer);
+      o.connect(gg); gg.connect(ziel || aus); o.start(ab); o.stop(ab + dauer + 0.05); return o;
+    }
+    function menge(ab, dauer, lo, hi, laut) { // Publikum: gefiltertes Rauschen
+      var q = rauschen(dauer), bp = c.createBiquadFilter(), gg = c.createGain(); bp.type = "bandpass"; bp.frequency.setValueAtTime(lo, ab); bp.frequency.linearRampToValueAtTime(hi, ab + dauer * 0.5); bp.Q.value = 1.4;
+      gg.gain.setValueAtTime(0.0001, ab); gg.gain.exponentialRampToValueAtTime(laut, ab + dauer * 0.25); gg.gain.exponentialRampToValueAtTime(0.0001, ab + dauer);
+      q.connect(bp); bp.connect(gg); gg.connect(aus); q.start(ab); q.stop(ab + dauer);
+    }
+    try {
+      if (art === "buh") {
+        var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 700; lp.connect(aus);
+        [0, 0.07, 0.15].forEach(function (v, i) { ton("sawtooth", 190 + i * 23, 120 + i * 15, t0 + v, 1.3, 0.12, lp); });
+        menge(t0, 1.4, 300, 450, 0.25);
+      } else if (art === "jubel") {
+        menge(t0, 1.8, 900, 2600, 0.45);
+        [523, 659, 784, 1047].forEach(function (f, i) { ton("square", f, 0, t0 + i * 0.09, 0.22, 0.05); });
+        ton("sawtooth", 233, 0, t0 + 0.45, 0.6, 0.07); ton("sawtooth", 311, 0, t0 + 0.45, 0.6, 0.06);
+      } else if (art === "wahwah") {
+        var lp2 = c.createBiquadFilter(); lp2.type = "lowpass"; lp2.frequency.value = 900; lp2.connect(aus);
+        [[294, 0], [277, 0.42], [262, 0.84]].forEach(function (n) { ton("sawtooth", n[0], n[0] * 0.98, t0 + n[1], 0.38, 0.13, lp2); });
+        var o = ton("sawtooth", 247, 233, t0 + 1.26, 1.1, 0.13, lp2), lfo = c.createOscillator(), lg = c.createGain(); lfo.frequency.value = 5.5; lg.gain.value = 9; lfo.connect(lg); lg.connect(o.frequency); lfo.start(t0 + 1.26); lfo.stop(t0 + 2.4);
+      } else if (art === "schock") {
+        ton("sine", 110, 70, t0, 0.5, 0.35); ton("sine", 104, 55, t0 + 0.55, 0.9, 0.38); menge(t0, 0.25, 2000, 3000, 0.2);
+      } else if (art === "pling") {
+        ton("triangle", 1319, 0, t0, 0.15, 0.1); ton("triangle", 1760, 0, t0 + 0.08, 0.25, 0.1);
+      } else if (art === "zisch") {
+        var q = rauschen(0.5), hp = c.createBiquadFilter(), gz = c.createGain(); hp.type = "highpass"; hp.frequency.value = 3000; gz.gain.setValueAtTime(0.15, t0); gz.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5); q.connect(hp); hp.connect(gz); gz.connect(aus); q.start(t0); q.stop(t0 + 0.5);
+      }
+    } catch (e) { /* egal */ }
+  }
+  // Welches Gesicht macht Thorsten gerade?
+  function gesichtJetzt() {
+    if (!Z) return "normal";
+    if (Z.gefuehl && Z.t < Z.gefuehl.bis) return Z.gefuehl.art;
+    if (Z.staunen > 0.3) return "schock";
+    if (Z.laune <= -2.5) return "grummel";
+    if (Z.laune >= 2.5) return "froh";
+    return "normal";
+  }
+
   // Thorsten verrät seine Bau-Idee: Form, Schwerpunkt, Mut – nacheinander
   function ideeSagen() {
     var d = Z && Z.idee; if (!d || Z.ideeGesagt) return; Z.ideeGesagt = true;
@@ -425,9 +544,15 @@
     if (!Z) return;
     Z.raf = requestAnimationFrame(zeichnen);
     var g = Z.g, W = Z.F.w, H = Z.F.h;
+    var tAlt = Z.t;
     if (Z.bereit) Z.t = (jetzt - Z.start) / 1000;
-    var t = Z.t;
+    var t = Z.t, dt = Math.max(0, Math.min(0.1, t - tAlt));
     g.fillStyle = "#07090f"; g.fillRect(0, 0, W, H);
+    // Bildschirm wackelt bei großen Gefühlen
+    Z.wackeln = Math.max(0, Z.wackeln - dt * 1.6);
+    var wa = Z.wackeln > 0.01 ? Math.min(1, Z.wackeln) * (Z.format === "hoch" ? 26 : 16) : 0;
+    g.save();
+    if (wa) { g.translate(W / 2 + Math.sin(t * 61) * wa, H / 2 + Math.cos(t * 47) * wa * 0.7); g.scale(1.04, 1.04); g.translate(-W / 2, -H / 2); }
     var spiel = Z.kz && Z.kz.canvas;
     if (wb()) zeichneWerbung(g, W, H, t);
     else if (Z.format === "hoch") zeichneHoch(g, W, H, spiel); else if (spiel) g.drawImage(spiel, 0, 0, W, H);
@@ -436,10 +561,19 @@
     if (Z.spricht && Z.spricht.quelle) { var d = new Uint8Array(Z.analyser.fftSize); Z.analyser.getByteTimeDomainData(d); var m = 0; for (var i = 0; i < d.length; i += 4) m = Math.max(m, Math.abs(d[i] - 128)); pegel = Math.min(1, m / 50); }
     Z.mund = (Z.mund || 0) + (pegel - (Z.mund || 0)) * 0.5;
     Z.staunen = Math.max(0, Z.staunen - 1 / 60);
-    var gross = Z.format === "hoch" ? 230 : 150;
-    var ax = Z.format === "hoch" ? 60 : 24, ay = Z.format === "hoch" ? 1290 : H - gross - 24;
+    Z.laune *= Math.pow(0.996, dt * 10); // die Laune beruhigt sich ganz langsam
+    g.restore();
+    // farbiger Blitz
+    if (Z.blitz) { var ba = Z.blitz.st * (1 - (t - Z.blitz.ab) / 0.6); if (ba > 0) { g.fillStyle = "rgba(" + Z.blitz.farbe + "," + ba.toFixed(3) + ")"; g.fillRect(0, 0, W, H); } else Z.blitz = null; }
+    if (Z.teilchen.length) zeichneTeilchen(g, dt);
+    var gross = Z.format === "hoch" ? 230 : 150, gesicht = gesichtJetzt();
+    // Zoom auf Thorsten: kurz groß in der Ecke
+    var gf = Z.gefuehl, zoom = 0;
+    if (gf && gf.zoom && t < gf.bis) { var lt = t - gf.ab, dauerZ = gf.bis - gf.ab; zoom = Math.min(easeOut(Math.min(1, lt / 0.25)), Math.min(1, (dauerZ - lt) / 0.5)); }
+    var sz = gross * (1 + 0.75 * zoom);
+    var ax = Z.format === "hoch" ? 60 : 24, ay = (Z.format === "hoch" ? 1290 + gross : H - 24) - sz;
     if (wb()) { if (Z.seg && t >= Z.seg[1].ab && t < Z.seg[Z.seg.length - 1].ab) avatar(g, 40, 40, 150, Z.mund, t, Z.staunen > 0.3); }
-    else { avatar(g, ax, ay, gross, Z.mund, t, Z.staunen > 0.3); namensSchild(g, ax + gross + 14, ay + gross * 0.35, Z.format === "hoch" ? 1.5 : 1); }
+    else { avatar(g, ax, ay, sz, Z.mund, t, gesicht, gf && t < gf.bis ? t - gf.ab : 9); if (zoom < 0.5) namensSchild(g, ax + gross + 14, (Z.format === "hoch" ? 1290 : H - gross - 24) + gross * 0.35, Z.format === "hoch" ? 1.5 : 1); }
     if (Z.untertitel && t < Z.untertitel.bis) untertitel(g, W, H, Z.untertitel.text);
     // Titel-Einblendung nach der ersten Action (Leitfaden: erst Ergebnis, dann kurz das Intro)
     if (!wb() && t > Z.intro + 1.2 && t < Z.intro + 5.2 && Z.bereit) titelKarte(g, W, H, t - Z.intro - 1.2);
@@ -648,35 +782,94 @@
   function rund(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
   function schrift(g, text, x, y, farbe, rand) { g.lineJoin = "round"; g.lineWidth = rand; g.strokeStyle = "rgba(0,0,0,.85)"; g.strokeText(text, x, y); g.fillStyle = farbe; g.fillText(text, x, y); }
   // Thorsten: freundlicher Roboter mit Kometen-Antenne (eigene Figur)
-  function avatar(g, x, y, s, mund, t, staunen) {
-    var k = s / 100;
+  // gesicht: normal | staunen | schock | wut | trauer | jubel | frech | grummel | froh  (true = staunen)
+  // seit: Sekunden seit Beginn des Gefühls (für Sprung, Kopfschütteln …)
+  function avatar(g, x, y, s, mund, t, gesicht, seit) {
+    var f = gesicht === true ? "staunen" : gesicht || "normal", L = seit == null ? 9 : seit;
+    var k = s / 100, PI2 = Math.PI * 2;
     g.save(); g.translate(x, y); g.scale(k, k);
-    // Hintergrund-Plakette
-    g.fillStyle = "rgba(10,12,22,.82)"; rund(g, 0, 0, 100, 100, 22); g.fill();
-    g.strokeStyle = "#ff8a3c"; g.lineWidth = 3; rund(g, 1.5, 1.5, 97, 97, 21); g.stroke();
-    var wipp = Math.sin(t * 3.2) * 1.5 + (mund * 2);
-    g.translate(0, wipp);
-    // Antenne mit Komet
-    g.strokeStyle = "#9aa7bd"; g.lineWidth = 3; g.beginPath(); g.moveTo(50, 28); g.lineTo(58, 12); g.stroke();
-    g.strokeStyle = "rgba(255,138,60,.6)"; g.lineWidth = 3; g.beginPath(); g.moveTo(60, 10); g.lineTo(70, 16); g.stroke();
-    g.fillStyle = "#ff8a3c"; g.beginPath(); g.arc(59, 10, 5.5, 0, Math.PI * 2); g.fill();
-    g.fillStyle = "#fff"; g.beginPath(); g.arc(57.5, 8.5, 1.6, 0, Math.PI * 2); g.fill();
+    // Hintergrund-Plakette – färbt sich mit dem Gefühl
+    var rahmen = { wut: "#ff3b3b", trauer: "#5b8cff", schock: "#ffffff", jubel: "#ffcf33", frech: "#3ef2a0" }[f] || "#ff8a3c";
+    g.fillStyle = f === "wut" ? "rgba(48,8,12,.88)" : f === "trauer" ? "rgba(8,14,40,.88)" : "rgba(10,12,22,.82)"; rund(g, 0, 0, 100, 100, 22); g.fill();
+    g.strokeStyle = rahmen; g.lineWidth = 3; rund(g, 1.5, 1.5, 97, 97, 21); g.stroke();
+    g.save(); rund(g, 0, 0, 100, 100, 22); g.clip();
+    // Bewegung je nach Gefühl
+    var dx = 0, dy = Math.sin(t * 3.2) * 1.5 + mund * 2, kipp = 0;
+    if (f === "wut") { var sch = Math.max(0, 1 - L / 1.6); dx = Math.sin(t * 38) * 3.5 * sch + Math.sin(t * 9) * 0.8; }
+    else if (f === "trauer") { dy += 5 + Math.min(1, L / 0.6) * 3; kipp = -0.06; }
+    else if (f === "schock") { dy -= Math.max(0, Math.sin(Math.min(1, L / 0.35) * Math.PI)) * 14; }
+    else if (f === "jubel") { dy -= Math.abs(Math.sin(t * 9)) * 9; kipp = Math.sin(t * 9) * 0.05; }
+    else if (f === "frech") { kipp = 0.08; }
+    g.translate(50 + dx, 57 + dy); g.rotate(kipp); g.translate(-50, -57);
+    // Antenne mit Komet (bei Wut glüht sie rot, bei Trauer hängt sie)
+    var spitzeX = f === "trauer" ? 66 : 58, spitzeY = f === "trauer" ? 18 : 12;
+    var kom = f === "wut" ? "#ff3b3b" : f === "trauer" ? "#6b7aa8" : f === "jubel" ? "#ffcf33" : "#ff8a3c";
+    g.strokeStyle = "#9aa7bd"; g.lineWidth = 3; g.beginPath(); g.moveTo(50, 28); g.lineTo(spitzeX, spitzeY); g.stroke();
+    g.strokeStyle = "rgba(255,138,60,.6)"; g.lineWidth = 3; g.beginPath(); g.moveTo(spitzeX + 2, spitzeY - 2); g.lineTo(spitzeX + 12, spitzeY + 4); g.stroke();
+    g.fillStyle = kom; if (f === "wut" || f === "jubel") { g.shadowColor = kom; g.shadowBlur = 10; }
+    g.beginPath(); g.arc(spitzeX + 1, spitzeY - 2, 5.5, 0, PI2); g.fill(); g.shadowBlur = 0;
+    g.fillStyle = "#fff"; g.beginPath(); g.arc(spitzeX - 0.5, spitzeY - 3.5, 1.6, 0, PI2); g.fill();
     // Ohren-Bolzen
     g.fillStyle = "#3b4a7a"; rund(g, 12, 46, 8, 18, 3); g.fill(); rund(g, 80, 46, 8, 18, 3); g.fill();
+    // Dampf aus den Ohren bei Wut
+    if (f === "wut") {
+      for (var i = 0; i < 3; i++) { var ph = (t * 1.6 + i / 3) % 1; g.fillStyle = "rgba(230,230,240," + (0.6 * (1 - ph)).toFixed(2) + ")";
+        g.beginPath(); g.arc(10 - ph * 8, 50 - ph * 22, 3 + ph * 5, 0, PI2); g.fill(); g.beginPath(); g.arc(90 + ph * 8, 50 - ph * 22, 3 + ph * 5, 0, PI2); g.fill(); }
+    }
     // Kopf
-    var grad = g.createLinearGradient(0, 28, 0, 90); grad.addColorStop(0, "#2b3a66"); grad.addColorStop(1, "#1a2344");
+    var grad = g.createLinearGradient(0, 28, 0, 90);
+    if (f === "wut") { grad.addColorStop(0, "#6a2433"); grad.addColorStop(1, "#3a1424"); }
+    else { grad.addColorStop(0, "#2b3a66"); grad.addColorStop(1, "#1a2344"); }
     g.fillStyle = grad; rund(g, 18, 28, 64, 58, 16); g.fill();
-    g.strokeStyle = "#4f62a0"; g.lineWidth = 2; rund(g, 18, 28, 64, 58, 16); g.stroke();
+    g.strokeStyle = f === "wut" ? "#c0475a" : "#4f62a0"; g.lineWidth = 2; rund(g, 18, 28, 64, 58, 16); g.stroke();
     // Visier
     g.fillStyle = "#0a0f1e"; rund(g, 25, 38, 50, 38, 11); g.fill();
-    // Augen (blinzeln ab und zu)
-    var zu = (t % 4.3) < 0.12, aH = staunen ? 13 : zu ? 1.5 : 10;
-    g.fillStyle = "#3ef2ff"; g.shadowColor = "#3ef2ff"; g.shadowBlur = 8;
-    rund(g, 33, 49 - aH / 2, 10, aH, Math.min(4, aH / 2)); g.fill(); rund(g, 57, 49 - aH / 2, 10, aH, Math.min(4, aH / 2)); g.fill();
+    // Augen
+    var farbe = { wut: "#ff4040", trauer: "#7fb0ff", jubel: "#ffd84a", grummel: "#ffb03e" }[f] || "#3ef2ff";
+    g.fillStyle = farbe; g.strokeStyle = farbe; g.shadowColor = farbe; g.shadowBlur = 8; g.lineCap = "round";
+    var zu = (t % 4.3) < 0.12;
+    function auge(cx, links) {
+      if (f === "wut") { // schräg nach innen
+        g.beginPath(); if (links) { g.moveTo(cx - 6, 44); g.lineTo(cx + 6, 48); g.lineTo(cx + 5, 54); g.lineTo(cx - 5, 53); }
+        else { g.moveTo(cx + 6, 44); g.lineTo(cx - 6, 48); g.lineTo(cx - 5, 54); g.lineTo(cx + 5, 53); } g.closePath(); g.fill();
+      } else if (f === "trauer") { // hängend, nach außen abfallend
+        g.beginPath(); if (links) { g.moveTo(cx - 6, 50); g.lineTo(cx + 5, 46); g.lineTo(cx + 5, 52); g.lineTo(cx - 5, 54); }
+        else { g.moveTo(cx + 6, 50); g.lineTo(cx - 5, 46); g.lineTo(cx - 5, 52); g.lineTo(cx + 5, 54); } g.closePath(); g.fill();
+      } else if (f === "schock" || f === "staunen") {
+        var r = f === "schock" ? 7.5 : 6; g.beginPath(); g.arc(cx, 49, r, 0, PI2); g.fill();
+        g.shadowBlur = 0; g.fillStyle = "#0a0f1e"; g.beginPath(); g.arc(cx, 49, r * 0.38, 0, PI2); g.fill(); g.fillStyle = farbe; g.shadowBlur = 8;
+      } else if (f === "jubel") { // Sterne
+        g.beginPath(); for (var j = 0; j < 10; j++) { var w = j * Math.PI / 5 - Math.PI / 2 + t * 2, rr = j % 2 ? 3 : 7.5; g.lineTo(cx + Math.cos(w) * rr, 49 + Math.sin(w) * rr); } g.closePath(); g.fill();
+      } else if (f === "frech" && !links) { // Zwinkern
+        g.lineWidth = 3; g.beginPath(); g.moveTo(cx - 5, 50); g.quadraticCurveTo(cx, 45, cx + 5, 50); g.stroke();
+      } else if (f === "froh") { // lachende Bögen
+        g.lineWidth = 3.4; g.beginPath(); g.moveTo(cx - 5, 51); g.quadraticCurveTo(cx, 43, cx + 5, 51); g.stroke();
+      } else if (f === "grummel") { // halb geschlossen
+        rund(g, cx - 5, 49, 10, 5, 2); g.fill(); g.fillRect(cx - 6, 47.5, 12, 1.5);
+      } else { var aH = zu ? 1.5 : 10; rund(g, cx - 5, 49 - aH / 2, 10, aH, Math.min(4, aH / 2)); g.fill(); }
+    }
+    auge(38, true); auge(62, false);
     // Mund
-    var mh = staunen ? 9 : 2.5 + mund * 9, mw = staunen ? 10 : 20 - mund * 4;
-    rund(g, 50 - mw / 2, 65 - mh / 2, mw, mh, Math.min(4, mh / 2)); g.fill();
+    g.lineWidth = 3;
+    if (f === "wut") { var mw1 = 18 + mund * 4, mh1 = 4 + mund * 7; rund(g, 50 - mw1 / 2, 66 - mh1 / 2, mw1, mh1, 2); g.fill();
+      g.shadowBlur = 0; g.strokeStyle = "#0a0f1e"; g.lineWidth = 1.2; for (var z = -1; z <= 1; z++) { g.beginPath(); g.moveTo(50 + z * 5, 66 - mh1 / 2); g.lineTo(50 + z * 5, 66 + mh1 / 2); g.stroke(); } }
+    else if (f === "trauer" || f === "grummel") { g.beginPath(); g.moveTo(40, 70); g.quadraticCurveTo(50, 62 - mund * 4, 60, 70); g.stroke(); }
+    else if (f === "schock") { g.beginPath(); g.ellipse(50, 66, 6 + mund * 2, 7 + mund * 3, 0, 0, PI2); g.fill(); }
+    else if (f === "staunen") { rund(g, 45, 61.5, 10, 9, 4); g.fill(); }
+    else if (f === "jubel" || f === "froh") { g.beginPath(); g.moveTo(37, 62); g.quadraticCurveTo(50, 78 + mund * 4, 63, 62); g.closePath(); g.fill(); }
+    else if (f === "frech") { g.beginPath(); g.moveTo(40, 66); g.quadraticCurveTo(52, 71 + mund * 4, 61, 61); g.stroke(); }
+    else { var mh = 2.5 + mund * 9, mw = 20 - mund * 4; rund(g, 50 - mw / 2, 65 - mh / 2, mw, mh, Math.min(4, mh / 2)); g.fill(); }
     g.shadowBlur = 0;
+    // Tränen
+    if (f === "trauer") {
+      for (var n = 0; n < 2; n++) { var tp = (t * 0.9 + n * 0.5) % 1; g.fillStyle = "rgba(127,176,255," + (1 - tp).toFixed(2) + ")";
+        [36, 64].forEach(function (tx) { g.beginPath(); g.ellipse(tx, 56 + tp * 30, 2.2, 3.2, 0, 0, PI2); g.fill(); }); }
+    }
+    // Wut-Ader
+    if (f === "wut") { g.strokeStyle = "#ff4040"; g.lineWidth = 2.4; var vx = 72, vy = 33; g.beginPath(); g.moveTo(vx - 4, vy - 1); g.lineTo(vx - 1, vy - 1); g.lineTo(vx - 1, vy - 4); g.moveTo(vx + 1, vy - 4); g.lineTo(vx + 1, vy - 1); g.lineTo(vx + 4, vy - 1); g.moveTo(vx + 4, vy + 1); g.lineTo(vx + 1, vy + 1); g.lineTo(vx + 1, vy + 4); g.moveTo(vx - 1, vy + 4); g.lineTo(vx - 1, vy + 1); g.lineTo(vx - 4, vy + 1); g.stroke(); }
+    // Schweißtropfen beim Schock
+    if (f === "schock") { g.fillStyle = "#9fdcff"; g.beginPath(); g.moveTo(80, 30); g.quadraticCurveTo(85, 38, 80, 41); g.quadraticCurveTo(75, 38, 80, 30); g.fill(); }
+    g.restore();
     g.restore();
   }
   function namensSchild(g, x, y, k) {
@@ -726,7 +919,7 @@
     var gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, "rgba(10,11,16,.92)"); gr.addColorStop(1, "rgba(28,14,48,.96)");
     g.fillStyle = gr; g.fillRect(0, 0, W, H);
     var hoch = Z.format === "hoch", s = hoch ? 330 : 210, cx = W / 2;
-    avatar(g, cx - s / 2, hoch ? 520 : 90, s, mund, t, false);
+    avatar(g, cx - s / 2, hoch ? 520 : 90, s, mund, t, Z.laune <= -1.5 ? "grummel" : "froh");
     g.textAlign = "center"; g.textBaseline = "middle";
     g.font = "800 " + (hoch ? 96 : 64) + "px 'Space Grotesk', Arial, sans-serif"; schrift(g, hz() ? "Bis zum nächsten Mal! 👋" : "Bleibt krawallig! 👋", cx, hoch ? 1020 : 380, "#ffcf33", 10);
     g.font = "500 " + (hoch ? 46 : 30) + "px 'Space Grotesk', Arial, sans-serif"; g.fillStyle = "#e6eaf3"; g.fillText(Z.S.spiel + " kostenlos spielen:", cx, hoch ? 1150 : 460);
