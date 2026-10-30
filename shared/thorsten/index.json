@@ -91,88 +91,99 @@
    "gruppe": "ko_treffer",
    "text": "Ja! Erwischt!",
    "datei": "ton/treffer-1.mp3",
-   "dauer": 1.2,
-   "hash": "503272f0b1de"
+   "dauer": 1.04,
+   "hash": "f62f0b9f2d4f",
+   "gefuehl": "frech"
   },
   {
    "id": "treffer-2",
    "gruppe": "ko_treffer",
    "text": "Den hab ich umgehauen!",
    "datei": "ton/treffer-2.mp3",
-   "dauer": 1.23,
-   "hash": "ea674f8575ed"
+   "dauer": 1.12,
+   "hash": "efb564869c74",
+   "gefuehl": "frech"
   },
   {
    "id": "treffer-3",
    "gruppe": "ko_treffer",
    "text": "Boom! Der ist raus!",
    "datei": "ton/treffer-3.mp3",
-   "dauer": 1.31,
-   "hash": "1cc957426e8a"
+   "dauer": 1.28,
+   "hash": "d051ac0feee1",
+   "gefuehl": "frech"
   },
   {
    "id": "treffer-4",
    "gruppe": "ko_treffer",
    "text": "Einer weniger, weiter so!",
    "datei": "ton/treffer-4.mp3",
-   "dauer": 1.44,
-   "hash": "d3d3fcf8c107"
+   "dauer": 1.46,
+   "hash": "f2468bf8b759",
+   "gefuehl": "frech"
   },
   {
    "id": "treffer-5",
    "gruppe": "ko_treffer",
    "text": "Sauber! Das war mein Moment!",
    "datei": "ton/treffer-5.mp3",
-   "dauer": 1.72,
-   "hash": "2bcb1c483a3d"
+   "dauer": 1.59,
+   "hash": "a8f154b0ab85",
+   "gefuehl": "frech"
   },
   {
    "id": "treffer-6",
    "gruppe": "ko_treffer",
    "text": "Haha, damit hat er nicht gerechnet!",
    "datei": "ton/treffer-6.mp3",
-   "dauer": 1.83,
-   "hash": "2a45a0363d8b"
+   "dauer": 1.75,
+   "hash": "715be376c846",
+   "gefuehl": "frech"
   },
   {
    "id": "raus-1",
    "gruppe": "ko_raus",
    "text": "Nein! Mein Tier ist raus!",
    "datei": "ton/raus-1.mp3",
-   "dauer": 1.62,
-   "hash": "72ab7b7ae622"
+   "dauer": 1.44,
+   "hash": "9c8cea9d510c",
+   "gefuehl": "wut"
   },
   {
    "id": "raus-2",
    "gruppe": "ko_raus",
    "text": "Autsch. Das hat wehgetan.",
    "datei": "ton/raus-2.mp3",
-   "dauer": 1.67,
-   "hash": "7360db110241"
+   "dauer": 1.41,
+   "hash": "b3db53a1cdd8",
+   "gefuehl": "wut"
   },
   {
    "id": "raus-3",
    "gruppe": "ko_raus",
    "text": "Okay, das war nicht mein bester Moment.",
    "datei": "ton/raus-3.mp3",
-   "dauer": 2.06,
-   "hash": "9f1ef7a921d6"
+   "dauer": 1.83,
+   "hash": "2e91c494d9bc",
+   "gefuehl": "wut"
   },
   {
    "id": "raus-4",
    "gruppe": "ko_raus",
    "text": "Wer hat mich da bitte erwischt?",
    "datei": "ton/raus-4.mp3",
-   "dauer": 1.52,
-   "hash": "56f316cb7fc2"
+   "dauer": 1.33,
+   "hash": "3fdd2291af11",
+   "gefuehl": "wut"
   },
   {
    "id": "raus-5",
    "gruppe": "ko_raus",
    "text": "Uff. Kurze Pause für mein Fell.",
    "datei": "ton/raus-5.mp3",
-   "dauer": 1.83,
-   "hash": "b1a15257f610"
+   "dauer": 1.65,
+   "hash": "fdb8606d1c7a",
+   "gefuehl": "wut"
   },
   {
    "id": "andere-1",
@@ -347,32 +358,36 @@
    "gruppe": "sieg",
    "text": "Ja! Gewonnen! Was für eine Runde!",
    "datei": "ton/sieg-1.mp3",
-   "dauer": 2.32,
-   "hash": "f9af260dfb44"
+   "dauer": 1.78,
+   "hash": "0942a60fb2c4",
+   "gefuehl": "jubel"
   },
   {
    "id": "sieg-2",
    "gruppe": "sieg",
    "text": "Sieg! Ich wusste es. Okay, ich hab's gehofft.",
    "datei": "ton/sieg-2.mp3",
-   "dauer": 2.98,
-   "hash": "6eb40600c573"
+   "dauer": 2.46,
+   "hash": "f709cfc9a84d",
+   "gefuehl": "jubel"
   },
   {
    "id": "sieg-3",
    "gruppe": "sieg",
    "text": "Wir haben gewonnen! Tanzpause!",
    "datei": "ton/sieg-3.mp3",
-   "dauer": 1.93,
-   "hash": "9a0203eb572d"
+   "dauer": 1.7,
+   "hash": "a8df74018bf1",
+   "gefuehl": "jubel"
   },
   {
    "id": "sieg-4",
    "gruppe": "sieg",
    "text": "Und das, liebe Leute, nennt man Krawall!",
    "datei": "ton/sieg-4.mp3",
-   "dauer": 2.59,
-   "hash": "5559964ee71c"
+   "dauer": 2.51,
+   "hash": "2bd811661711",
+   "gefuehl": "jubel"
   },
   {
    "id": "platz-1",
@@ -395,24 +410,27 @@
    "gruppe": "niederlage",
    "text": "Verloren. Aber hey, das Fell wächst nach!",
    "datei": "ton/verloren-1.mp3",
-   "dauer": 2.48,
-   "hash": "a329e84f84ee"
+   "dauer": 2.64,
+   "hash": "01e209937aa9",
+   "gefuehl": "trauer"
   },
   {
    "id": "verloren-2",
    "gruppe": "niederlage",
    "text": "Das war nix. Revanche, sofort!",
    "datei": "ton/verloren-2.mp3",
-   "dauer": 2.14,
-   "hash": "a401a4031ab3"
+   "dauer": 2.17,
+   "hash": "75bbcddeccdb",
+   "gefuehl": "trauer"
   },
   {
    "id": "verloren-3",
    "gruppe": "niederlage",
    "text": "Okay, die anderen waren heute besser. Respekt!",
    "datei": "ton/verloren-3.mp3",
-   "dauer": 2.69,
-   "hash": "889d79a51ebc"
+   "dauer": 3.11,
+   "hash": "b2e5ff7735ef",
+   "gefuehl": "trauer"
   },
   {
    "id": "fuell-1",
@@ -971,16 +989,18 @@
    "gruppe": "hz_problem_brand",
    "text": "Oh nein, es brennt! Feuerwehr, schnell!",
    "datei": "ton/hz-problem-brand-1.mp3",
-   "dauer": 2.66,
-   "hash": "45a0d6f832de"
+   "dauer": 2.3,
+   "hash": "14521f75002d",
+   "gefuehl": "schock"
   },
   {
    "id": "hz-problem-brand-2",
    "gruppe": "hz_problem_brand",
    "text": "Da kommt Rauch raus! Das ist kein Grillfest!",
    "datei": "ton/hz-problem-brand-2.mp3",
-   "dauer": 2.51,
-   "hash": "e32b7d214f23"
+   "dauer": 2.12,
+   "hash": "91ada60e9dfd",
+   "gefuehl": "schock"
   },
   {
    "id": "hz-problem-stau-1",
@@ -1067,8 +1087,9 @@
    "gruppe": "hz_problem",
    "text": "Oh oh. Da läuft gerade etwas schief.",
    "datei": "ton/hz-problem-1.mp3",
-   "dauer": 2.06,
-   "hash": "2adbadf2d1c5"
+   "dauer": 1.8,
+   "hash": "e0bc2fd675e8",
+   "gefuehl": "schock"
   },
   {
    "id": "hz-loesung-brand-1",
@@ -1163,16 +1184,18 @@
    "gruppe": "hz_loesung_nicht",
    "text": "Hm, da passt nichts hin. Darum kümmere ich mich später.",
    "datei": "ton/hz-loesung-nicht-1.mp3",
-   "dauer": 2.77,
-   "hash": "94f9bde1fd67"
+   "dauer": 3.0,
+   "hash": "0954e5c05d0a",
+   "gefuehl": "trauer"
   },
   {
    "id": "hz-loesung-nicht-2",
    "gruppe": "hz_loesung_nicht",
    "text": "Okay, das kann ich gerade nicht reparieren. Weiter geht's!",
    "datei": "ton/hz-loesung-nicht-2.mp3",
-   "dauer": 3.06,
-   "hash": "1a87a3265897"
+   "dauer": 3.11,
+   "hash": "f467c2b97091",
+   "gefuehl": "trauer"
   },
   {
    "id": "kz-wechsel-1",
@@ -1219,16 +1242,18 @@
    "gruppe": "kz_frueh_raus",
    "text": "Was? Ich war noch gar nicht richtig da!",
    "datei": "ton/kz-frueh-raus-1.mp3",
-   "dauer": 1.99,
-   "hash": "947dcb419401"
+   "dauer": 1.83,
+   "hash": "8bcda6b29ea6",
+   "gefuehl": "wut"
   },
   {
    "id": "kz-frueh-raus-2",
    "gruppe": "kz_frueh_raus",
    "text": "Das ging schnell. Zu schnell!",
    "datei": "ton/kz-frueh-raus-2.mp3",
-   "dauer": 1.72,
-   "hash": "12bf544d3c03"
+   "dauer": 1.44,
+   "hash": "015492363439",
+   "gefuehl": "wut"
   },
   {
    "id": "kz-nebel-ich-1",
@@ -1251,48 +1276,54 @@
    "gruppe": "kz_knapp",
    "text": "Ganz wenig Leben! Jetzt bloß vorsichtig.",
    "datei": "ton/kz-knapp-1.mp3",
-   "dauer": 2.46,
-   "hash": "ccd88886f492"
+   "dauer": 2.27,
+   "hash": "5015cf512940",
+   "gefuehl": "schock"
   },
   {
    "id": "kz-knapp-2",
    "gruppe": "kz_knapp",
    "text": "Uiuiui, das wird knapp!",
    "datei": "ton/kz-knapp-2.mp3",
-   "dauer": 1.78,
-   "hash": "99239783e0dc"
+   "dauer": 1.46,
+   "hash": "8bb0c6972eed",
+   "gefuehl": "schock"
   },
   {
    "id": "kz-pech-1",
    "gruppe": "kz_pech",
    "text": "Schon wieder verloren. Heute ist nicht mein Tag.",
    "datei": "ton/kz-pech-1.mp3",
-   "dauer": 2.35,
-   "hash": "c567bb9e9caf"
+   "dauer": 2.17,
+   "hash": "6bfc253985ea",
+   "gefuehl": "wut"
   },
   {
    "id": "kz-pech-2",
    "gruppe": "kz_pech",
    "text": "Okay, die Bots sind heute echt gut. Ich gebe nicht auf!",
    "datei": "ton/kz-pech-2.mp3",
-   "dauer": 3.03,
-   "hash": "6456c2bfb8be"
+   "dauer": 2.64,
+   "hash": "5ebb24817151",
+   "gefuehl": "wut"
   },
   {
    "id": "kz-endlich-1",
    "gruppe": "kz_endlich",
    "text": "Endlich! Nach all den Niederlagen ein Sieg!",
    "datei": "ton/kz-endlich-1.mp3",
-   "dauer": 2.77,
-   "hash": "d53bc20ff14d"
+   "dauer": 2.06,
+   "hash": "fbdea1681490",
+   "gefuehl": "jubel"
   },
   {
    "id": "kz-endlich-2",
    "gruppe": "kz_endlich",
    "text": "Ich hab's euch gesagt, ich gebe nicht auf!",
    "datei": "ton/kz-endlich-2.mp3",
-   "dauer": 2.12,
-   "hash": "dab48fcc414a"
+   "dauer": 1.88,
+   "hash": "db1a9647f1b3",
+   "gefuehl": "jubel"
   },
   {
    "id": "app-quiz-1",
@@ -1989,6 +2020,429 @@
    "datei": "ton/hz-extra-sport.mp3",
    "dauer": 2.04,
    "hash": "54d18a8a773a"
+  },
+  {
+   "id": "emo-gekillt-1",
+   "gruppe": "emo_gekillt",
+   "text": "Nein, nein, nein! Wer war das?!",
+   "datei": "ton/emo-gekillt-1.mp3",
+   "dauer": 2.27,
+   "hash": "7b0bb191c1ca",
+   "gefuehl": "wut"
+  },
+  {
+   "id": "emo-gekillt-2",
+   "gruppe": "emo_gekillt",
+   "text": "Was?! Das gibt's doch nicht! Ich war fast weg!",
+   "datei": "ton/emo-gekillt-2.mp3",
+   "dauer": 2.32,
+   "hash": "a49b0b068b6f",
+   "gefuehl": "wut"
+  },
+  {
+   "id": "emo-gekillt-3",
+   "gruppe": "emo_gekillt",
+   "text": "Ahhh! Das war unfair! Komplett unfair!",
+   "datei": "ton/emo-gekillt-3.mp3",
+   "dauer": 2.3,
+   "hash": "2740b4558cbf",
+   "gefuehl": "wut"
+  },
+  {
+   "id": "emo-gekillt-4",
+   "gruppe": "emo_gekillt",
+   "text": "Neeein! Ich komme wieder, versprochen!",
+   "datei": "ton/emo-gekillt-4.mp3",
+   "dauer": 2.12,
+   "hash": "c955ff39af51",
+   "gefuehl": "wut"
+  },
+  {
+   "id": "emo-gekillt-5",
+   "gruppe": "emo_gekillt",
+   "text": "Wie bitte?! Von hinten? Echt jetzt?!",
+   "datei": "ton/emo-gekillt-5.mp3",
+   "dauer": 1.8,
+   "hash": "22006f96fa71",
+   "gefuehl": "wut"
+  },
+  {
+   "id": "emo-gekillt-6",
+   "gruppe": "emo_gekillt",
+   "text": "Boah! Das zahle ich dir heim!",
+   "datei": "ton/emo-gekillt-6.mp3",
+   "dauer": 1.75,
+   "hash": "f0a03f641da2",
+   "gefuehl": "wut"
+  },
+  {
+   "id": "tor-gegen-1",
+   "gruppe": "tor_gegen",
+   "text": "Nein! Das darf doch nicht wahr sein! Wer verteidigt hier eigentlich?!",
+   "datei": "ton/tor-gegen-1.mp3",
+   "dauer": 3.19,
+   "hash": "0cb69f76e271",
+   "gefuehl": "wut"
+  },
+  {
+   "id": "tor-gegen-2",
+   "gruppe": "tor_gegen",
+   "text": "Gegentor?! Ich glaub's nicht! Wo war die Abwehr?!",
+   "datei": "ton/tor-gegen-2.mp3",
+   "dauer": 2.48,
+   "hash": "4b63af789eff",
+   "gefuehl": "wut"
+  },
+  {
+   "id": "tor-gegen-3",
+   "gruppe": "tor_gegen",
+   "text": "Ahhh! Der Ball war doch schon draußen! ... Oder?",
+   "datei": "ton/tor-gegen-3.mp3",
+   "dauer": 2.27,
+   "hash": "e24b685ff4e6",
+   "gefuehl": "wut"
+  },
+  {
+   "id": "tor-gegen-4",
+   "gruppe": "tor_gegen",
+   "text": "Nein, nein, nein! Das war ein Fehler. Mein Fehler. Leider.",
+   "datei": "ton/tor-gegen-4.mp3",
+   "dauer": 3.66,
+   "hash": "fb396f1114a7",
+   "gefuehl": "wut"
+  },
+  {
+   "id": "tor-rueckstand-1",
+   "gruppe": "tor_rueckstand",
+   "text": "Okay, eins zu null für die. Kein Problem. Gar kein Problem. ... Doch, ein bisschen Problem!",
+   "datei": "ton/tor-rueckstand-1.mp3",
+   "dauer": 4.28,
+   "hash": "7f1915e10d87",
+   "gefuehl": "wut"
+  },
+  {
+   "id": "tor-rueckstand-2",
+   "gruppe": "tor_rueckstand",
+   "text": "Wir liegen hinten! Jetzt aber Gas geben, Leute!",
+   "datei": "ton/tor-rueckstand-2.mp3",
+   "dauer": 2.59,
+   "hash": "6b5a65c91470",
+   "gefuehl": "wut"
+  },
+  {
+   "id": "tor-rueckstand-3",
+   "gruppe": "tor_rueckstand",
+   "text": "Rückstand! Na warte, das holen wir auf!",
+   "datei": "ton/tor-rueckstand-3.mp3",
+   "dauer": 2.51,
+   "hash": "af0f32463c14",
+   "gefuehl": "wut"
+  },
+  {
+   "id": "tor-ausgleich-gegen-1",
+   "gruppe": "tor_ausgleich_gegen",
+   "text": "Was?! Ausgleich?! Wir hatten das doch schon!",
+   "datei": "ton/tor-ausgleich-gegen-1.mp3",
+   "dauer": 2.19,
+   "hash": "f927e4833010",
+   "gefuehl": "schock"
+  },
+  {
+   "id": "tor-ausgleich-gegen-2",
+   "gruppe": "tor_ausgleich_gegen",
+   "text": "Eins zu eins! Jetzt wird's richtig spannend. Und ich hab Angst!",
+   "datei": "ton/tor-ausgleich-gegen-2.mp3",
+   "dauer": 3.08,
+   "hash": "fb017d31b95c",
+   "gefuehl": "schock"
+  },
+  {
+   "id": "tor-ausgleich-gegen-3",
+   "gruppe": "tor_ausgleich_gegen",
+   "text": "Ausgleich für die anderen! Mein Herz! Also, mein Prozessor!",
+   "datei": "ton/tor-ausgleich-gegen-3.mp3",
+   "dauer": 3.13,
+   "hash": "1fdaf9bd11a7",
+   "gefuehl": "schock"
+  },
+  {
+   "id": "tor-eigen-1",
+   "gruppe": "tor_eigen",
+   "text": "Tor! Tor! Tor! Habt ihr das gesehen?!",
+   "datei": "ton/tor-eigen-1.mp3",
+   "dauer": 2.27,
+   "hash": "467e2eab4fbb",
+   "gefuehl": "jubel"
+  },
+  {
+   "id": "tor-eigen-2",
+   "gruppe": "tor_eigen",
+   "text": "Jaaa! Drin ist das Ding!",
+   "datei": "ton/tor-eigen-2.mp3",
+   "dauer": 1.54,
+   "hash": "51eb93b09e7f",
+   "gefuehl": "jubel"
+  },
+  {
+   "id": "tor-eigen-3",
+   "gruppe": "tor_eigen",
+   "text": "Tooor! Was für ein Schuss!",
+   "datei": "ton/tor-eigen-3.mp3",
+   "dauer": 1.36,
+   "hash": "26c52fbd37fb",
+   "gefuehl": "jubel"
+  },
+  {
+   "id": "tor-eigen-4",
+   "gruppe": "tor_eigen",
+   "text": "Ja! Genau so! Weiter so, Team!",
+   "datei": "ton/tor-eigen-4.mp3",
+   "dauer": 2.22,
+   "hash": "cde0aaf1e0ee",
+   "gefuehl": "jubel"
+  },
+  {
+   "id": "tor-selbst-1",
+   "gruppe": "tor_selbst",
+   "text": "Ich! Ich hab's gemacht! Tor von Thorsten!",
+   "datei": "ton/tor-selbst-1.mp3",
+   "dauer": 2.09,
+   "hash": "6f5cdb2e5241",
+   "gefuehl": "jubel"
+  },
+  {
+   "id": "tor-selbst-2",
+   "gruppe": "tor_selbst",
+   "text": "Jaaa! Was für ein Schuss von mir! Ich bin ein Genie!",
+   "datei": "ton/tor-selbst-2.mp3",
+   "dauer": 2.3,
+   "hash": "e73aa394d972",
+   "gefuehl": "jubel"
+  },
+  {
+   "id": "tor-selbst-3",
+   "gruppe": "tor_selbst",
+   "text": "Thorsten trifft! Das kommt in die Highlights!",
+   "datei": "ton/tor-selbst-3.mp3",
+   "dauer": 2.14,
+   "hash": "ac81fd23ebcf",
+   "gefuehl": "jubel"
+  },
+  {
+   "id": "tor-ausgleich-1",
+   "gruppe": "tor_ausgleich",
+   "text": "Ausgleich! Jaaa! Wir sind wieder da!",
+   "datei": "ton/tor-ausgleich-1.mp3",
+   "dauer": 2.19,
+   "hash": "ab9806ae59ff",
+   "gefuehl": "jubel"
+  },
+  {
+   "id": "tor-ausgleich-2",
+   "gruppe": "tor_ausgleich",
+   "text": "Eins zu eins! Jetzt geht's richtig los!",
+   "datei": "ton/tor-ausgleich-2.mp3",
+   "dauer": 2.06,
+   "hash": "836b29c9bbe8",
+   "gefuehl": "jubel"
+  },
+  {
+   "id": "tor-ausgleich-3",
+   "gruppe": "tor_ausgleich",
+   "text": "Ausgleich! Ich wusste es! Ich wusste es!",
+   "datei": "ton/tor-ausgleich-3.mp3",
+   "dauer": 2.06,
+   "hash": "79d575a74635",
+   "gefuehl": "jubel"
+  },
+  {
+   "id": "kz-fuehrung-ich-1",
+   "gruppe": "kz_fuehrung_ich",
+   "text": "Wir haben zehn Früchte! Jetzt nur noch festhalten!",
+   "datei": "ton/kz-fuehrung-ich-1.mp3",
+   "dauer": 2.32,
+   "hash": "92a436dc9e24",
+   "gefuehl": "jubel"
+  },
+  {
+   "id": "kz-fuehrung-ich-2",
+   "gruppe": "kz_fuehrung_ich",
+   "text": "Führung! Bitte, bitte nicht wieder verlieren!",
+   "datei": "ton/kz-fuehrung-ich-2.mp3",
+   "dauer": 2.06,
+   "hash": "89f24ac72eab",
+   "gefuehl": "jubel"
+  },
+  {
+   "id": "kz-fuehrung-gegen-1",
+   "gruppe": "kz_fuehrung_gegen",
+   "text": "Oh nein, die haben zehn Früchte! Schnell, holt sie euch!",
+   "datei": "ton/kz-fuehrung-gegen-1.mp3",
+   "dauer": 2.64,
+   "hash": "a0fd6143563c",
+   "gefuehl": "schock"
+  },
+  {
+   "id": "kz-fuehrung-gegen-2",
+   "gruppe": "kz_fuehrung_gegen",
+   "text": "Die anderen führen! Alarm! Alarm!",
+   "datei": "ton/kz-fuehrung-gegen-2.mp3",
+   "dauer": 1.96,
+   "hash": "ec63e30d3bfd",
+   "gefuehl": "schock"
+  },
+  {
+   "id": "laune-genervt-1",
+   "gruppe": "laune_genervt",
+   "text": "Okay, jetzt reicht's mir! Ab jetzt wird zurückgeschlagen!",
+   "datei": "ton/laune-genervt-1.mp3",
+   "dauer": 2.77,
+   "hash": "7c47400c8a87",
+   "gefuehl": "wut"
+  },
+  {
+   "id": "laune-genervt-2",
+   "gruppe": "laune_genervt",
+   "text": "Leute, ich bin ein bisschen sauer. Nur ein bisschen. Sehr.",
+   "datei": "ton/laune-genervt-2.mp3",
+   "dauer": 3.06,
+   "hash": "f39afad82754",
+   "gefuehl": "wut"
+  },
+  {
+   "id": "laune-genervt-3",
+   "gruppe": "laune_genervt",
+   "text": "Heute ist echt nicht mein Tag. Aber aufgeben? Niemals!",
+   "datei": "ton/laune-genervt-3.mp3",
+   "dauer": 2.66,
+   "hash": "ec78d2c87de2",
+   "gefuehl": "wut"
+  },
+  {
+   "id": "laune-genervt-4",
+   "gruppe": "laune_genervt",
+   "text": "Ich bin ruhig. Ich bin ganz ruhig. ... Nein, bin ich nicht!",
+   "datei": "ton/laune-genervt-4.mp3",
+   "dauer": 2.64,
+   "hash": "453c86326328",
+   "gefuehl": "wut"
+  },
+  {
+   "id": "laune-super-1",
+   "gruppe": "laune_super",
+   "text": "Leute, ich bin heute einfach nicht zu stoppen!",
+   "datei": "ton/laune-super-1.mp3",
+   "dauer": 2.06,
+   "hash": "1419972188ce",
+   "gefuehl": "jubel"
+  },
+  {
+   "id": "laune-super-2",
+   "gruppe": "laune_super",
+   "text": "Läuft bei mir! Läuft richtig gut!",
+   "datei": "ton/laune-super-2.mp3",
+   "dauer": 1.72,
+   "hash": "fb8cbc78e3de",
+   "gefuehl": "jubel"
+  },
+  {
+   "id": "laune-super-3",
+   "gruppe": "laune_super",
+   "text": "Ich glaube, ich bin der beste Krawallzoo-Spieler der Welt! Na gut, fast.",
+   "datei": "ton/laune-super-3.mp3",
+   "dauer": 3.5,
+   "hash": "a6249ca72481",
+   "gefuehl": "jubel"
+  },
+  {
+   "id": "emo-traurig-1",
+   "gruppe": "emo_traurig",
+   "text": "Oh nein. Das war's. Ich bin traurig.",
+   "datei": "ton/emo-traurig-1.mp3",
+   "dauer": 2.64,
+   "hash": "b8f7b5d77a14",
+   "gefuehl": "trauer"
+  },
+  {
+   "id": "emo-traurig-2",
+   "gruppe": "emo_traurig",
+   "text": "Verloren. Ich brauche jetzt kurz eine Pause. ... Okay, schon vorbei.",
+   "datei": "ton/emo-traurig-2.mp3",
+   "dauer": 3.66,
+   "hash": "9c48ad2a7d41",
+   "gefuehl": "trauer"
+  },
+  {
+   "id": "emo-traurig-3",
+   "gruppe": "emo_traurig",
+   "text": "Schnief. Das tut weh. Aber nächste Runde wird besser.",
+   "datei": "ton/emo-traurig-3.mp3",
+   "dauer": 3.4,
+   "hash": "959e824279aa",
+   "gefuehl": "trauer"
+  },
+  {
+   "id": "hz-emo-brand-1",
+   "gruppe": "hz_emo_brand",
+   "text": "Feuer! Feuer! Ruft die Feuerwehr! Ach, das bin ja ich!",
+   "datei": "ton/hz-emo-brand-1.mp3",
+   "dauer": 3.21,
+   "hash": "62cbe322b5a0",
+   "gefuehl": "schock"
+  },
+  {
+   "id": "hz-emo-brand-2",
+   "gruppe": "hz_emo_brand",
+   "text": "Es brennt! Oh nein, oh nein, oh nein!",
+   "datei": "ton/hz-emo-brand-2.mp3",
+   "dauer": 2.43,
+   "hash": "2dc644b8c54a",
+   "gefuehl": "schock"
+  },
+  {
+   "id": "hz-emo-brand-3",
+   "gruppe": "hz_emo_brand",
+   "text": "Was?! Da brennt ein Haus! Schnell, schnell!",
+   "datei": "ton/hz-emo-brand-3.mp3",
+   "dauer": 2.27,
+   "hash": "4b2b7bda1452",
+   "gefuehl": "schock"
+  },
+  {
+   "id": "hz-emo-1000-1",
+   "gruppe": "hz_emo_1000",
+   "text": "Tausend Einwohner! Tausend! Jaaa! Party in der ganzen Stadt!",
+   "datei": "ton/hz-emo-1000-1.mp3",
+   "dauer": 3.27,
+   "hash": "bb91ca52405d",
+   "gefuehl": "jubel"
+  },
+  {
+   "id": "hz-emo-1000-2",
+   "gruppe": "hz_emo_1000",
+   "text": "Wir haben die Tausend geknackt! Ich bin so stolz!",
+   "datei": "ton/hz-emo-1000-2.mp3",
+   "dauer": 2.3,
+   "hash": "f8fd1b929420",
+   "gefuehl": "jubel"
+  },
+  {
+   "id": "hz-emo-geschafft-1",
+   "gruppe": "hz_emo_geschafft",
+   "text": "Problem gelöst. Wie immer. Ich bin einfach gut.",
+   "datei": "ton/hz-emo-geschafft-1.mp3",
+   "dauer": 2.48,
+   "hash": "c81bbc8e7cfc",
+   "gefuehl": "frech"
+  },
+  {
+   "id": "hz-emo-geschafft-2",
+   "gruppe": "hz_emo_geschafft",
+   "text": "Repariert! Ganz locker. Hat jemand gezweifelt?",
+   "datei": "ton/hz-emo-geschafft-2.mp3",
+   "dauer": 2.56,
+   "hash": "06401fc7e3f4",
+   "gefuehl": "frech"
   }
  ]
 }
