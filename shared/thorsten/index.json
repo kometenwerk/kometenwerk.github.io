@@ -1293,6 +1293,702 @@
    "datei": "ton/kz-endlich-2.mp3",
    "dauer": 2.12,
    "hash": "dab48fcc414a"
+  },
+  {
+   "id": "app-quiz-1",
+   "gruppe": "app_quiz",
+   "text": "Vokabeln lernen nervt? Nicht mit dem Fidelia Quiz!",
+   "datei": "ton/app-quiz-1.mp3",
+   "dauer": 2.9,
+   "hash": "00b89ca87347",
+   "nr": 1
+  },
+  {
+   "id": "app-quiz-2",
+   "gruppe": "app_quiz",
+   "text": "Einfach die Buchseite einscannen, und schon hast du deine Lernkarten.",
+   "datei": "ton/app-quiz-2.mp3",
+   "dauer": 3.45,
+   "hash": "47268efd4c01",
+   "nr": 2
+  },
+  {
+   "id": "app-quiz-3",
+   "gruppe": "app_quiz",
+   "text": "Und es spricht dir die Wörter sogar vor.",
+   "datei": "ton/app-quiz-3.mp3",
+   "dauer": 1.85,
+   "hash": "e65024fbcef3",
+   "nr": 3
+  },
+  {
+   "id": "app-planer-1",
+   "gruppe": "app_planer",
+   "text": "Hausaufgabe vergessen? Das passiert dir nie wieder!",
+   "datei": "ton/app-planer-1.mp3",
+   "dauer": 2.74,
+   "hash": "62d4c5b3a8e5",
+   "nr": 1
+  },
+  {
+   "id": "app-planer-2",
+   "gruppe": "app_planer",
+   "text": "Im Fidelia Planer stehen Hausaufgaben, Tests und dein Stundenplan an einem Ort.",
+   "datei": "ton/app-planer-2.mp3",
+   "dauer": 4.83,
+   "hash": "ea8cbfe56006",
+   "nr": 2
+  },
+  {
+   "id": "app-planer-3",
+   "gruppe": "app_planer",
+   "text": "Ordnung in der Schultasche, ganz ohne Stress.",
+   "datei": "ton/app-planer-3.mp3",
+   "dauer": 2.35,
+   "hash": "bfca1ed2bde8",
+   "nr": 3
+  },
+  {
+   "id": "app-notizen-1",
+   "gruppe": "app_notizen",
+   "text": "Schnell was aufschreiben? Fidelia Notizen!",
+   "datei": "ton/app-notizen-1.mp3",
+   "dauer": 2.48,
+   "hash": "bd028cbfaee8",
+   "nr": 1
+  },
+  {
+   "id": "app-notizen-2",
+   "gruppe": "app_notizen",
+   "text": "Notizen und Listen zum Abhaken, alles sofort wiedergefunden.",
+   "datei": "ton/app-notizen-2.mp3",
+   "dauer": 3.47,
+   "hash": "308e61879702",
+   "nr": 2
+  },
+  {
+   "id": "app-notizen-3",
+   "gruppe": "app_notizen",
+   "text": "Perfekt für Einkaufslisten und Ideen.",
+   "datei": "ton/app-notizen-3.mp3",
+   "dauer": 2.17,
+   "hash": "8c60a6b0299b",
+   "nr": 3
+  },
+  {
+   "id": "app-fokus-1",
+   "gruppe": "app_fokus",
+   "text": "Beim Lernen immer abgelenkt? Ich kenne das.",
+   "datei": "ton/app-fokus-1.mp3",
+   "dauer": 2.38,
+   "hash": "e7c4857bc771",
+   "nr": 1
+  },
+  {
+   "id": "app-fokus-2",
+   "gruppe": "app_fokus",
+   "text": "Fidelia Fokus ist ein Lern-Timer mit Pausen.",
+   "datei": "ton/app-fokus-2.mp3",
+   "dauer": 2.87,
+   "hash": "69d9d419b909",
+   "nr": 2
+  },
+  {
+   "id": "app-fokus-3",
+   "gruppe": "app_fokus",
+   "text": "Und am Ende siehst du, wie viel du geschafft hast.",
+   "datei": "ton/app-fokus-3.mp3",
+   "dauer": 2.56,
+   "hash": "a61a4528afa4",
+   "nr": 3
+  },
+  {
+   "id": "app-beats-1",
+   "gruppe": "app_beats",
+   "text": "Du willst Musik machen? Dann probier Fidelia Beats!",
+   "datei": "ton/app-beats-1.mp3",
+   "dauer": 3.03,
+   "hash": "3b68a29f68b3",
+   "nr": 1
+  },
+  {
+   "id": "app-beats-2",
+   "gruppe": "app_beats",
+   "text": "Baue eigene Beats und Melodien, direkt im Browser.",
+   "datei": "ton/app-beats-2.mp3",
+   "dauer": 3.06,
+   "hash": "eb67dd028644",
+   "nr": 2
+  },
+  {
+   "id": "app-beats-3",
+   "gruppe": "app_beats",
+   "text": "Ich hab's ausprobiert. Ich bin jetzt Musik-Roboter.",
+   "datei": "ton/app-beats-3.mp3",
+   "dauer": 2.66,
+   "hash": "147e7a87cb81",
+   "nr": 3
+  },
+  {
+   "id": "app-kueche-1",
+   "gruppe": "app_kueche",
+   "text": "Wo war nochmal das Rezept vom Schokokuchen?",
+   "datei": "ton/app-kueche-1.mp3",
+   "dauer": 2.06,
+   "hash": "9e67d02783ba",
+   "nr": 1
+  },
+  {
+   "id": "app-kueche-2",
+   "gruppe": "app_kueche",
+   "text": "In Fidelia Küche landen alle deine Rezepte, per Link, Foto oder Text.",
+   "datei": "ton/app-kueche-2.mp3",
+   "dauer": 3.94,
+   "hash": "d8e8645956d3",
+   "nr": 2
+  },
+  {
+   "id": "app-kueche-3",
+   "gruppe": "app_kueche",
+   "text": "Einfach suchen, und los kochen!",
+   "datei": "ton/app-kueche-3.mp3",
+   "dauer": 1.91,
+   "hash": "ff914e5faa6b",
+   "nr": 3
+  },
+  {
+   "id": "app-taschengeld-1",
+   "gruppe": "app_taschengeld",
+   "text": "Wo ist mein Taschengeld schon wieder hin?",
+   "datei": "ton/app-taschengeld-1.mp3",
+   "dauer": 1.75,
+   "hash": "fcf04abc4d53",
+   "nr": 1
+  },
+  {
+   "id": "app-taschengeld-2",
+   "gruppe": "app_taschengeld",
+   "text": "Mit Fidelia Taschengeld siehst du Einnahmen, Ausgaben und deine Sparziele.",
+   "datei": "ton/app-taschengeld-2.mp3",
+   "dauer": 4.28,
+   "hash": "a8b4aff01d3d",
+   "nr": 2
+  },
+  {
+   "id": "app-taschengeld-3",
+   "gruppe": "app_taschengeld",
+   "text": "So klappt's auch mit dem großen Wunsch.",
+   "datei": "ton/app-taschengeld-3.mp3",
+   "dauer": 1.85,
+   "hash": "06e555488e7f",
+   "nr": 3
+  },
+  {
+   "id": "app-werkstatt-1",
+   "gruppe": "app_werkstatt",
+   "text": "Du bastelst gern? Dann schau in die Kometenwerk Werkstatt!",
+   "datei": "ton/app-werkstatt-1.mp3",
+   "dauer": 3.16,
+   "hash": "55f80c0f77b1",
+   "nr": 1
+  },
+  {
+   "id": "app-werkstatt-2",
+   "gruppe": "app_werkstatt",
+   "text": "Technik-Projekte zum Nachbauen, mit Bauteilen, Schaltplan und Code.",
+   "datei": "ton/app-werkstatt-2.mp3",
+   "dauer": 4.02,
+   "hash": "9a60b137684a",
+   "nr": 2
+  },
+  {
+   "id": "app-werkstatt-3",
+   "gruppe": "app_werkstatt",
+   "text": "Ab in die Werkstatt!",
+   "datei": "ton/app-werkstatt-3.mp3",
+   "dauer": 1.15,
+   "hash": "f6b0461465d4",
+   "nr": 3
+  },
+  {
+   "id": "app-ki-1",
+   "gruppe": "app_ki",
+   "text": "Eine KI, die nichts ins Internet schickt? Gibt's!",
+   "datei": "ton/app-ki-1.mp3",
+   "dauer": 2.53,
+   "hash": "17ae8ee6d3f9",
+   "nr": 1
+  },
+  {
+   "id": "app-ki-2",
+   "gruppe": "app_ki",
+   "text": "Aoris KI läuft direkt auf deinem Gerät.",
+   "datei": "ton/app-ki-2.mp3",
+   "dauer": 2.09,
+   "hash": "f23d7703ea77",
+   "nr": 2
+  },
+  {
+   "id": "app-ki-3",
+   "gruppe": "app_ki",
+   "text": "Deine Fragen bleiben bei dir.",
+   "datei": "ton/app-ki-3.mp3",
+   "dauer": 1.44,
+   "hash": "76c2909e6e5f",
+   "nr": 3
+  },
+  {
+   "id": "app-suche-1",
+   "gruppe": "app_suche",
+   "text": "Suchen, ohne dass jemand mitliest?",
+   "datei": "ton/app-suche-1.mp3",
+   "dauer": 2.06,
+   "hash": "754d49e333d7",
+   "nr": 1
+  },
+  {
+   "id": "app-suche-2",
+   "gruppe": "app_suche",
+   "text": "Die Omnivia Suche durchsucht alle unsere Apps, und auf Wunsch Wikipedia.",
+   "datei": "ton/app-suche-2.mp3",
+   "dauer": 4.28,
+   "hash": "9aec6a58de4c",
+   "nr": 2
+  },
+  {
+   "id": "app-suche-3",
+   "gruppe": "app_suche",
+   "text": "Und sie speichert nicht, was du suchst.",
+   "datei": "ton/app-suche-3.mp3",
+   "dauer": 1.93,
+   "hash": "0511bc735c9a",
+   "nr": 3
+  },
+  {
+   "id": "app-nachrichten-1",
+   "gruppe": "app_nachrichten",
+   "text": "Nachrichten, ohne Meinungsmache?",
+   "datei": "ton/app-nachrichten-1.mp3",
+   "dauer": 1.91,
+   "hash": "e1db0a22bd62",
+   "nr": 1
+  },
+  {
+   "id": "app-nachrichten-2",
+   "gruppe": "app_nachrichten",
+   "text": "Im Nachrichten-Heft kommt ein Thema erst, wenn mehrere große Medien berichten.",
+   "datei": "ton/app-nachrichten-2.mp3",
+   "dauer": 4.47,
+   "hash": "35fbbfe34439",
+   "nr": 2
+  },
+  {
+   "id": "app-nachrichten-3",
+   "gruppe": "app_nachrichten",
+   "text": "Und schwierige Sachen werden einfach erklärt.",
+   "datei": "ton/app-nachrichten-3.mp3",
+   "dauer": 2.4,
+   "hash": "0c85a2206cf5",
+   "nr": 3
+  },
+  {
+   "id": "app-krawallzoo-1",
+   "gruppe": "app_krawallzoo",
+   "text": "Tiere, Chaos und Spezialattacken? Willkommen im Krawallzoo!",
+   "datei": "ton/app-krawallzoo-1.mp3",
+   "dauer": 3.29,
+   "hash": "86683884e67e",
+   "nr": 1
+  },
+  {
+   "id": "app-krawallzoo-2",
+   "gruppe": "app_krawallzoo",
+   "text": "Sechs Spielmodi, Mischtiere und Skins. Spiel mit deinen Freunden.",
+   "datei": "ton/app-krawallzoo-2.mp3",
+   "dauer": 3.76,
+   "hash": "8c1b6fc7fb10",
+   "nr": 2
+  },
+  {
+   "id": "app-krawallzoo-3",
+   "gruppe": "app_krawallzoo",
+   "text": "Ich spiele es jeden Tag. Und verliere oft.",
+   "datei": "ton/app-krawallzoo-3.mp3",
+   "dauer": 2.3,
+   "hash": "d8bb323642a2",
+   "nr": 3
+  },
+  {
+   "id": "app-horizonte-1",
+   "gruppe": "app_horizonte",
+   "text": "Baue deine eigene Stadt, direkt im Browser!",
+   "datei": "ton/app-horizonte-1.mp3",
+   "dauer": 2.48,
+   "hash": "59cbeeafdea4",
+   "nr": 1
+  },
+  {
+   "id": "app-horizonte-2",
+   "gruppe": "app_horizonte",
+   "text": "In Horizonte gibt es Züge, Häfen und sogar einen Flughafen.",
+   "datei": "ton/app-horizonte-2.mp3",
+   "dauer": 3.76,
+   "hash": "3a808c8a4e26",
+   "nr": 2
+  },
+  {
+   "id": "app-horizonte-3",
+   "gruppe": "app_horizonte",
+   "text": "Meine Stadt ist übrigens die schönste.",
+   "datei": "ton/app-horizonte-3.mp3",
+   "dauer": 1.93,
+   "hash": "0cd91b063d57",
+   "nr": 3
+  },
+  {
+   "id": "app-notruf-1",
+   "gruppe": "app_notruf",
+   "text": "Achtung, Einsatz! Bald kommt Notruf Lindau.",
+   "datei": "ton/app-notruf-1.mp3",
+   "dauer": 2.85,
+   "hash": "c92e41871cd3",
+   "nr": 1
+  },
+  {
+   "id": "app-notruf-2",
+   "gruppe": "app_notruf",
+   "text": "Polizei, Feuerwehr und Rettung auf der Insel Lindau, bald auf Roblox.",
+   "datei": "ton/app-notruf-2.mp3",
+   "dauer": 4.21,
+   "hash": "b1a66151d9da",
+   "nr": 2
+  },
+  {
+   "id": "app-notruf-3",
+   "gruppe": "app_notruf",
+   "text": "Ich halte euch auf dem Laufenden!",
+   "datei": "ton/app-notruf-3.mp3",
+   "dauer": 1.46,
+   "hash": "ce730499cbc7",
+   "nr": 3
+  },
+  {
+   "id": "app-missionnova-1",
+   "gruppe": "app_missionnova",
+   "text": "Bald geht's ins Weltall! Mission Nova ist in Arbeit.",
+   "datei": "ton/app-missionnova-1.mp3",
+   "dauer": 2.98,
+   "hash": "71797e069870",
+   "nr": 1
+  },
+  {
+   "id": "app-missionnova-2",
+   "gruppe": "app_missionnova",
+   "text": "Erst die Astronauten-Ausbildung, dann mit der Rakete zur ISS.",
+   "datei": "ton/app-missionnova-2.mp3",
+   "dauer": 3.45,
+   "hash": "d1ac8b74ac8f",
+   "nr": 2
+  },
+  {
+   "id": "app-missionnova-3",
+   "gruppe": "app_missionnova",
+   "text": "Ich packe schon mal meinen Raumanzug.",
+   "datei": "ton/app-missionnova-3.mp3",
+   "dauer": 1.7,
+   "hash": "7b580ce79068",
+   "nr": 3
+  },
+  {
+   "id": "app-konto-1",
+   "gruppe": "app_konto",
+   "text": "Bald kommt etwas Praktisches: ein Konto für alles.",
+   "datei": "ton/app-konto-1.mp3",
+   "dauer": 2.77,
+   "hash": "8e6541d46a08",
+   "nr": 1
+  },
+  {
+   "id": "app-konto-2",
+   "gruppe": "app_konto",
+   "text": "Einmal anmelden und alle Omnivia-Apps nutzen, sicher und ohne Werbung.",
+   "datei": "ton/app-konto-2.mp3",
+   "dauer": 4.26,
+   "hash": "54155f19aba8",
+   "nr": 2
+  },
+  {
+   "id": "app-konto-3",
+   "gruppe": "app_konto",
+   "text": "Noch ein bisschen Geduld!",
+   "datei": "ton/app-konto-3.mp3",
+   "dauer": 1.18,
+   "hash": "50afc5be2542",
+   "nr": 3
+  },
+  {
+   "id": "app-start-1",
+   "gruppe": "app_start",
+   "text": "Hey, Thorsten hier! Ich stelle euch heute was vor.",
+   "datei": "ton/app-start-1.mp3",
+   "dauer": 2.85,
+   "hash": "6f0c69957c0c"
+  },
+  {
+   "id": "app-start-2",
+   "gruppe": "app_start",
+   "text": "Kurze Werbepause. Aber ehrlich, versprochen!",
+   "datei": "ton/app-start-2.mp3",
+   "dauer": 2.72,
+   "hash": "35fe8a11edd8"
+  },
+  {
+   "id": "app-start-bald-1",
+   "gruppe": "app_start_bald",
+   "text": "Psst! Ich verrate euch ein Geheimnis.",
+   "datei": "ton/app-start-bald-1.mp3",
+   "dauer": 2.38,
+   "hash": "e77a910c5101"
+  },
+  {
+   "id": "app-start-bald-2",
+   "gruppe": "app_start_bald",
+   "text": "Achtung, Vorschau! Das hier ist noch in Arbeit.",
+   "datei": "ton/app-start-bald-2.mp3",
+   "dauer": 2.72,
+   "hash": "84cf51e37618"
+  },
+  {
+   "id": "app-ende-1",
+   "gruppe": "app_ende",
+   "text": "Kostenlos und ohne Werbung, auf kometenwerk punkt github punkt io!",
+   "datei": "ton/app-ende-1.mp3",
+   "dauer": 3.84,
+   "hash": "da0e8ffeeaf1"
+  },
+  {
+   "id": "app-ende-2",
+   "gruppe": "app_ende",
+   "text": "Probiert's aus, kostenlos auf kometenwerk punkt github punkt io!",
+   "datei": "ton/app-ende-2.mp3",
+   "dauer": 3.71,
+   "hash": "d214eab156dc"
+  },
+  {
+   "id": "app-ende-bald-1",
+   "gruppe": "app_ende_bald",
+   "text": "Abonniert, dann verpasst ihr den Start nicht!",
+   "datei": "ton/app-ende-bald-1.mp3",
+   "dauer": 2.3,
+   "hash": "e6d66f4e4e9b"
+  },
+  {
+   "id": "app-ende-bald-2",
+   "gruppe": "app_ende_bald",
+   "text": "Bald verfügbar. Ich sag euch Bescheid!",
+   "datei": "ton/app-ende-bald-2.mp3",
+   "dauer": 2.09,
+   "hash": "7dbc403c7f07"
+  },
+  {
+   "id": "kanal-intro-1",
+   "gruppe": "kanal_intro",
+   "text": "Hey, hier ist Thorsten!",
+   "datei": "ton/kanal-intro-1.mp3",
+   "dauer": 1.49,
+   "hash": "e688b64467c4"
+  },
+  {
+   "id": "hz-idee-raster",
+   "gruppe": "hz_idee_raster",
+   "text": "Heute baue ich ganz ordentlich. Schachbrett-Stadt, alles schön gerade!",
+   "datei": "ton/hz-idee-raster.mp3",
+   "dauer": 3.45,
+   "hash": "d14efab8af6f"
+  },
+  {
+   "id": "hz-idee-ring",
+   "gruppe": "hz_idee_ring",
+   "text": "Heute probiere ich was Verrücktes: eine Stadt im Kreis, mit Kreisverkehr in der Mitte!",
+   "datei": "ton/hz-idee-ring.mp3",
+   "dauer": 4.41,
+   "hash": "1b2356e0f1d1"
+  },
+  {
+   "id": "hz-idee-hauptstrasse",
+   "gruppe": "hz_idee_hauptstrasse",
+   "text": "Heute baue ich ein Dorf an einer langen Hauptstraße. Ganz gemütlich.",
+   "datei": "ton/hz-idee-hauptstrasse.mp3",
+   "dauer": 3.4,
+   "hash": "1c3c40df4486"
+  },
+  {
+   "id": "hz-idee-garten",
+   "gruppe": "hz_idee_garten",
+   "text": "Heute wird's eine Gartenstadt. Viel Platz und viel Grün!",
+   "datei": "ton/hz-idee-garten.mp3",
+   "dauer": 3.11,
+   "hash": "11988bf951f1"
+  },
+  {
+   "id": "hz-idee-gemischt",
+   "gruppe": "hz_idee_gemischt",
+   "text": "Heute mische ich alles! Jedes Viertel sieht anders aus.",
+   "datei": "ton/hz-idee-gemischt.mp3",
+   "dauer": 2.85,
+   "hash": "edae378fb676"
+  },
+  {
+   "id": "hz-fokus-wohnen",
+   "gruppe": "hz_fokus_wohnen",
+   "text": "Ich will, dass hier ganz viele Leute gemütlich wohnen.",
+   "datei": "ton/hz-fokus-wohnen.mp3",
+   "dauer": 2.43,
+   "hash": "407950bf38fb"
+  },
+  {
+   "id": "hz-fokus-laden",
+   "gruppe": "hz_fokus_laden",
+   "text": "Meine Stadt wird eine Einkaufsstadt. Shoppen, shoppen, shoppen!",
+   "datei": "ton/hz-fokus-laden.mp3",
+   "dauer": 3.5,
+   "hash": "e089c328661b"
+  },
+  {
+   "id": "hz-fokus-industrie",
+   "gruppe": "hz_fokus_industrie",
+   "text": "Heute wird gearbeitet! Fabriken, Lagerhallen, volle Power.",
+   "datei": "ton/hz-fokus-industrie.mp3",
+   "dauer": 3.45,
+   "hash": "3ded27426fc4"
+  },
+  {
+   "id": "hz-fokus-gruen",
+   "gruppe": "hz_fokus_gruen",
+   "text": "Mir sind Parks wichtig. Die grünste Stadt der Welt!",
+   "datei": "ton/hz-fokus-gruen.mp3",
+   "dauer": 2.66,
+   "hash": "7f93a3ad19a1"
+  },
+  {
+   "id": "hz-fokus-hochhaus",
+   "gruppe": "hz_fokus_hochhaus",
+   "text": "Mein Ziel: Hochhäuser! Ich will eine Skyline.",
+   "datei": "ton/hz-fokus-hochhaus.mp3",
+   "dauer": 2.74,
+   "hash": "eb8dc33139df"
+  },
+  {
+   "id": "hz-fokus-arbeit",
+   "gruppe": "hz_fokus_arbeit",
+   "text": "Heute baue ich ein Büroviertel. Krawatten an!",
+   "datei": "ton/hz-fokus-arbeit.mp3",
+   "dauer": 2.74,
+   "hash": "381cc7c193c7"
+  },
+  {
+   "id": "hz-mut-chaotisch",
+   "gruppe": "hz_mut_chaotisch",
+   "text": "Und ich plane heute gar nicht lange. Einfach drauflos bauen!",
+   "datei": "ton/hz-mut-chaotisch.mp3",
+   "dauer": 2.87,
+   "hash": "95efc0781738"
+  },
+  {
+   "id": "hz-mut-vorsichtig",
+   "gruppe": "hz_mut_vorsichtig",
+   "text": "Aber erst mal Strom und Wasser. Ich bin ja nicht verrückt.",
+   "datei": "ton/hz-mut-vorsichtig.mp3",
+   "dauer": 3.13,
+   "hash": "7158ab5cc813"
+  },
+  {
+   "id": "hz-ups-1",
+   "gruppe": "hz_ups",
+   "text": "Ups! Die Häuser haben ja gar keinen Strom. Das hätte ich vorher bauen sollen.",
+   "datei": "ton/hz-ups-1.mp3",
+   "dauer": 4.02,
+   "hash": "2fa51ac3e608"
+  },
+  {
+   "id": "hz-ups-2",
+   "gruppe": "hz_ups",
+   "text": "Moment mal, wo ist eigentlich das Wasser? Okay, schnell nachbauen!",
+   "datei": "ton/hz-ups-2.mp3",
+   "dauer": 3.89,
+   "hash": "b896dafef5c2"
+  },
+  {
+   "id": "hz-bedarf-w",
+   "gruppe": "hz_bedarf_w",
+   "text": "Die Leute wollen mehr Wohnungen. Kriegen sie!",
+   "datei": "ton/hz-bedarf-w.mp3",
+   "dauer": 2.22,
+   "hash": "b92d0bf40c75"
+  },
+  {
+   "id": "hz-bedarf-g",
+   "gruppe": "hz_bedarf_g",
+   "text": "Hier fehlen Läden! Wo sollen die Leute denn einkaufen?",
+   "datei": "ton/hz-bedarf-g.mp3",
+   "dauer": 3.08,
+   "hash": "22afb25d946e"
+  },
+  {
+   "id": "hz-bedarf-b",
+   "gruppe": "hz_bedarf_b",
+   "text": "Die Stadt braucht Büros. Also bauen wir Büros!",
+   "datei": "ton/hz-bedarf-b.mp3",
+   "dauer": 2.53,
+   "hash": "e44dc28e97cb"
+  },
+  {
+   "id": "hz-bedarf-i",
+   "gruppe": "hz_bedarf_i",
+   "text": "Wir brauchen mehr Arbeitsplätze. Ab ins Industriegebiet!",
+   "datei": "ton/hz-bedarf-i.mp3",
+   "dauer": 2.87,
+   "hash": "7787e213b090"
+  },
+  {
+   "id": "hz-extra-riesenrad",
+   "gruppe": "hz_extra_riesenrad",
+   "text": "Und zum Schluss: ein Riesenrad! Einfach weil ich's kann.",
+   "datei": "ton/hz-extra-riesenrad.mp3",
+   "dauer": 2.93,
+   "hash": "f15dec59bbab"
+  },
+  {
+   "id": "hz-extra-schwimmbad",
+   "gruppe": "hz_extra_schwimmbad",
+   "text": "Ein Schwimmbad für alle! Arschbombe!",
+   "datei": "ton/hz-extra-schwimmbad.mp3",
+   "dauer": 2.14,
+   "hash": "cd0e2da95d1f"
+  },
+  {
+   "id": "hz-extra-hafen",
+   "gruppe": "hz_extra_hafen",
+   "text": "Ich baue noch einen Hafen. Ahoi!",
+   "datei": "ton/hz-extra-hafen.mp3",
+   "dauer": 2.04,
+   "hash": "46cdb43e990d"
+  },
+  {
+   "id": "hz-extra-park",
+   "gruppe": "hz_extra_park",
+   "text": "Ein großer Park, mitten in der Stadt. Wunderschön.",
+   "datei": "ton/hz-extra-park.mp3",
+   "dauer": 2.8,
+   "hash": "f305b732ad10"
+  },
+  {
+   "id": "hz-extra-sport",
+   "gruppe": "hz_extra_sport",
+   "text": "Ein Sportplatz! Wer kommt zum Kicken?",
+   "datei": "ton/hz-extra-sport.mp3",
+   "dauer": 2.04,
+   "hash": "54d18a8a773a"
   }
  ]
 }
