@@ -813,6 +813,459 @@
       "id": "kz-endlich-2",
       "gruppe": "kz_endlich",
       "text": "Ich hab's euch gesagt, ich gebe nicht auf!"
+    },
+    {
+      "id": "app-quiz-1",
+      "gruppe": "app_quiz",
+      "nr": 1,
+      "text": "Vokabeln lernen nervt? Nicht mit dem Fidelia Quiz!"
+    },
+    {
+      "id": "app-quiz-2",
+      "gruppe": "app_quiz",
+      "nr": 2,
+      "text": "Einfach die Buchseite einscannen, und schon hast du deine Lernkarten."
+    },
+    {
+      "id": "app-quiz-3",
+      "gruppe": "app_quiz",
+      "nr": 3,
+      "text": "Und es spricht dir die Wörter sogar vor."
+    },
+    {
+      "id": "app-planer-1",
+      "gruppe": "app_planer",
+      "nr": 1,
+      "text": "Hausaufgabe vergessen? Das passiert dir nie wieder!"
+    },
+    {
+      "id": "app-planer-2",
+      "gruppe": "app_planer",
+      "nr": 2,
+      "text": "Im Fidelia Planer stehen Hausaufgaben, Tests und dein Stundenplan an einem Ort."
+    },
+    {
+      "id": "app-planer-3",
+      "gruppe": "app_planer",
+      "nr": 3,
+      "text": "Ordnung in der Schultasche, ganz ohne Stress."
+    },
+    {
+      "id": "app-notizen-1",
+      "gruppe": "app_notizen",
+      "nr": 1,
+      "text": "Schnell was aufschreiben? Fidelia Notizen!"
+    },
+    {
+      "id": "app-notizen-2",
+      "gruppe": "app_notizen",
+      "nr": 2,
+      "text": "Notizen und Listen zum Abhaken, alles sofort wiedergefunden."
+    },
+    {
+      "id": "app-notizen-3",
+      "gruppe": "app_notizen",
+      "nr": 3,
+      "text": "Perfekt für Einkaufslisten und Ideen."
+    },
+    {
+      "id": "app-fokus-1",
+      "gruppe": "app_fokus",
+      "nr": 1,
+      "text": "Beim Lernen immer abgelenkt? Ich kenne das."
+    },
+    {
+      "id": "app-fokus-2",
+      "gruppe": "app_fokus",
+      "nr": 2,
+      "text": "Fidelia Fokus ist ein Lern-Timer mit Pausen."
+    },
+    {
+      "id": "app-fokus-3",
+      "gruppe": "app_fokus",
+      "nr": 3,
+      "text": "Und am Ende siehst du, wie viel du geschafft hast."
+    },
+    {
+      "id": "app-beats-1",
+      "gruppe": "app_beats",
+      "nr": 1,
+      "text": "Du willst Musik machen? Dann probier Fidelia Beats!"
+    },
+    {
+      "id": "app-beats-2",
+      "gruppe": "app_beats",
+      "nr": 2,
+      "text": "Baue eigene Beats und Melodien, direkt im Browser."
+    },
+    {
+      "id": "app-beats-3",
+      "gruppe": "app_beats",
+      "nr": 3,
+      "text": "Ich hab's ausprobiert. Ich bin jetzt Musik-Roboter."
+    },
+    {
+      "id": "app-kueche-1",
+      "gruppe": "app_kueche",
+      "nr": 1,
+      "text": "Wo war nochmal das Rezept vom Schokokuchen?"
+    },
+    {
+      "id": "app-kueche-2",
+      "gruppe": "app_kueche",
+      "nr": 2,
+      "text": "In Fidelia Küche landen alle deine Rezepte, per Link, Foto oder Text."
+    },
+    {
+      "id": "app-kueche-3",
+      "gruppe": "app_kueche",
+      "nr": 3,
+      "text": "Einfach suchen, und los kochen!"
+    },
+    {
+      "id": "app-taschengeld-1",
+      "gruppe": "app_taschengeld",
+      "nr": 1,
+      "text": "Wo ist mein Taschengeld schon wieder hin?"
+    },
+    {
+      "id": "app-taschengeld-2",
+      "gruppe": "app_taschengeld",
+      "nr": 2,
+      "text": "Mit Fidelia Taschengeld siehst du Einnahmen, Ausgaben und deine Sparziele."
+    },
+    {
+      "id": "app-taschengeld-3",
+      "gruppe": "app_taschengeld",
+      "nr": 3,
+      "text": "So klappt's auch mit dem großen Wunsch."
+    },
+    {
+      "id": "app-werkstatt-1",
+      "gruppe": "app_werkstatt",
+      "nr": 1,
+      "text": "Du bastelst gern? Dann schau in die Kometenwerk Werkstatt!"
+    },
+    {
+      "id": "app-werkstatt-2",
+      "gruppe": "app_werkstatt",
+      "nr": 2,
+      "text": "Technik-Projekte zum Nachbauen, mit Bauteilen, Schaltplan und Code."
+    },
+    {
+      "id": "app-werkstatt-3",
+      "gruppe": "app_werkstatt",
+      "nr": 3,
+      "text": "Ab in die Werkstatt!"
+    },
+    {
+      "id": "app-ki-1",
+      "gruppe": "app_ki",
+      "nr": 1,
+      "text": "Eine KI, die nichts ins Internet schickt? Gibt's!"
+    },
+    {
+      "id": "app-ki-2",
+      "gruppe": "app_ki",
+      "nr": 2,
+      "text": "Aoris KI läuft direkt auf deinem Gerät."
+    },
+    {
+      "id": "app-ki-3",
+      "gruppe": "app_ki",
+      "nr": 3,
+      "text": "Deine Fragen bleiben bei dir."
+    },
+    {
+      "id": "app-suche-1",
+      "gruppe": "app_suche",
+      "nr": 1,
+      "text": "Suchen, ohne dass jemand mitliest?"
+    },
+    {
+      "id": "app-suche-2",
+      "gruppe": "app_suche",
+      "nr": 2,
+      "text": "Die Omnivia Suche durchsucht alle unsere Apps, und auf Wunsch Wikipedia."
+    },
+    {
+      "id": "app-suche-3",
+      "gruppe": "app_suche",
+      "nr": 3,
+      "text": "Und sie speichert nicht, was du suchst."
+    },
+    {
+      "id": "app-nachrichten-1",
+      "gruppe": "app_nachrichten",
+      "nr": 1,
+      "text": "Nachrichten, ohne Meinungsmache?"
+    },
+    {
+      "id": "app-nachrichten-2",
+      "gruppe": "app_nachrichten",
+      "nr": 2,
+      "text": "Im Nachrichten-Heft kommt ein Thema erst, wenn mehrere große Medien berichten."
+    },
+    {
+      "id": "app-nachrichten-3",
+      "gruppe": "app_nachrichten",
+      "nr": 3,
+      "text": "Und schwierige Sachen werden einfach erklärt."
+    },
+    {
+      "id": "app-krawallzoo-1",
+      "gruppe": "app_krawallzoo",
+      "nr": 1,
+      "text": "Tiere, Chaos und Spezialattacken? Willkommen im Krawallzoo!"
+    },
+    {
+      "id": "app-krawallzoo-2",
+      "gruppe": "app_krawallzoo",
+      "nr": 2,
+      "text": "Sechs Spielmodi, Mischtiere und Skins. Spiel mit deinen Freunden."
+    },
+    {
+      "id": "app-krawallzoo-3",
+      "gruppe": "app_krawallzoo",
+      "nr": 3,
+      "text": "Ich spiele es jeden Tag. Und verliere oft."
+    },
+    {
+      "id": "app-horizonte-1",
+      "gruppe": "app_horizonte",
+      "nr": 1,
+      "text": "Baue deine eigene Stadt, direkt im Browser!"
+    },
+    {
+      "id": "app-horizonte-2",
+      "gruppe": "app_horizonte",
+      "nr": 2,
+      "text": "In Horizonte gibt es Züge, Häfen und sogar einen Flughafen."
+    },
+    {
+      "id": "app-horizonte-3",
+      "gruppe": "app_horizonte",
+      "nr": 3,
+      "text": "Meine Stadt ist übrigens die schönste."
+    },
+    {
+      "id": "app-notruf-1",
+      "gruppe": "app_notruf",
+      "nr": 1,
+      "text": "Achtung, Einsatz! Bald kommt Notruf Lindau."
+    },
+    {
+      "id": "app-notruf-2",
+      "gruppe": "app_notruf",
+      "nr": 2,
+      "text": "Polizei, Feuerwehr und Rettung auf der Insel Lindau, bald auf Roblox."
+    },
+    {
+      "id": "app-notruf-3",
+      "gruppe": "app_notruf",
+      "nr": 3,
+      "text": "Ich halte euch auf dem Laufenden!"
+    },
+    {
+      "id": "app-missionnova-1",
+      "gruppe": "app_missionnova",
+      "nr": 1,
+      "text": "Bald geht's ins Weltall! Mission Nova ist in Arbeit."
+    },
+    {
+      "id": "app-missionnova-2",
+      "gruppe": "app_missionnova",
+      "nr": 2,
+      "text": "Erst die Astronauten-Ausbildung, dann mit der Rakete zur ISS."
+    },
+    {
+      "id": "app-missionnova-3",
+      "gruppe": "app_missionnova",
+      "nr": 3,
+      "text": "Ich packe schon mal meinen Raumanzug."
+    },
+    {
+      "id": "app-konto-1",
+      "gruppe": "app_konto",
+      "nr": 1,
+      "text": "Bald kommt etwas Praktisches: ein Konto für alles."
+    },
+    {
+      "id": "app-konto-2",
+      "gruppe": "app_konto",
+      "nr": 2,
+      "text": "Einmal anmelden und alle Omnivia-Apps nutzen, sicher und ohne Werbung."
+    },
+    {
+      "id": "app-konto-3",
+      "gruppe": "app_konto",
+      "nr": 3,
+      "text": "Noch ein bisschen Geduld!"
+    },
+    {
+      "id": "app-start-1",
+      "gruppe": "app_start",
+      "text": "Hey, Thorsten hier! Ich stelle euch heute was vor."
+    },
+    {
+      "id": "app-start-2",
+      "gruppe": "app_start",
+      "text": "Kurze Werbepause. Aber ehrlich, versprochen!"
+    },
+    {
+      "id": "app-start-bald-1",
+      "gruppe": "app_start_bald",
+      "text": "Psst! Ich verrate euch ein Geheimnis."
+    },
+    {
+      "id": "app-start-bald-2",
+      "gruppe": "app_start_bald",
+      "text": "Achtung, Vorschau! Das hier ist noch in Arbeit."
+    },
+    {
+      "id": "app-ende-1",
+      "gruppe": "app_ende",
+      "text": "Kostenlos und ohne Werbung, auf kometenwerk punkt github punkt io!"
+    },
+    {
+      "id": "app-ende-2",
+      "gruppe": "app_ende",
+      "text": "Probiert's aus, kostenlos auf kometenwerk punkt github punkt io!"
+    },
+    {
+      "id": "app-ende-bald-1",
+      "gruppe": "app_ende_bald",
+      "text": "Abonniert, dann verpasst ihr den Start nicht!"
+    },
+    {
+      "id": "app-ende-bald-2",
+      "gruppe": "app_ende_bald",
+      "text": "Bald verfügbar. Ich sag euch Bescheid!"
+    },
+    {
+      "id": "kanal-intro-1",
+      "gruppe": "kanal_intro",
+      "text": "Hey, hier ist Thorsten!"
+    },
+    {
+      "id": "hz-idee-raster",
+      "gruppe": "hz_idee_raster",
+      "text": "Heute baue ich ganz ordentlich. Schachbrett-Stadt, alles schön gerade!"
+    },
+    {
+      "id": "hz-idee-ring",
+      "gruppe": "hz_idee_ring",
+      "text": "Heute probiere ich was Verrücktes: eine Stadt im Kreis, mit Kreisverkehr in der Mitte!"
+    },
+    {
+      "id": "hz-idee-hauptstrasse",
+      "gruppe": "hz_idee_hauptstrasse",
+      "text": "Heute baue ich ein Dorf an einer langen Hauptstraße. Ganz gemütlich."
+    },
+    {
+      "id": "hz-idee-garten",
+      "gruppe": "hz_idee_garten",
+      "text": "Heute wird's eine Gartenstadt. Viel Platz und viel Grün!"
+    },
+    {
+      "id": "hz-idee-gemischt",
+      "gruppe": "hz_idee_gemischt",
+      "text": "Heute mische ich alles! Jedes Viertel sieht anders aus."
+    },
+    {
+      "id": "hz-fokus-wohnen",
+      "gruppe": "hz_fokus_wohnen",
+      "text": "Ich will, dass hier ganz viele Leute gemütlich wohnen."
+    },
+    {
+      "id": "hz-fokus-laden",
+      "gruppe": "hz_fokus_laden",
+      "text": "Meine Stadt wird eine Einkaufsstadt. Shoppen, shoppen, shoppen!"
+    },
+    {
+      "id": "hz-fokus-industrie",
+      "gruppe": "hz_fokus_industrie",
+      "text": "Heute wird gearbeitet! Fabriken, Lagerhallen, volle Power."
+    },
+    {
+      "id": "hz-fokus-gruen",
+      "gruppe": "hz_fokus_gruen",
+      "text": "Mir sind Parks wichtig. Die grünste Stadt der Welt!"
+    },
+    {
+      "id": "hz-fokus-hochhaus",
+      "gruppe": "hz_fokus_hochhaus",
+      "text": "Mein Ziel: Hochhäuser! Ich will eine Skyline."
+    },
+    {
+      "id": "hz-fokus-arbeit",
+      "gruppe": "hz_fokus_arbeit",
+      "text": "Heute baue ich ein Büroviertel. Krawatten an!"
+    },
+    {
+      "id": "hz-mut-chaotisch",
+      "gruppe": "hz_mut_chaotisch",
+      "text": "Und ich plane heute gar nicht lange. Einfach drauflos bauen!"
+    },
+    {
+      "id": "hz-mut-vorsichtig",
+      "gruppe": "hz_mut_vorsichtig",
+      "text": "Aber erst mal Strom und Wasser. Ich bin ja nicht verrückt."
+    },
+    {
+      "id": "hz-ups-1",
+      "gruppe": "hz_ups",
+      "text": "Ups! Die Häuser haben ja gar keinen Strom. Das hätte ich vorher bauen sollen."
+    },
+    {
+      "id": "hz-ups-2",
+      "gruppe": "hz_ups",
+      "text": "Moment mal, wo ist eigentlich das Wasser? Okay, schnell nachbauen!"
+    },
+    {
+      "id": "hz-bedarf-w",
+      "gruppe": "hz_bedarf_w",
+      "text": "Die Leute wollen mehr Wohnungen. Kriegen sie!"
+    },
+    {
+      "id": "hz-bedarf-g",
+      "gruppe": "hz_bedarf_g",
+      "text": "Hier fehlen Läden! Wo sollen die Leute denn einkaufen?"
+    },
+    {
+      "id": "hz-bedarf-b",
+      "gruppe": "hz_bedarf_b",
+      "text": "Die Stadt braucht Büros. Also bauen wir Büros!"
+    },
+    {
+      "id": "hz-bedarf-i",
+      "gruppe": "hz_bedarf_i",
+      "text": "Wir brauchen mehr Arbeitsplätze. Ab ins Industriegebiet!"
+    },
+    {
+      "id": "hz-extra-riesenrad",
+      "gruppe": "hz_extra_riesenrad",
+      "text": "Und zum Schluss: ein Riesenrad! Einfach weil ich's kann."
+    },
+    {
+      "id": "hz-extra-schwimmbad",
+      "gruppe": "hz_extra_schwimmbad",
+      "text": "Ein Schwimmbad für alle! Arschbombe!"
+    },
+    {
+      "id": "hz-extra-hafen",
+      "gruppe": "hz_extra_hafen",
+      "text": "Ich baue noch einen Hafen. Ahoi!"
+    },
+    {
+      "id": "hz-extra-park",
+      "gruppe": "hz_extra_park",
+      "text": "Ein großer Park, mitten in der Stadt. Wunderschön."
+    },
+    {
+      "id": "hz-extra-sport",
+      "gruppe": "hz_extra_sport",
+      "text": "Ein Sportplatz! Wer kommt zum Kicken?"
     }
   ]
 }

@@ -1,0 +1,274 @@
+{
+  "info": "Apps, über die Thorsten Werbe-Shorts macht. Neue App oder neues Projekt in Auftrag? Hier eintragen (status: \"fertig\" oder \"bald\") und in saetze.json drei Sätze mit gruppe \"app_<id>\" ergänzen – GitHub spricht sie automatisch ein. Bei \"bald\" niemals erfundene Bilder benutzen.",
+  "apps": [
+    {
+      "id": "quiz",
+      "name": "FIDELIA Quiz",
+      "marke": "fidelia",
+      "farbe": "#6d3fd6",
+      "status": "fertig",
+      "pfad": "quiz/",
+      "bilder": [
+        "apps/bilder/quiz-2.webp",
+        "apps/bilder/quiz-3.webp",
+        "apps/bilder/quiz-4.webp"
+      ],
+      "punkte": [
+        "Vokabeln & Lernkarten",
+        "Buchseite einscannen",
+        "Mit Aussprache"
+      ]
+    },
+    {
+      "id": "planer",
+      "name": "FIDELIA Planer",
+      "marke": "fidelia",
+      "farbe": "#1f4fd1",
+      "status": "fertig",
+      "pfad": "planer/",
+      "bilder": [
+        "apps/bilder/planer-2.webp",
+        "apps/bilder/planer-3.webp",
+        "apps/bilder/planer-4.webp"
+      ],
+      "punkte": [
+        "Hausaufgaben & Tests",
+        "Stundenplan",
+        "Alles an einem Ort"
+      ]
+    },
+    {
+      "id": "notizen",
+      "name": "FIDELIA Notizen",
+      "marke": "fidelia",
+      "farbe": "#a36b00",
+      "status": "fertig",
+      "pfad": "notizen/",
+      "bilder": [
+        "apps/bilder/notizen-2.webp",
+        "apps/bilder/notizen-3.webp"
+      ],
+      "punkte": [
+        "Notizen & Listen",
+        "Zum Abhaken",
+        "Schnell gefunden"
+      ]
+    },
+    {
+      "id": "fokus",
+      "name": "FIDELIA Fokus",
+      "marke": "fidelia",
+      "farbe": "#0369a1",
+      "status": "fertig",
+      "pfad": "fokus/",
+      "bilder": [
+        "apps/bilder/fokus-2.webp",
+        "apps/bilder/fokus-1.webp"
+      ],
+      "punkte": [
+        "Lern-Timer",
+        "Mit Pausen",
+        "Deine Statistik"
+      ]
+    },
+    {
+      "id": "beats",
+      "name": "FIDELIA Beats",
+      "marke": "fidelia",
+      "farbe": "#b8235a",
+      "status": "fertig",
+      "pfad": "beats/",
+      "bilder": [
+        "apps/bilder/beats-2.webp",
+        "apps/bilder/beats-1.webp"
+      ],
+      "punkte": [
+        "Eigene Beats bauen",
+        "Melodien",
+        "Direkt im Browser"
+      ]
+    },
+    {
+      "id": "kueche",
+      "name": "FIDELIA Küche",
+      "marke": "fidelia",
+      "farbe": "#c2410c",
+      "status": "fertig",
+      "pfad": "kueche/",
+      "bilder": [
+        "apps/bilder/kueche-2.webp",
+        "apps/bilder/kueche-3.webp",
+        "apps/bilder/kueche-4.webp"
+      ],
+      "punkte": [
+        "Rezepte per Link oder Foto",
+        "Schnell gefunden",
+        "Alles an einem Ort"
+      ]
+    },
+    {
+      "id": "taschengeld",
+      "name": "FIDELIA Taschengeld",
+      "marke": "fidelia",
+      "farbe": "#15803d",
+      "status": "fertig",
+      "pfad": "taschengeld/",
+      "bilder": [
+        "apps/bilder/taschengeld-2.webp",
+        "apps/bilder/taschengeld-3.webp"
+      ],
+      "punkte": [
+        "Einnahmen & Ausgaben",
+        "Sparziele",
+        "Alles im Blick"
+      ]
+    },
+    {
+      "id": "werkstatt",
+      "name": "Kometenwerk Werkstatt",
+      "marke": "kometenwerk",
+      "farbe": "#d4561a",
+      "status": "fertig",
+      "pfad": "werkstatt/",
+      "bilder": [
+        "apps/bilder/werkstatt-2.webp",
+        "apps/bilder/werkstatt-3.webp"
+      ],
+      "punkte": [
+        "Technik zum Nachbauen",
+        "Bauteile & Schaltplan",
+        "Mit Code"
+      ]
+    },
+    {
+      "id": "ki",
+      "name": "AORIS KI",
+      "marke": "aoris",
+      "farbe": "#0f766e",
+      "status": "fertig",
+      "pfad": "ki/",
+      "bilder": [
+        "apps/bilder/ki-1.webp"
+      ],
+      "punkte": [
+        "KI auf deinem Gerät",
+        "Nichts geht ins Internet",
+        "Kostenlos"
+      ]
+    },
+    {
+      "id": "suche",
+      "name": "OMNIVIA Suche",
+      "marke": "omnivia",
+      "farbe": "#b08a2e",
+      "status": "fertig",
+      "pfad": "suche/",
+      "bilder": [
+        "apps/bilder/suche-2.webp",
+        "apps/bilder/suche-1.webp"
+      ],
+      "punkte": [
+        "Alle Apps durchsuchen",
+        "Auch Wikipedia",
+        "Speichert nichts"
+      ]
+    },
+    {
+      "id": "nachrichten",
+      "name": "Nachrichten-Heft",
+      "marke": "fidelia",
+      "farbe": "#334155",
+      "status": "fertig",
+      "pfad": "ND/",
+      "bilder": [
+        "apps/bilder/nachrichten-2.webp",
+        "apps/bilder/nachrichten-1.webp",
+        "apps/bilder/wissen-2.webp"
+      ],
+      "punkte": [
+        "Neutrale Nachrichten",
+        "Mehrere Quellen",
+        "Einfach erklärt"
+      ]
+    },
+    {
+      "id": "krawallzoo",
+      "name": "Krawallzoo",
+      "marke": "flaressa",
+      "farbe": "#7c3aed",
+      "status": "fertig",
+      "pfad": "Krawallzoo/",
+      "bilder": [
+        "apps/bilder/krawallzoo-2.webp",
+        "apps/bilder/krawallzoo-3.webp",
+        "apps/bilder/krawallzoo-4.webp"
+      ],
+      "punkte": [
+        "Tier-Arena",
+        "6 Spielmodi",
+        "Mit Freunden"
+      ]
+    },
+    {
+      "id": "horizonte",
+      "name": "Horizonte",
+      "marke": "flaressa",
+      "farbe": "#e8743c",
+      "status": "fertig",
+      "pfad": "spiele/horizonte/",
+      "bilder": [
+        "spiele/horizonte/bilder/dorf.webp",
+        "spiele/horizonte/bilder/bahnhof.webp",
+        "spiele/horizonte/bilder/hafen.webp",
+        "spiele/horizonte/bilder/nacht.webp"
+      ],
+      "punkte": [
+        "Städtebau im Browser",
+        "Züge, Häfen, Flughafen",
+        "Kostenlos"
+      ]
+    },
+    {
+      "id": "notruf",
+      "name": "Notruf Lindau",
+      "marke": "flaressa",
+      "farbe": "#dc2626",
+      "status": "bald",
+      "pfad": "apps/",
+      "bilder": [],
+      "punkte": [
+        "Polizei, Feuerwehr, Rettung",
+        "Auf der Insel Lindau",
+        "Bald auf Roblox"
+      ]
+    },
+    {
+      "id": "missionnova",
+      "name": "Mission Nova",
+      "marke": "flaressa",
+      "farbe": "#2563eb",
+      "status": "bald",
+      "pfad": "spiele/",
+      "bilder": [],
+      "punkte": [
+        "Astronauten-Ausbildung",
+        "Raketenflug zur ISS",
+        "Planeten entdecken"
+      ]
+    },
+    {
+      "id": "konto",
+      "name": "Ein Konto für alles",
+      "marke": "omnivia",
+      "farbe": "#b08a2e",
+      "status": "bald",
+      "pfad": "apps/",
+      "bilder": [],
+      "punkte": [
+        "Einmal anmelden",
+        "Alle OMNIVIA-Apps",
+        "Sicher & werbefrei"
+      ]
+    }
+  ]
+}

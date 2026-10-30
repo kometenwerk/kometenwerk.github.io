@@ -4916,61 +4916,123 @@ function zuTour() {
   S.push({ was: "nacht", d: 13, f: () => { zeitZiel = ZEITEN.nacht; zuKamera(M.x, M.z, M.r * 1.3 + 12, 0.55, null, 3.2, 0.07); }, ende: () => { zeitZiel = ZEITEN.tag; } });
   return S;
 }
-// Bau-Autopilot: Straßen, Versorgung, Zonen, Wachstum, Bus, Erweiterung – Schritt für Schritt
+// Bau-Autopilot: Thorsten denkt sich jedes Mal eine eigene Stadt-Idee aus
+// (Form, Schwerpunkt, vorsichtig oder chaotisch) und entscheidet unterwegs nach Bedarf.
 function zuBauPlan() {
   const n = knoten.get(aussenKnoten); if (!n) return zuTour();
   const l = Math.hypot(n.x, n.z) || 1, dx = n.x / l, dz = n.z / l;
   const innen = naechsterKnoten({ x: dx * 17, z: dz * 17 }, 3); if (!innen) return zuTour();
   strTyp = "klein";
-  const A = { art: "knoten", id: innen.id, x: innen.x, z: innen.z }, inx = -dx, inz = -dz, px = -dz, pz = dx;
-  const r = Math.random, breit = 10 + Math.floor(r() * 4), tief = 20 + Math.floor(r() * 7), st = rasterAbst(), m = Math.max(1, Math.round(tief / st));
-  const mitte = { x: innen.x + inx * tief * 0.55, z: innen.z + inz * tief * 0.55 }; zuMitte = mitte;
-  const blick = Math.atan2(-inx, -inz) + (r() - 0.5) * 1.2;
-  const kam = (q, d, h, dauer, kr) => () => zuKamera(q.x, q.z, d, h, blick, dauer || 2.6, kr);
-  const S = [];
-  const strassen = (P, br, ti, was) => {
-    const L = []; for (const sg of [1, -1]) { const B = { x: P.x + px * br * sg, z: P.z + pz * br * sg }, C = { x: P.x + inx * ti, z: P.z + inz * ti }; L.push(...rasterLinien(P, B, C)); }
-    L.forEach(([a, b], i) => S.push({ was: i === 0 ? was : null, ev: "bau", d: 0.42, f: () => { const pl = planen(fangOderFrei(a), lerp(a, b, 0.5), fangOderFrei(b), strTyp, 0); if (pl.ok) bauen(pl); } }));
-    S.push({ d: 0.3, f: () => { netzGeaendert(); } });
+  const r = Math.random, pick = (a) => a[Math.floor(r() * a.length)], zw = (a, b) => a + r() * (b - a);
+  const A = { art: "knoten", id: innen.id, x: innen.x, z: innen.z }, IN = { x: -dx, z: -dz }, QU = { x: -dz, z: dx };
+  const FORMEN = ["raster", "ring", "hauptstrasse", "garten", "gemischt"];
+  const IDEE = { form: pick(FORMEN), fokus: pick(["wohnen", "laden", "industrie", "gruen", "hochhaus", "arbeit"]), mut: r() < 0.4 ? "chaotisch" : "vorsichtig" };
+  const form1 = IDEE.form === "gemischt" ? pick(["raster", "ring", "hauptstrasse", "garten"]) : IDEE.form;
+  const form2 = IDEE.form === "gemischt" ? pick(["raster", "ring", "hauptstrasse", "garten"].filter((f) => f !== form1)) : r() < 0.7 ? form1 : pick(["raster", "ring", "hauptstrasse", "garten"]);
+  const S = [], add = (o) => S.push(o), plus = (P, d, s) => ({ x: P.x + d.x * s, z: P.z + d.z * s }), neben = (P, d, s) => ({ x: P.x + d.z * s, z: P.z - d.x * s });
+  const bauStrasse = (a, b, c, typ) => { const t0 = strTyp; strTyp = typ && typFrei(typ) ? typ : "klein"; const pl = planen(fangOderFrei(a), c || lerp(a, b, 0.5), fangOderFrei(b), strTyp, 0); let ok = false; if (pl.ok) { bauen(pl); ok = true; } strTyp = t0; return ok; };
+  let blick = Math.atan2(-IN.x, -IN.z) + (r() - 0.5) * 1.6;
+  const kam = (q, d, h, dauer, kr) => () => zuKamera(q.x, q.z, d, h, blick + (r() - 0.5) * 0.8, dauer || 2.6, kr == null ? (r() < 0.5 ? 0.05 : -0.05) : kr);
+  const vorherK = new Set(kanten.keys()), viertel = [];
+  // Ein Viertel in einer bestimmten Form anlegen; gibt Mitte und Größe zurück
+  const viertelBauen = (P, dir, form, groesse, was) => {
+    const V = { mitte: plus(P, dir, groesse * 0.55), r: groesse * 0.75, form };
+    const L = [];   // Liste von [a, b, c?, typ]
+    const quer = { x: -dir.z, z: dir.x };
+    if (form === "raster" || form === "garten") {
+      const br = groesse * zw(0.42, 0.55);
+      for (const sg of [1, -1]) { const B = plus(P, quer, br * sg), C = plus(P, dir, groesse); L.push(...rasterLinien(P, B, C).map(([a, b]) => [a, b])); }
+      if (form === "garten") { const dropped = L.slice(1).filter(() => r() < 0.35); for (const x of dropped) L.splice(L.indexOf(x), 1); }
+    } else if (form === "hauptstrasse") {
+      const lang = groesse * 1.3, E = plus(P, dir, lang); L.push([P, E, null, "haupt"]);
+      const st = rasterAbst();
+      for (let s = st; s < lang - 2; s += st) { const Q = plus(P, dir, s); for (const sg of [1, -1]) if (r() < 0.85) L.push([Q, plus(Q, quer, zw(6, 12) * sg)]); }
+      V.mitte = plus(P, dir, lang * 0.5);
+    } else if (form === "ring") {
+      const R = zw(8, 11), M = plus(P, dir, R + 5);
+      L.push([P, plus(M, dir, -R)]);
+      const pt = (w) => ({ x: M.x + R * Math.cos(w), z: M.z + R * Math.sin(w) }), w0 = Math.atan2(-dir.z, -dir.x);
+      for (let i = 0; i < 4; i++) { const w1 = w0 + i * Math.PI / 2, w2 = w1 + Math.PI / 2, wm = (w1 + w2) / 2; const c = { x: M.x + R * 1.08 * Math.cos(wm), z: M.z + R * 1.08 * Math.sin(wm) }; L.push([pt(w1), pt(w2), c]); }
+      for (let i = 0; i < 4; i++) L.push([M, pt(w0 + i * Math.PI / 2)]);
+      for (let i = 1; i < 4; i++) { const w = w0 + i * Math.PI / 2 + (r() - 0.5) * 0.3; L.push([pt(w), { x: M.x + (R + zw(6, 10)) * Math.cos(w), z: M.z + (R + zw(6, 10)) * Math.sin(w) }]); }
+      V.mitte = M; V.r = R + 9; V.kreisel = M;
+    }
+    L.forEach(([a, b, c, typ], i) => add({ was: i === 0 ? was : null, ev: "bau", d: 0.42, f: () => { bauStrasse(a, b, c, typ); } }));
+    add({ d: 0.3, f: () => { netzGeaendert(); if (V.kreisel) { const g0 = geld; geld = 1e9; try { kreiselGr = 1; kreiselBauen(V.kreisel); } catch (e) { /* egal */ } geld = Math.max(g0, geld); netzGeaendert(); } } });
+    viertel.push(V); return V;
   };
-  const kandidaten = (Q, rad) => { const out = []; for (const k of kanten.values()) { if (!autoKante(k) || k.aussen) continue; for (const t of [0.3, 0.7]) { const q = punktBei(k, k.len * t); if (abst(q, Q) > rad) continue; for (const sg of [1, -1]) out.push({ x: q.x - q.tz * 2 * sg, z: q.z + q.tx * 2 * sg }); } } return out; };
-  const setze = (typ, aussen, Q, rad) => { const L = kandidaten(Q, rad).sort((a, b) => aussen ? abst(b, Q) - abst(a, Q) : abst(a, Q) - abst(b, Q)); for (const q of L) { const pl = dienstPlan(q, typ); if (pl.ok && !pl.haeuser) { const d = dienstBauen(pl); if (d) return d; } } return null; };
-  const zonen = (Q, rad, wahl, was) => {
+  const zonen = (V, wahl, was) => {
     let liste = null;
-    S.push({ was, ev: "bau", d: 0.2, f: () => { liste = [...zellen.values()].filter((c) => !c.haus && !c.zone && abst(c, Q) < rad).sort((a, b) => abst(a, Q) - abst(b, Q)); } });
-    for (let i = 0; i < 14; i++) S.push({ d: 0.16, f: () => { if (!liste) return; const teil = liste.splice(0, Math.ceil(liste.length / (14 - i)) || 0); for (const c of teil) c.zone = wahl(c); zellenNeu = true; } });
+    add({ was, ev: "bau", d: 0.2, f: () => { liste = [...zellen.values()].filter((c) => !c.haus && !c.zone && abst(c, V.mitte) < V.r + 4).sort((a, b) => abst(a, V.mitte) - abst(b, V.mitte)); } });
+    for (let i = 0; i < 14; i++) add({ d: 0.16, f: () => { if (!liste) return; const teil = liste.splice(0, Math.ceil(liste.length / (14 - i)) || 0); for (const c of teil) { const z = wahl(c, V); if (zoneFrei(z)) c.zone = z; } zellenNeu = true; } });
   };
-  // 1. Leeres Land
-  S.push({ was: "land", ev: "bau", d: 4.5, f: kam(mitte, 42, 0.85, 2.4, 0.04) });
-  // 2. Straßen
-  S.push({ d: 0.2, f: kam(mitte, 30, 0.8, 3, 0.03) });
-  strassen(A, breit, tief, "strassen");
-  // 3. Versorgung und Dienste
-  const dienstListe = [["windrad", "strom", true], ["windrad", null, true], ["wasserturm", "wasser", true], ["klaer", null, true], ["deponie", "muell", true], ["feuerklein", "dienste", false], ["polizei", null, false], ["arzt", null, false], ["grundschule", "schule", false], ["park", "park", false], ["spielplatz", null, false]];
-  for (const [t, was, aussen] of dienstListe) S.push({ was, ev: "bau", d: 1.1, f: () => { setze(t, aussen, mitte, tief + breit); versorgungRechnen(); } });
-  // 4. Zonen malen
-  S.push({ d: 0.2, f: kam(mitte, 24, 0.75, 2.4, 0.05) });
-  const ez = (c) => { const ex = c.x - innen.x, ezz = c.z - innen.z, ti = ex * inx + ezz * inz, qu = ex * px + ezz * pz; return ti < 5 ? 3 : ti > tief - 6 && qu > 3 ? 6 : 1; };
-  zonen(mitte, tief + 4, ez, "zonen");
-  // 5. Wachsen
-  S.push({ was: "wachsen", ev: "bau", d: 20, f: () => { versorgungRechnen(); busRechnen(); bedarfBerechnen(); tempo = 4; zuSchnell = 2; kam(mitte, 17, 0.55, 3, 0.1)(); } });
-  // 6. Bus
-  S.push({ was: "bus", ev: "bau", d: 8, f: () => {
-    const depot = setze("busdepot", true, mitte, tief + breit); if (!depot) return;
-    const ks = [...kanten.values()].filter((k) => autoKante(k) && !k.aussen && k.len > 4 && abst(punktBei(k, k.len / 2), mitte) < tief).sort((a, b) => Math.atan2(punktBei(a, a.len / 2).z - mitte.z, punktBei(a, a.len / 2).x - mitte.x) - Math.atan2(punktBei(b, b.len / 2).z - mitte.z, punktBei(b, b.len / 2).x - mitte.x));
-    const ids = []; for (let i = 0; i < ks.length && ids.length < 5; i += Math.max(1, Math.floor(ks.length / 5))) { const hh = neueHalte({ k: ks[i].id, s: ks[i].len / 2 }); if (hh) ids.push(hh.id); }
+  const MIX = {
+    wohnen: (c) => r() < 0.85 ? 1 : 3,
+    laden: (c) => r() < 0.5 ? (r() < 0.5 ? 4 : 3) : 1,
+    industrie: (c, V) => abst(c, V.mitte) > V.r * 0.55 && r() < 0.7 ? 6 : r() < 0.2 ? 3 : 1,
+    gruen: (c) => 1,
+    hochhaus: (c) => r() < 0.6 ? 2 : r() < 0.5 ? 4 : 1,
+    arbeit: (c) => r() < 0.45 ? 5 : r() < 0.3 ? 3 : 1
+  };
+  const versorgung = () => {
+    const M = viertel[0].mitte, rad = viertel[0].r + 14;
+    const liste = [["windrad", "strom", true], [r() < 0.5 ? "windrad" : "solar", null, true], ["wasserturm", "wasser", true], ["klaer", null, true], ["deponie", "muell", true], ["feuerklein", "dienste", false], ["polizei", null, false], ["arzt", null, false], ["grundschule", "schule", false]];
+    const park = IDEE.fokus === "gruen" ? ["park", "spielplatz", "brunnen", "sportplatz", "park"] : [pick(["park", "spielplatz", "brunnen"])];
+    for (const t of park) liste.push([t, t === park[0] ? "park" : null, false]);
+    for (const [t, was, aussen] of liste) add({ was, ev: "bau", d: 1.0, f: () => { zuSetzen(t, aussen, M, rad); versorgungRechnen(); } });
+  };
+  const wachsen = (V, was, dauer) => add({ was, ev: "bau", d: dauer, f: () => { versorgungRechnen(); busRechnen(); bedarfBerechnen(); tempo = 4; zuSchnell = 2; kam(V.mitte, 15 + V.r * 0.4, 0.55, 3, 0.1)(); } });
+
+  // 1. Leeres Land – Thorsten verrät seine Idee
+  const M1 = plus(A, IN, 14);
+  add({ ev: "bau", d: 6, f: () => { kam(M1, 42, 0.85, 2.4, 0.04)(); zuEvent("idee", IDEE); } });
+  // 2. Erstes Viertel
+  add({ d: 0.2, f: kam(M1, 30, 0.8, 3, 0.03) });
+  const V1 = viertelBauen(A, IN, form1, zw(20, 26), "strassen");
+  // 3. Vorsichtig: erst Versorgung, dann Zonen. Chaotisch: erst Zonen, dann „Ups!“
+  const zonenMix1 = MIX[IDEE.fokus === "arbeit" || IDEE.fokus === "hochhaus" ? "wohnen" : IDEE.fokus];
+  if (IDEE.mut === "vorsichtig") { versorgung(); add({ d: 0.2, f: kam(V1.mitte, 24, 0.75, 2.4) }); zonen(V1, zonenMix1, "zonen"); wachsen(V1, "wachsen", 18); }
+  else { add({ d: 0.2, f: kam(V1.mitte, 24, 0.75, 2.4) }); zonen(V1, zonenMix1, "zonen"); wachsen(V1, "wachsen", 12); add({ was: "ups", ev: "bau", d: 1.2, f: kam(V1.mitte, 20, 0.6, 2) }); versorgung(); wachsen(V1, null, 6); }
+  // 4. Was braucht die Stadt? Thorsten schaut auf den Bedarf
+  let zielMix = null;
+  add({ ev: "bau", d: 3.5, f: () => {
+    bedarfBerechnen();
+    const top = Object.entries(bedarf).sort((a, b) => b[1] - a[1])[0][0];
+    const fok = IDEE.fokus === "hochhaus" || IDEE.fokus === "arbeit" ? IDEE.fokus : null;
+    zielMix = fok ? MIX[fok] : { w: (c) => r() < 0.5 ? 2 : 1, g: (c) => r() < 0.6 ? 4 : 3, b: (c) => r() < 0.6 ? 5 : 3, i: (c) => r() < 0.6 ? 6 : 3 }[top];
+    zuEvent("bedarf", { art: fok ? (fok === "arbeit" ? "b" : "w") : top });
+  } });
+  // 5. Bus (manchmal schon hier, manchmal erst am Ende)
+  const busFrueh = r() < 0.5;
+  const bus = () => add({ was: "bus", ev: "bau", d: 7, f: () => {
+    const M = viertel[0].mitte, depot = zuSetzen("busdepot", true, M, viertel[0].r + 14); if (!depot) return;
+    const ks = [...kanten.values()].filter((k) => !vorherK.has(k.id) && autoKante(k) && !k.aussen && !k.ring && k.len > 4).sort((a, b) => Math.atan2(punktBei(a, a.len / 2).z - M.z, punktBei(a, a.len / 2).x - M.x) - Math.atan2(punktBei(b, b.len / 2).z - M.z, punktBei(b, b.len / 2).x - M.x));
+    const ids = []; for (let i = 0; i < ks.length && ids.length < 6; i += Math.max(1, Math.floor(ks.length / 6))) { const hh = neueHalte({ k: ks[i].id, s: ks[i].len / 2 }); if (hh) ids.push(hh.id); }
     if (ids.length >= 3) { const bm = busModus; busModus = "linie"; linieBau = ids; linieFertig(); busModus = bm; lfZeigen(null); const L = [...linien.values()].pop(); if (L) L.name = "Thorsten-Bus"; }
     kam(depot, 11, 0.5, 2.6, 0.12)();
   } });
-  // 7. Erweiterung: größere Häuser, Büros und Läden
-  const A2 = { x: A.x + inx * m * st, z: A.z + inz * m * st }, tief2 = 16 + Math.floor(r() * 6), mitte2 = { x: A2.x + inx * tief2 * 0.5, z: A2.z + inz * tief2 * 0.5 };
-  S.push({ was: "erweiterung", ev: "bau", d: 1.5, f: () => { meilenstein = Math.max(meilenstein, 3); zuSchnell = 1; kam({ x: (mitte.x + mitte2.x) / 2, z: (mitte.z + mitte2.z) / 2 }, 44, 0.8, 3, 0.03)(); } });
-  strassen(A2, breit + 2, tief2, null);
-  S.push({ d: 0.6, f: () => { setze("feuerklein", false, mitte2, tief2); setze("park", false, mitte2, tief2); versorgungRechnen(); } });
-  zonen(mitte2, tief2 + 4, (c) => { const v = Math.random(); return v < 0.45 ? 2 : v < 0.7 ? 4 : v < 0.88 ? 5 : 1; }, "zonen2");
-  S.push({ was: "wachsen2", ev: "bau", d: 22, f: () => { versorgungRechnen(); busRechnen(); bedarfBerechnen(); tempo = 4; zuSchnell = 2; kam(mitte2, 20, 0.5, 3, 0.1)(); } });
+  if (busFrueh) bus();
+  // 6. Zweites Viertel dort, wo Platz ist (Richtung prüft Thorsten selbst: Land statt Wasser)
+  const richt = [IN, QU, { x: -QU.x, z: -QU.z }].sort(() => r() - 0.5);
+  let wahl = richt.find((d) => { const z1 = plus(V1.mitte, d, V1.r + 16), z2 = plus(V1.mitte, d, V1.r + 30); return aufLand(z1.x, z1.z, 3) && aufLand(z2.x, z2.z, 3); }) || IN;
+  const P2 = plus(V1.mitte, wahl, V1.r + 4);
+  add({ was: "erweiterung", ev: "bau", d: 1.6, f: () => { meilenstein = Math.max(meilenstein, 3); zuSchnell = 1; kam(plus(V1.mitte, wahl, V1.r * 0.6), 44, 0.8, 3, 0.03)(); } });
+  add({ d: 0.5, f: () => {   // Anbindung an das erste Viertel
+    let best = null, bd = 1e9; for (const k of knoten.values()) { if (![...k.kanten].some((id) => !vorherK.has(id))) continue; const d = abst(k, P2); if (d < bd) { bd = d; best = k; } }
+    if (best && bd > 1) bauStrasse({ art: "knoten", id: best.id, x: best.x, z: best.z }, P2);
+  } });
+  const V2 = viertelBauen(P2, wahl, form2, zw(16, 22), null);
+  zonen(V2, (c) => (zielMix || MIX.wohnen)(c, V2), "zonen2");
+  add({ d: 0.6, f: () => { zuSetzen("feuerklein", false, V2.mitte, V2.r + 6); zuSetzen(pick(["park", "brunnen", "spielplatz", "sportplatz"]), false, V2.mitte, V2.r + 6); versorgungRechnen(); } });
+  wachsen(V2, "wachsen2", 20);
+  if (!busFrueh) bus();
+  // 7. Extra: Thorsten probiert was Besonderes
+  add({ ev: "bau", d: 6, f: () => {
+    const M = stadtMitte(), versuche = [["riesenrad", "riesenrad"], ["schwimmbad", "schwimmbad"], ["fischereihafen", "hafen"], ["yachthafen", "hafen"], ["grosspark", "park"], ["sportplatz", "sport"]].sort(() => r() - 0.5);
+    for (const [typ, art] of versuche) { const d = zuSetzen(typ, typ.includes("hafen"), M, M.r + 20); if (d) { zuEvent("extra", { art }); zuKamera(d.x, d.z, 12, 0.5, null, 2.4, 0.1); return; } }
+  } });
   // 8. Nacht und Abschluss
-  S.push({ was: "nacht", ev: "bau", d: 14, f: () => { zuSchnell = 1; zeitZiel = ZEITEN.nacht; const M = stadtMitte(); zuKamera(M.x, M.z, M.r * 1.4 + 12, 0.6, null, 3, 0.07); }, ende: () => { zeitZiel = ZEITEN.tag; } });
+  add({ was: "nacht", ev: "bau", d: 13, f: () => { zuSchnell = 1; zeitZiel = ZEITEN.nacht; const M = stadtMitte(); zuKamera(M.x, M.z, M.r * 1.4 + 12, 0.6, null, 3, 0.07); }, ende: () => { zeitZiel = ZEITEN.tag; } });
   return S;
 }
 function zuStart() {

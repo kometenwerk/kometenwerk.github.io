@@ -16,10 +16,29 @@
   var SPIELE = {
     krawallzoo: { name: "🎮 Krawallzoo – Thorsten zockt", titel: "THORSTEN ZOCKT", spiel: "Krawallzoo", marke: "FLARESSA", url: "Krawallzoo/?zuschauer=1&modus=" },
     zeigen: { name: "🏙️ Horizonte – Thorsten zeigt seine Stadt", titel: "THORSTEN ZEIGT", spiel: "Horizonte", marke: "FLARESSA", url: "spiele/inselstadt/?zuschauer=1&art=zeigen" },
-    bauen: { name: "🏗️ Horizonte – Thorsten baut eine Stadt", titel: "THORSTEN BAUT", spiel: "Horizonte", marke: "FLARESSA", url: "spiele/inselstadt/?zuschauer=1&art=bauen" }
+    bauen: { name: "🏗️ Horizonte – Thorsten baut eine Stadt", titel: "THORSTEN BAUT", spiel: "Horizonte", marke: "FLARESSA", url: "spiele/inselstadt/?zuschauer=1&art=bauen" },
+    werbung: { name: "📣 Werbe-Short – Thorsten stellt eine App vor", titel: "THORSTEN STELLT VOR", spiel: "OMNIVIA", marke: "OMNIVIA", url: null }
   };
+  var APPS = null, appsLaden = null;
+  function appsVorladen() {
+    if (!appsLaden) appsLaden = fetch(wurzel + "shared/thorsten/apps.json", { cache: "no-cache" }).then(function (r) { return r.json(); }).then(function (j) { APPS = j.apps || []; return APPS; }).catch(function () { appsLaden = null; APPS = []; return APPS; });
+    return appsLaden;
+  }
+  // Welche App ist heute dran? Jeden Tag eine andere, ab und zu eine, die bald kommt
+  function appWaehlen() {
+    var alle = (APPS || []).filter(function (a) { return a.status === "bald" || (a.bilder && a.bilder.length); });
+    if (!alle.length) return null;
+    var zuletzt = A.lade("omni-studio-apps", []), bald = alle.filter(function (a) { return a.status === "bald"; }), fertig = alle.filter(function (a) { return a.status !== "bald"; });
+    var topf = bald.length && Math.random() < 0.3 ? bald : fertig.length ? fertig : bald;
+    var frei = topf.filter(function (a) { return zuletzt.indexOf(a.id) < 0; });
+    if (!frei.length) { frei = topf; zuletzt = []; }
+    var a = frei[Math.floor(Math.random() * frei.length)];
+    zuletzt.push(a.id); A.merke("omni-studio-apps", zuletzt.slice(-Math.max(1, alle.length - 1)));
+    return a;
+  }
   function ein() { var e = A.lade("omni-studio", { spiel: "krawallzoo", format: "breit", laenge: 180, modus: "ffa", stimme: true, spielton: true, hoeren: true }); if (!SPIELE[e.spiel]) e.spiel = "krawallzoo"; return e; }
-  function hz() { return Z && Z.spiel !== "krawallzoo"; }
+  function hz() { return Z && (Z.spiel === "zeigen" || Z.spiel === "bauen"); }
+  function wb() { return Z && Z.spiel === "werbung"; }
 
   /* ---------------- Zustand ---------------- */
   var Z = null; // läuft gerade: { aufnahme, start, dauer, ... }
@@ -40,13 +59,14 @@
       '<div class="studio">' +
       '<p class="hinweis" id="stErklaer"></p>' +
       '<div class="st-entscheidet"><button class="knopf" type="button" id="stWuerfel">🎲 Thorsten, was machen wir heute?</button><p class="hinweis" id="stWahl" hidden></p></div>' +
-      '<div class="st-bild" id="stBild"><iframe id="stSpiel" title="Spiel im Zuschauer-Modus" tabindex="-1" aria-hidden="true"></iframe><canvas id="stLeinwand"></canvas>' +
+      '<div class="st-bild" id="stBild"><iframe id="stSpiel" title="Spiel im Zuschauer-Modus" tabindex="-1" aria-hidden="true" allow="autoplay"></iframe><canvas id="stLeinwand"></canvas>' +
       '<div class="st-leer" id="stLeer"><div class="gross">🎬</div><b>Noch nichts zu sehen</b><span>Tipp auf „Vorschau“, um zu testen, oder direkt auf „Aufnahme starten“.</span></div></div>' +
       '<div class="st-leiste"><span class="st-rec" id="stRec" hidden>● REC</span><span id="stZeit">–</span><span id="stInfo" class="st-info"></span></div>' +
       '<form class="st-einst" id="stForm">' +
       '<div class="feld st-voll"><label for="stSpielWahl">Was macht Thorsten?</label><select id="stSpielWahl">' + Object.keys(SPIELE).map(function (k) { return '<option value="' + k + '"' + (e.spiel === k ? " selected" : "") + ">" + SPIELE[k].name + "</option>"; }).join("") + "</select></div>" +
       '<div class="feld"><label for="stFormat">Format</label><select id="stFormat">' + Object.keys(FORMATE).map(function (k) { return '<option value="' + k + '"' + (e.format === k ? " selected" : "") + ">" + FORMATE[k].name + "</option>"; }).join("") + "</select></div>" +
       '<div class="feld"><label for="stLaenge">Länge</label><select id="stLaenge">' + laengen.map(function (l) { return '<option value="' + l[0] + '"' + (+e.laenge === l[0] ? " selected" : "") + ">" + l[1] + "</option>"; }).join("") + "</select></div>" +
+      '<div class="feld" id="stAppFeld" hidden><label for="stApp">Welche App?</label><select id="stApp"><option value="">🎲 Thorsten sucht aus</option></select></div>' +
       '<div class="feld" id="stModusFeld"><label for="stModus">Spielmodus</label><select id="stModus">' + MODI.map(function (m) { return '<option value="' + m[0] + '"' + (e.modus === m[0] ? " selected" : "") + ">" + m[1] + "</option>"; }).join("") + "</select></div>" +
       '<div class="st-haken"><label><input type="checkbox" id="stStimme"' + (e.stimme ? " checked" : "") + "> Thorsten spricht</label>" +
       '<label><input type="checkbox" id="stSpielton"' + (e.spielton ? " checked" : "") + "> Spielsound im Video</label>" +
@@ -55,6 +75,9 @@
       '<div class="reihe st-knoepfe"><button class="knopf" type="button" id="stVorschau">▶ Vorschau</button><button class="knopf haupt" type="button" id="stAufnahme">⏺ Aufnahme starten</button><button class="knopf gefahr" type="button" id="stStopp" hidden>■ Stopp</button></div>' +
       '<p class="hinweis" id="stTonHinweis" hidden></p>' +
       '<div id="stErgebnis"></div>' +
+      '<div class="st-auto"><label class="st-schalter"><input type="checkbox" id="stAuto"' + (A.lade("omni-studio-auto", false) ? " checked" : "") + '> <b>🤖 Thorsten arbeitet allein</b></label><p class="hinweis" id="stAutoInfo"></p>' +
+      '<p class="hinweis">Jeden Tag 3 Videos, sobald der PC an und der Team-Chat offen ist: 🎮 Krawallzoo, 🏙️ Horizonte und ein 📣 Werbe-Short. Das Fenster darf nicht minimiert sein. Nichts geht von allein auf YouTube – du gibst jedes Video unten frei.</p></div>' +
+      '<div id="stFreigabe" class="st-freigabe"></div>' +
       '<p class="hinweis">💡 Die Aufnahme dauert so lange wie das Video. Lass diesen Tab <b>vorne und offen</b> (am besten am PC) – sonst ruckelt das Video. Thorsten ist eine KI-Figur: Im Video steht immer „KI-Stimme“, und in der Beschreibung steht, dass es Computer-Gegner sind.</p>' +
       "</div>";
     $("stFormat").onchange = function () {
@@ -73,15 +96,23 @@
     $("stAufnahme").onclick = function () { starten(true); };
     $("stStopp").onclick = function () { stoppen(true); };
     tonVorladen();
+    appsVorladen().then(function (l) { var sel = $("stApp"); if (!sel) return; sel.innerHTML = '<option value="">🎲 Thorsten sucht aus</option>' + l.map(function (a) { return '<option value="' + A.esc(a.id) + '"' + (ein().app === a.id ? " selected" : "") + ">" + A.esc(a.name) + (a.status === "bald" ? " (bald)" : "") + "</option>"; }).join(""); sel.onchange = merken; });
     if (ergebnis) ergebnisZeigen();
+    $("stAuto").onchange = function () { A.merke("omni-studio-auto", this.checked); if (this.checked) { autoStarten(A); A.toast("🤖 Automatik an – Thorsten legt los, sobald er Zeit hat."); } autoAnzeigen(); };
+    autoAnzeigen(); freigabeZeigen();
+    if (autoAn()) autoStarten(A);
   }
   function spielAnzeige() {
     var k = $("stSpielWahl").value;
     $("stModusFeld").hidden = k !== "krawallzoo";
+    $("stAppFeld").hidden = k !== "werbung";
+    if (k === "werbung" && $("stFormat").value !== "hoch") { $("stFormat").value = "hoch"; $("stFormat").onchange(); }
+    $("stFormat").disabled = k === "werbung" || !!Z;
     $("stErklaer").innerHTML = {
       krawallzoo: "🎮 <b>Thorsten zockt Krawallzoo.</b> Die Tiere spielen als Bots, eins davon ist Thorstens Tier. Thorsten kommentiert, was passiert.",
       zeigen: "🏙️ <b>Thorsten zeigt seine Stadt.</b> Kameraflug durch Horizonte: Häuser, Bahnhof, Hafen, Verkehr und Nacht. Hast du auf diesem Gerät einen Horizonte-Spielstand, zeigt er <b>deine</b> Stadt.",
-      bauen: "🏗️ <b>Thorsten baut eine Stadt.</b> Auf leerem Land: Straßen, Strom, Wasser, Zonen – dann wächst die Stadt im Zeitraffer. Jedes Mal etwas anders."
+      bauen: "🏗️ <b>Thorsten baut eine Stadt.</b> Er denkt sich jedes Mal eine eigene Idee aus (Stadtform, Schwerpunkt, vorsichtig oder chaotisch), baut im Zeitraffer und repariert, was schiefgeht.",
+      werbung: "📣 <b>Thorsten stellt eine App vor.</b> Ein Short (hochkant) mit echten Bildern aus der App – oder ein Teaser für eine App, die bald kommt. Thorsten sucht sich die App selbst aus."
     }[k] + " Du schaust zu – am Ende bekommst du das fertige Video.";
   }
   // „Thorsten entscheidet“: Abwechslung nach einem kleinen Wochenplan
@@ -105,7 +136,7 @@
     w.innerHTML = "🤖 <b>Thorsten:</b> „Heute mache ich " + (format === "hoch" ? "ein Short" : "ein Video") + ": <b>" + SPIELE[spiel].name.replace(/^\S+\s/, "") + "</b>" + (spiel === "krawallzoo" ? " im Modus " + MODI.filter(function (m) { return m[0] === modus; })[0][1] : "") + ", " + zeitText(laenge) + " lang. Warum? " + grund.join(", ") + ".“ <br><small>Passt es? Dann tipp auf „Aufnahme starten“ – oder stell selbst etwas anderes ein.</small>";
   }
   function merken() {
-    A.merke("omni-studio", { spiel: $("stSpielWahl").value, format: $("stFormat").value, laenge: +$("stLaenge").value, modus: $("stModus").value, stimme: $("stStimme").checked, spielton: $("stSpielton").checked, hoeren: $("stHoeren").checked });
+    A.merke("omni-studio", { spiel: $("stSpielWahl").value, format: $("stFormat").value, laenge: +$("stLaenge").value, modus: $("stModus").value, stimme: $("stStimme").checked, spielton: $("stSpielton").checked, hoeren: $("stHoeren").checked, app: $("stApp") ? $("stApp").value : "" });
   }
   function verlassen() { if (Z && !Z.aufnahme) stoppen(false); }
   function info(t) { var el = $("stInfo"); if (el) el.textContent = t || ""; }
@@ -139,10 +170,12 @@
   /* ================================================================
      Start / Stopp
      ================================================================ */
-  function starten(aufnahme) {
+  function starten(aufnahme, vorgabe) {
     if (Z) stoppen(false);
-    merken();
-    var e = ein(), F = FORMATE[e.format] || FORMATE.breit;
+    if (!vorgabe) merken();
+    var e = vorgabe || ein();
+    if (e.spiel === "werbung") e.format = "hoch";
+    var F = FORMATE[e.format] || FORMATE.breit;
     if (aufnahme && typeof MediaRecorder === "undefined") { A.toast("Dieser Browser kann keine Videos aufnehmen. Nimm Chrome oder Edge am PC."); return; }
     var lw = $("stLeinwand"); lw.width = F.w; lw.height = F.h;
     $("stBild").classList.toggle("hoch", e.format === "hoch");
@@ -155,8 +188,9 @@
     var analyser = ctx.createAnalyser(); analyser.fftSize = 512;
     stimmeGain.connect(analyser); analyser.connect(ziel); spielGain.connect(ziel);
     var mithoeren = ctx.createGain(); mithoeren.gain.value = e.hoeren ? 1 : 0; analyser.connect(mithoeren); mithoeren.connect(ctx.destination);
+    var musikGain = ctx.createGain(); musikGain.gain.value = 0.3; musikGain.connect(spielGain); musikGain.connect(mithoeren);
 
-    Z = { aufnahme: aufnahme, spiel: e.spiel, S: SPIELE[e.spiel], format: e.format, F: F, dauer: aufnahme ? +e.laenge : 1e9, modus: e.modus, stimme: e.stimme, ctx: ctx, ziel: ziel, spielGain: spielGain, spielGainZiel: spielGain.gain.value,
+    Z = { auto: !!(vorgabe && vorgabe.auto), musikGain: musikGain, intro: e.format === "hoch" ? 1.6 : 3.4, aufnahme: aufnahme, spiel: e.spiel, S: SPIELE[e.spiel], format: e.format, F: F, dauer: aufnahme ? +e.laenge : 1e9, modus: e.modus, stimme: e.stimme, ctx: ctx, ziel: ziel, spielGain: spielGain, spielGainZiel: spielGain.gain.value,
       stimmeGain: stimmeGain, analyser: analyser, mithoeren: mithoeren, lw: lw, g: lw.getContext("2d"), start: 0, t: 0, bereit: false,
       spricht: null, letzterSatz: -99, benutzt: {}, warteschlange: [], untertitel: null, outro: false,
       stats: { runden: 0, siege: 0, kos: 0, raus: 0, tiere: [], highlight: null, letzterSieger: null, einwohner: 0, momente: [], probleme: [], geloest: [], serie: 0, wechsel: 0 }, tier: "", modusName: "", vorschauBild: null, vorschauGrund: 0,
@@ -164,7 +198,8 @@
     ctx.resume().catch(function () {});
     // Spiel laden
     var fr = $("stSpiel");
-    fr.src = wurzel + Z.S.url + (e.spiel === "krawallzoo" ? encodeURIComponent(e.modus) : "&dauer=" + (aufnahme ? +e.laenge : 180)) + "&v=" + Date.now();
+    if (e.spiel === "werbung") { fr.src = "about:blank"; Z.app = e.app || null; werbungVorbereiten(); }
+    else fr.src = wurzel + Z.S.url + (e.spiel === "krawallzoo" ? encodeURIComponent(e.modus) : "&dauer=" + (aufnahme ? +e.laenge : 180)) + "&v=" + Date.now();
     knoepfe();
     info(aufnahme ? "Spiel wird geladen …" : "Vorschau – es wird nichts aufgenommen.");
     $("stZeit").textContent = aufnahme ? "0:00 / " + zeitText(Z.dauer) : "Vorschau";
@@ -173,22 +208,26 @@
     Z.raf = requestAnimationFrame(zeichnen);
     if (A.seiteNeu) A.seiteNeu();
   }
-  function bereit() {
+  function bereit(ohneSpiel) {
     if (!Z || Z.bereit) return;
-    var w = $("stSpiel").contentWindow, kz = w && w.KZ_ZU;
-    if (!kz) return;
+    var w = $("stSpiel").contentWindow, kz = ohneSpiel ? null : w && w.KZ_ZU;
+    if (!kz && !ohneSpiel) return;
     clearTimeout(Z.ladeTimer);
     Z.bereit = true; Z.kz = kz; Z.start = performance.now();
+    if (Z.ctx.state !== "running") Z.ctx.resume().catch(function () {});
+    introTon();
     // Spielton abgreifen
-    try {
+    if (kz) try {
       var st = kz.ton();
       if (st) { Z.spielQuelle = Z.ctx.createMediaStreamSource(st); Z.spielQuelle.connect(Z.spielGain); }
-      kz.lautsprecher(!!$("stHoeren").checked);
+      kz.lautsprecher(!!($("stHoeren") ? $("stHoeren").checked : true));
     } catch (err) { console.warn("Spielton", err); }
     if (Z.aufnahme) aufnahmeStarten();
     info(Z.aufnahme ? "Aufnahme läuft …" : "Vorschau läuft.");
-    // Begrüßung
-    setTimeout(function () { if (!Z) return; sag(Z.spiel === "krawallzoo" ? (Z.format === "hoch" ? "short_intro" : "intro") : (Z.format === "hoch" ? "hz_short_intro" : "hz_intro_" + Z.spiel), 9); }, 600);
+    // Begrüßung – nach dem Kanal-Intro
+    var z = Z;
+    if (Z.format !== "hoch") setTimeout(function () { if (Z === z) sag("kanal_intro", 10); }, 1300);
+    if (!wb()) setTimeout(function () { if (Z !== z) return; z.letzterSatz = -99; sag(Z.spiel === "krawallzoo" ? (Z.format === "hoch" ? "short_intro" : "intro") : (Z.format === "hoch" ? "hz_short_intro" : "hz_intro_" + Z.spiel), 9); }, Z.intro * 1000 + 300);
   }
   function aufnahmeStarten() {
     var spur = Z.lw.captureStream(30);
@@ -211,6 +250,7 @@
       z.endet = true;
       // fertigstellen läuft im onstop – Z wird dort aufgeräumt
       try { z.kz && z.kz.stopp(); } catch (e) { /* egal */ }
+      if (z.musik) clearInterval(z.musik);
       info("Video wird fertiggestellt …");
       z.rec.stop();
       return;
@@ -221,7 +261,7 @@
   function aufraeumen() {
     if (!Z) return;
     removeEventListener("message", nachricht);
-    cancelAnimationFrame(Z.raf); clearTimeout(Z.ladeTimer);
+    cancelAnimationFrame(Z.raf); clearTimeout(Z.ladeTimer); if (Z.musik) clearInterval(Z.musik);
     try { if (Z.spricht) Z.spricht.quelle.stop(); } catch (e) { /* egal */ }
     try { Z.ctx.close(); } catch (e) { /* egal */ }
     var fr = $("stSpiel"); if (fr) fr.src = "about:blank";
@@ -235,9 +275,10 @@
   function knoepfe() {
     var an = !!Z;
     if (!$("stAufnahme")) return;
+    if ($("stAutoInfo")) autoAnzeigen();
     $("stVorschau").hidden = an; $("stAufnahme").hidden = an; $("stStopp").hidden = !an;
     $("stStopp").textContent = Z && Z.aufnahme ? "■ Aufnahme beenden" : "■ Vorschau beenden";
-    ["stSpielWahl", "stFormat", "stLaenge", "stModus", "stStimme", "stSpielton", "stWuerfel"].forEach(function (id) { $(id).disabled = an; });
+    ["stSpielWahl", "stFormat", "stLaenge", "stModus", "stStimme", "stSpielton", "stWuerfel"].forEach(function (id) { if ($(id)) $(id).disabled = an || (id === "stFormat" && $("stSpielWahl").value === "werbung"); });
   }
 
   /* ================================================================
@@ -316,6 +357,10 @@
     var frei = liste.filter(function (s) { return !Z.benutzt[s.id] || jetzt - Z.benutzt[s.id] > 90; });
     var s = (frei.length ? frei : liste)[Math.floor(Math.random() * (frei.length || liste.length))];
     if (gruppe === "hz_einwohner" && Z.einwText) { var passend = liste.filter(function (x) { return x.zahl === Z.einwText; })[0]; if (passend) s = passend; }
+    return sprich(s, prio);
+  }
+  function sprich(s, prio) {
+    var jetzt = Z.t;
     Z.benutzt[s.id] = jetzt;
     if (!Z.stimme) { Z.untertitel = { text: s.text, bis: jetzt + Math.max(1.6, s.dauer || 2) }; Z.letzterSatz = jetzt + (s.dauer || 2); return true; }
     var z = Z;
@@ -351,7 +396,7 @@
   }
   // Bester Moment fürs Vorschaubild
   function merkeMoment(wert, text) {
-    if (!Z || wert < Z.vorschauGrund || Z.t < 3) return;
+    if (!Z || !Z.kz || wert < Z.vorschauGrund || Z.t < Z.intro + 2) return;
     setTimeout(function () {
       if (!Z) return;
       var c = document.createElement("canvas"); c.width = 1280; c.height = 720;
@@ -371,7 +416,8 @@
     var t = Z.t;
     g.fillStyle = "#07090f"; g.fillRect(0, 0, W, H);
     var spiel = Z.kz && Z.kz.canvas;
-    if (Z.format === "hoch") zeichneHoch(g, W, H, spiel); else if (spiel) g.drawImage(spiel, 0, 0, W, H);
+    if (wb()) zeichneWerbung(g, W, H, t);
+    else if (Z.format === "hoch") zeichneHoch(g, W, H, spiel); else if (spiel) g.drawImage(spiel, 0, 0, W, H);
     // Avatar + Untertitel
     var pegel = 0;
     if (Z.spricht && Z.spricht.quelle) { var d = new Uint8Array(Z.analyser.fftSize); Z.analyser.getByteTimeDomainData(d); var m = 0; for (var i = 0; i < d.length; i += 4) m = Math.max(m, Math.abs(d[i] - 128)); pegel = Math.min(1, m / 50); }
@@ -379,24 +425,26 @@
     Z.staunen = Math.max(0, Z.staunen - 1 / 60);
     var gross = Z.format === "hoch" ? 230 : 150;
     var ax = Z.format === "hoch" ? 60 : 24, ay = Z.format === "hoch" ? 1290 : H - gross - 24;
-    avatar(g, ax, ay, gross, Z.mund, t, Z.staunen > 0.3);
-    namensSchild(g, ax + gross + 14, ay + gross * 0.35, Z.format === "hoch" ? 1.5 : 1);
+    if (wb()) { if (Z.seg && t >= Z.seg[1].ab && t < Z.seg[Z.seg.length - 1].ab) avatar(g, 40, 40, 150, Z.mund, t, Z.staunen > 0.3); }
+    else { avatar(g, ax, ay, gross, Z.mund, t, Z.staunen > 0.3); namensSchild(g, ax + gross + 14, ay + gross * 0.35, Z.format === "hoch" ? 1.5 : 1); }
     if (Z.untertitel && t < Z.untertitel.bis) untertitel(g, W, H, Z.untertitel.text);
     // Titel-Einblendung nach der ersten Action (Leitfaden: erst Ergebnis, dann kurz das Intro)
-    if (t > 2.2 && t < 6.2 && Z.bereit) titelKarte(g, W, H, t - 2.2);
+    if (!wb() && t > Z.intro + 1.2 && t < Z.intro + 5.2 && Z.bereit) titelKarte(g, W, H, t - Z.intro - 1.2);
     // Füllsätze, wenn es zu ruhig ist
-    if (Z.bereit && !Z.spricht && !Z.outro && Z.format !== "hoch" && t - Z.letzterSatz > 15 && t > 10) sag(hz() ? "hz_fuell" : "fuell", 1);
+    if (Z.bereit && !wb() && !Z.spricht && !Z.outro && Z.format !== "hoch" && t - Z.letzterSatz > 15 && t > 10 + Z.intro) sag(hz() ? "hz_fuell" : "fuell", 1);
     // Schluss
     if (Z.aufnahme && Z.bereit) {
       var rest = Z.dauer - t;
       var schluss = Z.format === "hoch" ? 3 : 7;
+      if (wb()) schluss = -1;
       if (rest < schluss + 0.6 && !Z.outro) { Z.outro = true; if (Z.spricht) { try { Z.spricht.quelle.stop(); } catch (e) { /* egal */ } } Z.spricht = null; Z.letzterSatz = -99; sag(hz() ? (Z.format === "hoch" ? "hz_short_outro" : "hz_outro") : (Z.format === "hoch" ? "short_outro" : "outro"), 10); }
       if (rest < schluss) schlussKarte(g, W, H, 1 - rest / schluss, Z.mund, t);
       var el = $("stZeit"); if (el) el.textContent = zeitText(t) + " / " + zeitText(Z.dauer);
       if (rest <= 0) { stoppen(true); return; }
     } else if (Z.bereit) { var el2 = $("stZeit"); if (el2) el2.textContent = "Vorschau · " + zeitText(t); }
-    // Einblenden am Anfang
-    if (t < 0.6) { g.fillStyle = "rgba(7,9,15," + (1 - t / 0.6) + ")"; g.fillRect(0, 0, W, H); }
+    // Kanal-Intro ganz am Anfang
+    if (!Z.bereit) { g.fillStyle = "#07090f"; g.fillRect(0, 0, W, H); }
+    else if (t < Z.intro) kanalIntro(g, W, H, t, Z.intro);
   }
   function zeichneHoch(g, W, H, spiel) {
     // Hintergrund: Spiel stark vergrößert und unscharf
@@ -412,6 +460,176 @@
     g.font = "800 92px 'Space Grotesk', Arial, sans-serif"; schrift(g, Z.S.titel, W / 2, 140, "#ffcf33", 12);
     g.font = "600 52px 'Space Grotesk', Arial, sans-serif"; schrift(g, Z.S.spiel + (Z.tier ? " · " + Z.tier : ""), W / 2, 228, "#ffffff", 9);
   }
+
+  /* ================================================================
+     Kanal-Intro: Thorsten fliegt als Komet ins Bild
+     ================================================================ */
+  function introTon() {
+    var c = Z.ctx, t0 = c.currentTime + 0.05, ziel = Z.stimmeGain;
+    try {
+      // Whoosh: Rauschen, das hochzieht
+      var n = c.createBuffer(1, c.sampleRate * 1.2, c.sampleRate), d = n.getChannelData(0); for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      var q = c.createBufferSource(); q.buffer = n; var f = c.createBiquadFilter(); f.type = "bandpass"; f.Q.value = 1.4; f.frequency.setValueAtTime(300, t0); f.frequency.exponentialRampToValueAtTime(3200, t0 + 0.9);
+      var g = c.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.35, t0 + 0.6); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.1);
+      q.connect(f); f.connect(g); g.connect(ziel); q.start(t0); q.stop(t0 + 1.2);
+      // Landung: kleiner Akkord
+      [523.25, 659.25, 783.99, 1046.5].forEach(function (fr, k) {
+        var o = c.createOscillator(), og = c.createGain(), t = t0 + 0.95 + k * 0.06; o.type = "triangle"; o.frequency.value = fr;
+        og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(0.16, t + 0.02); og.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+        o.connect(og); og.connect(ziel); o.start(t); o.stop(t + 1.2);
+      });
+    } catch (e) { /* egal */ }
+  }
+  function kanalIntro(g, W, H, t, dauer) {
+    var hoch = Z.format === "hoch", k = hoch ? W / 1280 * 1.35 : W / 1280, cx = W / 2, cy = H * (hoch ? 0.42 : 0.44);
+    var raus = t > dauer - 0.45 ? (t - (dauer - 0.45)) / 0.45 : 0;
+    g.save(); g.globalAlpha = 1 - raus;
+    var bg = g.createRadialGradient(cx, cy, 10, cx, cy, Math.max(W, H) * 0.7); bg.addColorStop(0, "#1b1440"); bg.addColorStop(1, "#05060b");
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    // Sterne
+    for (var i = 0; i < 70; i++) { var sx = (i * 137.5 % 100) / 100 * W, sy = (i * 61.3 % 100) / 100 * H, tw = 0.4 + 0.6 * Math.abs(Math.sin(t * 2 + i)); g.fillStyle = "rgba(255,255,255," + (0.25 + 0.5 * tw) + ")"; g.fillRect(sx - (t * 40 * k) % W * 0 , sy, 2 * k + (i % 3 === 0 ? 1.5 : 0), 2 * k); }
+    // Flug: von oben rechts zur Mitte
+    var fl = Math.min(1, t / (hoch ? 0.7 : 1.0)), e = easeOut(fl), sx0 = W * 1.15, sy0 = -H * 0.15;
+    var x = sx0 + (cx - sx0) * e, y = sy0 + (cy - sy0) * e, gr = (hoch ? 300 : 200) * k * (0.35 + 0.65 * e);
+    // Schweif
+    for (var j = 0; j < 3; j++) {
+      var len = (1 - e * 0.6) * 520 * k + 60 * k, wid = [26, 12, 6][j] * k * (1.1 - e * 0.4), col = ["rgba(255,255,255,.75)", "rgba(255,138,60,.9)", "rgba(154,167,189,.7)"][j];
+      g.strokeStyle = col; g.lineWidth = wid; g.lineCap = "round"; g.beginPath(); var ox = (j - 1) * 14 * k; g.moveTo(x + ox, y - ox); g.lineTo(x + len * 0.75 + ox, y - len * 0.75 * 0.62 - ox); g.stroke();
+    }
+    // Funken beim Landen
+    if (fl >= 1) { var p = Math.min(1, (t - (hoch ? 0.7 : 1.0)) / 0.6); for (var m = 0; m < 14; m++) { var w = m / 14 * Math.PI * 2, r = (40 + 160 * p) * k; g.fillStyle = "rgba(255,207,51," + (1 - p) + ")"; g.beginPath(); g.arc(cx + Math.cos(w) * r, cy + Math.sin(w) * r, 5 * k, 0, 7); g.fill(); } }
+    avatar(g, x - gr / 2, y - gr / 2, gr, 0.3, t, fl < 1);
+    // Schrift
+    if (fl >= 1) {
+      var tt = t - (hoch ? 0.7 : 1.0), name = "THORSTEN";
+      g.textAlign = "center"; g.textBaseline = "middle";
+      g.font = "800 " + Math.round((hoch ? 150 : 96) * k / (hoch ? 1.35 : 1)) + "px 'Space Grotesk', Arial, sans-serif";
+      var ges = g.measureText(name).width, bx = cx - ges / 2, ty = cy + gr * 0.5 + (hoch ? 140 : 90) * k / (hoch ? 1.35 : 1);
+      for (var b = 0; b < name.length; b++) {
+        var bt = Math.max(0, Math.min(1, (tt - b * 0.05) / 0.25)); if (!bt) continue;
+        var vor = g.measureText(name.slice(0, b)).width, cw = g.measureText(name[b]).width;
+        g.save(); g.globalAlpha = (1 - raus) * bt; g.translate(bx + vor + cw / 2, ty + (1 - easeOut(bt)) * 30 * k); schrift(g, name[b], 0, 0, "#ffffff", 10 * k); g.restore();
+      }
+      var st = Math.max(0, Math.min(1, (tt - 0.5) / 0.4));
+      if (st) { g.globalAlpha = (1 - raus) * st; g.font = "600 " + Math.round((hoch ? 46 : 30) * k / (hoch ? 1.35 : 1)) + "px 'Space Grotesk', Arial, sans-serif"; g.fillStyle = "#ff8a3c"; g.fillText("KI-YOUTUBER · OMNIVIA", cx, ty + (hoch ? 110 : 70) * k / (hoch ? 1.35 : 1)); }
+    }
+    g.restore();
+  }
+
+  /* ================================================================
+     Werbe-Short: Thorsten stellt eine App vor
+     ================================================================ */
+  function satzVon(gruppe, nr) { var l = ton && ton[gruppe]; if (!l || !l.length) return null; if (nr) { var x = l.filter(function (s) { return s.nr === nr; })[0]; if (x) return x; } return l[Math.floor(Math.random() * l.length)]; }
+  function bildLaden(url) { return new Promise(function (ok) { var i = new Image(); i.onload = function () { ok(i); }; i.onerror = function () { ok(null); }; i.src = wurzel + url; }); }
+  function werbungVorbereiten() {
+    var z = Z;
+    Promise.all([appsVorladen(), tonVorladen()]).then(function () {
+      if (Z !== z) return;
+      var app = z.app ? (APPS || []).filter(function (a) { return a.id === z.app; })[0] : null;
+      app = app || appWaehlen();
+      if (!app) { A.toast("Keine App für das Werbevideo gefunden."); stoppen(false); return; }
+      z.appDaten = app; z.tier = app.name; z.modusName = app.name;
+      var bald = app.status === "bald";
+      return Promise.all([Promise.all((app.bilder || []).slice(0, 3).map(bildLaden)), bildLaden("shared/marken/" + app.marke + "-zeichen.webp")]).then(function (r) {
+        if (Z !== z) return;
+        z.bilder = r[0].filter(Boolean); z.logo = r[1];
+        // Ablauf: Aufhänger – Name – Bilder mit Merkmalen – Schluss
+        var seg = [], dauer = function (s, min) { return Math.max(min || 3, (s ? s.dauer : 2.2) + 0.5); };
+        var s0 = satzVon(bald ? "app_start_bald" : "app_start"), s1 = satzVon("app_" + app.id, 1), s2 = satzVon("app_" + app.id, 2), s3 = satzVon("app_" + app.id, 3), s4 = satzVon(bald ? "app_ende_bald" : "app_ende");
+        seg.push({ art: "hook", satz: s0, d: dauer(s0, 2.6) });
+        seg.push({ art: "name", satz: s1, d: dauer(s1, 3.2) });
+        var punkte = app.punkte || [];
+        if (z.bilder.length && !bald) {
+          seg.push({ art: "bild", bild: 0, punkt: punkte[0], satz: s2, d: dauer(s2, 4) });
+          seg.push({ art: "bild", bild: 1 % z.bilder.length, punkt: punkte[1], satz: s3, d: dauer(s3, 4) });
+          if (z.bilder.length > 2) seg.push({ art: "bild", bild: 2, punkt: punkte[2], satz: null, d: 3.2 });
+        } else {
+          seg.push({ art: "punkte", satz: s2, d: dauer(s2, 4) });
+          seg.push({ art: "punkte2", satz: s3, d: dauer(s3, 3.6) });
+        }
+        seg.push({ art: "ende", satz: s4, d: dauer(s4, 4.2) + 0.8 });
+        var t = z.intro; seg.forEach(function (x) { x.ab = t; t += x.d; });
+        z.seg = seg; z.dauer = z.aufnahme ? Math.min(58, t) : 1e9; z.segEnde = t;
+        musikStarten(z);
+        bereit(true);
+      });
+    }).catch(function (e) { console.warn(e); if (Z === z) { A.toast("Werbevideo konnte nicht vorbereitet werden."); stoppen(false); } });
+  }
+  // Leichte, eigene Hintergrundmusik (synthetisch erzeugt – keine fremde Musik)
+  function musikStarten(z) {
+    var c = z.ctx, ziel = z.musikGain, bpm = 112, takt = 60 / bpm / 2, naechste = c.currentTime + 0.1, schritt = 0;
+    var akk = [[220, 277.18, 329.63], [196, 246.94, 293.66], [174.61, 220, 261.63], [196, 246.94, 293.66]];
+    var noise = c.createBuffer(1, c.sampleRate * 0.1, c.sampleRate), nd = noise.getChannelData(0); for (var i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+    var ton1 = function (f, t, d, typ, v) { var o = c.createOscillator(), g = c.createGain(); o.type = typ; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + d); o.connect(g); g.connect(ziel); o.start(t); o.stop(t + d + 0.05); };
+    z.musik = setInterval(function () {
+      if (Z !== z) return;
+      while (naechste < c.currentTime + 0.25) {
+        var t = naechste, a = akk[Math.floor(schritt / 8) % 4];
+        if (schritt % 4 === 0) { var o = c.createOscillator(), g = c.createGain(); o.frequency.setValueAtTime(130, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.15); g.gain.setValueAtTime(0.9, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22); o.connect(g); g.connect(ziel); o.start(t); o.stop(t + 0.25); }
+        if (schritt % 2 === 1) { var q = c.createBufferSource(); q.buffer = noise; var hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 7000; var hg = c.createGain(); hg.gain.value = 0.16; q.connect(hp); hp.connect(hg); hg.connect(ziel); q.start(t); }
+        if (schritt % 8 === 0) a.forEach(function (f) { ton1(f, t, takt * 7, "triangle", 0.07); });
+        if (schritt % 2 === 0) ton1(a[0] / 2, t, takt * 0.9, "sine", 0.22);
+        if (schritt % 4 === 2) ton1(a[(schritt / 2) % 3] * 2, t, takt * 0.8, "square", 0.025);
+        naechste += takt; schritt++;
+      }
+    }, 80);
+  }
+  function zeichneWerbung(g, W, H, t) {
+    var z = Z, app = z.appDaten; if (!app || !z.seg) return;
+    var farbe = app.farbe || "#4338ca", bald = app.status === "bald";
+    // Hintergrund mit langsam wandernden Farbflecken
+    var bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, "#0a0b12"); bg.addColorStop(1, "#141026"); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    for (var i = 0; i < 3; i++) { var bx = W * (0.5 + 0.4 * Math.sin(t * 0.3 + i * 2.1)), by = H * (0.3 + 0.25 * i + 0.08 * Math.cos(t * 0.4 + i)), rg = g.createRadialGradient(bx, by, 0, bx, by, 520); rg.addColorStop(0, i === 1 ? "rgba(255,138,60,.22)" : hexA(farbe, 0.42)); rg.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = rg; g.fillRect(0, 0, W, H); }
+    // aktueller Abschnitt
+    var seg = null; for (var j = 0; j < z.seg.length; j++) if (t >= z.seg[j].ab) seg = z.seg[j];
+    if (seg && !seg.gesagt && t >= seg.ab) { seg.gesagt = true; if (seg.satz) { z.spricht = null; z.letzterSatz = -99; sprich(seg.satz, 9); } }
+    if (!seg) return;
+    var lt = t - seg.ab, rein = easeOut(Math.min(1, lt / 0.45));
+    // Kopfzeile: Marke + App-Name
+    g.textAlign = "center"; g.textBaseline = "middle";
+    if (seg.art !== "hook") {
+      if (z.logo) { var lh = 90, lw = z.logo.width / z.logo.height * lh; g.drawImage(z.logo, W / 2 - lw / 2, 90, lw, lh); }
+      g.font = "800 76px 'Space Grotesk', Arial, sans-serif"; schrift(g, app.name, W / 2, 250, "#ffffff", 10);
+      if (bald) { g.font = "800 40px 'Space Grotesk', Arial, sans-serif"; var bw = g.measureText("BALD VERFÜGBAR").width + 60; g.fillStyle = "#ff8a3c"; rund(g, W / 2 - bw / 2, 300, bw, 64, 20); g.fill(); g.fillStyle = "#1a0d02"; g.fillText("BALD VERFÜGBAR", W / 2, 334); }
+    }
+    if (seg.art === "hook") {
+      var s = 420 * (0.7 + 0.3 * rein); avatar(g, W / 2 - s / 2, 520 - (1 - rein) * 200, s, z.mund || 0, t, true);
+      g.font = "900 110px 'Space Grotesk', Arial, sans-serif"; g.save(); g.translate(W / 2, 1140); g.rotate(-0.05); g.scale(rein, rein); schrift(g, bald ? "PSST! 🤫" : "NEU? 👀", 0, 0, "#ffcf33", 16); g.restore();
+      g.font = "700 56px 'Space Grotesk', Arial, sans-serif"; g.globalAlpha = rein; schrift(g, bald ? "Bald bei OMNIVIA:" : "Kennst du schon …", W / 2, 1270, "#ffffff", 8); g.globalAlpha = 1;
+    } else if (seg.art === "name") {
+      var sk = 0.6 + 0.4 * rein;
+      g.save(); g.translate(W / 2, 760); g.scale(sk, sk);
+      g.fillStyle = farbe; rund(g, -300, -300, 600, 600, 140); g.fill();
+      g.strokeStyle = "rgba(255,255,255,.3)"; g.lineWidth = 8; rund(g, -300, -300, 600, 600, 140); g.stroke();
+      if (z.logo) { var l2 = 360, lw2 = z.logo.width / z.logo.height * l2; g.drawImage(z.logo, -lw2 / 2, -l2 / 2, lw2, l2); } else { g.font = "900 220px 'Space Grotesk', Arial, sans-serif"; g.fillStyle = "#fff"; g.fillText(app.name.charAt(0), 0, 10); }
+      g.restore();
+      var p = app.punkte || []; g.font = "700 54px 'Space Grotesk', Arial, sans-serif";
+      p.slice(0, 3).forEach(function (x, i) { var a = Math.max(0, Math.min(1, (lt - 0.4 - i * 0.35) / 0.3)); g.globalAlpha = a; schrift(g, "✓ " + x, W / 2, 1180 + i * 86, "#ffffff", 8); }); g.globalAlpha = 1;
+    } else if (seg.art === "bild") {
+      var img = z.bilder[seg.bild]; var pw = 560, ph = 1120, px = W / 2 - pw / 2 + (1 - rein) * W, py = 460;
+      var zoom = 1 + lt * 0.015;
+      g.save(); g.shadowColor = "rgba(0,0,0,.6)"; g.shadowBlur = 60; g.fillStyle = "#000"; rund(g, px - 18, py - 18, pw + 36, ph + 36, 70); g.fill(); g.restore();
+      g.save(); rund(g, px, py, pw, ph, 54); g.clip();
+      if (img) { var iw = pw * zoom, ih = img.height / img.width * iw; g.drawImage(img, px + (pw - iw) / 2, py + (ph - Math.min(ih, ph * zoom)) / 2 - lt * 6, iw, ih); }
+      g.restore();
+      g.strokeStyle = "rgba(255,255,255,.25)"; g.lineWidth = 4; rund(g, px, py, pw, ph, 54); g.stroke();
+      if (seg.punkt) { var pa = Math.max(0, Math.min(1, (lt - 0.3) / 0.3)); g.globalAlpha = pa; g.font = "800 58px 'Space Grotesk', Arial, sans-serif"; var tw = g.measureText(seg.punkt).width + 70; g.fillStyle = farbe; rund(g, W / 2 - tw / 2, 330, tw, 96, 30); g.fill(); g.fillStyle = "#fff"; g.fillText(seg.punkt, W / 2, 380); g.globalAlpha = 1; }
+    } else if (seg.art === "punkte" || seg.art === "punkte2") {
+      var pp = app.punkte || [], idx = seg.art === "punkte" ? [0, 1] : [2];
+      idx.forEach(function (n, i) { if (!pp[n]) return; var a = Math.max(0, Math.min(1, (lt - i * 0.5) / 0.4)), y = 760 + i * 300; g.globalAlpha = a;
+        g.fillStyle = "rgba(255,255,255,.08)"; rund(g, 110, y - 120 + (1 - a) * 40, W - 220, 240, 50); g.fill(); g.strokeStyle = hexA(farbe, 0.9); g.lineWidth = 5; rund(g, 110, y - 120 + (1 - a) * 40, W - 220, 240, 50); g.stroke();
+        g.font = "800 70px 'Space Grotesk', Arial, sans-serif"; schrift(g, pp[n], W / 2, y + (1 - a) * 40, "#ffffff", 8); g.globalAlpha = 1; });
+      g.font = "600 40px 'Space Grotesk', Arial, sans-serif"; g.fillStyle = "#9aa7bd"; g.fillText("In Entwicklung – noch keine Bilder", W / 2, 1460);
+    } else if (seg.art === "ende") {
+      var s2 = 300; avatar(g, W / 2 - s2 / 2, 470, s2, z.mund || 0, t, false);
+      g.font = "900 " + (bald ? 96 : 104) + "px 'Space Grotesk', Arial, sans-serif"; g.save(); g.translate(W / 2, 960); g.scale(0.7 + 0.3 * rein, 0.7 + 0.3 * rein); schrift(g, bald ? "Bald da! 🚀" : "Kostenlos! ✨", 0, 0, "#ffcf33", 14); g.restore();
+      g.font = "700 52px 'Space Grotesk', Arial, sans-serif"; schrift(g, bald ? "Abonnieren & nichts verpassen" : "Ohne Werbung · ohne Konto", W / 2, 1090, "#ffffff", 8);
+      g.fillStyle = "rgba(255,255,255,.1)"; rund(g, 90, 1180, W - 180, 130, 40); g.fill();
+      g.font = "800 50px 'Space Grotesk', Arial, sans-serif"; g.fillStyle = "#fff"; g.fillText("kometenwerk.github.io", W / 2, 1246);
+      g.font = "500 32px 'Space Grotesk', Arial, sans-serif"; g.fillStyle = "#9aa7bd"; g.fillText("Werbung in eigener Sache · Thorsten ist eine KI-Figur", W / 2, 1380);
+    }
+  }
+  function hexA(hex, a) { var h = String(hex).replace("#", ""); if (h.length === 3) h = h.split("").map(function (c) { return c + c; }).join(""); var n = parseInt(h, 16); return "rgba(" + (n >> 16 & 255) + "," + (n >> 8 & 255) + "," + (n & 255) + "," + a + ")"; }
 
   /* ---------- Bausteine ---------- */
   function rund(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
@@ -465,7 +683,7 @@
     var hoch = Z.format === "hoch", gr = hoch ? 54 : 30, maxB = hoch ? W - 120 : W * 0.56;
     g.font = "700 " + gr + "px 'Space Grotesk', Arial, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
     var zeilen = umbruch(g, text, maxB).slice(0, 3), lh = gr * 1.25;
-    var y0 = hoch ? 1640 : H - 70 - (zeilen.length - 1) * lh, x = hoch ? W / 2 : W / 2 + 150;
+    var y0 = hoch ? (wb() ? 1740 - (zeilen.length - 1) * lh : 1640) : H - 70 - (zeilen.length - 1) * lh, x = hoch ? W / 2 : W / 2 + 150;
     zeilen.forEach(function (z, i) {
       var w = g.measureText(z).width + gr;
       g.fillStyle = "rgba(0,0,0,.72)"; rund(g, x - w / 2, y0 + i * lh - lh / 2, w, lh, 10); g.fill();
@@ -516,7 +734,16 @@
     var datum = new Date().toISOString().slice(0, 10);
     var tier = st.tiere[0] || "Zufallstier";
     var titel, beschreibung, tags, dateiName = "thorsten-zockt-";
-    if (z.spiel !== "krawallzoo") {
+    if (z.spiel === "werbung") {
+      var ap = z.appDaten || { name: "OMNIVIA", pfad: "", punkte: [] }, bald = ap.status === "bald", link = "https://kometenwerk.github.io/" + (ap.pfad || "");
+      dateiName = "thorsten-werbung-" + (ap.id || "app") + "-";
+      titel = bald ? ap.name + " – bald verfügbar! 🚀 #Shorts" : ap.name + ": kostenlos & ohne Werbung ✨ #Shorts";
+      beschreibung = (bald ? "Vorschau: " + ap.name + " ist bei OMNIVIA in Entwicklung. Noch gibt es keine fertige App – im Video siehst du nur die Idee, keine echten Spielszenen.\n" : "Thorsten stellt " + ap.name + " vor – kostenlos, ohne Werbung, direkt im Browser.\n") +
+        (ap.punkte && ap.punkte.length ? "• " + ap.punkte.join("\n• ") + "\n" : "") +
+        "\n" + (bald ? "🌐 Mehr von OMNIVIA: https://kometenwerk.github.io" : "👉 Ausprobieren: " + link + "\n🌐 Mehr von OMNIVIA: https://kometenwerk.github.io") + "\n\n" +
+        "ℹ️ Werbung in eigener Sache: " + ap.name + " ist ein Projekt der OMNIVIA Group. Thorsten ist eine KI-Figur, seine Stimme eine Computerstimme (Piper „Thorsten“, CC0). Musik selbst erzeugt.";
+      tags = ap.name + ", OMNIVIA, App, kostenlos, werbefrei, Thorsten, KI, Shorts";
+    } else if (z.spiel !== "krawallzoo") {
       var stadt = z.tier || "Horizonte", ew = st.einwohner || 0, bau = z.spiel === "bauen";
       dateiName = bau ? "thorsten-baut-" : "thorsten-zeigt-";
       titel = kurz
@@ -547,13 +774,17 @@
     vorschaubild(z).then(function (bild) {
       if (ergebnis) { URL.revokeObjectURL(ergebnis.url); if (ergebnis.vorschauUrl) URL.revokeObjectURL(ergebnis.vorschauUrl); }
       ergebnis = { blob: blob, url: URL.createObjectURL(blob), name: dateiName + datum + "." + endung, vorschau: bild, vorschauUrl: bild ? URL.createObjectURL(bild) : null,
-        titel: titel, beschreibung: beschreibung, tags: tags, kurz: kurz, dauer: z.dauer };
+        titel: titel, beschreibung: beschreibung, tags: tags, kurz: kurz, dauer: z.dauer, spiel: z.spiel };
+      var verlauf = A.lade("omni-studio-verlauf", []); verlauf.push({ spiel: z.spiel, format: z.format, modus: z.modus, t: Date.now() }); A.merke("omni-studio-verlauf", verlauf.slice(-12));
+      var auto = z.auto, job = z.job;
       aufraeumen();
-      ergebnisZeigen();
-      A.toast("🎬 Video fertig!");
+      if (auto) {
+        freigabeSpeichern(ergebnis).then(function () { autoErledigt(job, true); A.toast("🤖 Thorsten hat ein neues Video gemacht – es wartet in „Zur Freigabe“."); freigabeZeigen(); }).catch(function (e) { console.warn(e); autoErledigt(job, true); ergebnisZeigen(); });
+      } else { ergebnisZeigen(); A.toast("🎬 Video fertig!"); }
     });
   }
   function vorschaubild(z) {
+    if (z.spiel === "werbung") return Promise.resolve(null);
     var c = document.createElement("canvas"); c.width = 1280; c.height = 720; var g = c.getContext("2d");
     var quelle = z.vorschauBild;
     if (quelle) g.drawImage(quelle, 0, 0); else { try { g.drawImage(z.kz.canvas, 0, 0, 1280, 720); } catch (e) { g.fillStyle = "#14321b"; g.fillRect(0, 0, 1280, 720); } }
@@ -589,5 +820,100 @@
     if ($("stLeer")) $("stLeer").hidden = true;
   }
 
-  window.OMNI_STUDIO = { zeigen: zeigen, verlassen: verlassen, laeuft: laeuft };
+  /* ================================================================
+     Automatik: Thorsten macht jeden Tag 3 Videos, sobald der PC an ist
+     (Krawallzoo, Horizonte, Werbe-Short) – fertige Videos warten auf deine Freigabe
+     ================================================================ */
+  var JOBS = ["krawallzoo", "horizonte", "werbung"], autoTimer = null, autoPause = 0, aktivHinweis = false;
+  function heute() { var d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
+  function autoStand() { var s = A.lade("omni-studio-auto-tag", null); if (!s || s.datum !== heute()) s = { datum: heute(), fertig: [], versuche: {} }; return s; }
+  function autoAn() { return !!A.lade("omni-studio-auto", false); }
+  function autoErledigt(job, ok) { if (!job) return; var s = autoStand(); if (ok) { if (s.fertig.indexOf(job) < 0) s.fertig.push(job); } else s.versuche[job] = (s.versuche[job] || 0) + 1; A.merke("omni-studio-auto-tag", s); autoPause = Date.now(); autoAnzeigen(); }
+  function autoVorgabe(job) {
+    var r = Math.random, e = ein(), vl = A.lade("omni-studio-verlauf", []), letzt = vl.filter(function (v) { return v.spiel === job || (job === "horizonte" && (v.spiel === "zeigen" || v.spiel === "bauen")); }).pop();
+    var v = { auto: true, job: job, stimme: true, spielton: true, hoeren: e.hoeren, modus: "ffa" };
+    if (job === "werbung") { v.spiel = "werbung"; v.format = "hoch"; v.laenge = 58; return v; }
+    v.format = letzt && letzt.format === "hoch" ? (r() < 0.7 ? "breit" : "hoch") : (r() < 0.55 ? "hoch" : "breit");
+    if (job === "krawallzoo") {
+      v.spiel = "krawallzoo";
+      var modi = MODI.map(function (m) { return m[0]; }).filter(function (m) { return !letzt || m !== letzt.modus; }); v.modus = modi[Math.floor(r() * modi.length)];
+      v.laenge = v.format === "hoch" ? [45, 58][Math.floor(r() * 2)] : [180, 240, 300][Math.floor(r() * 3)];
+    } else {
+      v.spiel = letzt && letzt.spiel === "bauen" ? (r() < 0.6 ? "zeigen" : "bauen") : (r() < 0.65 ? "bauen" : "zeigen");
+      v.laenge = v.format === "hoch" ? 58 : v.spiel === "bauen" ? [180, 240][Math.floor(r() * 2)] : 120;
+    }
+    return v;
+  }
+  function autoNaechster() { var s = autoStand(); return JOBS.filter(function (j) { return s.fertig.indexOf(j) < 0 && (s.versuche[j] || 0) < 2; })[0] || null; }
+  function autoTakt() {
+    if (!A || !autoAn() || Z) return;
+    var job = autoNaechster(); if (!job) { autoAnzeigen(); return; }
+    if (Date.now() - autoPause < 60000) return;
+    if (document.visibilityState !== "visible") return;
+    if (navigator.userActivation && !navigator.userActivation.hasBeenActive) {
+      if (!aktivHinweis) { aktivHinweis = true; A.toast("🤖 Thorsten will Videos machen – tipp einmal irgendwo auf die Seite, damit der Ton erlaubt ist."); }
+      return;
+    }
+    if (typeof MediaRecorder === "undefined") return;
+    // Ins Studio wechseln und loslegen
+    if (!$("stAufnahme")) { if (A.studioOeffnen) A.studioOeffnen(); setTimeout(autoTakt, 1500); return; }
+    var v = autoVorgabe(job);
+    A.toast("🤖 Thorsten startet: " + (job === "werbung" ? "Werbe-Short" : SPIELE[v.spiel].name.replace(/^\S+\s/, "")) + " (" + (v.format === "hoch" ? "Short" : zeitText(v.laenge)) + ")");
+    starten(true, v);
+    if (Z) { Z.job = job; var z = Z; setTimeout(function () { if (Z === z && !Z.bereit) { stoppen(false); autoErledigt(job, false); } else if (Z === z && Z.ctx.state !== "running") { stoppen(false); autoErledigt(job, false); A.toast("🤖 Ton war blockiert – Thorsten versucht es gleich nochmal."); } }, 40000); }
+  }
+  function autoStarten(api) {
+    A = api; wurzel = api.wurzel || "../../";
+    if (autoTimer) return;
+    tonVorladen(); appsVorladen();
+    autoTimer = setInterval(autoTakt, 20000); setTimeout(autoTakt, 4000);
+  }
+  function autoAnzeigen() {
+    var el = $("stAutoInfo"); if (!el) return;
+    var s = autoStand(), an = autoAn();
+    var name = { krawallzoo: "🎮 Krawallzoo", horizonte: "🏙️ Horizonte", werbung: "📣 Werbe-Short" };
+    el.innerHTML = an ? "Heute: " + JOBS.map(function (j) { return name[j] + " " + (s.fertig.indexOf(j) >= 0 ? "✅" : (s.versuche[j] || 0) >= 2 ? "⚠️" : Z && Z.job === j ? "⏺" : "⏳"); }).join(" · ") : "Aus – Thorsten macht nur Videos, wenn du auf „Aufnahme starten“ tippst.";
+  }
+
+  /* ---------- Zur Freigabe: fertige Videos im Browser-Speicher (IndexedDB) ---------- */
+  var dbP = null;
+  function db() {
+    if (!dbP) dbP = new Promise(function (ok, nein) { var r = indexedDB.open("omni-studio", 1); r.onupgradeneeded = function () { r.result.createObjectStore("videos", { keyPath: "id" }); }; r.onsuccess = function () { ok(r.result); }; r.onerror = function () { nein(r.error); }; });
+    return dbP;
+  }
+  function tx(modus, fn) { return db().then(function (d) { return new Promise(function (ok, nein) { var t = d.transaction("videos", modus), st = t.objectStore("videos"), res = fn(st); t.oncomplete = function () { ok(res && res.result !== undefined ? res.result : res); }; t.onerror = function () { nein(t.error); }; }); }); }
+  function freigabeSpeichern(e) {
+    var v = { id: "v" + Date.now(), erstellt: Date.now(), spiel: e.spiel, name: e.name, titel: e.titel, beschreibung: e.beschreibung, tags: e.tags, kurz: e.kurz, dauer: e.dauer, blob: e.blob, vorschau: e.vorschau || null, status: "neu" };
+    return tx("readwrite", function (st) { return st.put(v); });
+  }
+  function freigabeListe() { return tx("readonly", function (st) { return st.getAll(); }).then(function (l) { return (l || []).sort(function (a, b) { return b.erstellt - a.erstellt; }); }); }
+  function freigabeWeg(id) { return tx("readwrite", function (st) { return st.delete(id); }); }
+  function freigabeStatus(id, status) { return tx("readwrite", function (st) { var r = st.get(id); r.onsuccess = function () { if (r.result) { r.result.status = status; st.put(r.result); } }; return r; }); }
+  var freigabeUrls = [];
+  function freigabeZeigen() {
+    var box = $("stFreigabe"); if (!box || !window.indexedDB) return;
+    freigabeListe().then(function (l) {
+      // Alte Videos nach 14 Tagen aufräumen
+      var alt = l.filter(function (v) { return Date.now() - v.erstellt > 14 * 864e5; }); alt.forEach(function (v) { freigabeWeg(v.id); });
+      l = l.filter(function (v) { return alt.indexOf(v) < 0; });
+      freigabeUrls.forEach(URL.revokeObjectURL); freigabeUrls = [];
+      var esc = A.esc, neu = l.filter(function (v) { return v.status === "neu"; }).length;
+      var h = '<h3>📺 Zur Freigabe' + (neu ? ' <span class="st-zahl">' + neu + "</span>" : "") + "</h3>";
+      if (!l.length) h += '<p class="hinweis">Noch keine Videos. Schalt oben die Automatik an – dann legt Thorsten hier seine Videos ab.</p>';
+      l.forEach(function (v) {
+        var u = URL.createObjectURL(v.blob); freigabeUrls.push(u);
+        h += '<div class="st-fg' + (v.status !== "neu" ? " fertig" : "") + '"><video src="' + u + '" controls preload="metadata" playsinline class="' + (v.kurz ? "hoch" : "") + '"></video><div class="st-fg-text"><b>' + esc(v.titel) + "</b><small>" + new Date(v.erstellt).toLocaleString("de-DE", { weekday: "short", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }) + " · " + zeitText(v.dauer) + " · " + (v.blob.size / 1048576).toFixed(1) + " MB" + (v.status === "hochgeladen" ? " · ✅ auf YouTube (privat)" : "") + "</small>" +
+          '<div class="reihe"><button class="knopf klein haupt" type="button" data-fgyt="' + v.id + '">📺 YouTube</button><a class="knopf klein" href="' + u + '" download="' + esc(v.name) + '">⬇ Speichern</a><button class="knopf klein gefahr" type="button" data-fgweg="' + v.id + '">🗑 Löschen</button></div></div></div>';
+      });
+      box.innerHTML = h;
+      box.onclick = function (ev) {
+        var b = ev.target.closest("button"); if (!b) return;
+        var v = l.filter(function (x) { return x.id === (b.dataset.fgyt || b.dataset.fgweg); })[0]; if (!v) return;
+        if (b.dataset.fgweg) { if (b.dataset.sicher !== "1") { b.dataset.sicher = "1"; b.textContent = "Wirklich löschen?"; return; } freigabeWeg(v.id).then(freigabeZeigen); }
+        else A.YT.oeffnen(null, { titel: v.titel, beschreibung: v.beschreibung, tags: v.tags, datei: new File([v.blob], v.name, { type: v.blob.type || "video/webm" }), vorschau: v.kurz ? null : v.vorschau, fertig: function () { freigabeStatus(v.id, "hochgeladen").then(freigabeZeigen); } });
+      };
+    }).catch(function () { box.innerHTML = '<p class="hinweis">Der Browser-Speicher ist hier nicht verfügbar.</p>'; });
+  }
+
+  window.OMNI_STUDIO = { zeigen: zeigen, verlassen: verlassen, laeuft: laeuft, autoStarten: autoStarten };
 })();

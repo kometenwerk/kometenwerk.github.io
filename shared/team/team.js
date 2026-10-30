@@ -203,6 +203,11 @@
       seiteZeichnen(); if (ansicht === "kunden") kundenZeichnen(); kopfZeichnen();
     }, null, function () { kundenGesperrt = true; seiteZeichnen(); if (ansicht === "kunden") kundenZeichnen(); });
     KI.vorladen();
+    // Thorstens Automatik: Studio im Hintergrund laden, damit er seine Tagesvideos machen kann
+    if (lade("omni-studio-auto", false) && !DEMO) {
+      if (!studioLaden) studioLaden = window.OMNI_STUDIO ? Promise.resolve() : ladeSkript(BASIS + "team/studio.js").catch(function (e) { studioLaden = null; throw e; });
+      studioLaden.then(function () { OMNI_STUDIO.autoStarten(API); }).catch(function () { /* egal */ });
+    }
   }
   function standardKanaele() {
     var u = {}; F.kanaele.forEach(function (n, i) { u["team/channels/" + K(n)] = { name: n, pos: i }; });
@@ -951,7 +956,7 @@
           snippet: { title: titel, description: sauber($("ytBeschr").value), tags: tagsListe($("ytTags").value), categoryId: "28", defaultLanguage: "de", defaultAudioLanguage: "de" },
           status: { privacyStatus: "private", selfDeclaredMadeForKids: kind === "ja", containsSyntheticMedia: $("ytKi").checked }
         };
-        var los = function () { starte(datei, metadaten, r, vorgabe.vorschau || null); };
+        var los = function () { starte(datei, metadaten, r, vorgabe.vorschau || null, vorgabe.fertig || null); };
         if (DEMO) { los(); return; }
         status("Google-Anmeldung …");
         anmelden(los, function (err) { status(err.message, true); });
@@ -966,7 +971,7 @@
       return fetch("https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=" + encodeURIComponent(id), { method: "POST", headers: { "Authorization": "Bearer " + token, "Content-Type": bild.type || "image/png" }, body: bild })
         .then(function (r) { return r.ok; }).catch(function () { return false; });
     }
-    function starte(datei, metadaten, r, vorschau) {
+    function starte(datei, metadaten, r, vorschau, fertigCb) {
       sperren(true); balken(0);
       status("Video wird hochgeladen … bitte das Fenster offen lassen.");
       var job = DEMO ? demoUpload(balken) : hochladen(datei, metadaten, balken);
@@ -974,6 +979,7 @@
         sperren(false); balken(1);
         var studio = "https://studio.youtube.com/video/" + encodeURIComponent(video.id) + "/edit";
         status("✅ Fertig! Das Video ist privat auf YouTube.");
+        if (fertigCb) try { fertigCb(video); } catch (e) { /* egal */ }
         if (vorschau && !DEMO) vorschaubildSetzen(video.id, vorschau).then(function (ok) {
           status(ok ? "✅ Fertig! Video und Vorschaubild sind privat auf YouTube." : "✅ Video ist privat auf YouTube. Das Vorschaubild ging nicht automatisch – lad es im YouTube Studio hoch (dafür muss dein Kanal per Telefon bestätigt sein).");
         });
@@ -1000,7 +1006,8 @@
   var API = {
     toast: toast, fenster: fenster, esc: esc, lade: lade, merke: merke, YT: YT, F: F, FIRMA: FIRMA,
     wurzel: BASIS.replace(/shared\/$/, ""), demo: function () { return DEMO; },
-    seiteNeu: function () { seiteZeichnen(); }
+    seiteNeu: function () { seiteZeichnen(); },
+    studioOeffnen: function () { studioOeffnen(); }
   };
 
   /* ---------- Los ---------- */

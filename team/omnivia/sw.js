@@ -1,5 +1,5 @@
 // Offline-Speicher für OMNIVIA Team
-const V = "omni-team-omnivia-2026-10-29-reagiert";
+const V = "omni-team-omnivia-2026-10-30-automatik";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "../../shared/team/team.css", "../../shared/team/team.js", "../../shared/team/rollen.js", "../../shared/intro.js", "../../shared/fonts/fonts.css", "../../shared/fonts/space-grotesk-latin-400-normal.woff2", "../../shared/fonts/space-grotesk-latin-500-normal.woff2", "../../shared/fonts/space-grotesk-latin-600-normal.woff2", "../../shared/marken/omnivia-zeichen.webp", "../../shared/marken/omnivia-zeichen.webp"].filter(Boolean);
 self.addEventListener("install", e => { e.waitUntil(caches.open(V).then(c => Promise.all(SHELL.map(u => c.add(u).catch(() => null)))).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x.startsWith("omni-team-omnivia-") && x !== V).map(x => caches.delete(x)))).then(() => self.clients.claim())); });
