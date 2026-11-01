@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>AORIS KI</title>
-<meta name="description" content="Eine KI, die direkt auf deinem Gerät läuft – Testversion.">
+<meta name="description" content="Eine KI, die direkt auf deinem Gerät läuft – mit Ehrlicher Linse zum Prüfen von Bildern. Testversion.">
 <meta name="theme-color" content="#0f766e">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png" type="image/png">
@@ -48,6 +48,29 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
 .eingabe .btn{height:46px;border-radius:14px}
 .unten{font-size:.75rem;color:var(--muted);text-align:center;margin:0 0 6px}
 .kw-foot{display:none}
+.linse-start{display:flex;gap:12px;align-items:flex-start;padding:14px;margin:0 0 14px;border-width:2px}
+.linse-start .ico{font-size:1.6rem;line-height:1}
+.linse-start b{display:block}
+.linse-start small{color:var(--muted);display:block;margin:2px 0 10px}
+.eingabe .foto{width:46px;padding:0;font-size:1.3rem;flex:none}
+.eingabe textarea:disabled{opacity:.6}
+.msg.ki.linse{width:88%}
+.linse-bild{display:block;max-width:100%;max-height:220px;border-radius:10px;margin:0 0 10px}
+.urteil{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;margin:0 0 10px;font-weight:600}
+.urteil .sym{font-size:1.4rem}
+.urteil.ki{background:rgba(201,58,58,.14)}
+.urteil.echt{background:rgba(21,128,61,.14)}
+.urteil.unsicher{background:rgba(255,138,60,.16)}
+.urteil small{display:block;font-weight:400;color:var(--muted);font-size:.85rem}
+.skala{margin:0 0 10px}
+.skala .bar{position:relative;height:10px;border-radius:6px;background:linear-gradient(90deg,#15803d,#ff8a3c,#c93a3a);opacity:.85}
+.skala .bar i{position:absolute;top:-4px;width:4px;height:18px;border-radius:2px;background:var(--ink);transform:translateX(-50%)}
+.skala .leg{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-top:4px}
+.funde{margin:0 0 10px;padding-left:18px;font-size:.9rem}
+.funde li{margin:0 0 4px}
+.grenze{font-size:.8rem;color:var(--muted);background:var(--soft);border-radius:10px;padding:8px 10px;margin:0 0 10px}
+.rueck{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:.85rem}
+.ablage{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(15,118,110,.25);border:4px dashed var(--app);font-size:1.3rem;font-weight:600;pointer-events:none}
 </style>
 </head>
 <body>
@@ -63,6 +86,7 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
     <h2>Deine eigene KI – auf deinem Gerät</h2>
     <p>Die AORIS KI läuft komplett in deinem Browser. Nichts von dem, was du schreibst, wird irgendwohin geschickt. Dafür lädt sie einmal ein KI-Modell herunter.</p>
     <div class="info warn" id="keinGPU" hidden></div>
+    <div class="linse-start card"><span class="ico" aria-hidden="true">🔍</span><span><b>Ehrliche Linse: Bild prüfen</b><small>Prüft, ob ein Bild gefälscht sein könnte. Läuft auf fast jedem Gerät, das Bild bleibt bei dir. Lädt einmal rund 90 MB.</small><button class="btn" type="button" id="nurLinse">Nur Bilder prüfen</button></span></div>
     <div class="wahl" id="wahl">
       <label class="modell card"><input type="radio" name="m" value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC" checked><span><b>Klein und schnell</b><small>Läuft auf mehr Geräten. Download: einige hundert MB. Antwortet einfacher und macht öfter Fehler.</small></span></label>
       <label class="modell card"><input type="radio" name="m" value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC"><span><b>Schlauer</b><small>Bessere Antworten, braucht aber ein stärkeres Gerät. Download: rund 1 GB.</small></span></label>
@@ -81,16 +105,19 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
     <button type="button">Was ist der Unterschied zwischen Wetter und Klima?</button>
   </div>
   <form class="eingabe" id="form" hidden>
+    <button class="btn foto" type="button" id="foto" aria-label="Bild mit der Ehrlichen Linse prüfen" title="Bild prüfen">📷</button>
+    <input type="file" id="datei" accept="image/*" hidden>
     <label class="vh" for="text">Nachricht</label>
     <textarea class="inp" id="text" rows="1" placeholder="Frag die AORIS KI …" maxlength="2000" enterkeyhint="send"></textarea>
     <button class="btn primary" type="submit" id="senden">Senden</button>
   </form>
-  <p class="unten" id="unten" hidden>Läuft nur auf deinem Gerät · Kann Fehler machen · <a href="#" id="neuChat">Neues Gespräch</a></p>
+  <p class="unten" id="unten" hidden>Läuft nur auf deinem Gerät · Kann Fehler machen · <a href="#" id="neuChat">Neues Gespräch</a><span id="chatLadenWrap" hidden> · <a href="#" id="chatLaden">Chat-KI dazuladen</a></span></p>
 </main>
 
 <script src="../shared/kw.js"></script>
 <script type="module">
 "use strict";
+import { bildPruefen, LINSE } from "./linse.js";
 const WEBLLM = "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.84/lib/index.js";
 const SYSTEM = "Du bist die AORIS KI von AORIS Tech, einer Marke der OMNIVIA Group, ein freundlicher Lernhelfer für Schülerinnen und Schüler. " +
   "Antworte immer auf Deutsch, kurz, einfach und ehrlich. Wenn du dir nicht sicher bist, sag das offen. " +
@@ -125,10 +152,29 @@ async function gpuOk() {
   if (!(await gpuOk())) {
     const w = $("#keinGPU");
     w.hidden = false;
-    w.innerHTML = "<b>Dein Browser kann diese KI leider noch nicht starten.</b> Sie braucht <i>WebGPU</i>. Das haben aktuelle Versionen von Chrome und Edge auf dem PC und viele neuere Android-Handys. Probier es dort, oder aktualisiere deinen Browser.";
+    w.innerHTML = "<b>Dein Browser kann diese KI leider noch nicht starten.</b> Sie braucht <i>WebGPU</i>. Das haben aktuelle Versionen von Chrome und Edge auf dem PC und viele neuere Android-Handys. Probier es dort, oder aktualisiere deinen Browser. <b>Die Ehrliche Linse funktioniert trotzdem.</b>";
     $("#laden").disabled = true;
   }
 })();
+
+function chatZeigen() {
+  $("#start").hidden = true;
+  ["#chat", "#form", "#unten"].forEach(s => $(s).hidden = false);
+}
+
+$("#nurLinse").addEventListener("click", () => {
+  chatZeigen();
+  $("#text").disabled = true; $("#senden").disabled = true;
+  $("#text").placeholder = "Tippe auf 📷 für ein Bild";
+  $("#chatLadenWrap").hidden = false;
+  if (!$("#chat").children.length) blase("ki", "Hier ist die **Ehrliche Linse**. 🔍 Tippe auf 📷 oder zieh ein Bild hierher, dann prüfe ich, ob es gefälscht sein könnte. Das Bild bleibt auf deinem Gerät.");
+});
+$("#chatLaden").addEventListener("click", e => {
+  e.preventDefault();
+  if (laeuftLinse) return;
+  ["#chat", "#form", "#unten", "#ideen"].forEach(s => $(s).hidden = true);
+  $("#start").hidden = false;
+});
 
 $("#laden").addEventListener("click", async () => {
   const modell = document.querySelector('#wahl input:checked').value;
@@ -143,9 +189,12 @@ $("#laden").addEventListener("click", async () => {
       }
     });
     KW.save("kw-ki-modell", modell);
-    $("#start").hidden = true;
-    ["#chat", "#ideen", "#form", "#unten"].forEach(s => $(s).hidden = false);
-    blase("ki", "Hallo! Ich bin die AORIS KI. 👋 Ich laufe nur auf deinem Gerät. Frag mich etwas, zum Beispiel zu einem Schulthema.");
+    chatZeigen();
+    $("#ideen").hidden = false;
+    $("#text").disabled = false; $("#senden").disabled = false;
+    $("#text").placeholder = "Frag die AORIS KI …";
+    $("#chatLadenWrap").hidden = true;
+    blase("ki", "Hallo! Ich bin die AORIS KI. 👋 Ich laufe nur auf deinem Gerät. Frag mich etwas, zum Beispiel zu einem Schulthema. Mit 📷 prüfe ich auch Bilder für dich.");
     $("#text").focus();
   } catch (e) {
     console.error(e);
@@ -192,10 +241,91 @@ $("#text").addEventListener("input", groesse);
 $("#ideen").addEventListener("click", e => { const b = e.target.closest("button"); if (b) fragen(b.textContent); });
 $("#neuChat").addEventListener("click", async e => {
   e.preventDefault();
-  if (laeuft) return;
-  verlauf = []; $("#chat").innerHTML = ""; $("#ideen").hidden = false;
-  try { await engine.resetChat(); } catch (x) {}
-  blase("ki", "Neues Gespräch. Was möchtest du wissen?");
+  if (laeuft || laeuftLinse) return;
+  verlauf = []; $("#chat").innerHTML = ""; $("#ideen").hidden = !engine;
+  try { if (engine) await engine.resetChat(); } catch (x) {}
+  blase("ki", engine ? "Neues Gespräch. Was möchtest du wissen?" : "Neues Gespräch. Tippe auf 📷, um ein Bild zu prüfen.");
+});
+
+// ---------- Ehrliche Linse im Chat ----------
+let laeuftLinse = false;
+const STUFE = { ki: "⚠️", echt: "✅", unsicher: "🤔" };
+
+async function linse(datei) {
+  if (laeuftLinse || laeuft) return;
+  if (!datei || !/^image\//.test(datei.type)) { KW.toast("Das ist leider kein Bild."); return; }
+  laeuftLinse = true;
+  $("#ideen").hidden = true;
+  const vorschau = URL.createObjectURL(datei);
+  const ich = document.createElement("div");
+  ich.className = "msg ich";
+  ich.innerHTML = '<img class="linse-bild" alt="Dein Bild" src="' + vorschau + '">Ist dieses Bild echt?';
+  $("#chat").appendChild(ich);
+  const b = blase("ki", "Ich schaue mir das Bild an …");
+  b.classList.add("linse", "denkt");
+  try {
+    const erg = await bildPruefen(datei, (anteil) => {
+      b.innerHTML = format("Ich lade einmalig den Bild-Erkenner … " + Math.round(anteil * 100) + " %");
+    });
+    b.classList.remove("denkt");
+    b.innerHTML = ergebnisHtml(erg);
+    rueckmeldungAnbinden(b, erg);
+    // Damit die Chat-KI über das Ergebnis reden kann – es ist ja eine KI
+    verlauf.push({ role: "user", content: "Ich habe ein Bild mit der Ehrlichen Linse prüfen lassen." });
+    verlauf.push({ role: "assistant", content: "Ergebnis der Ehrlichen Linse: " + erg.urteil.titel + ". " + erg.urteil.grund + " " + erg.herkunft.funde.map(f => f.text).join(" ") + " Hinweis: Die Linse kann sich irren." });
+  } catch (e) {
+    b.classList.remove("denkt");
+    b.innerHTML = format("Das hat leider nicht geklappt: " + (e && e.message ? e.message : e));
+  }
+  b.scrollIntoView({ block: "end", behavior: "smooth" });
+  laeuftLinse = false;
+}
+
+function ergebnisHtml(erg) {
+  const u = erg.urteil;
+  let h = '<div class="urteil ' + u.stufe + '"><span class="sym" aria-hidden="true">' + STUFE[u.stufe] + '</span><span>' + esc(u.titel) + '<small>' + esc(u.grund) + '</small></span></div>';
+  if (erg.kiWert != null) {
+    const pz = Math.round(erg.kiWert * 100);
+    h += '<div class="skala" role="img" aria-label="Fälschungs-Spuren laut Erkenner: ' + pz + ' Prozent"><div class="bar"><i style="left:' + pz + '%"></i></div><div class="leg"><span>kaum Spuren</span><span>Fälschungs-Spuren: ' + pz + ' %</span><span>starke Spuren</span></div></div>';
+  }
+  h += '<ul class="funde">' + erg.herkunft.funde.map(f => '<li>' + (f.art === "ki" ? "🤖 " : "ℹ️ ") + esc(f.text) + '</li>').join("") + '</ul>';
+  if (erg.fehler) h += '<div class="grenze">Der Erkenner konnte nicht starten (' + esc(erg.fehler) + '). Hast du Internet für den ersten Download?</div>';
+  h += '<div class="grenze"><b>Gut zu wissen:</b> Dieser Erkenner wurde vor allem mit <b>Gesichtern</b> trainiert. Bei Landschaften, Zeichnungen oder Screenshots ist er unzuverlässig. Absichtlich bearbeitete Bilder können ihn austricksen. Prüf bei wichtigen Bildern immer auch die Quelle.</div>';
+  h += '<div class="rueck"><span>Lag die Linse richtig?</span><button class="btn small" type="button" data-r="ja">👍 Ja</button><button class="btn small" type="button" data-r="nein">👎 Nein</button></div>';
+  return h;
+}
+
+function rueckmeldungAnbinden(b, erg) {
+  b.querySelectorAll(".rueck button").forEach(btn => btn.addEventListener("click", () => {
+    // Nur eine Zählung auf diesem Gerät – kein Bild, nichts wird verschickt
+    const st = KW.load("kw-ki-linse", { ja: 0, nein: 0 });
+    st[btn.dataset.r] = (st[btn.dataset.r] || 0) + 1;
+    st.version = LINSE.version;
+    KW.save("kw-ki-linse", st);
+    b.querySelector(".rueck").innerHTML = "<span>Danke! Deine Rückmeldung bleibt auf diesem Gerät.</span>";
+  }));
+}
+
+$("#foto").addEventListener("click", () => $("#datei").click());
+$("#datei").addEventListener("change", e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (f) linse(f); });
+// Bild hineinziehen oder einfügen
+let ablage = null;
+document.addEventListener("dragover", e => {
+  if ($("#chat").hidden || !e.dataTransfer || ![...e.dataTransfer.types].includes("Files")) return;
+  e.preventDefault();
+  if (!ablage) { ablage = document.createElement("div"); ablage.className = "ablage"; ablage.textContent = "Bild loslassen zum Prüfen 🔍"; document.body.appendChild(ablage); }
+});
+document.addEventListener("dragleave", e => { if (ablage && (e.clientX <= 0 || e.clientY <= 0 || e.clientX >= innerWidth || e.clientY >= innerHeight)) { ablage.remove(); ablage = null; } });
+document.addEventListener("drop", e => {
+  if (ablage) { ablage.remove(); ablage = null; }
+  if ($("#chat").hidden) return;
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) { e.preventDefault(); linse(f); }
+});
+document.addEventListener("paste", e => {
+  if ($("#chat").hidden) return;
+  const f = [...(e.clipboardData ? e.clipboardData.files : [])].find(x => /^image\//.test(x.type));
+  if (f) { e.preventDefault(); linse(f); }
 });
 </script>
 </body>
