@@ -70,6 +70,10 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
 .funde li{margin:0 0 4px}
 .grenze{font-size:.8rem;color:var(--muted);background:var(--soft);border-radius:10px;padding:8px 10px;margin:0 0 10px}
 .rueck{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:.85rem}
+.nachschl{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted);margin:2px 0 0;cursor:pointer}
+.nachschl input{width:18px;height:18px;accent-color:var(--app)}
+.quellen{margin:10px 0 0;padding-top:8px;border-top:1px solid var(--line);font-size:.8rem;color:var(--muted)}
+.quellen a{color:inherit}
 .ablage{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(15,118,110,.25);border:4px dashed var(--app);font-size:1.3rem;font-weight:600;pointer-events:none}
 </style>
 </head>
@@ -104,6 +108,7 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
     <button type="button">Hilf mir, einen Aufsatz über mein Hobby zu gliedern.</button>
     <button type="button">Was ist der Unterschied zwischen Wetter und Klima?</button>
   </div>
+  <label class="nachschl" id="nachschlWrap" hidden><input type="checkbox" id="wiki"> 🔎 Bei Wikipedia nachschlagen (die Suchwörter gehen an Wikipedia)</label>
   <form class="eingabe" id="form" hidden>
     <button class="btn foto" type="button" id="foto" aria-label="Bild mit der Ehrlichen Linse prüfen" title="Bild prüfen">📷</button>
     <input type="file" id="datei" accept="image/*" hidden>
@@ -118,11 +123,14 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
 <script type="module">
 "use strict";
 import { bildPruefen, LINSE } from "./linse.js";
+import { nachschlagen, lohntNachschlagen, kontextBauen } from "./wissen.js";
 const WEBLLM = "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.84/lib/index.js";
 const SYSTEM = "Du bist die AORIS KI von AORIS Tech, einer Marke der OMNIVIA Group, ein freundlicher Lernhelfer für Schülerinnen und Schüler. " +
   "Antworte immer auf Deutsch, kurz, einfach und ehrlich. Wenn du dir nicht sicher bist, sag das offen. " +
   "Bei Hausaufgaben erklärst du den Weg Schritt für Schritt, statt nur die Lösung zu verraten. " +
   "Du schreibst nichts über Gewalt, Sex, Drogen oder gefährliche Dinge. Du fragst nie nach Namen, Adressen oder anderen persönlichen Daten. " +
+  "Bei Fakten wie Zahlen, Namen, Daten oder Orten rätst du nie. Wenn du keine Quelle bekommst und dir nicht sicher bist, sag ehrlich: Da bin ich mir nicht sicher. " +
+  "Wenn du Quellen aus Wikipedia bekommst, stützt du dich nur auf diese Quellen. " +
   "Wenn jemand Sorgen oder Probleme hat, sei freundlich und empfiehl, mit den Eltern, einer Lehrkraft oder der Nummer gegen Kummer (116 111, kostenlos) zu sprechen.";
 
 const $ = s => document.querySelector(s);
@@ -194,7 +202,8 @@ $("#laden").addEventListener("click", async () => {
     $("#text").disabled = false; $("#senden").disabled = false;
     $("#text").placeholder = "Frag die AORIS KI …";
     $("#chatLadenWrap").hidden = true;
-    blase("ki", "Hallo! Ich bin die AORIS KI. 👋 Ich laufe nur auf deinem Gerät. Frag mich etwas, zum Beispiel zu einem Schulthema. Mit 📷 prüfe ich auch Bilder für dich.");
+    $("#nachschlWrap").hidden = false;
+    blase("ki", "Hallo! Ich bin die AORIS KI. 👋 Ich laufe nur auf deinem Gerät. Frag mich etwas, zum Beispiel zu einem Schulthema. Mit 📷 prüfe ich auch Bilder für dich. Tipp: Schalte unten „Bei Wikipedia nachschlagen“ ein, dann rate ich bei Wissensfragen nicht, sondern schaue nach.");
     $("#text").focus();
   } catch (e) {
     console.error(e);
@@ -213,9 +222,23 @@ async function fragen(text) {
   const antwort = blase("ki", "");
   antwort.classList.add("denkt");
   $("#senden").textContent = "Stopp"; $("#senden").type = "button";
-  let voll = "";
+  let voll = "", treffer = [], frageMitQuellen = text;
+  if ($("#wiki").checked && lohntNachschlagen(text)) {
+    antwort.innerHTML = format("Ich schlage bei Wikipedia nach …");
+    try {
+      treffer = await nachschlagen(text);
+      if (treffer.length) {
+        frageMitQuellen = "Quellen aus Wikipedia:\n" + kontextBauen(treffer) + "\n\nFrage: " + text +
+          "\n\nAntworte kurz auf Deutsch und nur mit dem, was in den Quellen steht. Steht die Antwort nicht drin, sag: Dazu habe ich bei Wikipedia nichts Passendes gefunden.";
+      }
+    } catch (e) {
+      treffer = [];
+      frageMitQuellen = text + "\n\n(Hinweis: Nachschlagen hat nicht geklappt" + (e && e.message === "offline" ? ", das Gerät ist offline" : "") + ". Sag das kurz, bevor du antwortest.)";
+    }
+    antwort.innerHTML = "";
+  }
   try {
-    const nachrichten = [{ role: "system", content: SYSTEM }].concat(verlauf.slice(-10));
+    const nachrichten = [{ role: "system", content: SYSTEM }].concat(verlauf.slice(-11, -1), [{ role: "user", content: frageMitQuellen }]);
     const stream = await engine.chat.completions.create({ messages: nachrichten, stream: true, temperature: 0.6, max_tokens: 700 });
     for await (const teil of stream) {
       if (abbruch) { try { engine.interruptGenerate(); } catch (e) {} break; }
@@ -228,6 +251,13 @@ async function fragen(text) {
     antwort.innerHTML = format(voll);
   }
   antwort.classList.remove("denkt");
+  if (treffer.length) {
+    const q = document.createElement("div");
+    q.className = "quellen";
+    q.innerHTML = "Quellen: " + treffer.map((t, i) => '<a href="' + esc(t.url) + '" target="_blank" rel="noopener noreferrer">[' + (i + 1) + "] " + esc(t.titel) + "</a>").join(" · ") +
+      '<br>Texte aus Wikipedia unter <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.de" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>';
+    antwort.appendChild(q);
+  }
   verlauf.push({ role: "assistant", content: voll });
   laeuft = false;
   $("#senden").textContent = "Senden"; $("#senden").type = "submit";
@@ -238,6 +268,11 @@ $("#senden").addEventListener("click", e => { if (laeuft) { e.preventDefault(); 
 $("#text").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); $("#form").requestSubmit(); } });
 function groesse() { const t = $("#text"); t.style.height = "auto"; t.style.height = Math.min(160, t.scrollHeight) + "px"; }
 $("#text").addEventListener("input", groesse);
+try { $("#wiki").checked = localStorage.getItem("kw-ki-wiki") === "an"; } catch (e) {}
+$("#wiki").addEventListener("change", () => {
+  try { localStorage.setItem("kw-ki-wiki", $("#wiki").checked ? "an" : "aus"); } catch (e) {}
+  KW.toast($("#wiki").checked ? "Nachschlagen ist an. Bei Wissensfragen gehen die Suchwörter an Wikipedia." : "Nachschlagen ist aus. Alles bleibt auf deinem Gerät.");
+});
 $("#ideen").addEventListener("click", e => { const b = e.target.closest("button"); if (b) fragen(b.textContent); });
 $("#neuChat").addEventListener("click", async e => {
   e.preventDefault();
