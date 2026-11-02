@@ -7,6 +7,13 @@ import { OrbitControls } from "three/addons/OrbitControls.js";
 import { mergeGeometries } from "three/addons/BufferGeometryUtils.js";
 
 const $ = (id) => document.getElementById(id);
+/* Sparsam hochladen: Instanz-Puffer nur so weit an die Grafikkarte schicken, wie Instanzen sichtbar sind (wichtig fürs Handy) */
+(function () {
+  const IM = THREE.InstancedMesh.prototype, sm = IM.setMatrixAt, sc = IM.setColorAt;
+  IM.setMatrixAt = function (i, m) { this.instanceMatrix.__mesh = this; return sm.call(this, i, m); };
+  IM.setColorAt = function (i, c) { sc.call(this, i, c); this.instanceColor.__mesh = this; };
+  Object.defineProperty(THREE.InstancedBufferAttribute.prototype, "needsUpdate", { configurable: true, set(v) { if (v !== true) return; const m = this.__mesh; if (m && m.count < this.count && this.addUpdateRange) { this.clearUpdateRanges(); this.addUpdateRange(0, Math.max(1, m.count) * this.itemSize); } this.version++; } });
+})();
 const lade = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
 const merke = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
 /* Zuschauer-Modus fürs Video-Studio (?zuschauer=1&art=zeigen|bauen) – Thorsten zeigt oder baut eine Stadt.
@@ -3831,7 +3838,7 @@ function busspurUmschalten(p) {
   merkeRueck(); e.k.busspur = !e.k.busspur; kanteNeuZeichnen(e.k); netzGeaendert(); tipp(e.k.busspur ? "🚌 Busspur: Die rechte Spur ist nur für Busse, Taxis und Einsatzfahrzeuge." : "Busspur entfernt.", 2600);
 }
 const modus = () => werkzeug === "gleis" ? gleisModus : strModus, istBau = () => werkzeug === "strasse" || werkzeug === "gleis";
-const zweiPunkte = () => modus() === "gerade", tippModus = () => ["ampel", "einbahn", "kreisel", "busspur", "schienen", "ersetzen", "parken", "entfernen", "zuglinie", "bahnhof"].includes(modus());
+const zweiPunkte = () => modus() === "gerade", tippModus = () => ["ampel", "einbahn", "kreisel", "busspur", "schienen", "ersetzen", "parken", "entfernen", "zuglinie", "bahnhof", "station"].includes(modus());
 const ebeneModus = () => ebeneWahl;
 const ebeneBox = () => `<div class="zeilebox" title="Höhe"><button class="chip" type="button" id="ebeneRunter" aria-label="tiefer">▼</button><span style="min-width:74px;text-align:center">${ebeneWahl > 0 ? "🌉 Brücke" : ebeneWahl < 0 ? "🚇 Tunnel" : "⬛ Boden"}</span><button class="chip" type="button" id="ebeneHoch" aria-label="höher">▲</button></div>`;
 function ersetzenTippen(p) {
@@ -4697,6 +4704,7 @@ function hauptmenue(ansicht) {
 let demoAn = false;
 function demoStarten() {
   if (stufe === "niedrig" || matchMedia("(prefers-reduced-motion: reduce)").matches || /demo=0/.test(location.search)) return;
+  if (matchMedia("(pointer:coarse)").matches || Math.min(screen.width, screen.height) < 600) { const m = $("hauptmenue"); m.classList.add("demo"); m.style.backgroundImage = "linear-gradient(90deg,rgba(9,12,26,.94),rgba(9,12,26,.55) 60%,rgba(9,12,26,.2)),url(../horizonte/bilder/dorf-klein.webp)"; m.style.backgroundSize = "cover"; m.style.backgroundPosition = "center"; return; }
   setTimeout(() => {
     try {
       grossKarte = true; weltBauen("kueste"); netzGeaendert(); if (!aussenKnoten) aussenBauen(); spielModus = "leicht"; dorfBauen(); geld = 0; zeit = ZEITEN.abend - 0.12; zeitZiel = null;
