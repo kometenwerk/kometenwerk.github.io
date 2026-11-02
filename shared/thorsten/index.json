@@ -1544,28 +1544,28 @@
   {
    "id": "app-ki-1",
    "gruppe": "app_ki",
-   "text": "Eine KI, die nichts ins Internet schickt? Gibt's!",
+   "text": "Kann man diesem Bild trauen? Aoris KI hilft dir dabei.",
    "datei": "ton/app-ki-1.mp3",
-   "dauer": 2.53,
-   "hash": "17ae8ee6d3f9",
+   "dauer": 3.27,
+   "hash": "56d1d8099ee1",
    "nr": 1
   },
   {
    "id": "app-ki-2",
    "gruppe": "app_ki",
-   "text": "Aoris KI läuft direkt auf deinem Gerät.",
+   "text": "Die Ehrliche Linse sucht nach Spuren von Fälschungen, direkt auf deinem Gerät.",
    "datei": "ton/app-ki-2.mp3",
-   "dauer": 2.09,
-   "hash": "f23d7703ea77",
+   "dauer": 3.97,
+   "hash": "657956ad26f2",
    "nr": 2
   },
   {
    "id": "app-ki-3",
    "gruppe": "app_ki",
-   "text": "Deine Fragen bleiben bei dir.",
+   "text": "Und bei Wissensfragen schaut sie bei Wikipedia nach, statt zu raten.",
    "datei": "ton/app-ki-3.mp3",
-   "dauer": 1.44,
-   "hash": "76c2909e6e5f",
+   "dauer": 3.68,
+   "hash": "7ae199cda92b",
    "nr": 3
   },
   {
