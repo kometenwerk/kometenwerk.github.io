@@ -25,6 +25,8 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
 .modell input{margin:3px 0 0;width:18px;height:18px;accent-color:var(--app);flex:none}
 .modell b{display:block}
 .modell small{color:var(--muted)}
+.modell .tipp{display:inline-block;margin-left:6px;font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--accent);color:#101826;vertical-align:middle}
+.modell.aus{opacity:.5;cursor:not-allowed}
 .modell:has(input:checked){border-color:var(--app);background:var(--app-soft)}
 .info{padding:12px 14px;border-radius:12px;background:var(--soft);font-size:.9rem;margin:0 0 12px}
 .info.warn{background:rgba(201,58,58,.12)}
@@ -92,13 +94,12 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
     <div class="info warn" id="keinGPU" hidden></div>
     <div class="linse-start card"><span class="ico" aria-hidden="true">🔍</span><span><b>Ehrliche Linse: Bild prüfen</b><small>Prüft, ob ein Bild gefälscht sein könnte. Läuft auf fast jedem Gerät, das Bild bleibt bei dir. Lädt einmal rund 90 MB.</small><button class="btn" type="button" id="nurLinse">Nur Bilder prüfen</button></span></div>
     <div class="wahl" id="wahl">
-      <label class="modell card"><input type="radio" name="m" value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC" checked><span><b>Klein und schnell</b><small>Läuft auf mehr Geräten. Download: einige hundert MB. Antwortet einfacher und macht öfter Fehler.</small></span></label>
-      <label class="modell card"><input type="radio" name="m" value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC"><span><b>Schlauer</b><small>Bessere Antworten, braucht aber ein stärkeres Gerät. Download: rund 1 GB.</small></span></label>
+      <p class="muted" style="margin:0">Dein Gerät wird geprüft …</p>
     </div>
     <div class="info">📶 Lade die KI am besten im WLAN. Danach ist sie gespeichert und startet beim nächsten Mal viel schneller, sogar ohne Internet.</div>
     <button class="btn primary" type="button" id="laden" style="width:100%;padding:14px">KI laden</button>
     <div class="lade" id="lade" hidden><div class="bar"><i id="ladeBar"></i></div><p id="ladeText">Wird vorbereitet …</p></div>
-    <p class="muted" style="font-size:.82rem;margin-top:16px">Das ist eine <b>Testversion</b>. Kleine KIs sind nicht so schlau wie die großen im Internet und können Dinge falsch sagen. Prüf wichtige Antworten immer nach.</p>
+    <p class="muted" style="font-size:.82rem;margin-top:16px">Das ist eine <b>Testversion</b>. KIs auf dem Gerät sind nicht so schlau wie die großen im Internet und können Dinge falsch sagen. Prüf wichtige Antworten immer nach – oder schalte im Chat das Nachschlagen bei Wikipedia ein.</p>
   </section>
 
   <section class="chat" id="chat" hidden aria-live="polite"></section>
@@ -124,7 +125,7 @@ body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
 "use strict";
 import { bildPruefen, LINSE } from "./linse.js";
 import { nachschlagen, lohntNachschlagen, kontextBauen } from "./wissen.js";
-const WEBLLM = "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.84/lib/index.js";
+import { MODELLE, empfehlung, moeglich, geraetPruefen, starten, ohneDenken } from "./motor.js";
 const SYSTEM = "Du bist die AORIS KI von AORIS Tech, einer Marke der OMNIVIA Group, ein freundlicher Lernhelfer für Schülerinnen und Schüler. " +
   "Antworte immer auf Deutsch, kurz, einfach und ehrlich. Wenn du dir nicht sicher bist, sag das offen. " +
   "Bei Hausaufgaben erklärst du den Weg Schritt für Schritt, statt nur die Lösung zu verraten. " +
@@ -135,7 +136,7 @@ const SYSTEM = "Du bist die AORIS KI von AORIS Tech, einer Marke der OMNIVIA Gro
 
 const $ = s => document.querySelector(s);
 const esc = KW.esc;
-let engine = null, verlauf = [], laeuft = false, abbruch = false;
+let engine = null, verlauf = [], laeuft = false, abbruch = null, geraet = null;
 
 function format(text) {
   return esc(text).split(/\n{2,}/).map(p => "<p>" + p.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>") + "</p>").join("");
@@ -149,19 +150,24 @@ function blase(wer, text) {
   return d;
 }
 
-async function gpuOk() {
-  if (!("gpu" in navigator)) return false;
-  try { return !!(await navigator.gpu.requestAdapter()); } catch (e) { return false; }
-}
-
+$("#laden").disabled = true;
 (async function () {
+  geraet = await geraetPruefen();
+  const tipp = empfehlung(geraet);
   const gespeichert = KW.load("kw-ki-modell", null);
-  if (gespeichert) { const r = document.querySelector('#wahl input[value="' + gespeichert + '"]'); if (r) r.checked = true; $("#laden").textContent = "KI starten"; }
-  if (!(await gpuOk())) {
+  const sichtbar = MODELLE.filter(m => m.art !== "nano" || geraet.nano);
+  $("#wahl").innerHTML = sichtbar.map(m => {
+    const geht = moeglich(m, geraet);
+    return '<label class="modell card' + (geht ? "" : " aus") + '"><input type="radio" name="m" value="' + esc(m.id) + '"' + (geht ? "" : " disabled") + '><span><b>' + esc(m.name) +
+      (m.id === tipp ? '<span class="tipp">Empfohlen für dein Gerät</span>' : "") + '</b><small>' + esc(m.text) + '</small></span></label>';
+  }).join("");
+  const wahl = [gespeichert, tipp].find(id => id && sichtbar.some(m => m.id === id && moeglich(m, geraet)));
+  if (wahl) { $('#wahl input[value="' + wahl + '"]').checked = true; $("#laden").disabled = false; }
+  if (gespeichert && wahl === gespeichert) $("#laden").textContent = "KI starten";
+  if (!geraet.gpu && !geraet.nano) {
     const w = $("#keinGPU");
     w.hidden = false;
-    w.innerHTML = "<b>Dein Browser kann diese KI leider noch nicht starten.</b> Sie braucht <i>WebGPU</i>. Das haben aktuelle Versionen von Chrome und Edge auf dem PC und viele neuere Android-Handys. Probier es dort, oder aktualisiere deinen Browser. <b>Die Ehrliche Linse funktioniert trotzdem.</b>";
-    $("#laden").disabled = true;
+    w.innerHTML = "<b>Dein Browser kann die Chat-KI leider noch nicht starten.</b> Sie braucht <i>WebGPU</i>. Das haben aktuelle Versionen von Chrome und Edge auf dem PC und viele neuere Android-Handys. Probier es dort, oder aktualisiere deinen Browser. <b>Die Ehrliche Linse funktioniert trotzdem.</b>";
   }
 })();
 
@@ -185,16 +191,16 @@ $("#chatLaden").addEventListener("click", e => {
 });
 
 $("#laden").addEventListener("click", async () => {
-  const modell = document.querySelector('#wahl input:checked').value;
+  const gewaehlt = document.querySelector('#wahl input:checked');
+  if (!gewaehlt || !geraet) return;
+  const modell = gewaehlt.value;
   $("#laden").disabled = true; $("#lade").hidden = false;
+  const vorher = [...document.querySelectorAll("#wahl input")].map(i => i.disabled);
   document.querySelectorAll("#wahl input").forEach(i => i.disabled = true);
   try {
-    const webllm = await import(WEBLLM);
-    engine = await webllm.CreateMLCEngine(modell, {
-      initProgressCallback: r => {
-        $("#ladeBar").style.width = Math.round((r.progress || 0) * 100) + "%";
-        $("#ladeText").textContent = (r.progress ? Math.round(r.progress * 100) + " % · " : "") + (r.text || "");
-      }
+    engine = await starten(modell, geraet, (anteil, text) => {
+      $("#ladeBar").style.width = Math.round(anteil * 100) + "%";
+      $("#ladeText").textContent = (anteil ? Math.round(anteil * 100) + " % · " : "") + (text || "");
     });
     KW.save("kw-ki-modell", modell);
     chatZeigen();
@@ -203,19 +209,19 @@ $("#laden").addEventListener("click", async () => {
     $("#text").placeholder = "Frag die AORIS KI …";
     $("#chatLadenWrap").hidden = true;
     $("#nachschlWrap").hidden = false;
-    blase("ki", "Hallo! Ich bin die AORIS KI. 👋 Ich laufe nur auf deinem Gerät. Frag mich etwas, zum Beispiel zu einem Schulthema. Mit 📷 prüfe ich auch Bilder für dich. Tipp: Schalte unten „Bei Wikipedia nachschlagen“ ein, dann rate ich bei Wissensfragen nicht, sondern schaue nach.");
+    blase("ki", "Hallo! Ich bin die AORIS KI. 👋 Gerade denke ich mit **" + engine.name + "**, nur auf deinem Gerät. Frag mich etwas, zum Beispiel zu einem Schulthema. Mit 📷 prüfe ich auch Bilder für dich. Tipp: Schalte unten „Bei Wikipedia nachschlagen“ ein, dann rate ich bei Wissensfragen nicht, sondern schaue nach.");
     $("#text").focus();
   } catch (e) {
     console.error(e);
-    $("#ladeText").textContent = "Das hat leider nicht geklappt: " + (e && e.message ? e.message : e) + ". Vielleicht hat dein Gerät zu wenig Speicher – probier das kleine Modell.";
+    $("#ladeText").textContent = "Das hat leider nicht geklappt: " + (e && e.message ? e.message : e) + ". Vielleicht hat dein Gerät zu wenig Speicher – probier ein kleineres Modell.";
     $("#laden").disabled = false; $("#laden").textContent = "Nochmal versuchen";
-    document.querySelectorAll("#wahl input").forEach(i => i.disabled = false);
+    document.querySelectorAll("#wahl input").forEach((i, n) => i.disabled = vorher[n]);
   }
 });
 
 async function fragen(text) {
   if (!engine || laeuft || !text.trim()) return;
-  laeuft = true; abbruch = false;
+  laeuft = true; abbruch = new AbortController();
   $("#ideen").hidden = true;
   blase("ich", text);
   verlauf.push({ role: "user", content: text });
@@ -239,15 +245,17 @@ async function fragen(text) {
   }
   try {
     const nachrichten = [{ role: "system", content: SYSTEM }].concat(verlauf.slice(-11, -1), [{ role: "user", content: frageMitQuellen }]);
-    const stream = await engine.chat.completions.create({ messages: nachrichten, stream: true, temperature: 0.6, max_tokens: 700 });
-    for await (const teil of stream) {
-      if (abbruch) { try { engine.interruptGenerate(); } catch (e) {} break; }
-      voll += (teil.choices[0] && teil.choices[0].delta && teil.choices[0].delta.content) || "";
+    let roh = "";
+    for await (const neu of engine.antworte(nachrichten, { signal: abbruch.signal })) {
+      if (abbruch.signal.aborted) break;
+      roh += neu;
+      voll = ohneDenken(roh);
       antwort.innerHTML = format(voll);
       antwort.scrollIntoView({ block: "end" });
     }
   } catch (e) {
-    voll = voll || "Hoppla, da ist etwas schiefgelaufen. Versuch es nochmal.";
+    if (!abbruch.signal.aborted) console.error(e);
+    voll = voll || (abbruch.signal.aborted ? "(abgebrochen)" : "Hoppla, da ist etwas schiefgelaufen. Versuch es nochmal.");
     antwort.innerHTML = format(voll);
   }
   antwort.classList.remove("denkt");
@@ -264,7 +272,7 @@ async function fragen(text) {
 }
 
 $("#form").addEventListener("submit", e => { e.preventDefault(); const t = $("#text").value; $("#text").value = ""; groesse(); fragen(t); });
-$("#senden").addEventListener("click", e => { if (laeuft) { e.preventDefault(); abbruch = true; } });
+$("#senden").addEventListener("click", e => { if (laeuft) { e.preventDefault(); abbruch.abort(); } });
 $("#text").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); $("#form").requestSubmit(); } });
 function groesse() { const t = $("#text"); t.style.height = "auto"; t.style.height = Math.min(160, t.scrollHeight) + "px"; }
 $("#text").addEventListener("input", groesse);
@@ -278,7 +286,7 @@ $("#neuChat").addEventListener("click", async e => {
   e.preventDefault();
   if (laeuft || laeuftLinse) return;
   verlauf = []; $("#chat").innerHTML = ""; $("#ideen").hidden = !engine;
-  try { if (engine) await engine.resetChat(); } catch (x) {}
+  try { if (engine) await engine.neu(); } catch (x) {}
   blase("ki", engine ? "Neues Gespräch. Was möchtest du wissen?" : "Neues Gespräch. Tippe auf 📷, um ein Bild zu prüfen.");
 });
 

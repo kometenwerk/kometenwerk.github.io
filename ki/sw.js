@@ -1,6 +1,6 @@
 // Offline-Speicher für AORIS KI
-const V = "kw-ki-2026-11-01b";
-const SHELL = ["./", "index.html", "linse.js", "wissen.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "../shared/kw.css", "../shared/kw.js", "../shared/intro.js", "../shared/marken/aoris.webp", "../shared/marken/omnivia-zeichen.webp", "../shared/fonts/fonts.css", "../shared/fonts/space-grotesk-latin-400-normal.woff2", "../shared/fonts/space-grotesk-latin-500-normal.woff2", "../shared/fonts/space-grotesk-latin-600-normal.woff2"];
+const V = "kw-ki-2026-11-02a";
+const SHELL = ["./", "index.html", "linse.js", "wissen.js", "motor.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "../shared/kw.css", "../shared/kw.js", "../shared/intro.js", "../shared/marken/aoris.webp", "../shared/marken/omnivia-zeichen.webp", "../shared/fonts/fonts.css", "../shared/fonts/space-grotesk-latin-400-normal.woff2", "../shared/fonts/space-grotesk-latin-500-normal.woff2", "../shared/fonts/space-grotesk-latin-600-normal.woff2"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
