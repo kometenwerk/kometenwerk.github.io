@@ -157,3 +157,44 @@
 @keyframes aufklappen{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 .flip:not(.gross):hover .face.front{background:color-mix(in srgb,var(--c,#ff8a3c) 7%,transparent);border-radius:12px}
 @media (prefers-reduced-motion:reduce){.flip:not(.gross).on .face.back{animation:none}}
+
+/* Organigramm (Startseite) */
+.org{margin-top:30px}
+.org-ebene{text-align:center;margin:0 0 10px;font-size:.74rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.org-chef{max-width:520px;margin:0 auto}
+.org-chef .person.chef{border:2px solid #ff8a3c}
+.org-linie{width:3px;height:30px;margin:8px auto;border-radius:2px;background:repeating-linear-gradient(180deg,color-mix(in srgb,var(--muted) 55%,transparent) 0 5px,transparent 5px 9px)}
+.org-linie.kurz{height:18px;margin:6px auto 0}
+.org-leitung{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.org-baum{margin-top:6px}
+.org-zentrale{max-width:420px;margin:0 auto}
+.org-marken{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding-top:18px}
+.org-marken::before{content:"";position:absolute;top:0;left:12.5%;right:12.5%;height:3px;border-radius:2px;background:color-mix(in srgb,var(--muted) 45%,transparent)}
+.org-marken .org-knoten::before{content:"";position:absolute;top:-18px;left:50%;width:3px;height:18px;transform:translateX(-50%);background:color-mix(in srgb,var(--muted) 45%,transparent)}
+.org-knoten{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;padding:14px 10px;border-radius:16px;border:2px solid var(--c);background:color-mix(in srgb,var(--c) 12%,var(--card));color:var(--ink);font:inherit;cursor:pointer;text-align:center;transition:transform .15s,box-shadow .15s}
+.org-knoten:hover{transform:translateY(-2px);box-shadow:0 8px 22px color-mix(in srgb,var(--c) 30%,transparent)}
+.org-knoten:focus-visible{outline:3px solid #ff8a3c;outline-offset:3px}
+.org-knoten[aria-selected="true"]{background:var(--c);color:var(--t)}
+.org-knoten .ok-em{font-size:1.5rem;line-height:1.2}
+.org-knoten .ok-name{font-weight:700;font-size:.98rem;line-height:1.2}
+.org-knoten .ok-was{font-size:.82rem;opacity:.85}
+.org-knoten .ok-info{font-size:.74rem;font-weight:600;opacity:.8;margin-top:4px}
+.org-panel{margin-top:26px;padding:20px;border-radius:var(--r);border:2px solid var(--c);background:color-mix(in srgb,var(--c) 5%,transparent)}
+.org-panel-kopf{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.org-panel-kopf .ok-em{font-size:1.8rem;width:52px;height:52px;flex:none;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 20%,transparent)}
+.org-panel-kopf h3{margin:0;font-size:1.25rem}
+.org-panel-kopf p{margin:2px 0 0;color:var(--muted);font-size:.9rem}
+.org-markenchef{max-width:460px;margin:0 0 16px}
+.bahn .zeit{display:block;font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 2px}
+.bahn .st{display:inline-block;margin-left:6px;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:999px;vertical-align:2px;background:var(--soft,rgba(127,127,127,.15));color:var(--ink);white-space:nowrap}
+.bahn .st.fertig{background:rgba(21,128,61,.16)}
+.bahn .st.arbeit{background:rgba(255,138,60,.2)}
+.bahn .st.test{background:rgba(59,156,255,.18)}
+.bahn.mit-status .jetzt h3::after{content:"Jetzt"}
+@media (max-width:760px){
+  .org-marken{grid-template-columns:1fr 1fr;padding-top:0}
+  .org-marken::before,.org-marken .org-knoten::before{display:none}
+  .org-linie.kurz{display:none}
+  .org-zentrale{margin-bottom:12px}
+  .org-panel{padding:14px}
+}

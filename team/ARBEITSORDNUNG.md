@@ -4,7 +4,7 @@
 
 Dieses Dokument beschreibt, wie das KI-Team arbeiten soll. Es trennt feste Regeln von Fähigkeiten, die erst nach einer technischen Anbindung verfügbar sind. Die Rollen sind Fachprofile; sie sind keine Behauptung, dass jede Rolle ein eigenes unabhängiges KI-Modell ist.
 
-Das aktuelle Rollenregister umfasst **80 Fachprofile in zehn Abteilungen**. Paul verteilt nicht alle 80 Rollen auf jeden Auftrag: Er wählt nur passende Spezialisten aus. Das spart Rechenzeit und hält die Diskussion beim Thema.
+Das aktuelle Rollenregister (`shared/team/rollen.js`) umfasst **über 100 Fachprofile in der OMNIVIA-Zentrale und vier Marken**. Paul verteilt nicht alle Rollen auf jeden Auftrag: Er wählt nur passende Spezialisten aus. Das spart Rechenzeit und hält die Diskussion beim Thema.
 
 ## 1. Auftrag und feste Grundsätze
 
