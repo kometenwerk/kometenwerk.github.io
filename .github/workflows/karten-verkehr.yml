@@ -1,0 +1,43 @@
+name: Karten-Verkehr
+
+# Holt stündlich Baustellen, Staus und Sperrungen der Autobahnen in Südbaden
+# (Autobahn GmbH des Bundes) als Ersatz, falls die App sie nicht direkt laden darf.
+
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: karten-verkehr
+  cancel-in-progress: true
+
+jobs:
+  holen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Meldungen holen
+        run: node karten/werkzeug/verkehr.mjs
+      - name: Speichern
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add karten/daten/verkehr.json
+          if git diff --cached --quiet; then
+            echo "Nichts Neues."
+            exit 0
+          fi
+          git commit -q -m "Karten: Verkehrsmeldungen"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep 5
+          done
+          exit 1

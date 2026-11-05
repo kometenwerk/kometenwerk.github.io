@@ -1,0 +1,68 @@
+name: Karten-Daten
+
+# Baut für OMNIVIA Karten das Straßennetz und die Adress-Suche aus OpenStreetMap
+# (Auszug „Regierungsbezirk Freiburg“ von Geofabrik). Läuft einmal im Monat,
+# wenn sich das Bau-Programm ändert, oder von Hand unter „Actions“.
+
+on:
+  schedule:
+    - cron: "17 2 3 * *"
+  push:
+    branches: [main]
+    paths:
+      - "karten/werkzeug/bauen.py"
+      - ".github/workflows/karten-daten.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: karten-daten
+  cancel-in-progress: false
+
+jobs:
+  bauen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: OpenStreetMap-Auszug holen
+        run: |
+          curl -fsSL --retry 3 -o auszug.osm.pbf \
+            https://download.geofabrik.de/europe/germany/baden-wuerttemberg/freiburg-regbez-latest.osm.pbf
+          ls -la auszug.osm.pbf
+
+      - name: Daten bauen
+        run: |
+          python3 -m pip install --quiet osmium
+          python3 karten/werkzeug/bauen.py auszug.osm.pbf neu
+          du -sh neu neu/*
+
+      - name: Prüfen
+        run: |
+          KARTEN_DATEN=neu node --test karten/tests/*.test.mjs
+
+      - name: Speichern
+        run: |
+          rm -rf karten/daten/netz karten/daten/suche karten/daten/index.json karten/daten/orte.json
+          mkdir -p karten/daten
+          mv neu/* karten/daten/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A karten/daten
+          if git diff --cached --quiet; then
+            echo "Nichts Neues."
+            exit 0
+          fi
+          git commit -q -m "Karten: Straßen und Adressen aus OpenStreetMap aktualisiert"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep 5
+          done
+          exit 1

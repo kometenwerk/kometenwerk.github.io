@@ -1,0 +1,90 @@
+/* OMNIVIA Karten */
+html,body{height:100%}
+body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;padding-bottom:0}
+.kk{position:relative;flex:1;min-height:0}
+.kk-karte{position:absolute;inset:0;background:var(--soft)}
+.kk-karte .maplibregl-ctrl-attrib{font-size:11px}
+
+/* Suche oben */
+.kk-suche{position:absolute;left:12px;right:12px;top:12px;z-index:7;max-width:460px}
+.kk-suchfeld{display:flex;align-items:center;gap:8px;padding:4px 6px 4px 14px;border-radius:999px}
+.kk-suchfeld svg{width:20px;height:20px;flex:none;color:var(--muted)}
+.kk-suchfeld input{flex:1;min-width:0;border:0;background:none;padding:10px 4px;font-size:1rem;outline:none}
+.kk-suchfeld input::-webkit-search-cancel-button{display:none}
+.kk-suchfeld:focus-within{outline:3px solid var(--app);outline-offset:1px}
+.kk-x{border:0;background:none;font-size:1.5rem;line-height:1;width:40px;height:40px;border-radius:50%;cursor:pointer;color:var(--muted)}
+.kk-treffer{list-style:none;margin:8px 0 0;padding:6px;max-height:min(60vh,420px);overflow:auto}
+.kk-treffer li{display:flex;gap:12px;align-items:center;padding:10px;border-radius:10px;cursor:pointer}
+.kk-treffer li[aria-selected="true"],.kk-treffer li:hover{background:var(--soft)}
+.kk-treffer .sym{width:34px;height:34px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--app-soft);font-size:1rem}
+.kk-treffer b{display:block;font-weight:500}
+.kk-treffer small{color:var(--muted)}
+.kk-treffer .leer{cursor:default;color:var(--muted);display:block}
+
+/* runde Knöpfe rechts */
+.kk-knoepfe{position:absolute;right:12px;top:76px;z-index:4;display:flex;flex-direction:column;gap:8px}
+.kk-rund{width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow);display:grid;place-items:center;cursor:pointer;font-size:1.15rem;color:var(--app)}
+.kk-rund svg{width:22px;height:22px}
+.kk-rund[aria-pressed="false"]{opacity:.55;filter:grayscale(1)}
+.kk-rund:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* Blatt unten */
+.kk-blatt{position:absolute;left:0;right:0;bottom:0;z-index:6;border-radius:20px 20px 0 0;max-height:46%;overflow:auto;padding:0 16px calc(16px + env(safe-area-inset-bottom,0px));transition:max-height .25s ease;overscroll-behavior:contain}
+.kk-blatt.gross{max-height:88%}
+.kk-blatt.klein{max-height:96px;overflow:hidden}
+.kk-griff{display:block;width:100%;border:0;background:none;padding:10px 0 6px;cursor:pointer;position:sticky;top:0;background:var(--card);z-index:1}
+.kk-griff span{display:block;width:44px;height:5px;border-radius:3px;background:var(--line);margin:0 auto}
+@media (min-width:820px){
+  .kk-blatt{left:12px;right:auto;bottom:12px;top:76px;width:400px;max-height:none;border-radius:16px}
+  .kk-blatt.klein,.kk-blatt.gross{max-height:none}
+  .kk-blatt.klein{bottom:auto;max-height:110px}
+  .kk-griff{display:none}
+  .kk-blatt{padding-top:12px}
+}
+.kk-blatt h2{margin:2px 0 4px;font-size:1.2rem;font-weight:600}
+.kk-blatt .unter{color:var(--muted);margin:0 0 12px;font-size:.92rem}
+.kk-reihe{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.kk-reihe .btn{flex:1;min-width:130px}
+
+/* Routenplaner */
+.kk-punkte{display:grid;grid-template-columns:22px 1fr 44px;gap:6px 8px;align-items:center;margin:4px 0 10px}
+.kk-punkte .pkt{width:14px;height:14px;border-radius:50%;justify-self:center;border:3px solid var(--app);background:var(--card)}
+.kk-punkte .pkt.ziel{border-radius:3px;background:var(--accent);border-color:var(--accent)}
+.kk-punkte .inp{padding:10px 12px}
+.kk-punkte .tausch{grid-row:1 / span 2;grid-column:3;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:1.2rem}
+.kk-modi{display:flex;gap:6px;margin:6px 0 10px}
+.kk-modi button{flex:1;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:8px 4px;cursor:pointer;font-size:.9rem;display:flex;flex-direction:column;align-items:center;gap:2px}
+.kk-modi button span{font-size:1.25rem}
+.kk-modi button[aria-pressed="true"]{background:var(--app);border-color:var(--app);color:#fff;font-weight:600}
+.kk-optionen{display:flex;flex-direction:column;gap:2px;margin:4px 0 8px}
+.kk-optionen label{display:flex;gap:10px;align-items:center;padding:6px 2px;font-size:.93rem;cursor:pointer}
+.kk-optionen input{width:20px;height:20px;accent-color:var(--app)}
+.kk-ergebnis{border-top:1px solid var(--line);margin-top:10px;padding-top:12px}
+.kk-zeit{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.kk-zeit b{font-size:1.7rem;font-weight:600;color:var(--app)}
+@media (prefers-color-scheme:dark){.kk-zeit b{color:#a5b4fc}}
+.kk-erklaer{background:var(--app-soft);border-radius:12px;padding:10px 12px;margin:10px 0;font-size:.95rem}
+.kk-erklaer .wer{display:block;font-size:.75rem;color:var(--muted);margin-bottom:2px}
+.kk-meldung{display:flex;gap:10px;padding:10px;border:1px solid var(--line);border-radius:12px;margin:6px 0;font-size:.9rem}
+.kk-meldung .sym{font-size:1.2rem}
+.kk-meldung small{color:var(--muted);display:block}
+.kk-schritte{list-style:none;margin:8px 0 0;padding:0;counter-reset:s}
+.kk-schritte li{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:9px 4px;border-bottom:1px solid var(--line);cursor:pointer;font-size:.93rem}
+.kk-schritte li:last-child{border-bottom:0}
+.kk-schritte .pfeil{width:30px;height:30px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-size:1rem}
+.kk-schritte small{color:var(--muted);white-space:nowrap}
+.kk-hinweis{font-size:.84rem;color:var(--muted);margin:10px 0 0}
+.kk-laedt{display:flex;gap:10px;align-items:center;color:var(--muted);padding:8px 0}
+.kk-laedt::before{content:"";width:18px;height:18px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--app);animation:kkdreh 0.8s linear infinite}
+@keyframes kkdreh{to{transform:rotate(360deg)}}
+.kk-fehler{background:color-mix(in srgb,var(--bad) 14%,transparent);border-radius:12px;padding:10px 12px;margin:10px 0;font-size:.93rem}
+
+/* Marker */
+.kk-marker{width:22px;height:22px;border-radius:50%;border:4px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);background:var(--app)}
+.kk-marker.ziel{border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--accent);width:26px;height:26px}
+.kk-meldung-pin{font-size:18px;width:30px;height:30px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.35);cursor:pointer;border:2px solid #f59e0b}
+.kk-meldung-pin.stau{border-color:#dc2626}
+.kk-meldung-pin.sperrung{border-color:#7f1d1d}
+.kk-ich{width:18px;height:18px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 8px rgba(37,99,235,.2)}
+.maplibregl-popup-content{background:var(--card);color:var(--ink);border-radius:12px;font-family:inherit;max-width:280px}
+.maplibregl-popup-tip{display:none}

@@ -1,0 +1,15 @@
+{
+  "name": "OMNIVIA Karten",
+  "short_name": "Karten",
+  "description": "Karte und Navi für Südbaden – eigener Routenplaner, Suche bis zur Hausnummer, ohne Tracking.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#4338ca",
+  "theme_color": "#4338ca",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
