@@ -28,7 +28,7 @@ export class Suche {
   }
   async holen(key) {
     if (!this.eimer.has(key)) return [];
-    if (!this.cache.has(key)) this.cache.set(key, this.laden(`suche/${key}.json.gz`).then(l => l.map(e => ({ e, n: norm(e[0]), o: norm(e[1] || "") }))).catch(() => []));
+    if (!this.cache.has(key)) this.cache.set(key, this.laden(`suche/${key}.json.gz`).then(l => l.map(e => ({ e, n: norm(e[0]), o: norm((e[1] || "") + (e[6] ? " " + e[6] : "")) }))).catch(() => []));
     return this.cache.get(key);
   }
 

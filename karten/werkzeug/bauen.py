@@ -216,6 +216,37 @@ def abstand(a, b, c, d):
     return math.hypot(x, y)
 
 
+def inseln_entfernen(nachbarn, n_knoten, mindestens=300):
+    """Kleine abgeschnittene Netzteile (z. B. Hofzufahrt mitten in der Fußgängerzone) sind für
+    dieses Verkehrsmittel nutzlos: Start oder Ziel dort einzurasten ergibt keine Route."""
+    for bit, name in ((B_AUTO, "Auto"), (B_RAD, "Rad"), (B_FUSS, "Fuß")):
+        eltern = list(range(n_knoten))
+        def wurzel(x):
+            while eltern[x] != x:
+                eltern[x] = eltern[eltern[x]]
+                x = eltern[x]
+            return x
+        for a, kanten in nachbarn.items():
+            for e in kanten:
+                if e[5] & bit:
+                    ra, rb = wurzel(a), wurzel(e[0])
+                    if ra != rb: eltern[ra] = rb
+        groesse = defaultdict(int)
+        for a, kanten in nachbarn.items():
+            if any(e[5] & bit for e in kanten): groesse[wurzel(a)] += 1
+        klein = {w for w, g in groesse.items() if g < mindestens}
+        weg = 0
+        for a, kanten in nachbarn.items():
+            if wurzel(a) in klein:
+                for i, e in enumerate(kanten):
+                    if e[5] & bit:
+                        kanten[i] = e[:5] + (e[5] & ~bit,) + e[6:]
+                        weg += 1
+        print(f"{name}: {len(klein)} kleine Inseln entfernt ({weg} Kanten), größtes Netz {max(groesse.values()) if groesse else 0} Knoten")
+    for a in list(nachbarn):
+        nachbarn[a] = [e for e in nachbarn[a] if e[5] & (B_AUTO | B_RAD | B_FUSS)]
+
+
 def kachel(lat, lon):
     return (int(math.floor(lat / KACHEL_LAT)), int(math.floor(lon / KACHEL_LON)))
 
@@ -264,6 +295,7 @@ def bauen(quelle, ziel):
                 start = i
                 laenge = 0.0
     r.wege = None
+    inseln_entfernen(nachbarn, n_knoten)
 
     os.makedirs(os.path.join(ziel, "netz"), exist_ok=True)
 

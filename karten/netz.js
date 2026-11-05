@@ -280,7 +280,7 @@ export class Netz {
       if (f >= bestWert) break;
       if (fertig.has(u)) continue;
       fertig.add(u);
-      if (++schritte > 3e6) break;
+      if (++schritte > 3e6 || geladen > 160) break; // Notbremse: nicht das ganze Land laden
       const gu = g.get(u);
       const zr = zielRest.get(u);
       if (zr && gu + zr.c < bestWert) { bestWert = gu + zr.c; bestKnoten = u; }
