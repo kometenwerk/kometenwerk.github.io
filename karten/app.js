@@ -37,7 +37,7 @@ const datenBereit = (async () => {
   try {
     index = await ladenJSON("index.json");
     netz = new Netz(index, ladenRoh);
-    suche = new Suche(ladenJSON, index.suche, await ladenJSON("orte.json"));
+    suche = new Suche(ladenJSON, index.suche, await ladenJSON("orte.json"), index.kategorien);
     altesAufraeumen();
     anschluss = await ladenJSON("anschluss.json").catch(() => null);
   } catch (e) { datenFehler = e; }

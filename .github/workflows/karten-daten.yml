@@ -50,7 +50,7 @@ jobs:
 
       - name: Speichern
         run: |
-          rm -rf karten/daten/netz karten/daten/suche karten/daten/index.json karten/daten/orte.json
+          rm -rf karten/daten/netz karten/daten/suche karten/daten/kategorie karten/daten/index.json karten/daten/orte.json karten/daten/anschluss.json
           mkdir -p karten/daten
           mv neu/* karten/daten/
           git config user.name "github-actions[bot]"

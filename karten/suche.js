@@ -13,6 +13,20 @@ export function eimerVon(s) {
   return n.length >= 2 ? n.slice(0, 2) : (n + "_").slice(0, 2) || "__";
 }
 
+// Wörter, mit denen man nach einer Art von Ziel sucht („Bäcker Riegel“, „Arzt in der Nähe“)
+const KAT_WORT = {
+  baecker: "baeckerei", brot: "baeckerei", broetchen: "baeckerei", arzt: "arztpraxis", aerztin: "arztpraxis", doktor: "arztpraxis", hausarzt: "arztpraxis",
+  zahnaerztin: "zahnarzt", kirche: "kirche", schule: "schule", grundschule: "schule", gymnasium: "schule", realschule: "schule", kita: "kita",
+  einkaufen: "supermarkt", lebensmittel: "supermarkt", tanken: "tankstelle", geld: "geldautomat", bankautomat: "geldautomat", sparkasse: "bank",
+  volksbank: "bank", bus: "bushaltestelle", haltestelle: "bushaltestelle", zug: "bahnhof", essen: "restaurant", pizza: "restaurant", pizzeria: "restaurant",
+  doener: "imbiss", kebab: "imbiss", pommes: "imbiss", kaffee: "cafe", eis: "eisdiele", freibad: "schwimmbad", hallenbad: "schwimmbad", baden: "schwimmbad",
+  haare: "friseur", frisoer: "friseur", wc: "toilette", klo: "toilette", parken: "parkplatz", strom: "ladesaeule", laden: "ladesaeule", elektroauto: "ladesaeule",
+  fussball: "sportplatz", sport: "sporthalle", fitness: "fitnessstudio", gym: "fitnessstudio", tierarzt: "tierarzt", tiere: "zoo", burg: "burg",
+  wandern: "aussicht", turm: "aussichtsturm", spielen: "spielplatz", kindergarten: "kindergarten", post: "post", paket: "post", briefkasten: "briefkasten",
+  krankenhaus: "krankenhaus", notaufnahme: "krankenhaus", klinik: "klinik", polizei: "polizei", feuerwehr: "feuerwehr", rathaus: "rathaus", amt: "amt",
+  getraenke: "getraenke", metzger: "metzgerei", fleisch: "metzgerei", drogerie: "drogerie", dm: "drogerie", baumarkt: "baumarkt", bibliothek: "buecherei",
+};
+
 const ORT_ART = ["Stadt", "Stadt", "Dorf", "Stadtteil", "Viertel", "Weiler", "Viertel", "Hof"];
 
 function abstand(a, b, c, d) {
@@ -22,13 +36,58 @@ function abstand(a, b, c, d) {
 
 export class Suche {
   /** laden(pfad) -> Promise<JSON>; eimerListe: Liste der vorhandenen Eimer; orte: Inhalt von orte.json */
-  constructor(laden, eimerListe, orte) {
-    this.laden = laden; this.eimer = new Set(eimerListe); this.cache = new Map();
+  constructor(laden, eimerListe, orte, kategorien = {}) {
+    this.laden = laden; this.eimer = new Set(eimerListe); this.cache = new Map(); this.kategorien = kategorien || {};
     this.orte = orte.map(o => ({ name: o[0], art: o[1], lat: o[2], lon: o[3], ew: o[4], n: norm(o[0]) }));
   }
   async holen(key) {
     if (!this.eimer.has(key)) return [];
     if (!this.cache.has(key)) this.cache.set(key, this.laden(`suche/${key}.json.gz`).then(l => l.map(e => ({ e, n: norm(e[0]), o: norm((e[1] || "") + (e[6] ? " " + e[6] : "")) }))).catch(() => []));
+    return this.cache.get(key);
+  }
+
+  /** Welche Kategorie meint dieses Wort? */
+  kategorieVon(w) {
+    if (w.length < 3) return null;
+    const k = this.kategorien;
+    if (k[w]) return w;
+    if (KAT_WORT[w] && k[KAT_WORT[w]]) return KAT_WORT[w];
+    if (w.length >= 4) {
+      const t = Object.keys(k).filter(x => x.startsWith(w)).sort((a, b) => k[b][1] - k[a][1])[0];
+      if (t) return t;
+      const a = Object.keys(KAT_WORT).find(x => x.startsWith(w));
+      if (a && k[KAT_WORT[a]]) return KAT_WORT[a];
+    }
+    return null;
+  }
+
+  async kategorieSuchen(woerter, nahe) {
+    let ki = -1, kat = null;
+    for (let i = 0; i < woerter.length && !kat; i++) { kat = this.kategorieVon(woerter[i]); if (kat) ki = i; }
+    if (!kat) return [];
+    const ortW = woerter.filter((w, i) => i !== ki && !["in", "im", "bei", "nahe", "naehe", "der", "die", "das", "naechste", "naechster", "naechstes"].includes(w));
+    let liste;
+    try { liste = await this.holenKat(kat); } catch { return []; }
+    let mitte = nahe, ortName = "";
+    if (ortW.length) {
+      const o = this.orte.filter(o => ortW.every(w => o.n.split(" ").some(t => t.startsWith(w)))).sort((a, b) => a.art - b.art || b.ew - a.ew)[0];
+      if (!o) return [];
+      mitte = { lat: o.lat, lon: o.lon }; ortName = o.n;
+    }
+    if (!mitte) return [];
+    const kand = [];
+    for (const e of liste) {
+      const d = abstand(mitte.lat, mitte.lon, e[2], e[3]);
+      const imOrt = ortName && norm(e[1]) === ortName;
+      if (d > (ortW.length ? 6000 : 20000) && !imOrt) continue;
+      kand.push({ e, d: imOrt ? d * 0.5 : d });
+    }
+    kand.sort((a, b) => a.d - b.d);
+    return kand.slice(0, 6).map((x, i) => ({ p: 80 - i, titel: x.e[0] || x.e[4], unter: `${x.e[4]} · ${x.e[1]}${!ortW.length && nahe ? " · " + (x.d < 950 ? Math.round(x.d / 10) * 10 + " m" : (x.d / 1000).toFixed(1).replace(".", ",") + " km") : ""}`, lat: x.e[2], lon: x.e[3], art: "ziel", zoom: 17 }));
+  }
+  holenKat(kat) {
+    const key = "kat:" + kat;
+    if (!this.cache.has(key)) this.cache.set(key, this.laden(`kategorie/${kat}.json.gz`).catch(e => { this.cache.delete(key); throw e; }));
     return this.cache.get(key);
   }
 
@@ -47,7 +106,7 @@ export class Suche {
     const plz = woerter.find(w => /^\d{5}$/.test(w));
     if (plz) woerter = woerter.filter(w => w !== plz);
     if (!woerter.length) return [];
-    const treffer = [];
+    const treffer = await this.kategorieSuchen(woerter, nahe);
     const passt = (woerterListe, text) => {
       const tok = text.split(" ");
       return woerterListe.every(w => tok.some(t => t.startsWith(w)) || text.includes(w) && w.length > 3);

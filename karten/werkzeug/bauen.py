@@ -39,6 +39,40 @@ UNBEFESTIGT = {"unpaved", "gravel", "fine_gravel", "dirt", "earth", "grass", "gr
 NEIN = {"no", "private", "agricultural", "forestry", "delivery", "destination_no"}
 
 
+ARTEN = [
+    ("amenity", {"hospital": "Krankenhaus", "clinic": "Klinik", "school": "Schule", "university": "Hochschule", "college": "Hochschule", "townhall": "Rathaus",
+                 "library": "Bücherei", "cinema": "Kino", "theatre": "Theater", "fuel": "Tankstelle", "charging_station": "Ladesäule", "pharmacy": "Apotheke",
+                 "police": "Polizei", "fire_station": "Feuerwehr", "swimming_pool": "Schwimmbad", "kindergarten": "Kindergarten", "childcare": "Kita",
+                 "restaurant": "Restaurant", "cafe": "Café", "ice_cream": "Eisdiele", "fast_food": "Imbiss", "pub": "Kneipe", "bar": "Bar", "biergarten": "Biergarten",
+                 "post_office": "Post", "post_box": "Briefkasten", "place_of_worship": "Kirche", "doctors": "Arztpraxis", "dentist": "Zahnarzt", "veterinary": "Tierarzt",
+                 "bank": "Bank", "atm": "Geldautomat", "parking": "Parkplatz", "toilets": "Toilette", "community_centre": "Gemeindehaus", "social_facility": "Pflegeheim",
+                 "nursing_home": "Pflegeheim", "marketplace": "Markt", "car_wash": "Waschanlage", "car_rental": "Autovermietung", "bicycle_rental": "Radverleih",
+                 "music_school": "Musikschule", "driving_school": "Fahrschule", "arts_centre": "Kultur", "courthouse": "Gericht", "recycling": "Wertstoffe",
+                 "grave_yard": "Friedhof", "playground": "Spielplatz", "drinking_water": "Trinkwasser", "taxi": "Taxi", "events_venue": "Halle", "youth_centre": "Jugendhaus"}),
+    ("shop", {"supermarket": "Supermarkt", "convenience": "Laden", "bakery": "Bäckerei", "butcher": "Metzgerei", "kiosk": "Kiosk", "beverages": "Getränke",
+              "hairdresser": "Friseur", "clothes": "Kleidung", "shoes": "Schuhe", "chemist": "Drogerie", "optician": "Optiker", "florist": "Blumen",
+              "car": "Autohaus", "car_repair": "Werkstatt", "bicycle": "Fahrradladen", "doityourself": "Baumarkt", "hardware": "Baumarkt", "electronics": "Elektronik",
+              "furniture": "Möbel", "books": "Buchladen", "toys": "Spielwaren", "sports": "Sportgeschäft", "mobile_phone": "Handyladen", "farm": "Hofladen",
+              "garden_centre": "Gärtnerei", "pet": "Tierbedarf", "jewelry": "Schmuck", "gift": "Geschenke", "department_store": "Kaufhaus", "mall": "Einkaufszentrum",
+              "beauty": "Kosmetik", "wine": "Wein", "deli": "Feinkost", "confectionery": "Süßwaren", "pastry": "Konditorei", "tobacco": "Tabak", "laundry": "Wäscherei",
+              "travel_agency": "Reisebüro", "stationery": "Schreibwaren", "computer": "Computer", "tyres": "Reifen", "funeral_directors": "Bestatter"}),
+    ("tourism", {"attraction": "Sehenswürdigkeit", "museum": "Museum", "theme_park": "Freizeitpark", "zoo": "Zoo", "viewpoint": "Aussicht", "hotel": "Hotel",
+                 "guest_house": "Pension", "hostel": "Herberge", "apartment": "Ferienwohnung", "camp_site": "Camping", "caravan_site": "Wohnmobilplatz",
+                 "information": "Touristen-Info", "picnic_site": "Grillplatz", "artwork": "Kunstwerk", "gallery": "Galerie", "alpine_hut": "Hütte", "wilderness_hut": "Hütte"}),
+    ("leisure", {"stadium": "Stadion", "sports_centre": "Sporthalle", "sports_hall": "Sporthalle", "water_park": "Bad", "park": "Park", "pitch": "Sportplatz",
+                 "playground": "Spielplatz", "swimming_pool": "Schwimmbad", "fitness_centre": "Fitnessstudio", "golf_course": "Golfplatz", "ice_rink": "Eisbahn",
+                 "marina": "Hafen", "miniature_golf": "Minigolf", "nature_reserve": "Naturschutzgebiet", "bowling_alley": "Bowling", "climbing": "Klettern"}),
+    ("healthcare", {"doctor": "Arztpraxis", "dentist": "Zahnarzt", "hospital": "Krankenhaus", "pharmacy": "Apotheke", "physiotherapist": "Physiotherapie", "clinic": "Klinik"}),
+    ("historic", {"castle": "Burg", "ruins": "Ruine", "monument": "Denkmal", "memorial": "Denkmal", "church": "Kirche", "monastery": "Kloster", "city_gate": "Stadttor"}),
+    ("aeroway", {"aerodrome": "Flugplatz"}),
+    ("natural", {"peak": "Berg", "water": "See", "spring": "Quelle", "cave_entrance": "Höhle", "waterfall": "Wasserfall"}),
+    ("water", {"lake": "See"}),
+    ("waterway", {"waterfall": "Wasserfall"}),
+    ("man_made", {"tower": "Turm", "observation_tower": "Aussichtsturm"}),
+    ("building", {"church": "Kirche", "chapel": "Kapelle", "cathedral": "Kirche", "train_station": "Bahnhof", "school": "Schule"}),
+]
+
+
 def tempo_aus(tag, klasse, link):
     v = tag.get("maxspeed", "")
     m = re.match(r"^(\d+)", v)
@@ -134,30 +168,29 @@ class Leser(osmium.SimpleHandler):
             try: ew = int(re.sub(r"\D", "", t.get("population", "0")) or 0)
             except ValueError: pass
             self.orte.append((t["name"], p, lat, lon, ew))
-        art = self.art(t)
-        if art and "name" in t:
-            self.orte_punkte.append((t["name"], art, lat, lon))
+        if t.get("amenity") or t.get("shop") or t.get("tourism") or t.get("leisure") or t.get("railway") or t.get("public_transport") or t.get("highway") or t.get("healthcare") or t.get("office") or t.get("craft") or t.get("historic") or t.get("natural") or t.get("aeroway") or t.get("man_made"):
+            self.ziel(t, lat, lon)
 
     @staticmethod
     def art(t):
         if t.get("railway") in ("station", "halt"): return "Bahnhof"
-        if t.get("public_transport") == "station": return "Haltestelle"
-        a = t.get("amenity")
-        A = {"hospital": "Krankenhaus", "school": "Schule", "university": "Hochschule", "college": "Hochschule", "townhall": "Rathaus", "library": "Bücherei",
-             "cinema": "Kino", "theatre": "Theater", "fuel": "Tankstelle", "charging_station": "Ladesäule", "pharmacy": "Apotheke", "police": "Polizei",
-             "fire_station": "Feuerwehr", "swimming_pool": "Schwimmbad", "kindergarten": "Kindergarten", "restaurant": "Restaurant", "cafe": "Café",
-             "ice_cream": "Eisdiele", "fast_food": "Imbiss", "post_office": "Post", "place_of_worship": "Kirche", "doctors": "Arztpraxis", "parking": "Parkplatz"}
-        if a in A: return A[a]
-        tu = t.get("tourism")
-        T = {"attraction": "Sehenswürdigkeit", "museum": "Museum", "theme_park": "Freizeitpark", "zoo": "Zoo", "viewpoint": "Aussicht", "hotel": "Hotel", "camp_site": "Camping"}
-        if tu in T: return T[tu]
-        if t.get("shop") in ("supermarket",): return "Supermarkt"
-        if t.get("shop") in ("bakery",): return "Bäckerei"
-        if t.get("leisure") in ("stadium", "sports_centre", "water_park", "park"): return {"stadium": "Stadion", "sports_centre": "Sporthalle", "water_park": "Bad", "park": "Park"}[t["leisure"]]
-        if t.get("aeroway") == "aerodrome": return "Flugplatz"
-        if t.get("natural") == "peak": return "Berg"
-        if t.get("natural") == "water" or t.get("water") == "lake": return "See"
+        if t.get("public_transport") == "station" or t.get("amenity") == "bus_station": return "Haltestelle"
+        if t.get("highway") == "bus_stop" or t.get("public_transport") == "platform" and t.get("bus") == "yes": return "Bushaltestelle"
+        for schl, tab in ARTEN:
+            w = t.get(schl)
+            if w and w in tab: return tab[w]
+        if t.get("shop") and t.get("shop") not in ("vacant", "no", "yes"): return "Geschäft"
+        if t.get("healthcare"): return "Gesundheit"
+        if t.get("office") in ("company", "yes", "government", "insurance", "lawyer", "estate_agent", "tax_advisor", "it", "architect", "notary"): return {"government": "Amt", "insurance": "Versicherung", "lawyer": "Anwalt", "notary": "Notar", "tax_advisor": "Steuerberater", "architect": "Architekt"}.get(t["office"], "Firma")
+        if t.get("craft"): return "Handwerk"
         return None
+
+    def ziel(self, t, la, lo):
+        art = self.art(t)
+        if not art: return
+        name = t.get("name") or t.get("brand") or ""
+        if art in ("Bushaltestelle",) and not name: return
+        self.orte_punkte.append((name, art, la, lo))
 
     def way(self, w):
         t = w.tags
@@ -172,10 +205,9 @@ class Leser(osmium.SimpleHandler):
             self.adressen.append((t.get("addr:street") or t.get("addr:place"), t["addr:housenumber"], t.get("addr:city", ""), t.get("addr:postcode", ""), la, lo))
         if t.get("highway") in ("services", "rest_area") and "name" in t:
             self.anschluesse.append((t["name"], sum(p[1] for p in pkt) / len(pkt), sum(p[2] for p in pkt) / len(pkt)))
-        art = self.art(t)
-        if art and "name" in t:
-            la = sum(p[1] for p in pkt) / len(pkt); lo = sum(p[2] for p in pkt) / len(pkt)
-            self.orte_punkte.append((t["name"], art, la, lo))
+        if "highway" not in t or t.get("highway") in ("services", "rest_area"):
+            if t.get("amenity") or t.get("shop") or t.get("tourism") or t.get("leisure") or t.get("railway") or t.get("healthcare") or t.get("office") or t.get("craft") or t.get("historic") or t.get("natural") or t.get("aeroway") or t.get("man_made"):
+                self.ziel(t, sum(p[1] for p in pkt) / len(pkt), sum(p[2] for p in pkt) / len(pkt))
         if hw not in KLASSE or t.get("area") == "yes": return
         if hw == "service" and t.get("service") == "parking_aisle" and "name" not in t: pass
         k = KLASSE[hw]
@@ -405,11 +437,19 @@ def bauen(quelle, ziel):
             eintrag = [e["n"], e["o"], e["p"], e["m"][0], e["m"][1], []]
         eimer[schluessel(e["n"])].append(eintrag)
     doppelt = set()
+    kategorien = defaultdict(list)
     for name, art, la, lo in r.orte_punkte:
-        k = (name, art, round(la, 2), round(lo, 2))
+        k = (name, art, round(la, 3), round(lo, 3))
         if k in doppelt: continue
         doppelt.add(k)
-        eimer[schluessel(name)].append([name, naechster_ort(la, lo), "", round(la, 6), round(lo, 6), None, art])
+        ort = naechster_ort(la, lo)
+        if name:
+            eimer[schluessel(name)].append([name, ort, "", round(la, 6), round(lo, 6), None, art])
+        kategorien[norm(art).replace(" ", "")].append([name, ort, round(la, 5), round(lo, 5), art])
+    os.makedirs(os.path.join(ziel, "kategorie"), exist_ok=True)
+    for k, l in kategorien.items():
+        with gzip.open(os.path.join(ziel, "kategorie", f"{k}.json.gz"), "wt", encoding="utf-8", compresslevel=9) as f:
+            json.dump(l, f, ensure_ascii=False, separators=(",", ":"))
     os.makedirs(os.path.join(ziel, "suche"), exist_ok=True)
     sg = 0
     for k, l in eimer.items():
@@ -435,6 +475,7 @@ def bauen(quelle, ziel):
         "kachel": [KACHEL_LAT, KACHEL_LON], "fernKlasse": FERN,
         "bbox": [round(v, 5) for v in r.bbox], "knoten": n_knoten,
         "kacheln": liste, "fern": fg, "suche": sorted(eimer.keys()),
+        "kategorien": {k: [v[0][4], len(v)] for k, v in sorted(kategorien.items())},
     }
     with open(os.path.join(ziel, "index.json"), "w") as f:
         json.dump(index, f, separators=(",", ":"))
