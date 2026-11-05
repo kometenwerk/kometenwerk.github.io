@@ -75,3 +75,5 @@ dialog.sheet::backdrop{background:rgba(10,16,27,.5)}
 .kw-foot button{border:0;background:transparent;color:inherit;cursor:pointer;padding:0;text-decoration:underline}
 
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition:none!important}}
+.kw-bar .kw-alter{flex:none;display:grid;place-items:center;min-width:34px;height:34px;padding:0 6px;border-radius:999px;border:2px solid currentColor;font-size:.72rem;font-weight:800;color:inherit;text-decoration:none;opacity:.9}
+.kw-bar .kw-alter:hover{opacity:1}

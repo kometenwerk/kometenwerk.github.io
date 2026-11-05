@@ -141,5 +141,17 @@
     document.body.appendChild(f);
   };
 
-  document.addEventListener("DOMContentLoaded", function () { setupInstall(); setupSW(); });
+
+  /* Altersempfehlung in der Kopfleiste */
+  var ALTER = { planer: 8, notizen: 8, quiz: 8, fokus: 8, taschengeld: 8, beats: 6, werkstatt: 10, kueche: 10, ki: 12 };
+  function setupAlter() {
+    var teil = location.pathname.split("/").filter(Boolean), ordner = teil[teil.length - 1] === "index.html" ? teil[teil.length - 2] : teil[teil.length - 1];
+    var a = ALTER[ordner], bar = document.querySelector(".kw-bar h1");
+    if (!a || !bar || document.querySelector(".kw-alter")) return;
+    var l = document.createElement("a");
+    l.className = "kw-alter"; l.href = "../alter/#ab" + a; l.textContent = "ab " + a;
+    l.title = "Altersempfehlung: ab " + a + " Jahren"; l.setAttribute("aria-label", "Empfohlen ab " + a + " Jahren");
+    bar.insertAdjacentElement("afterend", l);
+  }
+  document.addEventListener("DOMContentLoaded", function () { setupInstall(); setupSW(); setupAlter(); });
 })();
