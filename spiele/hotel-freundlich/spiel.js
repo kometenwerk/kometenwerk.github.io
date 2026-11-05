@@ -691,7 +691,7 @@ function hudZeigen() {
   $('laerm-balken').firstElementChild.style.width = F.laerm + '%';
 }
 const STOCK = [66, 59, 52, 44, 37, 30, 22, 15, 8, 1];
-const etage = i => STOCK[Math.min(i, 9)];
+const etage = i => WELT ? Math.max(1, 66 - i) : STOCK[Math.min(i, 9)];
 function zeiten() {
   const b = { leicht: { q: 24, r: 2.6, h: 900 }, normal: { q: 16, r: 1.7, h: 680 }, schwer: { q: 10, r: 1.1, h: 480 } }[spar.zeit];
   let k = Math.max(.6, Math.pow(.92, F.loop) * (F.modus === 'endlos' ? Math.pow(.985, F.geschafft) : 1));
@@ -1340,6 +1340,7 @@ async function angriff3d() {
 }
 function naechsterTyp3() {
   const alle = ['quiz', 'fans', 'hebel'], l = F.typen;
+  if (F.geschafft >= 2) alle.push('toni');
   const t = alle.filter(x => l[l.length - 1] !== x);
   const w = t[Math.floor(Math.random() * t.length)]; l.push(w); return w;
 }
@@ -1347,13 +1348,14 @@ async function abschnitt3d() {
   const nr = laufNr, typ = naechsterTyp3(), dunkel = Math.random() < .3;
   const c = { typ, dunkel, lampe: F.dinge.includes('lampe') };
   let frage = null, richtig = -1, antworten = [], folge = [], pos3 = 0;
-  if (typ === 'fans') { c.n = Math.min(6, 3 + Math.floor(F.geschafft / 3)); c.tempo = { leicht: .9, normal: 1.35, schwer: 1.9 }[spar.zeit] * (F.beruf === 'tech' ? .8 : 1) * (1 + F.loop * .1); }
+  if (typ === 'fans') { c.n = Math.min(6, 3 + Math.floor(F.geschafft / 11)); c.tempo = { leicht: .9, normal: 1.35, schwer: 1.9 }[spar.zeit] * (F.beruf === 'tech' ? .8 : 1) * (1 + F.loop * .1); }
+  if (typ === 'toni') Object.assign(c, { trommel: { leicht: 3.4, normal: 2.8, schwer: 2.2 }[spar.zeit], warn: { leicht: .9, normal: .65, schwer: .45 }[spar.zeit], still: { leicht: 1.3, normal: 1.6, schwer: 2 }[spar.zeit] });
   if (typ === 'quiz') {
     if (!fragenRest.length) fragenRest = mische(FRAGEN);
     frage = fragenRest.pop(); antworten = mische(frage.slice(1)); richtig = antworten.indexOf(frage[1]); c.antworten = antworten; F.quizAn = true;
   } else F.quizAn = false;
   if (typ === 'hebel') {
-    folge = Array.from({ length: Math.min(6, 3 + Math.floor(F.geschafft / 3) + Math.min(2, F.loop)) }, () => Math.floor(Math.random() * 4));
+    folge = Array.from({ length: Math.min(6, 3 + Math.floor(F.geschafft / 11) + Math.min(2, F.loop)) }, () => Math.floor(Math.random() * 4));
     c.folge = folge; c.takt = { leicht: .9, normal: .7, schwer: .5 }[spar.zeit];
   }
   const fundId = Math.random() < (F.beruf === 'meme' ? .62 : .42) ? Object.keys(DINGE3)[Math.floor(Math.random() * 4)] : null;
@@ -1368,9 +1370,11 @@ async function abschnitt3d() {
   beutelZeigen(); hudZeigen();
   await blende(0, 260); pruefe(nr);
   F.jagd = true;
+  WELT.beiBumm = () => Ton.bumm(.45);
+  WELT.beiStill = () => { Ton.knack(); dingZeigen('STOPP!', 30); };
   const wo = F.modus === 'story' ? `Etage ${etage(F.geschafft)}. ` : '';
-  const kommt = { quiz: 'Am Ende des Rohrs wartet eine Frage.', fans: 'Weich den Ventilatoren aus. Unter den oberen musst du dich ducken.', hebel: 'Hinten zeigt eine Tafel, welche Hebel du nacheinander umlegen musst.' }[typ];
-  const hinweis0 = wo + (F.beruf === 'wiss' || typ === 'fans' ? kommt : 'Kriech weiter, Herr Feindlich ist hinter dir.') + (dunkel && !c.lampe ? ' Hier ist es dunkel.' : '');
+  const kommt = { quiz: 'Am Ende des Rohrs wartet eine Frage.', fans: 'Weich den Ventilatoren aus. Unter den oberen musst du dich ducken.', hebel: 'Hinten zeigt eine Tafel, welche Hebel du nacheinander umlegen musst.', toni: 'Trommel-Toni steht im Rohr! Lauf nur bei grünem Licht. Bei Rot bleib stehen, sonst dreht er dich zurück.' }[typ];
+  const hinweis0 = wo + (F.beruf === 'wiss' || typ === 'fans' || typ === 'toni' ? kommt : 'Kriech weiter, Herr Feindlich ist hinter dir.') + (dunkel && !c.lampe ? ' Hier ist es dunkel.' : '');
   let hinweis = typ === 'quiz' ? `${wo}${frage[0]} Kriech durch das richtige Gitter.` : hinweis0;
   for (;;) {
     const id = await gehe(hinweis, ziele); pruefe(nr);
@@ -1408,16 +1412,37 @@ async function abschnitt3d() {
     }
   }
 }
+function standSichern() {
+  spar.coins += F.coins; F.coins = 0;
+  if (F.modus === 'story') spar.stand = { g: F.geschafft, l: F.leben, d: F.dinge.slice(), b: F.beruf, loop: F.loop, dk: [...F.dokus], skip: F.skip, riegel: F.riegel, ablenkung: F.ablenkung, linse: F.linse };
+  sichern();
+}
+async function ruheEtage() {
+  const nr = laufNr, et = etage(F.geschafft);
+  await blende(1, 220); pruefe(nr);
+  const info = WELT.abschnitt({ typ: 'fans', n: 0, ruhe: true, etage: et, lampe: F.dinge.includes('lampe') });
+  F.laerm = 0; F.leben = Math.min(F.beruf === 'body' ? 4 : 3, F.leben + 1); standSichern(); hudZeigen(); beutelZeigen();
+  await blende(0, 260); pruefe(nr);
+  await gehe(`Ruhe-Etage ${et}. Hier findet dich niemand. Spielstand gespeichert, Lärm auf 0, ein Leben zurück.`, info.ziele); pruefe(nr);
+}
+function weiterspielen() {
+  const t = spar.stand; if (!t) return titel();
+  abbrechen(); spar.beruf = t.b; neueFlucht('story', t.loop);
+  Object.assign(F, { geschafft: t.g, leben: t.l, dinge: t.d.slice(), skip: t.skip, riegel: t.riegel, ablenkung: t.ablenkung, linse: t.linse, dokus: new Set(t.dk), doku: t.dk.length >= 4 });
+  $('pause').hidden = false; pfadWeg(); blendeWert = 1;
+  schachtTeil();
+}
 async function schacht3d() {
   const nr = laufNr; let ok = true;
   F.imSchacht = true; F.leiseBis = F.stillBis = 0; laufendesSpiel = true;
   modus3d(true); document.body.classList.add('schacht3d'); Ton.musik(false); letzteDing = 0; WELT.schachtStart(); hudZeigen();
   WELT.beiTreffer = () => { F.laerm = Math.min(100, F.laerm + fehlerLaerm() * .55); Ton.fehl(); Ton.pock(.8); dingZeigen('AUTSCH', 26); hudZeigen(); };
-  const ziel = F.modus === 'story' ? STOCK.length : Infinity;
+  const ziel = F.modus === 'story' ? 66 : Infinity;
   while (F.geschafft < ziel) {
     if (!(await abschnitt3d())) { ok = false; break; }
     pruefe(nr);
     F.jagd = false; F.geschafft++; F.coins += 2; F.laerm = Math.max(0, F.laerm - 15); hudZeigen();
+    if (F.geschafft % 11 === 0 && F.geschafft < ziel) { await ruheEtage(); pruefe(nr); continue; }
     if (F.geschafft < ziel) { leere(); setzeText('', 'Du rutschst weiter nach unten ...'); Ton.rutsch(); await warte(420); pruefe(nr); }
   }
   F.jagd = false; document.body.classList.remove('schacht3d'); $('beutel').innerHTML = '';
@@ -1426,7 +1451,7 @@ async function schacht3d() {
 }
 async function memeEnde() {
   const nr = laufNr;
-  const bonus = 20 + F.coins; spar.coins += bonus; spar.enden.meme = true; sichern();
+  const bonus = 20 + F.coins; spar.coins += bonus; spar.enden.meme = true; delete spar.stand; sichern();
   await blende(1, 400); pruefe(nr);
   if (WELT) { WELT.figur(figurDaten()); WELT.endeBild('frei'); modus3d(true); } else szene = freiheit;
   Ton.musik(true, false);
@@ -1438,7 +1463,7 @@ async function memeEnde() {
 }
 async function schleifenEnde(grund) {
   const nr = laufNr;
-  const bonus = F.coins; spar.coins += bonus; spar.enden.schleife = true; sichern();
+  const bonus = F.coins; spar.coins += bonus; spar.enden.schleife = true; if (grund === 'doku') delete spar.stand; sichern();
   await blende(1, 700); pruefe(nr);
   if (WELT) { WELT.figur(figurDaten()); WELT.endeBild('start'); modus3d(true); } else szene = () => aussen({ nurZimmer: true });
   await blende(0, 500); pruefe(nr);
@@ -1451,11 +1476,13 @@ async function schleifenEnde(grund) {
   Ton.ding(.5);
   const stufe = F.loop + 2;
   setzeText(HFE, `„Du warst schon mal hier, Flitzpiepe ...“ Die Zeitschleife beginnt von vorn: Stufe ${stufe}, alles wird schwieriger.${bonus ? ` +${bonus} Hotel-Coins` : ''}`);
-  const w = await wahl([{ t: 'Direkt in den Schacht', w: 's' }, { t: 'Alles noch mal von vorn', w: 'a', art: 'neben' }, { t: 'Zurück zum Titel', w: 't', art: 'leise' }]); pruefe(nr);
+  const stand = spar.stand && WELT ? [{ t: `Ab Etage ${66 - spar.stand.g} weiter`, w: 'r' }] : [];
+  const w = await wahl([...stand, { t: 'Direkt in den Schacht', w: 's' }, { t: 'Alles noch mal von vorn', w: 'a', art: 'neben' }, { t: 'Zurück zum Titel', w: 't', art: 'leise' }]); pruefe(nr);
   Ton.musik(false);
   if (WELT) { WELT.spricht(false); WELT.zustand({}); modus3d(false); }
   const loop = F.loop + 1;
   if (w === 't') return titel();
+  if (w === 'r') return weiterspielen();
   neueFlucht('story', loop, false);
   if (w === 's') return schachtTeil();
   storyLauf();
@@ -1514,7 +1541,8 @@ function titel() {
   setzeText('Hotel Freundlich', 'Die Nacht von Raum 67. Check ein, versuch zu schlafen und flieh durch den Lüftungsschacht.');
   leere(); $('knoepfe').className = 'titel';
   const eins = (t, f, o) => { const b = knopf(t, o); b.addEventListener('click', () => { Ton.klick(); f(); }); $('knoepfe').append(b); return b; };
-  eins('Geschichte spielen', () => figurMenue(() => berufMenue('story')), { klein: enden ? `Enden gefunden: ${enden} von 2` : 'Etwa 20 Minuten' });
+  if (spar.stand && WELT) eins('Weiterspielen', () => weiterspielen(), { klein: `Ruhe-Etage ${66 - spar.stand.g}` });
+  eins('Geschichte spielen', () => figurMenue(() => berufMenue('story')), { klein: enden ? `Enden gefunden: ${enden} von 2` : 'Etwa 45 Minuten' });
   eins('Endlos-Schacht', () => figurMenue(() => berufMenue('endlos')), { art: 'neben', klein: spar.rekord ? `Rekord: ${spar.rekord}` : 'Wie weit kommst du?' });
   eins('Einstellungen', () => einstellungen(), { art: 'neben', klein: 'Schreck-Schutz: ' + (spar.schreck ? 'an' : 'aus') });
   pfadWeg();

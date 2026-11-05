@@ -275,12 +275,15 @@
       "name": "Hotel Freundlich",
       "marke": "flaressa",
       "farbe": "#5b1a2e",
-      "status": "bald",
+      "status": "fertig",
       "pfad": "spiele/hotel-freundlich/",
-      "bilder": [],
+      "bilder": [
+        "apps/bilder/hotel-freundlich-1.webp",
+        "apps/bilder/hotel-freundlich-2.webp"
+      ],
       "punkte": [
         "3D-Grusel im Browser",
-        "Eigene Figuren",
+        "66 Etagen Flucht",
         "Ohne Werbung"
       ]
     }

@@ -505,6 +505,22 @@ function schachtTick(dt) {
     const trifft = f.art === 'seite' ? Math.abs(pos.x - f.g.position.x) < f.r + .14 : pos.y > .62;
     if (trifft) { immun = .65; pos.z = Math.min(.5, f.z + 1.9); if (Welt.beiTreffer) Welt.beiTreffer(); }
   });
+  if (E.rl) {
+    const r = E.rl, alt = r.phase; r.t += dt;
+    const ganz = r.trommel + r.warn + r.still, i = r.t % ganz;
+    r.phase = i < r.trommel ? 'trommel' : i < r.trommel + r.warn ? 'warn' : 'still';
+    if (r.phase === 'trommel') { const b = Math.floor(i / .42); if (b !== r.schlag) { r.schlag = b; if (Welt.beiBumm) Welt.beiBumm(); } }
+    if (r.phase !== alt) {
+      if (r.phase === 'warn' && Welt.beiStill) Welt.beiStill();
+      E.rlLicht.material.color.set(r.phase === 'trommel' ? 0x35c46a : r.phase === 'warn' ? 0xf0b030 : 0xe03020);
+    }
+    const ziel = r.phase === 'still' ? 0 : Math.PI;
+    r.m.g.rotation.y += winkelNorm(ziel - r.m.g.rotation.y) * Math.min(1, dt * 9);
+    E.tempo = r.phase === 'trommel' ? 15 : 0;
+    r.m.arme[0].rotation.x = Math.sin(zeit * E.tempo) * .4; r.m.arme[1].rotation.x = -Math.sin(zeit * E.tempo) * .4;
+    const bewegt = Math.hypot(pos.x - r.ax, pos.z - r.az) > .004; r.ax = pos.x; r.az = pos.z;
+    if (r.phase === 'still' && bewegt && !auto && immun <= 0) { immun = 1.4; pos.z = Math.min(.5, pos.z + 3); r.ax = pos.x; r.az = pos.z; if (Welt.beiTreffer) Welt.beiTreffer(); }
+  }
   if (E.endeZ !== null && E.endeZ !== undefined && pos.z < E.endeZ && Welt.beiEnde) { const f = Welt.beiEnde; Welt.beiEnde = null; f(); }
   if (E.folge) {
     E.fzeit += dt;
@@ -856,7 +872,7 @@ const markeMat = () => new THREE.SpriteMaterial({
 
 /* ---------- Schnittstelle ---------- */
 export const Welt = {
-  Z, beiNah: null, beiBetreten: null, beiEnde: null, beiTreffer: null, beiSchritt: null,
+  Z, beiNah: null, beiBetreten: null, beiBumm: null, beiStill: null, beiEnde: null, beiTreffer: null, beiSchritt: null,
   start(el, grafikEinfach) {
     einfach = grafikEinfach;
     try { r = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' }); }
@@ -872,6 +888,7 @@ export const Welt = {
     baueLobby(); baueAufzug(); baueFlur(); baueZimmer(); baueSchacht(); baueSaal(); baueKammer(); baueBad(); baueAussen();
     E.fig = baueFigur();
     glocke = baueGlocke(); toni = baueToni();
+    E.sToni = baueToni(); E.sToni.g.visible = false; orte.schacht.g.add(E.sToni.g);
     E.sG = baueGlocke(); E.sG.setz(1); E.sG.g.visible = false; orte.schacht.g.add(E.sG.g);
     orte.flur.g.add(glocke.g, toni.g); glocke.g.visible = toni.g.visible = false;
     Object.values(orte).forEach(o => { o.g.visible = false; szene.add(o.g); });
@@ -903,7 +920,8 @@ export const Welt = {
   },
   nah() { return nahId; },
   wo() { return [pos.x, pos.z, yaw]; },
-  stopp() { auto = null; frei = false; tweens.length = 0; Welt.ziele([]); E.spricht = false; E.fans = []; E.endeZ = null; E.folge = null; if (E.sG) Welt.feindWeg(); tempoJetzt = TEMPO; },
+  rlPhase() { return E.rl ? E.rl.phase : ''; },
+  stopp() { auto = null; frei = false; tweens.length = 0; Welt.ziele([]); E.spricht = false; E.fans = []; E.endeZ = null; E.folge = null; E.rl = null; if (E.sToni) E.sToni.g.visible = false; if (E.sG) Welt.feindWeg(); tempoJetzt = TEMPO; },
   hin(z) { return new Promise(ok => { auto = { z: z.steh, ok }; }); },
   fokus(p, ms = 500) {
     const y0 = yaw, p0 = pitch, ziel = yawZu(p[0], p[2]), dw = winkelNorm(ziel - y0), pz = Math.atan2(p[1] - pos.y, Math.hypot(p[0] - pos.x, p[2] - pos.z));
@@ -935,7 +953,7 @@ export const Welt = {
   },
   feindVorne() {
     E.feindNah = true; const f = 1.35; E.sG.g.visible = true;
-    E.sG.g.position.set(pos.x - Math.sin(yaw) * f, .06, pos.z - Math.cos(yaw) * f); E.sG.g.rotation.y = yaw; E.sG.g.scale.setScalar(1.25);
+    E.sG.g.position.set(pos.x - Math.sin(yaw) * f, .34, pos.z - Math.cos(yaw) * f); E.sG.g.rotation.y = yaw; E.sG.g.scale.setScalar(1.25);
     pitch = 0;
   },
   feindWeg() { E.feindNah = false; E.sG.g.scale.setScalar(1); E.sG.g.visible = false; },
@@ -946,21 +964,32 @@ export const Welt = {
     const o = orte.schacht; auto = null;
     if (E.sek) { o.g.remove(E.sek); E.sek.traverse(m => { if (m.geometry) m.geometry.dispose(); if (m.material && m.material.map && m.material.frisch) m.material.map.dispose(); }); }
     const s = new THREE.Group(); E.sek = s; o.g.add(s);
-    E.fans = []; E.endeZ = null; E.folge = null; E.gZu = []; E.gSchild = []; E.hebelM = [];
-    const an = !c.dunkel, st = an ? 5 : 0, D = 2.4, H = 1.5, L = c.typ === 'fans' ? 6 + c.n * 5 : 9;
-    E.sLicht.forEach(l => { l.intensity = st; }); E.sLicht[0].position.z = -2; E.sLicht[1].position.z = -L * .55; E.sLicht[2].position.z = -L - 2;
+    E.fans = []; E.endeZ = null; E.folge = null; E.gZu = []; E.gSchild = []; E.hebelM = []; E.rl = null; E.sG.g.visible = false; E.sToni.g.visible = false;
+    const an = !c.dunkel, st = an ? 5 : 0, D = 2.4, H = 1.5, L = c.typ === 'toni' ? 19 : c.typ === 'fans' ? 6 + c.n * 5 : 9;
+    E.sLicht.forEach(l => { l.intensity = st; l.color.set(c.ruhe ? 0x7fe6a8 : 0xffc98a); }); E.sLicht[0].position.z = -2; E.sLicht[1].position.z = -L * .55; E.sLicht[2].position.z = -L - 2;
     E.sHemi.intensity = an ? .3 : .045; E.fackel.intensity = c.lampe ? 34 : 0;
     schachtKanal(s, 1, -L, D, H); schachtLampen(s, 1, -L, H, an);
     flaeche(D, H, E.sW, 0, H / 2, 1, s, 1, 1, Math.PI);
     const ziele = [];
-    if (c.typ === 'fans') {
+    if (c.typ === 'fans' || c.typ === 'toni') {
       flaeche(D, H, E.sW, 0, H / 2, -L - .8, s, 1, 1);
       schachtKanal(s, -L, -L - .8, D, H);
       const hl = new THREE.MeshBasicMaterial({ color: 0x000000 }); flaeche(2, 1.4, hl, 0, .016, -L - .1, s, 1, 1, 0, -Math.PI / 2);
       box(2.1, .03, .07, M({ color: 0xe0ac3f, roughness: .4 }), 0, .02, -L + .62, s, { schatten: false });
       o.frei = [[-.9, .9, -L - .5, .7]]; o.block = []; E.endeZ = -L + .25;
       ziele.push({ id: 'ausgang', ort: [0, 1, -L], steh: [0, -L], r: .4, weit: 'Zum Ausgang', nah: 'Weiter' });
-      for (let i = 0; i < c.n; i++) {
+      if (c.ruhe) {
+        const m = new THREE.MeshBasicMaterial({ map: schild('RUHE-ETAGE ' + c.etage, 640, 110, '#0e2a1c', '#9df0bf', 54, '#35c46a') }); m.frisch = true;
+        flaeche(1.5, .26, m, 0, 1.2, -L - .75, s);
+      }
+      if (c.typ === 'toni') {
+        const t = E.sToni; t.g.visible = true; t.g.position.set(0, 0, -L - .1); t.g.rotation.y = Math.PI; t.g.scale.setScalar(.76);
+        E.rlLicht = kug(.13, new THREE.MeshBasicMaterial({ color: 0x35c46a }), 0, 1.33, -L + 2.2, s, { schatten: false });
+        glueh(E.rlLicht, 0, 0, 0, 1.3);
+        E.rl = { m: t, t: 0, phase: 'trommel', schlag: -1, trommel: c.trommel, warn: c.warn, still: c.still, ax: 0, az: 0 };
+        E.endeZ = -L + 1.1;
+      }
+      for (let i = 0; i < (c.n || 0); i++) {
         const z = -5 - i * 5, geduckt = i % 3 === 1;
         if (geduckt) {
           [-.74, 0, .74].forEach(x => { const f = baueFan(.38); f.position.set(x, 1.1, z); s.add(f); E.fans.push({ g: f, z, art: 'oben', r: .38 }); });
