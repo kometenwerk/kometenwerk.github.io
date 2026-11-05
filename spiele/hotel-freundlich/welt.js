@@ -3,6 +3,7 @@
 import * as THREE from '../../shared/vendor/three-0.160.0/three.module.min.js';
 
 const AUGE = 1.6, TEMPO = 2.5;
+let augeZiel = AUGE, tempoJetzt = TEMPO, duckt = false, immun = 0, schrittAlt = 0;
 let r, szene, kamera, wurzel, uhr, env;
 const orte = {};
 let ort = 'lobby', frei = false, yaw = 0, pitch = 0, zeit = 0, schritt = 0;
@@ -433,9 +434,97 @@ function baueZimmer() {
   E.hemiZ = new THREE.HemisphereLight(0xffe4c0, 0x241410, .34); p.add(E.hemiZ);
 }
 
+/* Schacht: wird für jeden Abschnitt neu zusammengebaut */
+function baueSchacht() {
+  const p = new THREE.Group(); orte.schacht = { g: p, frei: [], block: [] };
+  const nieten = (a, b) => (c, w, h) => {
+    const z = zufall(5); c.fillStyle = a; c.fillRect(0, 0, w, h);
+    for (let i = 0; i < 700; i++) { c.fillStyle = `rgba(255,255,255,${z() * .035})`; c.fillRect(z() * w, z() * h, 1 + z() * 40, 1); c.fillStyle = `rgba(60,30,10,${z() * .06})`; c.fillRect(z() * w, z() * h, 3, 3 + z() * 26); }
+    c.strokeStyle = b; c.lineWidth = 5; c.strokeRect(0, 0, w, h); c.fillStyle = '#c7d0d8';
+    for (let i = 0; i < 8; i++) for (const [x, y] of [[16 + i * 66, 15], [16 + i * 66, h - 15], [15, 16 + i * 66], [w - 15, 16 + i * 66]]) { c.beginPath(); c.arc(x, y, 4, 0, 7); c.fill(); }
+  };
+  const t = tex(512, 512, nieten('#59636d', '#2d343b'));
+  E.sW = M({ map: t, bumpMap: t, bumpScale: 1.2, metalness: .75, roughness: .46, envMapIntensity: .5 });
+  const t2 = tex(512, 512, nieten('#39414a', '#1c2126'));
+  E.sB = M({ map: t2, metalness: .7, roughness: .55, envMapIntensity: .4 });
+  E.sR = M({ color: 0x77828d, metalness: .9, roughness: .38 });
+  E.sL = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 1.2, .75) });
+  E.sL0 = new THREE.MeshBasicMaterial({ color: 0x14171a });
+  E.sLicht = [punkt(p, 0, 1.2, -3, 8, 0xffc98a, 12), punkt(p, 0, 1.2, -9, 8, 0xffc98a, 12), punkt(p, 0, 1.8, -14, 8, 0xffc98a, 13)];
+  E.sHemi = new THREE.HemisphereLight(0xbfd2e6, 0x20160f, .3); p.add(E.sHemi);
+  E.fackel = new THREE.SpotLight(0xfff0d2, 0, 15, .55, .5, 1.2); E.fackel.position.set(.15, -.1, 0); E.fackel.target.position.set(0, 0, -3);
+  kamera.add(E.fackel, E.fackel.target);
+  p.fog = new THREE.Fog(0x07090c, 4, 21);
+}
+function schachtKanal(s, z0, z1, b, h) {
+  const l = z0 - z1, m = (z0 + z1) / 2;
+  flaeche(b, l, E.sB, 0, 0, m, s, b / 2, l / 2, 0, -Math.PI / 2);
+  flaeche(b, l, E.sW, 0, h, m, s, b / 2, l / 2, 0, Math.PI / 2);
+  flaeche(l, h, E.sW, -b / 2, h / 2, m, s, l / 2, h / 2, Math.PI / 2);
+  flaeche(l, h, E.sW, b / 2, h / 2, m, s, l / 2, h / 2, -Math.PI / 2);
+  for (let z = z0 - .6; z > z1; z -= 1.6) {
+    box(b, .07, .1, E.sR, 0, h - .035, z, s, { schatten: false }); box(b, .05, .1, E.sR, 0, .025, z, s, { schatten: false });
+    box(.07, h, .1, E.sR, -b / 2 + .035, h / 2, z, s, { schatten: false }); box(.07, h, .1, E.sR, b / 2 - .035, h / 2, z, s, { schatten: false });
+  }
+}
+function schachtLampen(s, z0, z1, h, an) {
+  for (let z = z0 - 3; z > z1; z -= 6) { zyl(.16, .16, .05, an ? E.sL : E.sL0, 0, h - .03, z, s, { schatten: false }); if (an) glueh(s, 0, h - .1, z, 1.4); }
+}
+function wandMitLoch(s, z, kammerB, h, lochB, lochH) {
+  const seite = (kammerB - lochB) / 2;
+  flaeche(seite, h, E.sW, -(lochB + seite) / 2, h / 2, z, s, seite / 2, h / 2, Math.PI);
+  flaeche(seite, h, E.sW, (lochB + seite) / 2, h / 2, z, s, seite / 2, h / 2, Math.PI);
+  flaeche(lochB, h - lochH, E.sW, 0, (h + lochH) / 2, z, s, lochB / 2, (h - lochH) / 2, Math.PI);
+}
+function baueFan(r) {
+  const g = new THREE.Group(), rot = new THREE.Group(); g.add(rot);
+  const blatt = M({ color: 0xb6c0c9, metalness: .9, roughness: .3 });
+  teil(new THREE.TorusGeometry(r, .035, 10, 36), M({ color: 0xd9a441, metalness: .9, roughness: .35 }), 0, 0, 0, g, { schatten: false });
+  for (let i = 0; i < 4; i++) { const a = new THREE.Group(); a.rotation.z = i * Math.PI / 2; rot.add(a); const b = box(r * .9, r * .32, .025, blatt, r * .5, 0, 0, a, { schatten: false }); b.rotation.x = .55; }
+  zyl(r * .17, r * .17, .1, M({ color: 0xd9a441, metalness: 1, roughness: .3 }), 0, 0, 0, g, { rx: Math.PI / 2, seg: 16, schatten: false });
+  g.userData.rot = rot; return g;
+}
+function schildZeile(text, w = 512, h = 170) {
+  return tex(w, h, c => {
+    c.fillStyle = '#14100c'; c.fillRect(0, 0, w, h); c.strokeStyle = '#e0ac3f'; c.lineWidth = 7; c.strokeRect(5, 5, w - 10, h - 10);
+    c.fillStyle = '#fbeed0'; let g = 56; c.textAlign = 'center'; c.textBaseline = 'middle';
+    const zeilen = () => { c.font = `800 ${g}px 'Baloo 2', sans-serif`; const o = [[]]; text.split(' ').forEach(t => { const n = [...o[o.length - 1], t].join(' '); if (c.measureText(n).width > w - 44 && o[o.length - 1].length) o.push([t]); else o[o.length - 1].push(t); }); return o; };
+    let z = zeilen(); while (g > 24 && (z.length * g * 1.08 > h - 26 || z.some(l => c.measureText(l.join(' ')).width > w - 40))) { g -= 3; z = zeilen(); }
+    z.forEach((l, i) => c.fillText(l.join(' '), w / 2, h / 2 + (i - (z.length - 1) / 2) * g * 1.08));
+  });
+}
+function schachtTick(dt) {
+  if (immun > 0) immun -= dt;
+  (E.fans || []).forEach(f => {
+    f.g.userData.rot.rotation.z += dt * 15;
+    if (f.art === 'seite') f.g.position.x = Math.sin(zeit * f.w + f.ph) * .62;
+    if (auto || immun > 0 || Math.abs(pos.z - f.z) > .42) return;
+    const trifft = f.art === 'seite' ? Math.abs(pos.x - f.g.position.x) < f.r + .14 : pos.y > .62;
+    if (trifft) { immun = .65; pos.z = Math.min(.5, f.z + 1.9); if (Welt.beiTreffer) Welt.beiTreffer(); }
+  });
+  if (E.endeZ !== null && E.endeZ !== undefined && pos.z < E.endeZ && Welt.beiEnde) { const f = Welt.beiEnde; Welt.beiEnde = null; f(); }
+  if (E.folge) {
+    E.fzeit += dt;
+    const schrittNr = Math.floor(E.fzeit / E.takt), n = E.folge.length * 2 + 3, i = schrittNr % n;
+    if (i !== E.fletzt) { E.fletzt = i; hebelTafel(i % 2 === 0 && i / 2 < E.folge.length ? E.folge[i / 2] : -1, Math.floor(i / 2) + 1); }
+  }
+  if (E.sG.g.visible && !E.feindNah) E.sG.g.position.y = .08 + Math.abs(Math.sin(zeit * 9)) * .1;
+}
+const ZEICHEN = ['★', '●', '▲', '■'];
+function hebelTafel(sym, nr) {
+  const c = E.hbT.image.getContext('2d'), w = 512, h = 256;
+  c.fillStyle = '#100b08'; c.fillRect(0, 0, w, h); c.strokeStyle = '#e0ac3f'; c.lineWidth = 8; c.strokeRect(6, 6, w - 12, h - 12);
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  if (sym >= 0) { c.fillStyle = '#a9dcc8'; c.font = "800 180px 'Baloo 2', sans-serif"; c.fillText(ZEICHEN[sym], w / 2, h / 2 + 14); c.fillStyle = '#ffd478'; c.font = '30px Bungee'; c.fillText(String(nr), 44, 44); }
+  else { c.fillStyle = '#5a5146'; c.font = '36px Bungee'; c.fillText('...', w / 2, h / 2); }
+  E.hbT.needsUpdate = true;
+}
+
 /* Ziele im Spiel: ort = Markierung, steh = wo man hinläuft, blick = wohin man schaut */
 const Z = {
   rezeption: { id: 'rezeption', ort: [0, 1.95, -3.3], steh: [0, -1.9], blick: [0, 1.5, -3.2], weit: 'Zur Rezeption gehen', nah: 'Mit Herrn Freundlich sprechen', r: 2.3 },
+  knopf: { id: 'knopf', ort: [.98, 1.75, -1.1], steh: [.45, -.6], blick: [.98, 1.3, -1.17], weit: 'Zum Knopf gehen', nah: 'Knopf 67 drücken', r: 1.4 },
+  aussteigen: { id: 'aussteigen', ort: [0, 1.5, -1.1], steh: [0, -.75], blick: [0, 1.5, -1.2], weit: 'Zur Tür gehen', nah: 'Aussteigen', r: 1 },
   aufzug: { id: 'aufzug', ort: [7.6, 2.2, 0], steh: [6.6, 0], blick: [8, 1.5, 0], weit: 'Zum Aufzug gehen', nah: 'Aufzug nehmen', r: 2.3 },
   tuer67: { id: 'tuer67', ort: [0, 2.3, -8.7], steh: [0, -7.6], blick: [0, 1.5, -9], weit: 'Zu Raum 67 gehen', nah: 'Mit dem Schlüssel öffnen', r: 1.9 },
   klo: { id: 'klo', ort: [-2.5, 2.3, -10.5], steh: [-1.7, -10.5], blick: [-2.7, 1.3, -10.5], weit: 'Zum Klo gehen', nah: 'Aufs Klo gehen', r: 1.7 },
@@ -490,7 +579,7 @@ function bewege(dt) {
   v -= stick.y; s += stick.x;
   const n = Math.hypot(v, s); if (n > 1) { v /= n; s /= n; }
   if (n < .03) return false;
-  const sy = Math.sin(yaw), cy = Math.cos(yaw), sp = TEMPO * dt;
+  const sy = Math.sin(yaw), cy = Math.cos(yaw), sp = tempoJetzt * dt;
   const dx = (-sy * v + cy * s) * sp, dz = (-cy * v - sy * s) * sp;
   if (darf(pos.x + dx, pos.z)) pos.x += dx;
   if (darf(pos.x, pos.z + dz)) pos.z += dz;
@@ -517,7 +606,9 @@ function schleife() {
       if (l < .07) { const a = auto; auto = null; a.ok(); }
       else { const sp = Math.min(l, TEMPO * 1.25 * dt); pos.x += dx / l * sp; pos.z += dz / l * sp; lauf = true; }
     } else if (frei) lauf = bewege(dt);
-    if (lauf) schritt += dt * 9;
+    if (lauf) { schritt += dt * 9; if (Math.floor(schritt / Math.PI) !== schrittAlt) { schrittAlt = Math.floor(schritt / Math.PI); if (Welt.beiSchritt) Welt.beiSchritt(ort === 'schacht'); } }
+    pos.y += ((ort === 'schacht' ? (duckt || tasten.c || tasten.control ? .42 : .86) : augeZiel) - pos.y) * Math.min(1, dt * 11);
+    if (ort === 'schacht') schachtTick(dt);
     if (titelModus) {
       const w = zeit * .13; pos.set(Math.sin(w) * 1.2, 1.5, -1.5 + Math.cos(w) * .3); yaw = yawZu(0, -3.3) ; pitch = -.03;
     }
@@ -542,13 +633,15 @@ function schleife() {
     });
     if (wild) { const a = Math.sin(zeit * 21) * Math.sin(zeit * 6.7) > .25 ? .3 : 1; E.lobbyLicht.forEach(l => { l.userData.st === undefined && (l.userData.st = l.intensity); l.intensity = l.userData.st * a * .6; }); }
     /* Ziele */
-    let beste = null, bd = 9;
+    let beste = null, bd = 9, drin = null;
     ziele.forEach((z, i) => {
       const m = marken[i], d = Math.hypot(z.steh[0] - pos.x, z.steh[1] - pos.z), d2 = Math.hypot(z.ort[0] - pos.x, z.ort[2] - pos.z);
       m.scale.setScalar(.2 + Math.sin(zeit * 4) * .03); m.position.y = z.ort[1] + Math.sin(zeit * 2.6) * .05;
       if (Math.min(d, d2) < z.r && Math.min(d, d2) < bd) { bd = Math.min(d, d2); beste = z.id; }
+      if (z.auto && d < .55 && !auto) drin = z.id;
     });
     if (beste !== nahId) { nahId = beste; if (Welt.beiNah) Welt.beiNah(nahId); }
+    if (drin && Welt.beiBetreten) Welt.beiBetreten(drin);
   }
   if (document.body.classList.contains('d3')) r.render(szene, kamera);
   requestAnimationFrame(schleife);
@@ -563,7 +656,7 @@ const markeMat = () => new THREE.SpriteMaterial({
 
 /* ---------- Schnittstelle ---------- */
 export const Welt = {
-  Z, beiNah: null,
+  Z, beiNah: null, beiBetreten: null, beiEnde: null, beiTreffer: null, beiSchritt: null,
   start(el, grafikEinfach) {
     einfach = grafikEinfach;
     try { r = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' }); }
@@ -575,8 +668,10 @@ export const Welt = {
     szene = new THREE.Scene(); szene.background = new THREE.Color(0);
     kamera = new THREE.PerspectiveCamera(66, 1, .05, 60); uhr = new THREE.Clock();
     env = umgebung();
-    baueLobby(); baueAufzug(); baueFlur(); baueZimmer();
+    szene.add(kamera);
+    baueLobby(); baueAufzug(); baueFlur(); baueZimmer(); baueSchacht();
     glocke = baueGlocke(); toni = baueToni();
+    E.sG = baueGlocke(); E.sG.setz(1); E.sG.g.visible = false; orte.schacht.g.add(E.sG.g);
     orte.flur.g.add(glocke.g, toni.g); glocke.g.visible = toni.g.visible = false;
     Object.values(orte).forEach(o => { o.g.visible = false; szene.add(o.g); });
     /* Zimmer und Flur gehören zusammen (für den Türspion) */
@@ -594,7 +689,7 @@ export const Welt = {
     orte[n].g.visible = true;
     if (n === 'flur' || n === 'zimmer') { orte.flur.g.visible = orte.zimmer.g.visible = true; szene.fog = orte.flur.g.fog; }
     else szene.fog = orte[n].g.fog || null;
-    pos.set(x, AUGE, z); yaw = ry; pitch = 0; titelModus = false; if (n !== 'flur') E.fov = 0;
+    pos.set(x, n === 'schacht' ? .86 : AUGE, z); yaw = ry; pitch = 0; titelModus = false; if (n !== 'flur') E.fov = 0;
     groesse();
   },
   titel() { Welt.ort('lobby', 0, -1.6, 0); titelModus = true; frei = false; },
@@ -606,7 +701,7 @@ export const Welt = {
   },
   nah() { return nahId; },
   wo() { return [pos.x, pos.z]; },
-  stopp() { auto = null; frei = false; tweens.length = 0; Welt.ziele([]); E.spricht = false; },
+  stopp() { auto = null; frei = false; tweens.length = 0; Welt.ziele([]); E.spricht = false; E.fans = []; E.endeZ = null; E.folge = null; if (E.sG) Welt.feindWeg(); tempoJetzt = TEMPO; },
   hin(z) { return new Promise(ok => { auto = { z: z.steh, ok }; }); },
   fokus(p, ms = 500) {
     const y0 = yaw, p0 = pitch, ziel = yawZu(p[0], p[2]), dw = winkelNorm(ziel - y0), pz = Math.atan2(p[1] - pos.y, Math.hypot(p[0] - pos.x, p[2] - pos.z));
@@ -614,6 +709,96 @@ export const Welt = {
   },
   tween(ms, f) { return new Promise(ok => tweens.push({ a: 0, d: ms / 1000, f, ok })); },
   stock,
+  schachtStart() { Welt.ort('schacht', 0, 0, 0); duckt = false; immun = 0; },
+  ducken(b) { duckt = b === undefined ? !duckt : b; return duckt; },
+  tempoSetzen(f) { tempoJetzt = TEMPO * f; },
+  jaeger(l) {
+    const z = pos.z + 1.7 + (100 - l) / 100 * 15;
+    E.sG.g.visible = z < .5; E.sG.g.position.x = 0; E.sG.g.position.z = z; E.sG.g.rotation.y = Math.PI;
+  },
+  feindVorne() {
+    E.feindNah = true; const f = 1.35; E.sG.g.visible = true;
+    E.sG.g.position.set(pos.x - Math.sin(yaw) * f, .06, pos.z - Math.cos(yaw) * f); E.sG.g.rotation.y = yaw; E.sG.g.scale.setScalar(1.25);
+    pitch = 0;
+  },
+  feindWeg() { E.feindNah = false; E.sG.g.scale.setScalar(1); E.sG.g.visible = false; },
+  gitterZu(i) { E.gZu[i].visible = true; E.gSchild[i].material.color.set(0x7a3030); },
+  hebel(i) { const a = E.hebelM[i]; return Welt.tween(320, e => { a.rotation.x = -.7 + Math.sin(e * Math.PI) * 1.4; }); },
+  lukeAuf() { E.luke.visible = true; },
+  abschnitt(c) {
+    const o = orte.schacht; auto = null;
+    if (E.sek) { o.g.remove(E.sek); E.sek.traverse(m => { if (m.geometry) m.geometry.dispose(); if (m.material && m.material.map && m.material.frisch) m.material.map.dispose(); }); }
+    const s = new THREE.Group(); E.sek = s; o.g.add(s);
+    E.fans = []; E.endeZ = null; E.folge = null; E.gZu = []; E.gSchild = []; E.hebelM = [];
+    const an = !c.dunkel, st = an ? 5 : 0, D = 2.4, H = 1.5, L = c.typ === 'fans' ? 6 + c.n * 5 : 9;
+    E.sLicht.forEach(l => { l.intensity = st; }); E.sLicht[0].position.z = -2; E.sLicht[1].position.z = -L * .55; E.sLicht[2].position.z = -L - 2;
+    E.sHemi.intensity = an ? .3 : .045; E.fackel.intensity = c.lampe ? 34 : 0;
+    schachtKanal(s, 1, -L, D, H); schachtLampen(s, 1, -L, H, an);
+    flaeche(D, H, E.sW, 0, H / 2, 1, s, 1, 1, Math.PI);
+    const ziele = [];
+    if (c.typ === 'fans') {
+      flaeche(D, H, E.sW, 0, H / 2, -L - .8, s, 1, 1);
+      schachtKanal(s, -L, -L - .8, D, H);
+      const hl = new THREE.MeshBasicMaterial({ color: 0x000000 }); flaeche(2, 1.4, hl, 0, .016, -L - .1, s, 1, 1, 0, -Math.PI / 2);
+      box(2.1, .03, .07, M({ color: 0xe0ac3f, roughness: .4 }), 0, .02, -L + .62, s, { schatten: false });
+      o.frei = [[-.9, .9, -L - .5, .7]]; o.block = []; E.endeZ = -L + .25;
+      ziele.push({ id: 'ausgang', ort: [0, 1, -L], steh: [0, -L], r: .4, weit: 'Zum Ausgang', nah: 'Weiter' });
+      for (let i = 0; i < c.n; i++) {
+        const z = -5 - i * 5, geduckt = i % 3 === 1;
+        if (geduckt) {
+          [-.74, 0, .74].forEach(x => { const f = baueFan(.38); f.position.set(x, 1.1, z); s.add(f); E.fans.push({ g: f, z, art: 'oben', r: .38 }); });
+          box(D, .04, .08, E.sR, 0, .72, z, s, { schatten: false });
+        } else {
+          const f = baueFan(.62); f.position.set(0, .75, z); s.add(f); E.fans.push({ g: f, z, art: 'seite', r: .62, w: c.tempo, ph: i * 2.1 });
+        }
+      }
+    } else {
+      const Kb = 9.2, Kh = 2.5, z0 = -L, z1 = -L - 6;
+      flaeche(Kb, 6, E.sB, 0, 0, z0 - 3, s, Kb / 2, 3, 0, -Math.PI / 2); flaeche(Kb, 6, E.sW, 0, Kh, z0 - 3, s, Kb / 2, 3, 0, Math.PI / 2);
+      flaeche(6, Kh, E.sW, -Kb / 2, Kh / 2, z0 - 3, s, 3, Kh / 2, Math.PI / 2); flaeche(6, Kh, E.sW, Kb / 2, Kh / 2, z0 - 3, s, 3, Kh / 2, -Math.PI / 2);
+      wandMitLoch(s, z0, Kb, Kh, D, H); flaeche(Kb, Kh, E.sW, 0, Kh / 2, z1, s, Kb / 2, Kh / 2);
+      if (an) { zyl(.24, .24, .05, E.sL, 0, Kh - .03, z0 - 3, s, { schatten: false }); glueh(s, 0, Kh - .12, z0 - 3, 2.4); }
+      o.frei = [[-.9, .9, z0 - .1, .7], [-4.2, 4.2, z1 + .3, z0 - .1]]; o.block = [];
+      if (c.typ === 'quiz') {
+        c.antworten.forEach((a, i) => {
+          const x = -3.3 + i * 2.2;
+          flaeche(1.5, 1.3, new THREE.MeshBasicMaterial({ color: 0x010102 }), x, .66, z1 + .02, s);
+          box(1.66, .08, .08, E.sR, x, 1.34, z1 + .05, s, { schatten: false }); box(.08, 1.34, .08, E.sR, x - .8, .67, z1 + .05, s, { schatten: false }); box(.08, 1.34, .08, E.sR, x + .8, .67, z1 + .05, s, { schatten: false });
+          const m = new THREE.MeshBasicMaterial({ map: schildZeile(a) }); m.frisch = true;
+          const sc = flaeche(1.9, .62, m, x, 1.82, z1 + .03, s); E.gSchild.push(sc);
+          const zu = new THREE.Group(); zu.visible = false; zu.position.set(x, .66, z1 + .07); s.add(zu); E.gZu.push(zu);
+          for (let k = 0; k < 7; k++) box(.05, 1.3, .05, M({ color: 0x8a2a2a, metalness: .7, roughness: .4 }), -.66 + k * .22, 0, 0, zu, { schatten: false });
+          ziele.push({ id: 'a' + i, ort: [x, 1.5, z1 + .3], steh: [x, z1 + .55], r: 1.25, auto: true, weit: 'Zu: ' + a, nah: 'Hier hinein: ' + a });
+        });
+      } else {
+        E.hbT = tex(512, 256, () => {}); const m = new THREE.MeshBasicMaterial({ map: E.hbT }); m.frisch = true; E.fletzt = -1; hebelTafel(-1, 0);
+        flaeche(2.6, 1.3, m, 0, 1.75, z1 + .03, s);
+        [-3, -1, 1, 3].forEach((x, i) => {
+          box(.6, .9, .1, E.sR, x, .7, z1 + .06, s);
+          const sch = new THREE.MeshBasicMaterial({ map: tex(128, 128, q => { q.fillStyle = '#14100c'; q.fillRect(0, 0, 128, 128); q.fillStyle = '#a9dcc8'; q.font = "800 96px 'Baloo 2', sans-serif"; q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillText(ZEICHEN[i], 64, 72); }) }); sch.frisch = true;
+          flaeche(.5, .5, sch, x, 1.4, z1 + .04, s);
+          const a = new THREE.Group(); a.position.set(x, .5, z1 + .14); a.rotation.x = -.7; s.add(a); E.hebelM.push(a);
+          zyl(.03, .03, .55, M({ color: 0xc9d0d6, metalness: 1, roughness: .3 }), 0, .27, 0, a, { seg: 10 }); kug(.075, M({ color: [0xc23b3b, 0xd9a441, 0x2c8a5a, 0x3f6fa8][i], roughness: .35 }), 0, .56, 0, a);
+          ziele.push({ id: 'h' + i, ort: [x, 1.5, z1 + .4], steh: [x, z1 + 1], r: 1.15, weit: 'Zu Hebel ' + ZEICHEN[i], nah: 'Hebel ' + ZEICHEN[i] + ' umlegen' });
+        });
+        E.luke = flaeche(1.6, 1.6, new THREE.MeshBasicMaterial({ color: 0 }), 0, .014, z0 - 2.4, s, 1, 1, 0, -Math.PI / 2); E.luke.visible = false;
+        ziele.push({ id: 'luke', ort: [0, 1, z0 - 2.4], steh: [0, z0 - 2.4], r: 1, auto: true, weit: 'Zur Luke', nah: 'In die Luke springen', spaeter: true });
+        E.takt = c.takt; E.fzeit = 0; E.folge = c.folge;
+      }
+    }
+    if (c.fund) {
+      const sx = c.fund.seite * .78, z = -3;
+      box(.34, .24, .26, M({ color: 0xd9a441, metalness: .3, roughness: .45 }), sx, .14, z, s); E.fundG = glueh(s, sx, .32, z, .7, 0x88aa66);
+      ziele.push({ id: 'fund', ort: [sx, .62, z], steh: [sx * .5, z], r: 1.15, weit: 'Zu: ' + c.fund.n, nah: c.fund.nah });
+    }
+    if (c.ei) {
+      const m = new THREE.MeshBasicMaterial({ map: tex(128, 128, q => { q.fillStyle = '#efe6cf'; q.fillRect(0, 0, 128, 128); q.fillStyle = '#2a1a14'; for (let i = 0; i < 6; i++) q.fillRect(14, 20 + i * 16, 80 + i * 4, 5); }) }); m.frisch = true;
+      flaeche(.34, .34, m, 1.16, .8, -6.5, s, 1, 1, -Math.PI / 2);
+      ziele.push({ id: 'ei', ort: [1, 1.2, -6.5], steh: [.5, -6.5], r: 1.05, weit: 'Zur Notiz', nah: 'Notiz lesen' });
+    }
+    pos.set(0, .86, 0); yaw = 0; pitch = 0; duckt = false;
+    return { ziele };
+  },
   kabine(auf) { const a = auf ? 0 : 1; return Welt.tween(900, e => { const k = auf ? e : 1 - e; E.kT[0].position.x = -.47 - k * .9; E.kT[1].position.x = .47 + k * .9; }); },
   lobbyTuer(auf) { return Welt.tween(800, e => { const k = auf ? e : 1 - e; E.lT[0].position.z = -.5 - k * .96; E.lT[1].position.z = .5 + k * .96; }); },
   kalender(b) { E.kalM.map = b ? E.kal1 : E.kal0; E.kalM.needsUpdate = true; },

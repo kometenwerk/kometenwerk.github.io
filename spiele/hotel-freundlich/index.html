@@ -30,6 +30,8 @@
     </div>
     <button id="pause" type="button" aria-label="Pause" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button>
     <div id="ding" aria-hidden="true"></div>
+    <div id="beutel" aria-label="Gegenstände und Fähigkeiten"></div>
+    <button id="duck" type="button" aria-label="Ducken">Ducken</button>
   </div>
   <section id="tafel" aria-live="polite">
     <div id="uhr" hidden><i></i></div>
@@ -43,10 +45,11 @@
 <dialog id="einst" aria-labelledby="einst-t">
   <h2 id="einst-t">Einstellungen</h2>
   <label class="zeile"><input type="checkbox" id="e-schreck"><span><b>Schreck-Schutz</b><small>Warnt vor Schreckmomenten, macht sie leiser und ohne Wackeln.</small></span></label>
+  <label class="zeile"><input type="checkbox" id="e-auto"><span><b>Automatisch laufen</b><small>Für alle, denen das Laufen schwerfällt: Knöpfe bringen dich zum Ziel.</small></span></label>
   <label class="zeile"><input type="checkbox" id="e-einfach"><span><b>Einfache Grafik</b><small>Für ältere Handys: weniger Schatten, flüssiger.</small></span></label>
   <label class="zeile"><input type="checkbox" id="e-ton"><span><b>Geräusche</b></span></label>
   <label class="zeile"><input type="checkbox" id="e-musik"><span><b>Musik</b></span></label>
-  <fieldset><legend>Reaktionszeit</legend>
+  <fieldset><legend>Schwierigkeit</legend>
     <label><input type="radio" name="zeit" value="leicht"><span>Leicht</span></label>
     <label><input type="radio" name="zeit" value="normal"><span>Normal</span></label>
     <label><input type="radio" name="zeit" value="schwer"><span>Schwer</span></label>

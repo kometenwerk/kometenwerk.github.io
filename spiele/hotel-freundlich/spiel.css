@@ -111,3 +111,14 @@ body.laufen #knoepfe{grid-template-columns:1fr;padding-top:8px}
 body.laufen .knopf{min-height:46px;font-size:16px;padding:7px 12px}
 body.laufen.touch #stick{display:block}
 #tipp{position:absolute;left:50%;top:12px;transform:translateX(-50%);max-width:calc(100% - 80px);padding:5px 12px;border-radius:7px;background:#0a0c10d9;color:var(--papier);font-size:15px;line-height:1.25;z-index:5;text-align:center}
+
+.knopf[hidden]{display:none}
+#hud{z-index:5}
+#beutel{display:none;position:absolute;left:8px;right:8px;top:58px;gap:6px;flex-wrap:wrap;z-index:5;line-height:1.1}
+#beutel button{min-height:40px;padding:5px 11px;border:2px solid var(--messing);border-radius:7px;background:#1a070de6;color:var(--papier);font:600 15px 'Baloo 2',sans-serif;cursor:pointer}
+#beutel button:disabled{border-color:#7c6a4a;color:#d7bfa8;cursor:default}
+#duck{display:none;position:absolute;right:14px;bottom:calc(16px + env(safe-area-inset-bottom,0px));width:84px;height:62px;border:2px solid var(--messing);border-radius:12px;background:#1a070de6;color:var(--papier);font:700 16px 'Baloo 2',sans-serif;z-index:6;cursor:pointer}
+#duck[aria-pressed=true]{background:var(--messing);color:var(--tinte)}
+body.schacht3d #beutel{display:flex}
+body.schacht3d #duck{display:block}
+body.schacht3d.laufen #tafel{bottom:calc(88px + env(safe-area-inset-bottom,0px))}
