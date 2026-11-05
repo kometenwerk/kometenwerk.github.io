@@ -2443,6 +2443,33 @@
    "dauer": 2.56,
    "hash": "06401fc7e3f4",
    "gefuehl": "frech"
+  },
+  {
+   "id": "app-hotelfreundlich-1",
+   "gruppe": "app_hotelfreundlich",
+   "text": "Leute, bei FLARESSA entsteht gerade ein neues Grusel-Spiel: Hotel Freundlich!",
+   "datei": "ton/app-hotelfreundlich-1.mp3",
+   "dauer": 4.39,
+   "hash": "08816ddb1d05",
+   "nr": 1
+  },
+  {
+   "id": "app-hotelfreundlich-2",
+   "gruppe": "app_hotelfreundlich",
+   "text": "Ihr checkt in Raum 67 ein, und die Rezeptionsklingel ist nicht so nett, wie sie aussieht.",
+   "datei": "ton/app-hotelfreundlich-2.mp3",
+   "dauer": 5.3,
+   "hash": "748803015d7a",
+   "nr": 2
+  },
+  {
+   "id": "app-hotelfreundlich-3",
+   "gruppe": "app_hotelfreundlich",
+   "text": "Dann müsst ihr durch den Lüftungsschacht fliehen. Ohne Werbung, im Browser.",
+   "datei": "ton/app-hotelfreundlich-3.mp3",
+   "dauer": 3.74,
+   "hash": "26b67cb2c346",
+   "nr": 3
   }
  ]
 }
