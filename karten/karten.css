@@ -82,9 +82,11 @@ body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;padding-bo
 /* Marker */
 .kk-marker{width:22px;height:22px;border-radius:50%;border:4px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);background:var(--app)}
 .kk-marker.ziel{border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--accent);width:26px;height:26px}
-.kk-meldung-pin{font-size:18px;width:30px;height:30px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.35);cursor:pointer;border:2px solid #f59e0b}
+.kk-meldung-pin{font-size:14px;width:26px;height:26px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.35);cursor:pointer;border:2px solid #f59e0b}
 .kk-meldung-pin.stau{border-color:#dc2626}
 .kk-meldung-pin.sperrung{border-color:#7f1d1d}
 .kk-ich{width:18px;height:18px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 8px rgba(37,99,235,.2)}
 .maplibregl-popup-content{background:var(--card);color:var(--ink);border-radius:12px;font-family:inherit;max-width:280px}
 .maplibregl-popup-tip{display:none}
+.kk-mehr{margin:6px 0}
+.kk-mehr summary{cursor:pointer;padding:8px 0;color:var(--muted);font-size:.92rem}

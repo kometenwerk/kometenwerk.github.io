@@ -77,16 +77,22 @@ export async function meldungenLaden(bbox, { kopie = "daten/verkehr.json", holen
   }
 }
 
-/** Welche Meldungen liegen an der Route? */
+/** Welche Meldungen liegen an der Route – und gelten für unsere Fahrtrichtung? */
 export function meldungenAnRoute(route, meldungen, weite = 300) {
   if (!route?.punkte?.length) return [];
   const p = route.punkte;
   return meldungen.filter(m => {
+    let best = -1, bd = weite;
     for (let i = 0; i < p.length; i += 1) {
       if (Math.abs(p[i][0] - m.lat) > 0.01) continue;
-      if (abstand(p[i][0], p[i][1], m.lat, m.lon) < weite) return true;
+      const d = abstand(p[i][0], p[i][1], m.lat, m.lon);
+      if (d < bd) { bd = d; best = i; }
     }
-    return false;
+    if (best < 0) return false;
+    if (m.grad == null || p.length < 2) return true;
+    const a = p[Math.max(0, best - 1)], b = p[Math.min(p.length - 1, best + 1)];
+    const diff = Math.abs(((richtung(a[0], a[1], b[0], b[1]) - m.grad + 540) % 360) - 180);
+    return diff <= 80;
   });
 }
 
@@ -107,9 +113,10 @@ export function routeErklaeren(route, anRoute = [], modus = "auto", vergleich = 
   const haupt = (route.strassen || []).slice(0, 3).map(x => x.name);
   if (haupt.length) s.push(`Hauptsächlich über ${LISTE(haupt)}.`);
   else if (modus === "auto") s.push("Nur über kleine Straßen.");
-  const st = anRoute.filter(m => m.art === "stau"), bs = anRoute.filter(m => m.art === "baustelle"), sp = anRoute.filter(m => m.art === "sperrung"), wa = anRoute.filter(m => m.art === "warnung");
+  const st = anRoute.filter(m => m.art === "stau"), bs = anRoute.filter(m => m.art === "baustelle"), sp = anRoute.filter(m => m.art === "sperrung" && m.gesperrt), ei = anRoute.filter(m => m.art === "sperrung" && !m.gesperrt), wa = anRoute.filter(m => m.art === "warnung");
   if (st.length) s.push(`Achtung: ${st.length === 1 ? "Stau" : st.length + " Staus"} auf der Strecke${st[0].strasse ? " (" + st[0].strasse + ")" : ""} – schon eingerechnet, so gut es geht.`);
   if (sp.length) s.push(`${sp.length === 1 ? "Eine Sperrung liegt" : sp.length + " Sperrungen liegen"} in der Nähe der Strecke.`);
+  if (ei.length) s.push(`${ei.length === 1 ? "Eine Einschränkung" : ei.length + " Einschränkungen"} (z. B. gesperrte Auffahrt oder Fahrstreifen) in der Nähe.`);
   if (bs.length) s.push(`${bs.length === 1 ? "Eine Baustelle" : bs.length + " Baustellen"} auf dem Weg${bs[0].strasse ? " (" + [...new Set(bs.map(b => b.strasse).filter(Boolean))].join(", ") + ")" : ""}.`);
   if (wa.length) s.push(`${wa.length === 1 ? "Eine Warnung" : wa.length + " Warnungen"} unterwegs – unten aufgelistet.`);
   if (vergleich && vergleich.sekunden - route.sekunden > 120) s.push(`Wir haben dich um die Meldungen herumgeführt: ${zeitText(vergleich.sekunden - route.sekunden)} schneller als der direkte Weg heute.`);

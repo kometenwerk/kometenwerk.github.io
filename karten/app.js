@@ -92,6 +92,7 @@ function routeZeichnen() {
     const b = new maplibregl.LngLatBounds();
     r.punkte.forEach(p => b.extend([p[1], p[0]]));
     karte.stop();
+    karte.setPadding({ top: 0, right: 0, bottom: 0, left: 0 }); // flyTo merkt sich den Rand, sonst passt die Route nicht
     karte.fitBounds(b, { padding: randAbstand(), duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 600, maxZoom: 16 });
   }
 }
@@ -290,6 +291,11 @@ async function routeRechnen() {
   ergebnisZeigen();
 }
 
+const meldKarte = m => `<div class="kk-meldung"><span class="sym" aria-hidden="true">${SYM[m.art]}</span><div><b>${esc(m.titel)}</b><small>${esc(m.richtung)}</small>${esc(m.text.slice(0, 200))}</div></div>`;
+function meldListe(l) {
+  const wichtig = l.filter(m => m.art === "stau" || m.gesperrt), rest = l.filter(m => !(m.art === "stau" || m.gesperrt));
+  return wichtig.map(meldKarte).join("") + (rest.length ? `<details class="kk-mehr"><summary>${rest.length} ${rest.length === 1 ? "weitere Meldung" : "weitere Meldungen"} (Baustellen, Einschränkungen)</summary>${rest.map(meldKarte).join("")}</details>` : "");
+}
 const PFEIL = d => { const w = drehWort(d); return w.includes("links") ? "↰" : w.includes("rechts") ? "↱" : w === "wenden" ? "↶" : "↑"; };
 function ergebnisZeigen() {
   const r = S.route, erg = $("#ergebnis");
@@ -298,7 +304,7 @@ function ergebnisZeigen() {
   erg.innerHTML = `<div class="kk-ergebnis">
     <div class="kk-zeit"><b>${esc(zeitText(r.sekunden))}</b><span>${esc(meterText(r.meter))} · an ${ankunft} Uhr</span></div>
     <div class="kk-erklaer"><span class="wer">Warum diese Route</span>${esc(routeErklaeren(r, r.anRoute, S.modus, r.vergleich))}</div>
-    ${r.anRoute.map(m => `<div class="kk-meldung"><span class="sym" aria-hidden="true">${SYM[m.art]}</span><div><b>${esc(m.titel)}</b><small>${esc(m.richtung)}</small>${esc(m.text.slice(0, 200))}</div></div>`).join("")}
+    ${meldListe(r.anRoute)}
     <div class="kk-reihe"><button class="btn small" id="teilen">Route teilen</button></div>
     <h3 style="margin:14px 0 0;font-size:1rem">So geht's</h3>
     <ol class="kk-schritte">${r.schritte.map((s, i) => `<li data-i="${i}"><span class="pfeil" aria-hidden="true">${i ? PFEIL(s.dreh) : "●"}</span><span>${esc(s.text)}</span><small>${esc(meterText(s.meter))}</small></li>`).join("")}
@@ -342,4 +348,4 @@ if (linkLesen()) { planerZeigen(); routeRechnen(); } else zeigeStart();
 datenBereit.then(() => { if (S.ansicht === "start") zeigeStart(); });
 verkehrHolen();
 setInterval(verkehrHolen, 10 * 60 * 1000);
-window.KARTEN = S;
+window.KARTEN = S; window.KARTE = () => karte;

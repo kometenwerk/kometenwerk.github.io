@@ -117,6 +117,7 @@ export function kosten(k, e, modus, opt = {}) {
     let t = len / (Math.max(5, k.sp[e]) / 3.6);
     if (fl & BIT.UNBEF) t *= 1.5;
     if (kl === 8) t *= 1.3;
+    if (kl >= 2) t += 4; // Kreuzungen, Ampeln, Abbiegen
     if (opt.keineEngen && (fl & (BIT.ENG | BIT.UNBEF))) t *= 4;
     if (opt.keineAutobahn && kl === 0) return Infinity;
     return t;
@@ -376,6 +377,14 @@ export function anweisungen(teile, modus = "auto") {
   }
   // Kurze namenlose Stücke (< 30 m) in die Nachbarn schieben
   const sauber = out.filter((x, i) => !(i > 0 && i < out.length - 1 && !x.name && x.meter < 30));
+  // namenlose Stücke an großen Straßen sind Auf- und Abfahrten
+  sauber.forEach((x, i) => {
+    if (x.name || x.klasse > 3) return;
+    const vor = sauber[i - 1], nach = sauber[i + 1];
+    if (nach && nach.klasse <= 1 && nach.name) x.name = `die Auffahrt (${nach.name.split(" · ")[0]})`, x.ohneAuf = true;
+    else if (vor && vor.klasse <= 1) x.name = "die Abfahrt", x.ohneAuf = true;
+    else x.name = "die Verbindungsstraße", x.ohneAuf = true;
+  });
   return sauber.map((x, i) => ({ text: anweisungsText(x, i, modus), name: x.name, meter: x.meter, punkt: x.punkt, dreh: x.dreh, klasse: x.klasse }));
 }
 
@@ -412,9 +421,10 @@ function strassenName(x) {
 
 function anweisungsText(x, i, modus) {
   const was = strassenName(x);
-  const auf = x.name ? `auf ${x.name}` : `auf ${was}`;
+  const auf = x.ohneAuf ? `auf ${x.name}` : x.name ? `auf ${x.name}` : `auf ${was}`;
   const weiter = modus === "fuss" ? "Geh" : modus === "rad" ? "Fahr" : "Fahr";
   if (i === 0) return `${weiter} los ${auf}`;
+  if (x.name === "die Abfahrt") return "Nimm die Abfahrt";
   const w = drehWort(x.dreh);
   if (!w || w === "geradeaus") return `Weiter geradeaus ${auf}`;
   if (w === "wenden") return `Wenden und weiter ${auf}`;
