@@ -45,6 +45,17 @@
     <button type="button" class="kk-rund" id="verkehrKnopf" aria-label="Baustellen und Staus zeigen" aria-pressed="true"><span aria-hidden="true">🚧</span></button>
   </div>
 
+  <div id="naviOben" class="kk-navi-oben" hidden role="status" aria-live="polite">
+    <span class="pf" id="nPfeil" aria-hidden="true">↑</span>
+    <div><b id="nBis"></b><span id="nText"></span></div>
+  </div>
+  <div id="naviFrage" class="kk-navi-frage card" hidden role="alertdialog" aria-live="assertive"></div>
+  <div id="naviUnten" class="kk-navi-unten card" hidden>
+    <div class="rest"><b id="nZeit"></b><span id="nRest"></span></div>
+    <button type="button" class="kk-rund" id="nTon" aria-pressed="true" aria-label="Ansagen an oder aus">🔊</button>
+    <button type="button" class="btn" id="nEnde">Beenden</button>
+  </div>
+
   <section id="blatt" class="kk-blatt card" aria-live="polite">
     <button type="button" class="kk-griff" id="griff" aria-label="Fenster größer oder kleiner"><span></span></button>
     <div id="blattInhalt"></div>

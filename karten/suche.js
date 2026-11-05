@@ -80,10 +80,12 @@ export class Suche {
       const d = abstand(mitte.lat, mitte.lon, e[2], e[3]);
       const imOrt = ortName && norm(e[1]) === ortName;
       if (d > (ortW.length ? 6000 : 20000) && !imOrt) continue;
-      kand.push({ e, d: imOrt ? d * 0.5 : d });
+      const wort = woerter[ki];
+      const nameTrifft = wort !== kat && e[0] && norm(e[0]).includes(wort); // „Sparkasse“ zuerst bei „Sparkasse Riegel“
+      kand.push({ e, d: (imOrt ? d * 0.5 : d) * (nameTrifft ? 0.2 : 1) });
     }
     kand.sort((a, b) => a.d - b.d);
-    return kand.slice(0, 6).map((x, i) => ({ p: 80 - i, titel: x.e[0] || x.e[4], unter: `${x.e[4]} · ${x.e[1]}${!ortW.length && nahe ? " · " + (x.d < 950 ? Math.round(x.d / 10) * 10 + " m" : (x.d / 1000).toFixed(1).replace(".", ",") + " km") : ""}`, lat: x.e[2], lon: x.e[3], art: "ziel", zoom: 17 }));
+    return kand.slice(0, 6).map((x, i) => ({ kat: true, p: 80 - i, titel: x.e[0] || x.e[4], unter: `${x.e[4]} · ${x.e[1]}${!ortW.length && nahe ? " · " + (x.d < 950 ? Math.round(x.d / 10) * 10 + " m" : (x.d / 1000).toFixed(1).replace(".", ",") + " km") : ""}`, lat: x.e[2], lon: x.e[3], art: "ziel", zoom: 17 }));
   }
   holenKat(kat) {
     const key = "kat:" + kat;
@@ -154,6 +156,9 @@ export class Suche {
         treffer.push({ p, titel, unter, lat, lon, art: ziel ? "ziel" : "strasse", zoom: nummer ? 18 : 16 });
       }
     }
+    // Heißt etwas genau so, wie getippt wurde („Europa-Park“), hat der Name Vorrang vor der Art („Park“)
+    const ganz = woerter.join(" ");
+    if (treffer.some(t => t.art !== "ziel" || !t.kat ? norm(t.titel).startsWith(ganz) : false)) treffer.forEach(t => { if (t.kat) t.p -= 60; });
     treffer.sort((a, b) => b.p - a.p);
     const gesehen = new Set();
     return treffer.filter(t => { const k = t.titel + "|" + t.unter; if (gesehen.has(k)) return false; gesehen.add(k); return true; }).slice(0, max);

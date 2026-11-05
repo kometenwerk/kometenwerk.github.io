@@ -2,6 +2,7 @@
 import { Netz, meterText, drehWort } from "./netz.js";
 import { Suche } from "./suche.js";
 import { meldungenLaden, meldungenAnRoute, routeErklaeren, zeitText } from "./verkehr.js";
+import { vorbereiten, fortschritt, naechste, ansage, faellig, kurzText } from "./navi.js";
 
 const DATEN = "daten/";
 const STIL_HELL = "https://tiles.openfreemap.org/styles/liberty";
@@ -84,11 +85,11 @@ function marker(alt, art, p) {
   const el = document.createElement("div"); el.className = "kk-marker " + art;
   return new maplibregl.Marker({ element: el, anchor: art === "ziel" ? "bottom" : "center", offset: art === "ziel" ? [0, -4] : [0, 0] }).setLngLat([p.lon, p.lat]).addTo(karte);
 }
-function routeZeichnen() {
+function routeZeichnen(einpassen = true) {
   if (!karte || !karte.getSource("route")) return;
   const r = S.route;
   karte.getSource("route").setData(r ? { type: "Feature", geometry: { type: "LineString", coordinates: r.punkte.map(p => [p[1], p[0]]) } } : { type: "FeatureCollection", features: [] });
-  if (r) {
+  if (r && einpassen) {
     const b = new maplibregl.LngLatBounds();
     r.punkte.forEach(p => b.extend([p[1], p[0]]));
     karte.stop();
@@ -124,6 +125,7 @@ async function verkehrHolen() {
   } catch { S.meldungen = []; S.meldStand = null; }
   meldungenZeichnen();
   if (S.ansicht === "start") zeigeStart();
+  if (N.an) verkehrUnterwegs();
 }
 
 /* ---------- Suche ---------- */
@@ -305,16 +307,174 @@ function ergebnisZeigen() {
     <div class="kk-zeit"><b>${esc(zeitText(r.sekunden))}</b><span>${esc(meterText(r.meter))} · an ${ankunft} Uhr</span></div>
     <div class="kk-erklaer"><span class="wer">Warum diese Route</span>${esc(routeErklaeren(r, r.anRoute, S.modus, r.vergleich))}</div>
     ${meldListe(r.anRoute)}
+    <div class="kk-los"><button class="btn primary" id="los">▶ Los</button><button class="btn" id="probe">Probefahrt</button></div>
     <div class="kk-reihe"><button class="btn small" id="teilen">Route teilen</button></div>
     <h3 style="margin:14px 0 0;font-size:1rem">So geht's</h3>
     <ol class="kk-schritte">${r.schritte.map((s, i) => `<li data-i="${i}"><span class="pfeil" aria-hidden="true">${i ? PFEIL(s.dreh) : "●"}</span><span>${esc(s.text)}</span><small>${esc(meterText(s.meter))}</small></li>`).join("")}
       <li><span class="pfeil" aria-hidden="true">🏁</span><span>Ziel: ${esc(name(S.nach))}</span><small></small></li></ol>
     <p class="kk-hinweis">${S.modus === "auto" ? "Staus und Baustellen kennen wir nur von den Autobahnen und rechnen sie ungefähr ein. " : ""}Achte immer auf Schilder und Verkehr – die Karte kann sich irren. Gerechnet in ${r.ms} ms auf deinem Gerät.</p></div>`;
   erg.querySelectorAll(".kk-schritte li[data-i]").forEach(li => li.onclick = () => { const s = r.schritte[+li.dataset.i]; karte?.flyTo({ center: [s.punkt[1], s.punkt[0]], zoom: 17, padding: randAbstand() }); });
+  $("#los").onclick = () => naviStarten(false);
+  $("#probe").onclick = () => naviStarten(true);
   $("#teilen").onclick = async () => {
     const url = location.href;
     try { if (navigator.share) await navigator.share({ title: "Route – OMNIVIA Karten", text: `Route nach ${name(S.nach)}`, url }); else { await navigator.clipboard.writeText(url); KW.toast("Link kopiert."); } } catch {}
   };
+}
+
+/* ---------- Navigation ---------- */
+const N = { an: false, v: null, watch: null, gesagt: new Map(), ton: true, weg: 0, frage: null, demo: null, lock: null, f: null, tempo: 0, fertig: false };
+try { N.ton = KW.load("kw-karten-ton", true) !== false; } catch {}
+function sprechen(t) {
+  if (!N.ton || !("speechSynthesis" in window)) return;
+  try {
+    const u = new SpeechSynthesisUtterance(t); u.lang = "de-DE"; u.rate = 1.02;
+    const st = speechSynthesis.getVoices().filter(v => v.lang && v.lang.toLowerCase().startsWith("de"));
+    if (st.length) u.voice = st.find(v => /Anna|Helena|Google/i.test(v.name)) || st[0];
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  } catch {}
+}
+async function wachHalten(an) {
+  try {
+    if (an && "wakeLock" in navigator) N.lock = await navigator.wakeLock.request("screen");
+    else if (!an && N.lock) { await N.lock.release(); N.lock = null; }
+  } catch {}
+}
+document.addEventListener("visibilitychange", () => { if (N.an && document.visibilityState === "visible") wachHalten(true); });
+
+const zeitSprechen = sek => { const min = Math.max(1, Math.round(sek / 60)), h = Math.floor(min / 60), m = min % 60;
+  const hs = h ? `${h} ${h === 1 ? "Stunde" : "Stunden"}` : "", ms = m ? `${m} ${m === 1 ? "Minute" : "Minuten"}` : "";
+  return [hs, ms].filter(Boolean).join(" und "); };
+function naviStarten(demo) {
+  if (!S.route) return;
+  N.an = true; N.v = vorbereiten(S.route); N.gesagt = new Map(); N.weg = 0; N.fertig = false; N.f = null;
+  document.body.classList.add("navi");
+  $("#naviOben").hidden = false; $("#naviUnten").hidden = false; $("#naviFrage").hidden = true;
+  $("#nTon").setAttribute("aria-pressed", String(N.ton)); $("#nTon").textContent = N.ton ? "🔊" : "🔇";
+  wachHalten(true);
+  const n = S.route.schritte.length > 1 ? S.route.schritte[1] : null;
+  sprechen(`Los geht's. ${zeitSprechen(S.route.sekunden)} bis zum Ziel.`);
+  if (demo) {
+    // Probefahrt: fährt die Route im Zeitraffer ab – zum Ausprobieren ohne loszufahren
+    let pos = 0;
+    const tempo = { auto: 14, rad: 5, fuss: 1.5 }[S.modus] * 4;
+    N.demo = setInterval(() => {
+      pos = Math.min(N.v.gesamt, pos + tempo * 0.5);
+      const p = punktBei(N.v, pos);
+      naviPosition(p[0], p[1], tempo / 4, 5);
+      if (pos >= N.v.gesamt) { clearInterval(N.demo); N.demo = null; }
+    }, 500);
+  } else if (navigator.geolocation) {
+    N.watch = navigator.geolocation.watchPosition(
+      p => naviPosition(p.coords.latitude, p.coords.longitude, p.coords.speed || 0, p.coords.accuracy || 20),
+      () => KW.toast("Ich bekomme gerade keinen Standort. Ist GPS an?"),
+      { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 });
+  }
+  if (S.ich) naviPosition(S.ich.lat, S.ich.lon, 0, 20);
+}
+function punktBei(v, m) {
+  let i = 1; while (i < v.d.length - 1 && v.d[i] < m) i++;
+  const a = v.punkte[i - 1], b = v.punkte[i], t = v.d[i] === v.d[i - 1] ? 0 : (m - v.d[i - 1]) / (v.d[i] - v.d[i - 1]);
+  return [a[0] + (b[0] - a[0]) * Math.min(1, Math.max(0, t)), a[1] + (b[1] - a[1]) * Math.min(1, Math.max(0, t))];
+}
+function naviPosition(lat, lon, tempo, genau) {
+  if (!N.an || !N.v) return;
+  S.ich = { lat, lon }; ichZeigen(); N.tempo = tempo;
+  const f = fortschritt(N.v, lat, lon); N.f = f;
+  // Kamera folgt, Fahrtrichtung zeigt nach oben
+  if (karte) karte.easeTo({ center: [lon, lat], bearing: f.neben < 60 ? f.grad : karte.getBearing(), pitch: S.modus === "auto" ? 50 : 30,
+    zoom: S.modus === "auto" ? (tempo > 22 ? 14.8 : 16) : 17.3, padding: { top: 150, bottom: 160, left: 0, right: 0 }, duration: 900 });
+  // Von der Route abgekommen? Erst fragen, nicht still umplanen
+  const grenze = Math.max(S.modus === "auto" ? 50 : 30, (genau || 20) * 1.5);
+  N.weg = f.neben > grenze ? N.weg + 1 : 0;
+  if (N.weg >= 3 && !N.frage) {
+    sprechen("Du hast die Route verlassen. Soll ich neu rechnen?");
+    frage("Du hast die Route verlassen. Neue Route berechnen?", "Neu berechnen", () => neuBerechnen(), "Nein, weiter", 10);
+  }
+  if (f.rest < 25 && f.neben < 60) return ankommen();
+  const n = naechste(N.v, f.entlang);
+  const bis = n ? n.bis : f.rest;
+  $("#nPfeil").textContent = n ? PFEIL(n.schritt.dreh) : "🏁";
+  $("#nBis").textContent = meterText(bis);
+  $("#nText").textContent = n ? kurzText(n.schritt) : `Ziel: ${name(S.nach)}`;
+  const restSek = S.route.sekunden * (f.rest / Math.max(1, N.v.gesamt));
+  $("#nZeit").textContent = zeitText(restSek);
+  $("#nRest").textContent = `${meterText(f.rest)} · an ${new Date(Date.now() + restSek * 1000).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr`;
+  const key = n ? n.nr : "ziel";
+  if (!N.gesagt.has(key)) N.gesagt.set(key, new Set());
+  // Geradeaus wird nicht angesagt (außer Auf- und Abfahrten) – sonst redet das Navi zu viel
+  const still = n && drehWort(n.schritt.dreh) === "geradeaus" && !/^die (Auf|Ab)fahrt/.test(n.schritt.name || "");
+  if (!still && f.neben < grenze && faellig(bis, S.modus, N.gesagt.get(key), tempo)) {
+    const t = ansage(n ? n.schritt : null, bis);
+    const kern = t.replace(/^(In [^ ]+ [^ ]+|Jetzt) /, "");
+    if (!(N.zuletzt && N.zuletzt.kern === kern && N.zuletzt.stufe === bis > 120 && Date.now() - N.zuletzt.zeit < 25000)) sprechen(t);
+    N.zuletzt = { kern, stufe: bis > 120, zeit: Date.now() };
+  }
+}
+function ankommen() {
+  if (N.fertig) return; N.fertig = true;
+  sprechen(`Du bist angekommen${S.nach?.name && S.nach.name !== "Ziel" && S.nach.name !== "Punkt auf der Karte" ? ": " + S.nach.name : ""}.`);
+  $("#nPfeil").textContent = "🏁"; $("#nBis").textContent = "Angekommen!"; $("#nText").textContent = name(S.nach);
+  setTimeout(naviEnde, 6000);
+}
+function naviEnde() {
+  N.an = false;
+  if (N.watch !== null) { navigator.geolocation.clearWatch(N.watch); N.watch = null; }
+  if (N.demo) { clearInterval(N.demo); N.demo = null; }
+  frageWeg(); wachHalten(false);
+  try { speechSynthesis.cancel(); } catch {}
+  document.body.classList.remove("navi");
+  $("#naviOben").hidden = true; $("#naviUnten").hidden = true;
+  if (karte) { karte.setPadding({ top: 0, right: 0, bottom: 0, left: 0 }); karte.easeTo({ pitch: 0, bearing: 0, duration: 400 }); }
+  routeZeichnen(true);
+}
+$("#nEnde").onclick = naviEnde;
+$("#nTon").onclick = () => { N.ton = !N.ton; try { KW.save("kw-karten-ton", N.ton); } catch {} $("#nTon").setAttribute("aria-pressed", String(N.ton)); $("#nTon").textContent = N.ton ? "🔊" : "🔇"; if (!N.ton) try { speechSynthesis.cancel(); } catch {} };
+
+let frageUhr = null;
+function frage(text, ja, beiJa, nein, autoSek = 0) {
+  frageWeg();
+  N.frage = true;
+  const box = $("#naviFrage");
+  box.innerHTML = `<p>${esc(text)}</p><div class="kk-reihe"><button class="btn primary" id="fJa">${esc(ja)}</button><button class="btn" id="fNein">${esc(nein)}</button></div>`;
+  box.hidden = false;
+  let rest = autoSek;
+  const knopf = $("#fJa");
+  if (autoSek) {
+    knopf.textContent = `${ja} (${rest})`;
+    frageUhr = setInterval(() => { rest--; knopf.textContent = `${ja} (${rest})`; if (rest <= 0) { frageWeg(); beiJa(); } }, 1000);
+  }
+  knopf.onclick = () => { frageWeg(); beiJa(); };
+  $("#fNein").onclick = () => { frageWeg(); N.weg = -20; };
+}
+function frageWeg() { clearInterval(frageUhr); frageUhr = null; N.frage = null; const b = $("#naviFrage"); if (b) b.hidden = true; }
+
+async function neuBerechnen(fertig = null) {
+  if (!S.ich || !netz) return;
+  const opt = { modus: S.modus, ...S.opt[S.modus], meldungen: S.modus === "auto" ? S.meldungen : [] };
+  const r = fertig || await netz.route(S.ich, S.nach, opt);
+  if (!r || r.fehler) { sprechen("Ich finde gerade keinen neuen Weg."); return; }
+  r.anRoute = meldungenAnRoute(r, S.meldungen); r.ms = 0;
+  S.route = r; S.von = { ...S.ich, name: "Mein Standort" };
+  N.v = vorbereiten(r); N.gesagt = new Map(); N.weg = 0;
+  routeZeichnen(false);
+  sprechen(`Neue Route. ${zeitSprechen(r.sekunden)} bis zum Ziel.`);
+}
+
+// Neue Verkehrsmeldungen während der Fahrt: Umweg vorschlagen, wenn er wirklich Zeit spart
+async function verkehrUnterwegs() {
+  if (!N.an || S.modus !== "auto" || !N.f || !netz || N.frage) return;
+  const opt = { modus: "auto", ...S.opt.auto, meldungen: S.meldungen };
+  const jetzt = netz.restKosten(S.route, N.f.entlang, opt);
+  const alt = await netz.route(S.ich, S.nach, opt);
+  if (!alt || alt.fehler) return;
+  const spart = jetzt - alt.sekunden;
+  if (spart > 180 && Math.abs(alt.meter - N.f.rest) > 300) {
+    const min = Math.round(spart / 60);
+    const grund = jetzt === Infinity ? "Auf deiner Strecke ist jetzt eine Sperrung." : `Neue Verkehrsmeldung: Ein anderer Weg spart etwa ${min} Minuten.`;
+    sprechen(grund + " Soll ich umplanen?");
+    frage(grund + " Umplanen?", "Ja, umplanen", () => neuBerechnen(alt), "Nein, bleiben");
+  }
 }
 
 /* ---------- Eingaben ---------- */
@@ -348,4 +508,4 @@ if (linkLesen()) { planerZeigen(); routeRechnen(); } else zeigeStart();
 datenBereit.then(() => { if (S.ansicht === "start") zeigeStart(); });
 verkehrHolen();
 setInterval(verkehrHolen, 10 * 60 * 1000);
-window.KARTEN = S; window.KARTE = () => karte;
+window.KARTEN = S; window.KARTE = () => karte; window.NAVI = N; window.NAVI_POS = naviPosition;

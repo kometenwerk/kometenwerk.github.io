@@ -153,11 +153,14 @@ class Leser(osmium.SimpleHandler):
         self.orte_punkte = []     # (name, art, lat, lon) für Gebäude/Orte zum Suchen
         self.bbox = [90, 180, -90, -180]
         self.anschluesse = []     # (name, lat, lon) Autobahn-Anschlussstellen, Kreuze, Raststätten
+        self.ampeln = set()       # Knoten mit Ampel
 
     def node(self, n):
         t = n.tags
         if not len(t): return
         lat, lon = n.location.lat, n.location.lon
+        if t.get("highway") == "traffic_signals" or t.get("crossing") == "traffic_signals":
+            self.ampeln.add(n.id)
         if t.get("highway") in ("motorway_junction", "services", "rest_area") and "name" in t:
             self.anschluesse.append((t["name"], lat, lon))
         if "addr:housenumber" in t and ("addr:street" in t or "addr:place" in t):
@@ -325,13 +328,17 @@ def bauen(quelle, ziel):
                 a, b = nr[ids[start]], nr[ids[i]]
                 zw = ko[start + 1:i]
                 if a != b or zw:
+                    # Ampeln auf dem Stück (oberes Halbbyte von bits2), jeweils ohne den Startknoten
+                    am_hin = min(15, sum(1 for x in ids[start + 1:i + 1] if x in r.ampeln)) << 4
+                    am_rueck = min(15, sum(1 for x in ids[start:i] if x in r.ampeln)) << 4
                     if hin & (B_AUTO | B_RAD | B_FUSS):
-                        nachbarn[a].append((b, laenge, zw, k, tempo, hin, b2, name))
+                        nachbarn[a].append((b, laenge, zw, k, tempo, hin, b2 | am_hin, name))
                     if rueck & (B_AUTO | B_RAD | B_FUSS):
-                        nachbarn[b].append((a, laenge, zw[::-1], k, tempo, rueck, b2, name))
+                        nachbarn[b].append((a, laenge, zw[::-1], k, tempo, rueck, b2 | am_rueck, name))
                 start = i
                 laenge = 0.0
-    r.wege = None
+    print(f"Ampeln: {len(r.ampeln)}")
+    r.wege = None; r.ampeln = None
     inseln_entfernen(nachbarn, n_knoten)
 
     os.makedirs(os.path.join(ziel, "netz"), exist_ok=True)

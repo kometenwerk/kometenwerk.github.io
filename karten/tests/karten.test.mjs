@@ -166,3 +166,35 @@ test("echte Daten: Suche", { skip: !echt && "KARTEN_DATEN fehlt" }, async () => 
 test("Netz-Datei mit falschem Kopf wird abgelehnt", () => {
   assert.throws(() => netzLesen(new ArrayBuffer(24)));
 });
+
+import { vorbereiten, fortschritt, naechste, ansage, faellig, kurzText } from "../navi.js";
+test("Navigation: Fortschritt, nächste Abbiegung und Ansagen", () => {
+  // Gerade nach Osten 1 km, dann rechts nach Süden 500 m
+  const punkte = [[48, 7.8], [48, 7.8067], [48, 7.81341], [47.9955, 7.81341]];
+  const route = { punkte, schritte: [
+    { name: "B 3", dreh: null, punkt: [48, 7.8], meter: 1000 },
+    { name: "Hauptstraße", dreh: 90, punkt: [48, 7.81341], meter: 500 },
+  ] };
+  const v = vorbereiten(route);
+  assert.ok(Math.abs(v.gesamt - 1500) < 20, String(v.gesamt));
+  const f = fortschritt(v, 48.0001, 7.8067);
+  assert.ok(f.neben < 15); assert.ok(Math.abs(f.entlang - 500) < 15);
+  assert.ok(Math.abs(f.grad - 90) < 2);
+  const n = naechste(v, f.entlang);
+  assert.equal(n.schritt.name, "Hauptstraße"); assert.ok(Math.abs(n.bis - 500) < 15);
+  assert.equal(ansage(n.schritt, 300), "In 300 Metern rechts abbiegen auf Hauptstraße.");
+  assert.equal(ansage(null, 10), "Du hast dein Ziel erreicht.");
+  assert.equal(kurzText(n.schritt), "Rechts auf Hauptstraße");
+  const gesagt = new Set();
+  assert.equal(faellig(900, "auto", gesagt), true);
+  assert.equal(faellig(850, "auto", gesagt), false);
+  assert.equal(faellig(280, "auto", gesagt), true);
+  assert.equal(faellig(30, "auto", gesagt), true);
+  const g2 = new Set();
+  assert.equal(faellig(200, "auto", g2), true); // Start kurz vor der Abbiegung: gleich die 300-m-Ansage
+  assert.equal(faellig(150, "auto", g2), false);
+  // weit weg von der Route
+  const weg = fortschritt(v, 48.01, 7.805);
+  assert.ok(weg.neben > 1000);
+  assert.equal(naechste(v, 1490), null);
+});

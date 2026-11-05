@@ -112,12 +112,13 @@ class Haufen {
 export function kosten(k, e, modus, opt = {}) {
   const fl = k.fl[e];
   if (!(fl & MODUS_BIT[modus])) return Infinity;
-  const kl = k.kl[e], f2 = k.f2[e], len = k.len[e];
+  const kl = k.kl[e], f2 = k.f2[e], len = k.len[e], ampeln = f2 >> 4;
   if (modus === "auto") {
     let t = len / (Math.max(5, k.sp[e]) / 3.6);
     if (fl & BIT.UNBEF) t *= 1.5;
     if (kl === 8) t *= 1.3;
-    if (kl >= 2) t += 4; // Kreuzungen, Ampeln, Abbiegen
+    if (kl >= 2) t += 4; // Kreuzungen und Abbiegen
+    t += ampeln * 15;    // im Schnitt etwa 15 s Warten pro Ampel
     if (opt.keineEngen && (fl & (BIT.ENG | BIT.UNBEF))) t *= 4;
     if (opt.keineAutobahn && kl === 0) return Infinity;
     return t;
@@ -129,9 +130,9 @@ export function kosten(k, e, modus, opt = {}) {
     if (fl & BIT.RADWEG) t *= 0.85;
     else if (kl <= 2) t *= opt.ruhig ? 3 : 1.8;
     else if (kl === 3) t *= opt.ruhig ? 1.8 : 1.3;
-    return t;
+    return t + ampeln * 12;
   }
-  let t = len / (4.8 / 3.6);
+  let t = len / (4.8 / 3.6) + ampeln * 15;
   if (f2 & BIT2.TREPPE) { if (opt.barrierefrei) return Infinity; t *= 1.4; }
   if (opt.barrierefrei && (fl & BIT.UNBEF)) t *= 3;
   if (opt.hell && !(fl & BIT.LICHT) && (kl >= 9 || kl === 5)) t *= 2.5;
@@ -326,22 +327,39 @@ export class Netz {
     return this.zusammenbauen(s, z, bestKnoten, bestWert, zurueck, zielRest, { schritte, geladen, gerade, modus });
   }
 
+  /** Wie lange dauert der Rest einer schon berechneten Route – mit den aktuellen Meldungen? */
+  restKosten(route, entlang, opt = {}) {
+    let acc = 0, sek = 0;
+    for (const t of route.teile) {
+      const ende = acc + t.meter;
+      if (ende > entlang) {
+        const anteil = t.meter ? Math.min(1, (ende - entlang) / t.meter) : 1;
+        const c = kosten(t.k, t.e, opt.modus || "auto", opt);
+        const m = (opt.modus || "auto") === "auto" ? this.meldungsKosten(t.k, t.e, opt.meldungen, t.i ?? -1) : 0;
+        if (c === Infinity || m === Infinity) return Infinity;
+        sek += c * anteil + m;
+      }
+      acc = ende;
+    }
+    return sek;
+  }
+
   zusammenbauen(s, z, bestKnoten, sekunden, zurueck, zielRest, info) {
     const teile = []; // {punkte, k, e, meter}
     if (bestKnoten === "direkt") {
       const p = linieTeilen(linieTeilen(s.linie, s.anteil)[1], (z.anteil - s.anteil) / Math.max(1e-9, 1 - s.anteil))[0];
-      teile.push({ punkte: p, k: s.k, e: s.e, meter: s.k.len[s.e] * (z.anteil - s.anteil) });
+      teile.push({ punkte: p, k: s.k, e: s.e, i: s.i, meter: s.k.len[s.e] * (z.anteil - s.anteil) });
     } else {
       const zr = zielRest.get(bestKnoten);
       const zp = kantenPunkte(zr.k, zr.i, zr.e);
-      teile.push({ punkte: linieTeilen(zp, zr.bis)[0], k: zr.k, e: zr.e, meter: zr.k.len[zr.e] * zr.bis });
+      teile.push({ punkte: linieTeilen(zp, zr.bis)[0], k: zr.k, e: zr.e, i: zr.i, meter: zr.k.len[zr.e] * zr.bis });
       let u = bestKnoten;
       for (let n = 0; n < 2e6; n++) {
         const r = zurueck.get(u);
         if (!r) break;
         const p = kantenPunkte(r.k, r.i, r.e);
-        if (r.start) { teile.push({ punkte: linieTeilen(p, r.ab)[1], k: r.k, e: r.e, meter: r.k.len[r.e] * (1 - r.ab) }); break; }
-        teile.push({ punkte: p, k: r.k, e: r.e, meter: r.k.len[r.e] });
+        if (r.start) { teile.push({ punkte: linieTeilen(p, r.ab)[1], k: r.k, e: r.e, i: r.i, meter: r.k.len[r.e] * (1 - r.ab) }); break; }
+        teile.push({ punkte: p, k: r.k, e: r.e, i: r.i, meter: r.k.len[r.e] });
         u = r.von;
       }
       teile.reverse();
