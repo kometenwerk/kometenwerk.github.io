@@ -1,0 +1,113 @@
+:root{--tapete:#5b1a2e;--tief:#2a0d17;--messing:#e0ac3f;--messing-h:#f6d27a;--petrol:#0f5257;--minze:#a9dcc8;--papier:#fbeed0;--tinte:#2a1a14}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--tief);color:var(--papier);font-family:'Baloo 2',system-ui,sans-serif;font-weight:500;-webkit-tap-highlight-color:transparent}
+body{min-height:100dvh;overflow-x:hidden;background:repeating-linear-gradient(90deg,#2a0d17 0 26px,#321220 26px 28px)}
+#spiel{min-height:100dvh;max-width:860px;margin:0 auto;display:flex;flex-direction:column;background:var(--tief);box-shadow:0 0 0 1px #6e3a2a}
+#buehne{position:relative;line-height:0;flex:none;background:#000}
+#bild{display:block;width:100%;height:auto;aspect-ratio:4/3}
+#hud{position:absolute;left:8px;right:56px;top:8px;display:flex;align-items:center;gap:10px;line-height:1.1;font-size:15px}
+#hud>span{background:#0a0c10d9;border-radius:9px;padding:6px 9px;white-space:nowrap}
+#hud[hidden]{display:none}
+#etage{font-family:'Bungee',sans-serif;color:var(--messing-h);font-size:14px}
+#leben{color:#ff7d7d;letter-spacing:1px}
+#laerm{display:flex;align-items:center;gap:7px;flex:1;min-width:0}
+#laerm-balken{flex:1;height:10px;min-width:30px;background:#2b3138;border-radius:6px;overflow:hidden}
+#laerm-balken i{display:block;height:100%;width:0;background:linear-gradient(90deg,#e0ac3f,#ff4d4d);transition:width .3s}
+#pause{position:absolute;top:8px;right:8px;width:42px;height:42px;padding:9px;border:0;border-radius:9px;background:#0a0c10d9;color:var(--papier);cursor:pointer}
+#pause svg{fill:currentColor;display:block}
+#pause[hidden]{display:none}
+#ding{position:absolute;right:16px;bottom:14px;font-family:'Bungee',sans-serif;line-height:1;color:#ff8a7a;opacity:0;pointer-events:none;text-shadow:0 2px 0 #000}
+#ding.an{animation:dingAn 1s ease-out}
+@keyframes dingAn{0%{opacity:0;transform:scale(.7)}15%{opacity:1;transform:scale(1.05)}100%{opacity:0;transform:scale(1)}}
+#tafel{flex:1;display:flex;flex-direction:column;position:relative;padding:12px 16px calc(18px + env(safe-area-inset-bottom,0px));background:linear-gradient(#3a1320,#2a0d17);border-top:3px solid var(--messing);min-height:210px}
+#tafel p{margin:0}
+#uhr{height:9px;border-radius:6px;background:#1a0a10;overflow:hidden;margin-bottom:10px}
+#uhr[hidden]{display:block;visibility:hidden}
+#uhr i{display:block;height:100%;width:100%;background:var(--minze)}
+#uhr.knapp i{background:#ff6b5e}
+#wer{font-family:'Bungee',sans-serif;font-size:15px;color:var(--messing-h);min-height:1.2em}
+#text{font-size:clamp(18px,4.6vw,21px);line-height:1.32;margin-top:2px!important;min-height:2.6em;max-width:64ch;text-wrap:pretty}
+#eigen:empty{display:none}
+#eigen{margin-top:8px}
+#knoepfe{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:9px;margin-top:auto;padding-top:12px;width:100%}
+.knopf{position:relative;appearance:none;border:0;width:100%;min-height:50px;padding:9px 16px;font:700 17px/1.2 'Baloo 2',system-ui,sans-serif;color:var(--tinte);background:linear-gradient(#f6d27a,#e0ac3f 60%,#c98f29);cursor:pointer;text-align:left;
+  clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}
+.knopf:hover{filter:brightness(1.08)}
+.knopf:active{transform:translateY(1px)}
+.knopf.neben{background:linear-gradient(#a9dcc8,#7fbfa8);}
+.knopf.leise{background:#4b2231;color:var(--papier)}
+.knopf:disabled{opacity:.42;cursor:default;filter:saturate(.3)}
+.knopf.falsch{text-decoration:line-through}
+.knopf small{display:block;font-weight:500;font-size:14px;opacity:.82}
+.knopf.leuchte{background:#fff;box-shadow:inset 0 0 0 4px var(--minze)}
+button:focus-visible,input:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.knopf:focus-visible{outline:0;box-shadow:inset 0 0 0 3px #123;filter:brightness(1.12)}
+#knoepfe.pfeile{grid-template-columns:repeat(3,1fr);grid-template-areas:". o ." "l u r";max-width:330px;margin-inline:auto}
+#knoepfe.pfeile .knopf{text-align:center;min-height:62px;font-size:24px;clip-path:none;border-radius:12px}
+#knoepfe.pfeile .knopf small{font-size:12px}
+#knoepfe.hebel{grid-template-columns:repeat(4,1fr)}
+#knoepfe.hebel .knopf{text-align:center;font-size:27px;min-height:78px;clip-path:none;border-radius:12px;padding:6px}
+#knoepfe.titel{grid-template-columns:1fr 1fr}
+#knoepfe.titel .knopf:first-child{grid-column:1/-1}
+.pfad{font-size:15px;color:#d7bfa8;margin-top:12px!important}
+#knoepfe.pfeile,#knoepfe.hebel{margin-bottom:12px}
+.pfad a{color:var(--minze)}
+/* Figur */
+.feld{display:block;margin-bottom:9px}
+.feld span{display:block;font-size:15px;color:#e6cfae}
+.feld input{width:100%;min-height:46px;font:600 18px 'Baloo 2',sans-serif;padding:6px 12px;border:2px solid var(--messing);border-radius:6px;background:var(--papier);color:var(--tinte)}
+.reihe{margin:0 0 9px;padding:0;border:0}
+.reihe legend{font-size:15px;color:#e6cfae;padding:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{min-height:42px;padding:4px 11px;border:2px solid #7c4a3c;border-radius:6px;background:#3a1320;color:var(--papier);font:600 15px 'Baloo 2',sans-serif;cursor:pointer}
+.chip[aria-pressed=true]{border-color:var(--messing-h);background:#6a3a20}
+.chip small{color:var(--messing-h);font-size:13px}
+.klein{font-size:14px;color:#d7bfa8;margin:8px 0!important}
+.inventar{display:flex;gap:7px;flex-wrap:wrap;font-size:15px;color:#e6cfae;margin-top:7px}
+.inventar b{color:var(--papier)}
+/* Einstellungen */
+dialog{border:3px solid var(--messing);background:#3a1320;color:var(--papier);max-width:420px;width:calc(100% - 32px);padding:16px 18px;border-radius:10px;font-family:'Baloo 2',sans-serif}
+dialog::backdrop{background:#000a}
+dialog h2{font-family:'Bungee',sans-serif;font-weight:400;font-size:20px;color:var(--messing-h);margin:0 0 10px}
+.zeile{display:flex;gap:11px;align-items:flex-start;padding:7px 0;font-size:17px;cursor:pointer}
+.zeile input{width:22px;height:22px;margin-top:3px;accent-color:#e0ac3f;flex:none}
+.zeile small{display:block;font-size:14px;color:#d7bfa8;font-weight:500}
+fieldset{border:0;padding:0;margin:8px 0}
+fieldset legend{font-weight:700;font-size:17px;padding:0}
+fieldset label{display:inline-flex;gap:6px;align-items:center;margin-right:13px;min-height:38px;font-size:17px;cursor:pointer}
+fieldset input{width:20px;height:20px;accent-color:#e0ac3f}
+/* Handy quer und niedrige Fenster */
+@media (orientation:landscape) and (max-height:620px){
+  body:not(.d3) #spiel{max-width:none;flex-direction:row;height:100dvh}
+  body:not(.d3) #buehne{flex:0 0 auto;height:100dvh;aspect-ratio:4/3;max-width:60vw}
+  body:not(.d3) #bild{height:100%;width:100%;aspect-ratio:auto}
+  body:not(.d3) #tafel{overflow:auto;border-top:0;border-left:3px solid var(--messing);min-height:0}
+}
+@media (prefers-reduced-motion:reduce){#laerm-balken i{transition:none}#ding.an{animation-duration:1.4s}}
+
+/* 3D-Modus */
+#welt{display:none;position:absolute;inset:0;touch-action:none;cursor:grab}
+#welt canvas{display:block;width:100%;height:100%}
+#vignette,#spion3d{display:none;position:absolute;inset:0;pointer-events:none}
+#schwarz{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:4}
+#spion3d{background:radial-gradient(circle at 50% 46%,transparent 0 31vmin,#6e4a14 31.4vmin 32.6vmin,#000 33vmin);z-index:3}
+#spion3d.an{display:block}
+#stick{display:none;position:absolute;left:18px;bottom:calc(20px + env(safe-area-inset-bottom,0px));width:118px;height:118px;border-radius:50%;border:2px solid #fbeed066;background:#0005;pointer-events:none;z-index:2}
+#stick i{position:absolute;left:34px;top:34px;width:50px;height:50px;border-radius:50%;background:#f6d27acc}
+body.d3 #spiel{display:block;max-width:none;box-shadow:none;background:#000}
+body.d3 #buehne{position:fixed;inset:0;line-height:normal}
+body.d3 #bild{display:none}
+body.d3 #welt,body.d3 #vignette{display:block}
+body.d3 #vignette{background:radial-gradient(ellipse at center,transparent 52%,#000b 100%)}
+body.d3 #tafel{position:fixed;z-index:5;left:50%;bottom:0;transform:translateX(-50%);width:min(100%,780px);min-height:0;max-height:64dvh;overflow:auto;border-top:0;padding-top:26px;background:linear-gradient(transparent,#1a070df0 24px)}
+body.d3 #text{min-height:0}
+body.d3 #knoepfe{margin-top:0}
+body.d3 #uhr{display:none}
+body.d3 #pause,body.d3 #ding{z-index:6}
+body.laufen #tafel{left:auto;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:none;width:min(54vw,290px);padding:9px 11px;background:#1a070dd9;border:2px solid var(--messing);border-radius:6px}
+body.laufen #wer,body.laufen #uhr{display:none}
+body.laufen #text{font-size:16px;line-height:1.25}
+body.laufen #knoepfe{grid-template-columns:1fr;padding-top:8px}
+body.laufen .knopf{min-height:46px;font-size:16px;padding:7px 12px}
+body.laufen.touch #stick{display:block}
+#tipp{position:absolute;left:50%;top:12px;transform:translateX(-50%);max-width:calc(100% - 80px);padding:5px 12px;border-radius:7px;background:#0a0c10d9;color:var(--papier);font-size:15px;line-height:1.25;z-index:5;text-align:center}

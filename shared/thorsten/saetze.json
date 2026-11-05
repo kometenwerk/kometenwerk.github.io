@@ -1594,6 +1594,24 @@
       "gruppe": "hz_emo_geschafft",
       "text": "Repariert! Ganz locker. Hat jemand gezweifelt?",
       "gefuehl": "frech"
+    },
+    {
+      "id": "app-hotelfreundlich-1",
+      "gruppe": "app_hotelfreundlich",
+      "nr": 1,
+      "text": "Leute, bei FLARESSA entsteht gerade ein neues Grusel-Spiel: Hotel Freundlich!"
+    },
+    {
+      "id": "app-hotelfreundlich-2",
+      "gruppe": "app_hotelfreundlich",
+      "nr": 2,
+      "text": "Ihr checkt in Raum 67 ein, und die Rezeptionsklingel ist nicht so nett, wie sie aussieht."
+    },
+    {
+      "id": "app-hotelfreundlich-3",
+      "gruppe": "app_hotelfreundlich",
+      "nr": 3,
+      "text": "Dann müsst ihr durch den Lüftungsschacht fliehen. Ohne Werbung, im Browser."
     }
   ]
 }

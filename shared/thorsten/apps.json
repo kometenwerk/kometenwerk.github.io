@@ -269,6 +269,20 @@
         "Alle OMNIVIA-Apps",
         "Sicher & werbefrei"
       ]
+    },
+    {
+      "id": "hotelfreundlich",
+      "name": "Hotel Freundlich",
+      "marke": "flaressa",
+      "farbe": "#5b1a2e",
+      "status": "bald",
+      "pfad": "spiele/hotel-freundlich/",
+      "bilder": [],
+      "punkte": [
+        "3D-Grusel im Browser",
+        "Eigene Figuren",
+        "Ohne Werbung"
+      ]
     }
   ]
 }

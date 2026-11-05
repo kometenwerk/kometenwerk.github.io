@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="de" data-marke="flaressa" data-intro="immer">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hotel Freundlich: Die Nacht von Raum 67 | FLARESSA Gaming</title>
+<meta name="description" content="Ein albernes 3D-Grusel-Spiel im Browser: Check im Hotel Freundlich ein und flieh durch den Lüftungsschacht. Ohne Werbung, ohne Käufe, empfohlen ab 12 Jahren.">
+<meta name="theme-color" content="#5b1a2e">
+<link rel="canonical" href="https://kometenwerk.github.io/spiele/hotel-freundlich/">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../../Krawallzoo/fonts/fonts.css">
+<link rel="stylesheet" href="spiel.css">
+</head>
+<body>
+<script src="../../shared/intro.js"></script>
+<main id="spiel" aria-label="Hotel Freundlich">
+  <div id="buehne">
+    <div id="welt" aria-label="3D-Hotel" role="img"></div>
+    <canvas id="bild" width="720" height="540" role="img" aria-label="Spielszene"></canvas>
+    <div id="vignette" aria-hidden="true"></div>
+    <div id="spion3d" aria-hidden="true"></div>
+    <div id="schwarz" aria-hidden="true"></div>
+    <div id="stick" aria-hidden="true"><i></i></div>
+    <div id="hud" hidden>
+      <span id="etage"></span>
+      <span id="leben" role="img"></span>
+      <span id="laerm" role="img"><span id="laerm-wort">Lärm</span><span id="laerm-balken"><i></i></span></span>
+    </div>
+    <button id="pause" type="button" aria-label="Pause" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button>
+    <div id="ding" aria-hidden="true"></div>
+  </div>
+  <section id="tafel" aria-live="polite">
+    <div id="uhr" hidden><i></i></div>
+    <p id="wer"></p>
+    <p id="text"></p>
+    <div id="eigen"></div>
+    <div id="knoepfe"></div>
+  </section>
+</main>
+
+<dialog id="einst" aria-labelledby="einst-t">
+  <h2 id="einst-t">Einstellungen</h2>
+  <label class="zeile"><input type="checkbox" id="e-schreck"><span><b>Schreck-Schutz</b><small>Warnt vor Schreckmomenten, macht sie leiser und ohne Wackeln.</small></span></label>
+  <label class="zeile"><input type="checkbox" id="e-einfach"><span><b>Einfache Grafik</b><small>Für ältere Handys: weniger Schatten, flüssiger.</small></span></label>
+  <label class="zeile"><input type="checkbox" id="e-ton"><span><b>Geräusche</b></span></label>
+  <label class="zeile"><input type="checkbox" id="e-musik"><span><b>Musik</b></span></label>
+  <fieldset><legend>Reaktionszeit</legend>
+    <label><input type="radio" name="zeit" value="leicht"><span>Leicht</span></label>
+    <label><input type="radio" name="zeit" value="normal"><span>Normal</span></label>
+    <label><input type="radio" name="zeit" value="schwer"><span>Schwer</span></label>
+  </fieldset>
+  <p class="klein">Dein Spielstand bleibt auf diesem Gerät. Keine Werbung, keine Tracker, keine Käufe.</p>
+  <button type="button" class="knopf" id="einst-zu">Fertig</button>
+</dialog>
+<script src="spiel.js"></script>
+</body>
+</html>
