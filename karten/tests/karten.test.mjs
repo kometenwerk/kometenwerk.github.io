@@ -7,7 +7,7 @@ import path from "node:path";
 import zlib from "node:zlib";
 import { Netz, linieTeilen, naechsterAufLinie, drehWort, meterText, abstand, kosten, netzLesen, BIT } from "../netz.js";
 import { Suche, norm, eimerVon } from "../suche.js";
-import { meldungenLesen, routeErklaeren } from "../verkehr.js";
+import { meldungenLesen, routeErklaeren, fahrtRichtung } from "../verkehr.js";
 
 test("norm passt zu den Daten", () => {
   assert.equal(norm("Hauptstraße 5"), "hauptstr 5");
@@ -103,6 +103,15 @@ test("Verkehrsmeldungen lesen", () => {
   const stau = m.find(x => x.art === "stau");
   assert.equal(stau.minuten, 15); assert.equal(stau.strasse, "A5");
   assert.ok(m.find(x => x.gesperrt));
+});
+
+test("Fahrtrichtung einer Meldung aus den Anschlussstellen", () => {
+  const anschluss = { "teningen": [[48.12, 7.80]], "freiburg nord": [[48.03, 7.79], [52, 13]] };
+  const g = fahrtRichtung("A5 | Teningen - Freiburg-Nord", 48.07, 7.80, anschluss);
+  assert.ok(g > 170 && g < 200, String(g)); // nach Süden
+  assert.equal(fahrtRichtung("A5 | Unbekannt - Freiburg-Nord", 48.07, 7.8, anschluss), null);
+  const m = meldungenLesen({ warning: [{ title: "A5 | Teningen - Freiburg-Nord", coordinate: { lat: "48.07", long: "7.8" }, description: ["Stau"], delayTimeValue: "9" }] }, null, anschluss);
+  assert.ok(m[0].grad > 170 && m[0].grad < 200);
 });
 
 test("Route erklären", () => {

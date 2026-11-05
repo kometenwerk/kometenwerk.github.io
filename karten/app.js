@@ -32,13 +32,14 @@ async function ladenRoh(p) {
 }
 const ladenJSON = async p => JSON.parse(new TextDecoder().decode(await ladenRoh(p)));
 
-let index = null, netz = null, suche = null, datenFehler = null;
+let index = null, netz = null, suche = null, datenFehler = null, anschluss = null;
 const datenBereit = (async () => {
   try {
     index = await ladenJSON("index.json");
     netz = new Netz(index, ladenRoh);
     suche = new Suche(ladenJSON, index.suche, await ladenJSON("orte.json"));
     altesAufraeumen();
+    anschluss = await ladenJSON("anschluss.json").catch(() => null);
   } catch (e) { datenFehler = e; }
 })();
 
@@ -117,7 +118,7 @@ async function verkehrHolen() {
   await datenBereit;
   const bbox = index?.bbox || [47.4, 7.4, 48.75, 9.0];
   try {
-    const r = await meldungenLaden(bbox, { kopie: DATEN + "verkehr.json" });
+    const r = await meldungenLaden(bbox, { kopie: DATEN + "verkehr.json", anschluss });
     S.meldungen = r.meldungen; S.meldStand = r.stand; S.meldLive = r.live;
   } catch { S.meldungen = []; S.meldStand = null; }
   meldungenZeichnen();

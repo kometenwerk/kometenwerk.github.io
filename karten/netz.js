@@ -206,16 +206,23 @@ export class Netz {
   }
 
   /** Strafzeit/Sperre durch Verkehrsmeldungen (nur Autobahn/Bundesstraßen, ungefähr). */
-  meldungsKosten(k, e, meldungen) {
+  meldungsKosten(k, e, meldungen, i = -1) {
     if (!meldungen?.length || k.kl[e] > 1) return 0;
     const la = k.tla[e] / 1e6, lo = k.tlo[e] / 1e6;
-    let plus = 0;
+    let plus = 0, grad = null;
     for (const m of meldungen) {
       if (Math.abs(m.lat - la) > 0.01 || Math.abs(m.lon - lo) > 0.015) continue;
       const d = abstand(la, lo, m.lat, m.lon);
       if (d > (m.radius || 400)) continue;
+      if (m.grad != null && i >= 0) {
+        if (grad === null) grad = richtung(k.lat[i] / 1e6, k.lon[i] / 1e6, la, lo);
+        const diff = Math.abs(((grad - m.grad + 540) % 360) - 180);
+        if (diff > 80) continue; // Meldung gilt für die Gegenrichtung
+      }
       if (m.gesperrt) return Infinity;
-      plus += (m.minuten || 0) * 60 / 3;
+      // Verzögerung nach Länge verteilen: wer die Stelle durchfährt, bekommt sie etwa einmal
+      const r = m.radius || 400;
+      plus = Math.max(plus, (m.minuten || 0) * 60 * Math.min(1, k.len[e] / (2 * r))); // doppelte Meldungen (beide Richtungen) nur einmal
     }
     return plus;
   }
@@ -236,14 +243,15 @@ export class Netz {
     const vmax = VMAX[modus];
     const h = (la, lo) => abstand(la, lo, ziel.lat, ziel.lon) / vmax;
 
-    const kostenVon = (k, e, la, lo) => {
+    const kostenVon = (k, i, e) => {
+      const la = k.tla[e] / 1e6, lo = k.tlo[e] / 1e6;
       let c = kosten(k, e, modus, opt);
       if (c === Infinity) return c;
       if (modus === "auto") {
         if (opt.keineSchleichwege && (k.fl[e] & BIT.WOHN)) {
           if (abstand(la, lo, start.lat, start.lon) > RUND_NAH && abstand(la, lo, ziel.lat, ziel.lon) > RUND_NAH) c *= 2.2;
         }
-        const m = this.meldungsKosten(k, e, opt.meldungen);
+        const m = this.meldungsKosten(k, e, opt.meldungen, i);
         if (m === Infinity) return m;
         c += m;
       }
@@ -253,18 +261,18 @@ export class Netz {
     const g = new Map(), zurueck = new Map(), fertig = new Set();
     const haufen = new Haufen();
     // Startkanten
-    const sK = kostenVon(s.k, s.e, s.punkt[0], s.punkt[1]);
+    const sK = kostenVon(s.k, s.i, s.e);
     if (sK < Infinity) { const c = sK * (1 - s.anteil); g.set(s.nach, c); zurueck.set(s.nach, { start: true, k: s.k, e: s.e, i: s.i, ab: s.anteil }); haufen.push(c + h(s.k.tla[s.e] / 1e6, s.k.tlo[s.e] / 1e6), s.nach); }
     if (s.rueck) {
-      const rK = kostenVon(s.rueck.k, s.rueck.e, s.punkt[0], s.punkt[1]);
+      const rK = kostenVon(s.rueck.k, s.rueck.i, s.rueck.e);
       if (rK < Infinity) { const c = rK * s.anteil; if (!(g.get(s.von) <= c)) { g.set(s.von, c); zurueck.set(s.von, { start: true, k: s.rueck.k, e: s.rueck.e, i: s.rueck.i, ab: 1 - s.anteil }); haufen.push(c + h(s.k.lat[s.i] / 1e6, s.k.lon[s.i] / 1e6), s.von); } }
     }
     // Zielkanten: von welchem Knoten aus, wie teuer noch
     const zielRest = new Map();
-    const zK = kostenVon(z.k, z.e, z.punkt[0], z.punkt[1]);
+    const zK = kostenVon(z.k, z.i, z.e);
     if (zK < Infinity) zielRest.set(z.von, { c: zK * z.anteil, k: z.k, e: z.e, i: z.i, bis: z.anteil });
     if (z.rueck) {
-      const rK = kostenVon(z.rueck.k, z.rueck.e, z.punkt[0], z.punkt[1]);
+      const rK = kostenVon(z.rueck.k, z.rueck.i, z.rueck.e);
       if (rK < Infinity) zielRest.set(z.nach, { c: rK * (1 - z.anteil), k: z.rueck.k, e: z.rueck.e, i: z.rueck.i, bis: 1 - z.anteil });
     }
     if (!zielRest.size) return { fehler: "ziel" };
@@ -303,7 +311,7 @@ export class Netz {
         const v = k.to[e];
         if (fertig.has(v)) continue;
         const la = k.tla[e] / 1e6, lo = k.tlo[e] / 1e6;
-        const c = kostenVon(k, e, la, lo);
+        const c = kostenVon(k, i, e);
         if (c === Infinity) continue;
         const ng = gu + c;
         const alt = g.get(v);

@@ -118,11 +118,14 @@ class Leser(osmium.SimpleHandler):
         self.strassen = []        # (name, lat, lon)
         self.orte_punkte = []     # (name, art, lat, lon) für Gebäude/Orte zum Suchen
         self.bbox = [90, 180, -90, -180]
+        self.anschluesse = []     # (name, lat, lon) Autobahn-Anschlussstellen, Kreuze, Raststätten
 
     def node(self, n):
         t = n.tags
         if not len(t): return
         lat, lon = n.location.lat, n.location.lon
+        if t.get("highway") in ("motorway_junction", "services", "rest_area") and "name" in t:
+            self.anschluesse.append((t["name"], lat, lon))
         if "addr:housenumber" in t and ("addr:street" in t or "addr:place" in t):
             self.adressen.append((t.get("addr:street") or t.get("addr:place"), t["addr:housenumber"], t.get("addr:city", ""), t.get("addr:postcode", ""), lat, lon))
         p = t.get("place")
@@ -167,6 +170,8 @@ class Leser(osmium.SimpleHandler):
         if "addr:housenumber" in t and ("addr:street" in t or "addr:place" in t):
             la = sum(p[1] for p in pkt) / len(pkt); lo = sum(p[2] for p in pkt) / len(pkt)
             self.adressen.append((t.get("addr:street") or t.get("addr:place"), t["addr:housenumber"], t.get("addr:city", ""), t.get("addr:postcode", ""), la, lo))
+        if t.get("highway") in ("services", "rest_area") and "name" in t:
+            self.anschluesse.append((t["name"], sum(p[1] for p in pkt) / len(pkt), sum(p[2] for p in pkt) / len(pkt)))
         art = self.art(t)
         if art and "name" in t:
             la = sum(p[1] for p in pkt) / len(pkt); lo = sum(p[2] for p in pkt) / len(pkt)
@@ -415,6 +420,13 @@ def bauen(quelle, ziel):
     ortsliste = [[o[0], STADT[o[1]], round(o[2], 5), round(o[3], 5), o[4]] for o in orte]
     with open(os.path.join(ziel, "orte.json"), "w", encoding="utf-8") as f:
         json.dump(ortsliste, f, ensure_ascii=False, separators=(",", ":"))
+    anschluss = defaultdict(list)
+    for name, la, lo in r.anschluesse:
+        p = [round(la, 5), round(lo, 5)]
+        if p not in anschluss[norm(name)]: anschluss[norm(name)].append(p)
+    with open(os.path.join(ziel, "anschluss.json"), "w", encoding="utf-8") as f:
+        json.dump(anschluss, f, ensure_ascii=False, separators=(",", ":"))
+    print(f"Anschlussstellen: {len(anschluss)}")
     print(f"Suche: {len(strassen)} Straßen, {len(doppelt)} Ziele, {len(eimer)} Dateien, {sg/1e6:.1f} MB; {len(ortsliste)} Orte")
 
     index = {

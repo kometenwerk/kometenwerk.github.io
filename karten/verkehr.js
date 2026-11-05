@@ -1,7 +1,8 @@
 // OMNIVIA Karten – Verkehrsmeldungen der Autobahn GmbH des Bundes und Erklärung der Route.
 // Quelle: verkehr.autobahn.de (frei, ohne Anmeldung). Staus auf Landstraßen gibt es dort nicht.
 
-import { abstand, meterText } from "./netz.js";
+import { abstand, meterText, richtung } from "./netz.js";
+import { norm } from "./suche.js";
 
 export const AUTOBAHNEN = ["A5", "A81", "A98", "A860", "A861", "A862", "A864"];
 const API = "https://verkehr.autobahn.de/o/autobahn";
@@ -10,7 +11,27 @@ const DIENSTE = { warning: "warning", closure: "closure", roadworks: "roadworks"
 function zahl(x) { const n = parseFloat(String(x ?? "").replace(",", ".")); return Number.isFinite(n) ? n : null; }
 
 /** Macht aus den Rohdaten der Autobahn-API eine einfache Liste. bbox = [süd, west, nord, ost] */
-export function meldungenLesen(roh, bbox) {
+/** Fahrtrichtung in Grad aus „A5 | Teningen - Freiburg-Nord“ (der Titel nennt die Stellen in Fahrtrichtung). */
+export function fahrtRichtung(titel, lat, lon, anschluss) {
+  if (!anschluss) return null;
+  const teil = String(titel || "").split("|")[1];
+  if (!teil) return null;
+  const [a, b] = teil.split(/\s+-\s+/);
+  if (!a || !b) return null;
+  const naechster = name => {
+    const n = norm(name.replace(/\(.*?\)/g, "").replace(/^(AS|AK|AD|Rastanlage|Raststätte|Rasthof|Parkplatz|Tank- und Rastanlage)\s+/i, ""));
+    const liste = anschluss[n] || anschluss[n.replace(/ /g, "")] || Object.entries(anschluss).find(([k]) => k.replace(/ /g, "") === n.replace(/ /g, ""))?.[1];
+    if (!liste) return null;
+    let best = null, bd = 30000;
+    for (const p of liste) { const d = abstand(lat, lon, p[0], p[1]); if (d < bd) { bd = d; best = p; } }
+    return best;
+  };
+  const pa = naechster(a), pb = naechster(b);
+  if (!pa || !pb || abstand(pa[0], pa[1], pb[0], pb[1]) < 200) return null;
+  return richtung(pa[0], pa[1], pb[0], pb[1]);
+}
+
+export function meldungenLesen(roh, bbox, anschluss = null) {
   const out = [];
   for (const [dienst, liste] of Object.entries(roh || {})) {
     for (const m of liste || []) {
@@ -26,10 +47,10 @@ export function meldungenLesen(roh, bbox) {
       const strasse = (String(m.title || "").match(/^\s*(A\s?\d+|B\s?\d+)/) || [])[1]?.replace(" ", "") || "";
       out.push({
         id: m.identifier || `${dienst}-${lat}-${lon}`, art, lat, lon, gesperrt,
-        minuten: minuten ?? (art === "stau" ? 10 : art === "baustelle" ? 2 : 0),
+        minuten: minuten ?? (art === "stau" ? 10 : art === "baustelle" ? 0.5 : 0),
         titel: String(m.title || "").replace(/\s*\|\s*/g, ": ").trim(), richtung: String(m.subtitle || "").replace("->", "→").trim(),
         text: (Array.isArray(m.description) ? m.description : [m.description]).filter(Boolean).slice(0, 6).join(" ").replace(/\s+/g, " ").trim(),
-        strasse, radius: gesperrt ? 250 : 500,
+        strasse, radius: gesperrt ? 250 : 500, grad: fahrtRichtung(m.title, lat, lon, anschluss),
       });
     }
   }
@@ -37,7 +58,7 @@ export function meldungenLesen(roh, bbox) {
 }
 
 /** Lädt die Meldungen: erst direkt bei der Autobahn GmbH, sonst die Kopie, die GitHub regelmäßig holt. */
-export async function meldungenLaden(bbox, { kopie = "daten/verkehr.json", holen = fetch } = {}) {
+export async function meldungenLaden(bbox, { kopie = "daten/verkehr.json", holen = fetch, anschluss = null } = {}) {
   try {
     const roh = { warning: [], closure: [], roadworks: [] };
     const anfragen = [];
@@ -47,12 +68,12 @@ export async function meldungenLaden(bbox, { kopie = "daten/verkehr.json", holen
     }
     const erg = await Promise.allSettled(anfragen);
     if (erg.filter(e => e.status === "fulfilled").length < anfragen.length / 2) throw new Error("direkt nicht erreichbar");
-    return { meldungen: meldungenLesen(roh, bbox), stand: new Date().toISOString(), live: true };
+    return { meldungen: meldungenLesen(roh, bbox, anschluss), stand: new Date().toISOString(), live: true };
   } catch {
     const r = await holen(kopie, { cache: "no-cache" });
     if (!r.ok) throw new Error("Keine Verkehrsdaten");
     const j = await r.json();
-    return { meldungen: meldungenLesen(j.roh, bbox), stand: j.stand, live: false };
+    return { meldungen: meldungenLesen(j.roh, bbox, anschluss), stand: j.stand, live: false };
   }
 }
 
