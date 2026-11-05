@@ -836,6 +836,11 @@ function schleife() {
       else if (E.dreh) f.g.rotation.y = Math.sin(zeit * .7) * .55;
     }
     konfetti(dt);
+    if (E.mit) Object.values(E.mit).forEach(e => {
+      const k = Math.min(1, dt * 9); e.x += (e.zx - e.x) * k; e.z += (e.zz - e.z) * k; e.r += winkelNorm(e.zr - e.r) * k;
+      e.f.g.position.set(e.x, 0, e.z); e.f.g.rotation.y = e.r + Math.PI;
+      const b = Math.hypot(e.zx - e.x, e.zz - e.z) > .03 ? Math.sin(zeit * 10) * .6 : 0; e.f.beine[0].rotation.x = b; e.f.beine[1].rotation.x = -b;
+    });
     if (toni && toni.g.visible) {
       const w = E.tempo || 0;
       toni.arme[0].rotation.x = Math.sin(zeit * w) * .4; toni.arme[1].rotation.x = -Math.sin(zeit * w) * .4;
@@ -920,6 +925,22 @@ export const Welt = {
   },
   nah() { return nahId; },
   wo() { return [pos.x, pos.z, yaw]; },
+  mitspieler(l) {
+    E.mit = E.mit || {};
+    const da = {};
+    l.forEach(m => {
+      da[m.id] = 1; let e = E.mit[m.id];
+      if (!e) {
+        e = { f: baueFigur(), x: m.x, z: m.z, r: m.r, zx: m.x, zz: m.z, zr: m.r }; e.f.g.scale.set(.8, .8, .8); e.f.setz(m.figur); orte.schacht.g.add(e.f.g);
+        const k = document.createElement('canvas'); k.width = 256; k.height = 64; const q = k.getContext('2d'); q.fillStyle = '#1a070dcc'; q.fillRect(0, 0, 256, 64); q.fillStyle = '#ffd478'; q.font = "700 38px 'Baloo 2', sans-serif"; q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillText(m.name, 128, 34);
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(k), depthTest: false, transparent: true })); sp.position.y = 2.05; sp.scale.set(.9, .225, 1); e.f.g.add(sp);
+        E.mit[m.id] = e;
+      }
+      e.zx = m.x; e.zz = m.z; e.zr = m.r; e.f.g.visible = m.n === undefined || m.n === E.nrAkt || true;
+    });
+    Object.keys(E.mit).forEach(id => { if (!da[id]) { const e = E.mit[id]; e.f.g.parent && e.f.g.parent.remove(e.f.g); delete E.mit[id]; } });
+  },
+  mitspielerWeg() { Welt.mitspieler([]); },
   rlPhase() { return E.rl ? E.rl.phase : ''; },
   stopp() { auto = null; frei = false; tweens.length = 0; Welt.ziele([]); E.spricht = false; E.fans = []; E.endeZ = null; E.folge = null; E.rl = null; if (E.sToni) E.sToni.g.visible = false; if (E.sG) Welt.feindWeg(); tempoJetzt = TEMPO; },
   hin(z) { return new Promise(ok => { auto = { z: z.steh, ok }; }); },

@@ -114,6 +114,7 @@ function bild(jetzt) {
     }
     dingWarnung(dt);
     jagdTick(dt);
+    if (typeof onlineTick === 'function') onlineTick(dt);
   }
   passeGroesse();
   const k = leinwand.width / W;
@@ -198,7 +199,7 @@ addEventListener('keydown', e => {
 });
 $('pause').addEventListener('click', pauseZeigen);
 $('duck').addEventListener('click', () => { if (WELT) $('duck').setAttribute('aria-pressed', WELT.ducken() ? 'true' : 'false'); });
-document.addEventListener('visibilitychange', () => { if (document.hidden && !pausiert && laufendesSpiel) pauseZeigen(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && !pausiert && laufendesSpiel && !(F && F.modus === 'koop')) pauseZeigen(); });
 let laufendesSpiel = false;
 
 const dlg = $('einst');
@@ -683,7 +684,7 @@ function dingWarnung(dt) {
 function hudZeigen() {
   const h = $('hud'); h.hidden = !F || !F.imSchacht;
   if (!F) return;
-  const et = F.modus === 'story' ? 'Etage ' + etage(F.geschafft) : F.geschafft + ' geschafft';
+  const et = F.modus !== 'endlos' ? 'Etage ' + etage(F.geschafft) : F.geschafft + ' geschafft';
   $('etage').textContent = et;
   $('leben').textContent = '♥'.repeat(F.leben);
   $('leben').setAttribute('aria-label', F.leben + ' Leben');
@@ -1307,14 +1308,14 @@ function beutelZeigen() {
     if (DINGE3[d].frei) return k(DINGE3[d].n, null, true);
     k(DINGE3[d].n, () => {
       F.dinge.splice(i, 1);
-      if (d === 'wd40') F.leiseBis = T + 20;
+      if (d === 'wd40') { F.leiseBis = T + 20; if (F.modus === 'koop') schick({ t: 'still', s: 20 }); }
       if (d === 'drink') { F.schnellBis = T + 15; WELT.tempoSetzen(1.45); }
-      if (d === 'fetzen') F.laerm = Math.max(0, F.laerm - 30);
+      if (d === 'fetzen') { if (F.modus === 'koop') schick({ t: 'laerm', v: -30 }); else F.laerm = Math.max(0, F.laerm - 30); }
     });
   });
   if (F.skip) k('Abkürzung', () => { F.skip = 0; if (aktFertig) aktFertig('ende'); });
-  if (F.riegel) k('Verrammeln', () => { F.riegel = 0; F.laerm = 0; Ton.pock(.7); });
-  if (F.ablenkung) k(`Ablenken (${F.ablenkung})`, () => { F.ablenkung--; F.stillBis = T + 10; });
+  if (F.riegel) k('Verrammeln', () => { F.riegel = 0; if (F.modus === 'koop') schick({ t: 'laerm', v: -100 }); else F.laerm = 0; Ton.pock(.7); });
+  if (F.ablenkung) k(`Ablenken (${F.ablenkung})`, () => { F.ablenkung--; F.stillBis = T + 10; if (F.modus === 'koop') schick({ t: 'still', s: 10 }); });
   if (F.linse && F.quizAn) k(`Linse (${F.linse})`, () => { if (aktFertig) aktFertig('linse'); });
 }
 function jagdTick(dt) {
@@ -1532,6 +1533,7 @@ async function endlosLauf() {
 
 /* ---------- Menüs ---------- */
 function titel() {
+  if (typeof onlineSchliessen === 'function') onlineSchliessen();
   abbrechen(); F = null; laufendesSpiel = false; $('beutel').innerHTML = ''; $('hud').hidden = true; $('pause').hidden = true; stoppeUhr();
   blendeWert = 0; Ton.musik(false);
   szene = titelBild;
@@ -1543,6 +1545,7 @@ function titel() {
   const eins = (t, f, o) => { const b = knopf(t, o); b.addEventListener('click', () => { Ton.klick(); f(); }); $('knoepfe').append(b); return b; };
   if (spar.stand && WELT) eins('Weiterspielen', () => weiterspielen(), { klein: `Ruhe-Etage ${66 - spar.stand.g}` });
   eins('Geschichte spielen', () => figurMenue(() => berufMenue('story')), { klein: enden ? `Enden gefunden: ${enden} von 2` : 'Etwa 45 Minuten' });
+  if (WELT) eins('Mit Freunden', () => figurMenue(() => berufMenue('online')), { art: 'neben', klein: 'Online mit Raum-Code' });
   eins('Endlos-Schacht', () => figurMenue(() => berufMenue('endlos')), { art: 'neben', klein: spar.rekord ? `Rekord: ${spar.rekord}` : 'Wie weit kommst du?' });
   eins('Einstellungen', () => einstellungen(), { art: 'neben', klein: 'Schreck-Schutz: ' + (spar.schreck ? 'an' : 'aus') });
   pfadWeg();
@@ -1602,8 +1605,8 @@ function berufMenue(modus) {
     const k = knopf(b.n, { klein: `${b.f} ${b.b}`, art: spar.beruf === id ? '' : 'neben' });
     k.addEventListener('click', () => {
       Ton.klick(); spar.beruf = id; sichern();
-      neueFlucht(modus);
-      if (modus === 'story') storyLauf(); else endlosLauf();
+      if (modus !== 'online') neueFlucht(modus);
+      if (modus === 'online') onlineMenue(); else if (modus === 'story') storyLauf(); else endlosLauf();
     });
     $('knoepfe').append(k);
   });

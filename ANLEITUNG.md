@@ -67,6 +67,19 @@ von etwa 100 Verbindungen gleichzeitig.
 Die Datei `database.rules.json` gehört NICHT ins Repo. Ihren Inhalt in der Firebase-Konsole einfügen:
 Realtime Database → Regeln → alles ersetzen → Veröffentlichen.
 
+## Hotel Freundlich online freischalten
+In der Firebase-Konsole unter Realtime Database → Regeln innerhalb von `"rules": { ... }` diesen Block ergänzen (die übrigen Regeln bleiben):
+```json
+"hotel": {
+  "$code": {
+    ".read": "auth != null && $code.length === 6",
+    ".write": "auth != null && (!data.exists() ? newData.child('host').val() === auth.uid : data.child('host').val() === auth.uid)",
+    "spieler": { "$uid": { ".write": "auth != null && $uid === auth.uid" } },
+    "aktion": { "$id": { ".write": "auth != null && root.child('hotel').child($code).child('spieler').child(auth.uid).exists()" } }
+  }
+},
+```
+
 ## Achtung: kunden/einstellungen.json
 Wenn du deine Kunden-Einstellungen (E-Mail, Sprechzeiten, Impressum) schon auf GitHub geändert hast,
 diese eine Datei beim Hochladen NICHT ersetzen.
