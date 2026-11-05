@@ -664,7 +664,7 @@ function neueFlucht(modus, loop = 0, doku = false) {
   const b = spar.beruf || 'wiss';
   F = {
     modus, loop, doku, beruf: b, leben: b === 'body' ? 4 : 3, laerm: 0, dinge: [], geschafft: 0,
-    linse: b === 'wiss' ? 3 : 0, skip: b === 'tech' ? 1 : 0, riegel: b === 'body' ? 1 : 0, ablenkung: b === 'meme' ? 2 : 0,
+    dokus: new Set(), linse: b === 'wiss' ? 3 : 0, skip: b === 'tech' ? 1 : 0, riegel: b === 'body' ? 1 : 0, ablenkung: b === 'meme' ? 2 : 0,
     bonus: 0, ablenkungAn: false, lautlos: 0, coins: 0, typen: []
   };
   fragenRest = mische(FRAGEN);
@@ -1098,6 +1098,81 @@ function gehe(hinweis, ziele) {
     tasteFn = k => { if ((k === 'e' || k === 'enter') && WELT.nah()) { Ton.klick(); fertig(WELT.nah()); return true; } return false; };
   });
 }
+async function dokument(id, titel, text) {
+  F.dokus.add(id); F.doku = F.dokus.size >= 4; Ton.gut();
+  await sag(`${titel} (Dokument ${F.dokus.size} von 4)`, text);
+}
+async function zumSaal() {
+  const nr = laufNr, Z = WELT.Z;
+  await blende(1, 350); pruefe(nr);
+  WELT.ort('saal', 0, 4.6, 0);
+  await blende(0, 350); pruefe(nr);
+  let h = 'Der Frühstückssaal ist leer. Fast leer. Eine Uhr steht auf 6:07.';
+  for (;;) {
+    const l = [Z.saalRaus, Z.kuh]; if (!F.dokus.has('saal')) l.push(Z.saalDoku);
+    const w = await gehe(h, l); pruefe(nr);
+    if (w === 'saalRaus') break;
+    if (w === 'kuh') {
+      await w3(WELT.fokus(Z.kuh.blick)); pruefe(nr);
+      await sag('Die Kuh', F.kuhGesehen ? 'Muh. (Immer noch frei.)' : 'Muh. (Sie hat heute wirklich frei. Sie schiebt dir eine Hotel-Münze zu.)'); pruefe(nr);
+      if (!F.kuhGesehen) { F.kuhGesehen = true; F.coins += 5; }
+      h = 'Die Kuh frühstückt weiter.';
+    }
+    if (w === 'saalDoku') {
+      await w3(WELT.fokus(Z.saalDoku.blick)); pruefe(nr);
+      await dokument('saal', 'Speisekarte', '„Frühstück für alle Gäste. Auch für die, die schon 67-mal hier waren.“'); pruefe(nr);
+      h = 'Die Speisekarte hat dir den Appetit verdorben.';
+    }
+  }
+  await blende(1, 350); pruefe(nr);
+  WELT.ort('lobby', -6.8, -4, -Math.PI / 2);
+  await blende(0, 350); pruefe(nr);
+}
+async function zurKammer() {
+  const nr = laufNr, Z = WELT.Z;
+  await blende(1, 300); pruefe(nr);
+  WELT.ort('kammer', 0, 1.2, 0);
+  await blende(0, 300); pruefe(nr);
+  let h = 'Die Kammer von Trommel-Toni. Es riecht nach Farbe und Trommelfell.';
+  for (;;) {
+    const l = [Z.kammerRaus]; if (!F.dokus.has('plan')) l.push(Z.plan); if (!F.dinge.includes('lampe') && !F.lampeGenommen) l.push(Z.lampe);
+    const w = await gehe(h, l); pruefe(nr);
+    if (w === 'kammerRaus') break;
+    if (w === 'plan') {
+      await w3(WELT.fokus(Z.plan.blick)); pruefe(nr);
+      await dokument('plan', 'Dienstplan', '„Nachts trommeln. Wer wegläuft, kommt sowieso wieder. Gezeichnet: Toni“'); pruefe(nr);
+      h = 'Hier solltest du nicht länger bleiben.';
+    }
+    if (w === 'lampe') { F.lampeGenommen = true; F.dinge.push('lampe'); WELT.lampeWeg(); Ton.gut(); h = 'Die Taschenlampe hilft dir später im Dunkeln.'; }
+  }
+  await blende(1, 300); pruefe(nr);
+  WELT.ort('flur', .4, -2.2, Math.PI / 2);
+  await blende(0, 300); pruefe(nr);
+}
+async function zumBad() {
+  const nr = laufNr, Z = WELT.Z;
+  await blende(1, 300); pruefe(nr);
+  WELT.spiegel(false); WELT.ort('bad', -.2, 1.1, 0);
+  await blende(0, 300); pruefe(nr);
+  await gehe('Das Klo ist hinten rechts.', [Z.toilette]); pruefe(nr);
+  leere(); setzeText('', '');
+  blendeWert = 1; Ton.flush();
+  await warte(2600); pruefe(nr);
+  WELT.spiegel(true);
+  await blende(0, 300); pruefe(nr);
+  let h = 'Das Licht geht wieder an. Der Spiegel ist plötzlich beschlagen.';
+  for (;;) {
+    const l = [Z.badRaus]; if (!F.dokus.has('spiegel')) l.push(Z.spiegel);
+    const w = await gehe(h, l); pruefe(nr);
+    if (w === 'badRaus') break;
+    await w3(WELT.fokus(Z.spiegel.blick)); pruefe(nr);
+    await dokument('spiegel', 'Spiegel', 'Jemand hat in den Dampf geschrieben: „Du warst schon mal hier.“'); pruefe(nr);
+    h = 'Raus hier.';
+  }
+  await blende(1, 300); pruefe(nr);
+  WELT.ort('zimmer', -1.7, -10.5, -Math.PI / 2);
+  await blende(0, 300); pruefe(nr);
+}
 async function story3d() {
   const nr = laufNr, Z = WELT.Z;
   /* Lobby */
@@ -1106,7 +1181,13 @@ async function story3d() {
   await w3(WELT.fokus(Z.rezeption.blick)); pruefe(nr);
   await gespraech(b => WELT.spricht(b)); pruefe(nr);
   WELT.spricht(false);
-  await gehe('Du hast den Schlüssel. Der Aufzug ist rechts.', [Z.aufzug]); pruefe(nr);
+  let hl = 'Du hast den Schlüssel. Der Aufzug ist rechts. Links geht es zum Frühstückssaal.';
+  for (;;) {
+    const w = await gehe(hl, [Z.aufzug, Z.saal]); pruefe(nr);
+    if (w === 'aufzug') break;
+    await zumSaal(); pruefe(nr);
+    hl = 'Der Aufzug ist auf der anderen Seite der Lobby.';
+  }
   await w3(WELT.lobbyTuer(true)); pruefe(nr);
   await blende(1, 400); pruefe(nr);
   /* Aufzug */
@@ -1123,35 +1204,47 @@ async function story3d() {
   /* Flur */
   WELT.ort('flur', 0, 8, 0);
   await blende(0, 400); pruefe(nr);
-  await gehe('Raum 67 liegt ganz am Ende des Flurs.', [Z.tuer67]); pruefe(nr);
+  let hf = 'Raum 67 liegt ganz am Ende des Flurs. Eine Tür steht offen: Hausmeister.';
+  for (;;) {
+    const w = await gehe(hf, [Z.tuer67, Z.kammer]); pruefe(nr);
+    if (w === 'tuer67') break;
+    await zurKammer(); pruefe(nr);
+    hf = 'Raum 67 liegt ganz am Ende des Flurs.';
+  }
   await blende(1, 400); pruefe(nr);
   /* Raum 67 */
   WELT.ort('zimmer', 0, -9.8, 0);
   await blende(0, 400); pruefe(nr);
-  let hinweis = 'Du musst ganz dringend aufs Klo!';
-  for (;;) {
-    const w = await gehe(hinweis, F.doku ? [Z.klo] : [Z.klo, Z.bild]); pruefe(nr);
-    if (w === 'klo') break;
+  let hinweis = 'Du musst ganz dringend aufs Klo! Das Bad ist links.';
+  const bild = async () => {
     await w3(WELT.fokus(Z.bild.blick)); pruefe(nr);
-    F.doku = true; Ton.knack(); await w3(WELT.bildWeg()); pruefe(nr);
-    await sag('Geheimes Dokument', 'Hinter dem Bild klebt ein Blatt aus dem Gästebuch: „Alle Gäste kommen zurück. Wirklich alle. Ding!“'); pruefe(nr);
+    Ton.knack(); await w3(WELT.bildWeg()); pruefe(nr);
+    await dokument('bild', 'Gästebuch', 'Hinter dem Bild klebt ein Blatt: „Alle Gäste kommen zurück. Wirklich alle. Ding!“'); pruefe(nr);
+  };
+  for (;;) {
+    const w = await gehe(hinweis, F.dokus.has('bild') ? [Z.klo] : [Z.klo, Z.bild]); pruefe(nr);
+    if (w === 'klo') break;
+    await bild(); pruefe(nr);
     hinweis = 'Komisch. Aber du musst immer noch dringend aufs Klo!';
   }
-  leere(); setzeText('', '');
-  blendeWert = 1; Ton.flush();
-  await warte(2600); pruefe(nr);
-  await blende(0, 300); pruefe(nr);
-  await sag(gast(), 'Das Licht geht wieder an. Moment mal ... der Wandkalender sieht anders aus.'); pruefe(nr);
+  await zumBad(); pruefe(nr);
+  await sag(gast(), 'Moment mal ... der Wandkalender sieht anders aus.'); pruefe(nr);
   await gehe('Schau dir den Kalender an.', [Z.kalender]); pruefe(nr);
   await w3(WELT.fokus(Z.kalender.blick)); pruefe(nr);
   WELT.kalender(true); Ton.schrill();
   await sag('Kalender', 'Es sind 67 Tage vergangen!'); pruefe(nr);
   await sag('', 'All das Lernen war umsonst ... Du hast die große Mathe-Arbeit verpasst!'); pruefe(nr);
-  await gehe('Erschöpft willst du nur noch ins Bett.', [Z.bett]); pruefe(nr);
+  let hb = 'Erschöpft willst du nur noch ins Bett.';
+  for (;;) {
+    const w = await gehe(hb, F.dokus.has('bild') ? [Z.bett] : [Z.bett, Z.bild]); pruefe(nr);
+    if (w === 'bett') break;
+    await bild(); pruefe(nr);
+    hb = 'Jetzt aber ins Bett.';
+  }
   await blende(1, 800); pruefe(nr);
   await warte(1000); pruefe(nr);
   /* Die Nacht */
-  const stand = { nacht: true, kalender: true, bildWeg: F.doku };
+  const stand = { nacht: true, kalender: true, bildWeg: F.dokus.has('bild') };
   WELT.zustand(stand); WELT.ort('zimmer', .4, -11.6, Math.PI * .92);
   WELT.fokus(Z.spion.blick, 1);
   await blende(0, 500); pruefe(nr);
@@ -1328,14 +1421,15 @@ async function schacht3d() {
     if (F.geschafft < ziel) { leere(); setzeText('', 'Du rutschst weiter nach unten ...'); Ton.rutsch(); await warte(420); pruefe(nr); }
   }
   F.jagd = false; document.body.classList.remove('schacht3d'); $('beutel').innerHTML = '';
-  WELT.stopp(); await blende(1, 300); pruefe(nr); modus3d(false);
+  WELT.stopp(); await blende(1, 300); pruefe(nr);
   return ok;
 }
 async function memeEnde() {
   const nr = laufNr;
   const bonus = 20 + F.coins; spar.coins += bonus; spar.enden.meme = true; sichern();
   await blende(1, 400); pruefe(nr);
-  szene = freiheit; Ton.musik(true, false);
+  if (WELT) { WELT.figur(figurDaten()); WELT.endeBild('frei'); modus3d(true); } else szene = freiheit;
+  Ton.musik(true, false);
   await blende(0, 400); pruefe(nr);
   setzeText('Meme-Ending', `Du brichst durch das letzte Gitter und entkommst in die Nacht! Die Mathe-Arbeit musst du trotzdem nachschreiben. +${bonus} Hotel-Coins`);
   const w = await wahl([{ t: 'Zurück zum Titel', w: 't' }, { t: 'Frisuren und Pyjamas', w: 'f', art: 'neben' }]); pruefe(nr);
@@ -1346,7 +1440,7 @@ async function schleifenEnde(grund) {
   const nr = laufNr;
   const bonus = F.coins; spar.coins += bonus; spar.enden.schleife = true; sichern();
   await blende(1, 700); pruefe(nr);
-  szene = () => aussen({ nurZimmer: true });
+  if (WELT) { WELT.figur(figurDaten()); WELT.endeBild('start'); modus3d(true); } else szene = () => aussen({ nurZimmer: true });
   await blende(0, 500); pruefe(nr);
   await sag('', grund === 'doku' ? 'Du rennst aus dem Hotel ... und stehst plötzlich wieder davor. Das Gästebuch hatte recht.' : 'Alles wird schwarz. Du wachst vor dem Hotel wieder auf.'); pruefe(nr);
   await blende(1, 400); pruefe(nr);
@@ -1402,7 +1496,7 @@ async function endlosLauf() {
     schachtEnde(); blendeWert = 0;
     const n = F.geschafft, neu = n > spar.rekord; if (neu) spar.rekord = n;
     spar.coins += F.coins; sichern();
-    szene = () => feindBricht();
+    if (WELT) WELT.feindVorne(); else szene = () => feindBricht();
     setzeText('Erwischt', `Du hast ${n} ${n === 1 ? 'Abschnitt' : 'Abschnitte'} geschafft.${neu ? ' Neuer Rekord!' : ` Dein Rekord: ${spar.rekord}.`} +${F.coins} Hotel-Coins`);
     const w = await wahl([{ t: 'Noch mal', w: 'n' }, { t: 'Zurück zum Titel', w: 't', art: 'leise' }]); pruefe(nr);
     if (w === 'n') { neueFlucht('endlos'); endlosLauf(); } else titel();
@@ -1415,7 +1509,7 @@ function titel() {
   blendeWert = 0; Ton.musik(false);
   szene = titelBild;
   if (WELT) WELT.beiSchritt = metall => Ton.schritt(metall);
-  if (WELT) { WELT.zustand({}); WELT.titel(); modus3d(true); }
+  if (WELT) { WELT.figurWeg(); WELT.zustand({}); WELT.titel(); modus3d(true); }
   const enden = Object.keys(spar.enden).length;
   setzeText('Hotel Freundlich', 'Die Nacht von Raum 67. Check ein, versuch zu schlafen und flieh durch den Lüftungsschacht.');
   leere(); $('knoepfe').className = 'titel';
@@ -1429,11 +1523,15 @@ function titel() {
   $('knoepfe').after(p);
   $('knoepfe').querySelector('button').focus({ preventScroll: true });
 }
+function figurDaten() {
+  return { haar: spar.haar, pyjama: PYJAMAS.find(p => p.id === spar.pyjama) || PYJAMAS[0], haut: HAUT[spar.haut], haarFarbe: ['#3a2316', '#141317', '#c58a35', '#a0432a'][spar.haut % 4] };
+}
 function pfadWeg() { const p = $('pfad'); if (p) p.remove(); }
 function figurMenue(weiter) {
-  pfadWeg(); abbrechen(); modus3d(false);
-  szene = figurVorschau;
+  pfadWeg(); abbrechen();
+  if (WELT) { WELT.zustand({}); WELT.menu(); modus3d(true); } else szene = figurVorschau;
   const zeichne = () => {
+    if (WELT) WELT.figur(figurDaten());
     setzeText('Deine Figur', `Hotel-Coins: ${spar.coins}. Du verdienst sie nur beim Spielen.`);
     leere();
     const e = $('eigen');
@@ -1468,8 +1566,8 @@ function figurMenue(weiter) {
   zeichne();
 }
 function berufMenue(modus) {
-  abbrechen(); modus3d(false);
-  szene = figurVorschau;
+  abbrechen();
+  if (!WELT) szene = figurVorschau;
   setzeText('Dein Beruf', 'Wähle, womit du den Schacht überleben willst.');
   leere();
   Object.entries(WELT ? BERUFE3 : BERUFE).forEach(([id, b]) => {

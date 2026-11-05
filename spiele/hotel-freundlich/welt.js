@@ -264,6 +264,9 @@ function baueLobby() {
     box(1.46, 2.9, .05, mess, x, 1.5, 5.88, p);
     flaeche(1.3, 2.7, M({ map: tex(128, 256, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#0d1230'); g.addColorStop(1, '#42214f'); c.fillStyle = g; c.fillRect(0, 0, w, h); }), roughness: .08, envMapIntensity: 1.5 }), x, 1.5, 5.84, p, 1, 1, Math.PI);
   });
+  /* Tür zum Frühstückssaal */
+  box(.1, 2.5, 1.5, hz2, -7.94, 1.25, -4, p); box(.06, 2.3, 1.26, hz, -7.88, 1.15, -4, p);
+  flaeche(1.4, .34, new THREE.MeshBasicMaterial({ map: schild('FRÜHSTÜCK', 512, 120, '#d9a441', '#2a1a14', 60) }), -7.83, 2.72, -4, p, 1, 1, Math.PI / 2);
   /* Sofa, Pflanzen, Sessel */
   const samt = M({ color: 0x0f5257, roughness: .85, envMapIntensity: .25 });
   box(1.1, .42, 2.6, samt, -7.25, .34, 1.8, p); box(.32, .86, 2.6, samt, -7.65, .62, 1.8, p); box(1.1, .6, .24, samt, -7.25, .5, .58, p); box(1.1, .6, .24, samt, -7.25, .5, 3.02, p);
@@ -340,7 +343,7 @@ function baueFlur() {
     const z = 5 - i * 2.4, s = i % 2 ? 1 : -1;
     box(.08, 2.2, 1, tuerM, s * 1.16, 1.1, z, p); box(.09, 2.3, 1.14, hz, s * 1.17, 1.15, z, p, { schatten: false });
     box(.1, 2.2, 1, tuerM, s * 1.16, 1.1, z, p, { schatten: false }); kug(.04, mess, s * 1.08, 1, z + .36, p, { schatten: false });
-    flaeche(.3, .16, new THREE.MeshBasicMaterial({ map: schild(n, 128, 64, '#d9a441', '#2a1a14', 44) }), s * 1.105, 1.72, z, p, 1, 1, s > 0 ? -Math.PI / 2 : Math.PI / 2);
+    flaeche(n === '64' ? .62 : .3, .16, new THREE.MeshBasicMaterial({ map: n === '64' ? schild('HAUSMEISTER', 256, 64, '#d9a441', '#2a1a14', 32) : schild(n, 128, 64, '#d9a441', '#2a1a14', 44) }), s * 1.105, 1.72, z, p, 1, 1, s > 0 ? -Math.PI / 2 : Math.PI / 2);
   });
   /* Tür 67 am Ende, Flurseite */
   box(1.16, 2.24, .08, tuerM, 0, 1.12, -8.95, p); box(1.34, 2.36, .05, hz, 0, 1.18, -8.97, p, { schatten: false });
@@ -520,14 +523,205 @@ function hebelTafel(sym, nr) {
   E.hbT.needsUpdate = true;
 }
 
+/* Spielfigur in 3D: Frisur, Pyjama und Hautton kommen aus dem Figur-Menü */
+function baueFigur() {
+  const g = new THREE.Group();
+  const stoff = M({ color: 0xffffff, roughness: .8, envMapIntensity: .2 }), haut = M({ color: 0xffffff, roughness: .55, envMapIntensity: .3 });
+  const beine = [-1, 1].map(s => { const b = new THREE.Group(); b.position.set(s * .1, .8, 0); g.add(b); teil(new THREE.CapsuleGeometry(.075, .6, 6, 12), stoff, 0, -.38, 0, b); kug(.08, M({ color: 0xefe6cf, roughness: .8 }), 0, -.76, .05, b).scale.set(1, .6, 1.5); return b; });
+  teil(new THREE.CapsuleGeometry(.2, .34, 6, 16), stoff, 0, 1.08, 0, g);
+  const arme = [-1, 1].map(s => { const a = new THREE.Group(); a.position.set(s * .23, 1.3, 0); g.add(a); teil(new THREE.CapsuleGeometry(.055, .42, 5, 10), stoff, 0, -.27, 0, a); kug(.06, haut, 0, -.55, 0, a); a.rotation.z = s * .12; return a; });
+  kug(.05, haut, 0, 1.43, 0, g); kug(.15, haut, 0, 1.6, 0, g);
+  const dunkel = M({ color: 0x20140c, roughness: .3 });
+  [-1, 1].forEach(s => kug(.034, M({ color: 0xffffff, roughness: .3 }), s * .055, 1.62, .124, g, { schatten: false }));
+  kug(.019, dunkel, -.055, 1.62, .147, g, { schatten: false }); kug(.019, dunkel, .055, 1.62, .147, g, { schatten: false });
+  const m = teil(new THREE.TorusGeometry(.06, .008, 8, 18, Math.PI * .8), dunkel, 0, 1.56, .14, g, { schatten: false }); m.rotation.z = Math.PI + .3;
+  const haar = new THREE.Group(); g.add(haar);
+  const karte = document.createElement('canvas'); karte.width = karte.height = 128;
+  const t = new THREE.CanvasTexture(karte); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(2, 2); stoff.map = t;
+  return {
+    g, beine, arme,
+    setz(c) {
+      const q = karte.getContext('2d'); q.fillStyle = c.pyjama.f; q.fillRect(0, 0, 128, 128);
+      if (c.pyjama.id === 'streifen') { q.fillStyle = c.pyjama.s; for (let i = 0; i < 4; i++) q.fillRect(i * 32, 0, 11, 128); }
+      if (c.pyjama.id === 'nacht') { q.fillStyle = c.pyjama.s; for (let i = 0; i < 9; i++) { q.beginPath(); q.arc((i * 47) % 128, (i * 83) % 128, 4, 0, 7); q.fill(); } }
+      t.needsUpdate = true; haut.color.set(c.haut);
+      while (haar.children.length) { const k = haar.children.pop(); k.geometry && k.geometry.dispose(); k.parent = null; }
+      const hm = M({ color: c.haarFarbe, roughness: .65, envMapIntensity: .3 }), w = (r, x, y, z, sx = 1, sy = 1, sz = 1) => { kug(r, hm, x, y, z, haar, { schatten: false }).scale.set(sx, sy, sz); };
+      if (c.haar === 'scheitel') { w(.16, 0, 1.66, -.02, 1, .72, 1); w(.08, -.08, 1.72, .08, 1.2, .55, .9); }
+      if (c.haar === 'igel') for (let i = 0; i < 26; i++) { const a = i * 2.4, r = .03 + i / 26 * .12; const k = teil(new THREE.ConeGeometry(.026, .13, 6), hm, Math.cos(a) * r, 1.78 - r * .7, Math.sin(a) * r - .01, haar, { schatten: false }); k.rotation.set(Math.sin(a) * r * 5, 0, -Math.cos(a) * r * 5); }
+      if (c.haar === 'zoepfe') { w(.16, 0, 1.66, -.02, 1, .72, 1); [-1, 1].forEach(a => { w(.05, a * .17, 1.55, -.02, 1, 2.2, 1); w(.035, a * .18, 1.4, -.02, 1, 1.6, 1); }); }
+      if (c.haar === 'wolke') [[0, 1.78, 0, .13], [-.12, 1.72, 0, .11], [.12, 1.72, 0, .11], [-.15, 1.6, -.03, .09], [.15, 1.6, -.03, .09], [0, 1.72, -.13, .12]].forEach(a => w(a[3], a[0], a[1], a[2]));
+      if (c.haar === 'kamm') for (let i = 0; i < 6; i++) { const k = teil(new THREE.ConeGeometry(.04, .2, 6), M({ color: 0xe8589b, roughness: .5 }), 0, 1.8 - Math.abs(i - 2.5) * .012, .12 - i * .05, haar, { schatten: false }); k.scale.z = .5; }
+      if (c.haar === 'muetze') { const k = kug(.19, M({ color: 0xf4f1ff, roughness: .6 }), 0, 1.68, -.02, haar, { schatten: false }); k.scale.set(1, .6, 1); }
+    }
+  };
+}
+function baueSaal() {
+  const p = new THREE.Group(); orte.saal = { g: p, frei: [[-6.6, 6.6, -5.6, 5.6]], block: [] };
+  const wand = M({ map: tex(512, 512, (c, w, h) => tapeteMalen(c, w, h, '#b9a26a', '#ab9560', '#c9b47e')), roughness: .75, envMapIntensity: .25 });
+  const boden = M({ map: tex(512, 512, (c, w, h) => { holz('#7a4a2b', '#3b1e0e', 21)(c, w, h); c.strokeStyle = '#2c160a'; c.lineWidth = 3; for (let i = 0; i <= 3; i++) { c.beginPath(); c.moveTo(i * 170, 0); c.lineTo(i * 170, h); c.moveTo(0, i * 170); c.lineTo(w, i * 170); c.stroke(); } }), roughness: .3, envMapIntensity: .8 });
+  raum(p, -7, 7, -6, 6, 3.8, wand, boden, M({ color: 0xe9dcc0, roughness: .85, envMapIntensity: .2 }));
+  const hz = M({ map: tex(512, 256, holz('#5e3019', '#2c1208', 22)), roughness: .4 });
+  vertafelung(p, -7, 7, -6, 6, hz, M({ color: 0xa8802f, metalness: .9, roughness: .4 }), .9);
+  const tuch = M({ color: 0xf6f0e2, roughness: .75, envMapIntensity: .2 }), bein = M({ color: 0x3a2015, roughness: .5 }), mess = M({ color: 0xd9a441, metalness: 1, roughness: .28, envMapIntensity: 1.4 });
+  const teller = M({ color: 0xffffff, roughness: .2, envMapIntensity: .8 }), sitz = M({ color: 0x8c1f33, roughness: .85 });
+  [[-4, -1.6], [0, -1.6], [4, -1.6], [-4, 2.2], [4, 2.2]].forEach(([x, z]) => {
+    zyl(.75, .75, .06, tuch, x, .78, z, p, { seg: 34 }); zyl(.8, .68, .22, tuch, x, .66, z, p, { seg: 34 }); zyl(.07, .1, .75, bein, x, .38, z, p);
+    bodenSchatten(p, x, z, 2.5, 2.5); orte.saal.block.push([x - .85, x + .85, z - .85, z + .85]);
+    [0, 1.57, 3.14, 4.71].forEach(w => {
+      const sx = x + Math.sin(w) * 1.1, sz = z + Math.cos(w) * 1.1; box(.44, .08, .44, sitz, sx, .46, sz, p);
+      box(.44, .56, .05, bein, sx + Math.sin(w) * .2, .74, sz + Math.cos(w) * .2, p, { ry: w });
+      zyl(.16, .17, .02, teller, x + Math.sin(w) * .52, .82, z + Math.cos(w) * .52, p, { seg: 22, schatten: false });
+    });
+  });
+  /* Buffet hinten */
+  box(9, .96, .8, tuch, 0, .48, -5.3, p); orte.saal.block.push([-4.7, 4.7, -5.8, -4.8]);
+  [-3.4, -1.1, 1.1, 3.4].forEach(x => { const k = kug(.34, mess, x, 1.02, -5.3, p); k.scale.y = .62; zyl(.42, .42, .03, mess, x, .98, -5.3, p); });
+  /* Uhr, stehen geblieben */
+  flaeche(1, 1, new THREE.MeshBasicMaterial({ map: tex(256, 256, c => { c.fillStyle = '#efe6cf'; c.beginPath(); c.arc(128, 128, 122, 0, 7); c.fill(); c.strokeStyle = '#2a1a14'; c.lineWidth = 8; c.stroke(); c.lineWidth = 9; c.beginPath(); c.moveTo(128, 128); c.lineTo(128, 200); c.moveTo(128, 128); c.lineTo(102, 44); c.stroke(); c.fillStyle = '#2a1a14'; c.font = '26px Bungee'; c.textAlign = 'center'; c.fillText('6:07', 128, 96); }), transparent: true }), 0, 2.8, -5.96, p);
+  /* Die Kuh hat frei */
+  const k = new THREE.Group(); k.position.set(0, 0, 2.2); p.add(k);
+  const fell = M({ map: tex(256, 256, c => { c.fillStyle = '#f2ece0'; c.fillRect(0, 0, 256, 256); c.fillStyle = '#1d1a1a'; [[60, 70, 44], [170, 50, 30], [200, 170, 48], [80, 190, 36]].forEach(a => { c.beginPath(); c.arc(a[0], a[1], a[2], 0, 7); c.fill(); }); }), roughness: .75, envMapIntensity: .2 });
+  teil(new THREE.CapsuleGeometry(.36, .5, 8, 16), fell, 0, .95, 0, k);
+  kug(.26, fell, 0, 1.72, .08, k).scale.set(.9, 1.05, 1.1); kug(.17, M({ color: 0xe8b4b4, roughness: .55 }), 0, 1.6, .28, k).scale.set(1.1, .8, .8);
+  [-1, 1].forEach(s => { const o = teil(new THREE.ConeGeometry(.05, .17, 8), M({ color: 0xd9c8a2, roughness: .5 }), s * .17, 1.98, .04, k); o.rotation.z = -s * .4; kug(.08, fell, s * .3, 1.82, .03, k).scale.set(1.4, .6, .7); kug(.035, M({ color: 0x140d08, roughness: .2 }), s * .11, 1.78, .3, k, { schatten: false }); });
+  const haube = flaeche(.9, .3, new THREE.MeshBasicMaterial({ map: schild('HEUTE FREI', 512, 160, '#fbeed0', '#2a1a14', 70, '#8d5f18') }), 0, 1.0, .77, k); haube.rotation.x = -.5;
+  box(.14, .1, .14, teller, -.4, .86, .55, k, { schatten: false });
+  /* Dokument auf dem Buffet */
+  E.saalKarte = box(.34, .02, .48, M({ color: 0xefe6cf, roughness: .8 }), 2.25, .98, -5.05, p, { schatten: false });
+  /* Tür zurück */
+  box(1.2, 2.3, .08, hz, 0, 1.15, 5.95, p);
+  [[-3.5, 1], [3.5, 1]].forEach(([x, z]) => { kug(.09, E.lampeM = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 1.3, .9) }), x, 3.4, z, p, { schatten: false }); glueh(p, x, 3.4, z, 1.5); punkt(p, x, 3.3, z, 13, 0xffd9a8, 11); });
+  spot(p, 0, 3.7, .6, 0, 0, .6, 42, 1.05);
+  p.add(new THREE.HemisphereLight(0xffe8c8, 0x3a2414, .55));
+  p.fog = new THREE.Fog(0x1c0f0a, 14, 34);
+}
+function baueKammer() {
+  const p = new THREE.Group(); orte.kammer = { g: p, frei: [[-1.5, 1.5, -1.8, 1.7]], block: [[-2, -1.05, -2, 2], [1.05, 2, -2, .6]] };
+  const wand = M({ map: tex(256, 256, c => { c.fillStyle = '#5e6a5c'; c.fillRect(0, 0, 256, 256); const z = zufall(31); for (let i = 0; i < 300; i++) { c.fillStyle = `rgba(30,30,20,${z() * .12})`; c.fillRect(z() * 256, z() * 256, z() * 16, 2 + z() * 40); } }), roughness: .9, envMapIntensity: .1 });
+  raum(p, -2, 2, -2, 2, 2.4, wand, M({ color: 0x3e3f3c, roughness: .7 }), M({ color: 0x4a4a42, roughness: .9 }));
+  const brett = M({ map: tex(256, 128, holz('#6a4228', '#2e170b', 33)), roughness: .6 });
+  const z = zufall(41), farben = [0xb5352f, 0xd9a441, 0x3f6fa8, 0x4f8a5c, 0xc9c2b0];
+  [.5, 1.15, 1.8].forEach(y => {
+    box(.9, .05, 3.6, brett, -1.52, y, 0, p); box(.9, .05, 2.2, brett, 1.52, y, -.75, p);
+    for (let i = 0; i < 7; i++) { const f = M({ color: farben[Math.floor(z() * 5)], metalness: .4, roughness: .45 }); zyl(.11, .11, .24, f, -1.55 + z() * .3, y + .145, -1.5 + i * .5, p, { seg: 16 }); }
+    for (let i = 0; i < 3; i++) box(.3, .3 * (.6 + z()), .34, M({ color: 0x8a6a42, roughness: .85 }), 1.5, y + .15, -1.4 + i * .6, p);
+  });
+  /* Trommeln, Eimer, Mopp */
+  const tr = M({ color: 0xb5352f, roughness: .45 }), fell = M({ color: 0xeee3c9, roughness: .8 });
+  [[.2, -1.5], [-.2, -1.55]].forEach(([x, q], i) => { zyl(.3, .3, .3, tr, x, .16 + i * .32, q, p, { seg: 30 }); zyl(.31, .31, .02, fell, x, .32 + i * .32, q, p, { seg: 30 }); });
+  orte.kammer.block.push([-.6, .6, -2, -1.15]);
+  zyl(.17, .13, .3, M({ color: 0x6d7782, metalness: .7, roughness: .4 }), 1.3, .15, 1.4, p, { seg: 18 });
+  zyl(.015, .015, 1.6, brett, 1.42, .8, 1.68, p, { seg: 8, rx: .12 });
+  /* Plan an der Tür-Wand */
+  E.plan = flaeche(.5, .68, new THREE.MeshBasicMaterial({ map: tex(128, 176, c => { c.fillStyle = '#fbeed0'; c.fillRect(0, 0, 128, 176); c.fillStyle = '#2a1a14'; c.font = '13px Bungee'; c.textAlign = 'center'; c.fillText('DIENSTPLAN', 64, 24); for (let i = 0; i < 8; i++) c.fillRect(14, 42 + i * 16, 90, 4); }) }), .4, 1.5, -1.98, p);
+  E.kammerLampe = box(.08, .06, .22, M({ color: 0xc23b3b, metalness: .5, roughness: .4 }), 1.52, 1.22, .9, p, { schatten: false });
+  box(.9, .05, .5, brett, 1.52, 1.15, .95, p);
+  /* Tür und Glühbirne */
+  box(1, 2.1, .06, M({ map: tex(256, 512, holz('#6b3a20', '#2c1208', 34)), roughness: .4 }), 0, 1.05, 1.97, p);
+  const b = kug(.05, new THREE.MeshBasicMaterial({ color: new THREE.Color(2, 1.6, 1) }), 0, 2.05, 0, p, { schatten: false }); zyl(.005, .005, .3, brett, 0, 2.25, 0, p, { seg: 6, schatten: false }); glueh(p, 0, 2.05, 0, 1.2);
+  punkt(p, 0, 2, 0, 5.5, 0xffd29a, 7); spot(p, 0, 2.3, 0, 0, 0, 0, 12, 1.25);
+  p.add(new THREE.HemisphereLight(0xdcdcc0, 0x201810, .22));
+  p.fog = new THREE.Fog(0x000000, 8, 18);
+}
+function baueBad() {
+  const p = new THREE.Group(); orte.bad = { g: p, frei: [[-1.3, 1.3, -1.5, 1.5]], block: [[.75, 1.6, -1.8, -.75], [-1.6, -.85, -.5, .5]] };
+  const kachel = M({ map: tex(256, 256, c => { c.fillStyle = '#d9e4df'; c.fillRect(0, 0, 256, 256); c.strokeStyle = '#8fa39d'; c.lineWidth = 4; for (let i = 0; i <= 4; i++) { c.beginPath(); c.moveTo(i * 64, 0); c.lineTo(i * 64, 256); c.moveTo(0, i * 64); c.lineTo(256, i * 64); c.stroke(); } }), roughness: .18, envMapIntensity: .8 });
+  const boden = M({ map: tex(256, 256, c => { for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) { c.fillStyle = (i + j) % 2 ? '#0f5257' : '#e6e0d0'; c.fillRect(i * 32, j * 32, 32, 32); } }), roughness: .25, envMapIntensity: .8 });
+  raum(p, -1.6, 1.6, -1.8, 1.8, 2.5, kachel, boden, M({ color: 0xe9e4d8, roughness: .85 }), 1);
+  const weiss = M({ color: 0xffffff, roughness: .14, envMapIntensity: 1.1 });
+  /* Toilette hinten rechts */
+  const bk = zyl(.2, .17, .4, weiss, 1.15, .2, -1.3, p, { seg: 26 }); bk.scale.z = 1.25;
+  const sitz = teil(new THREE.TorusGeometry(.17, .035, 10, 26), weiss, 1.15, .42, -1.28, p, { rx: Math.PI / 2 }); sitz.scale.y = 1.25;
+  box(.46, .5, .18, weiss, 1.15, .72, -1.68, p); zyl(.025, .025, .05, M({ color: 0xc2c8cd, metalness: 1, roughness: .2 }), 1.15, 1, -1.68, p, { seg: 12 });
+  /* Waschbecken und Spiegel links */
+  zyl(.09, .07, .76, weiss, -1.3, .38, 0, p, { seg: 18 }); const be = zyl(.32, .2, .14, weiss, -1.25, .84, 0, p, { seg: 26 }); be.scale.x = .8;
+  zyl(.014, .014, .22, M({ color: 0xc2c8cd, metalness: 1, roughness: .2 }), -1.45, .98, 0, p, { seg: 10 });
+  E.spiegelT = tex(512, 400, () => {});
+  E.spiegelM = new THREE.MeshStandardMaterial({ map: E.spiegelT, metalness: .1, roughness: .32, envMap: env, envMapIntensity: .25 });
+  flaeche(1.1, .86, E.spiegelM, -1.55, 1.65, 0, p, 1, 1, Math.PI / 2);
+  box(.04, .92, 1.16, M({ color: 0xd9a441, metalness: 1, roughness: .3 }), -1.585, 1.65, 0, p, { schatten: false });
+  spiegelMalen(false);
+  /* Dusche und Tuch */
+  flaeche(1.2, 2, M({ color: 0x8c1f33, roughness: .7, side: THREE.DoubleSide }), .96, 1.15, 1.2, p, 1, 1, Math.PI / 2 + .02);
+  box(.05, .7, .42, M({ color: 0xa9dcc8, roughness: .9 }), 1.57, 1.1, -.2, p, { schatten: false });
+  flaeche(.9, .6, M({ color: 0x8c1f33, roughness: .95 }), .1, .012, -.3, p, 1, 1, 0, -Math.PI / 2);
+  /* Tür und Licht */
+  box(1, 2.1, .06, M({ color: 0xcfc4ab, roughness: .55 }), -.2, 1.05, 1.77, p);
+  const lp = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.8, 1.7, 1.45) }); box(.8, .04, .2, lp, 0, 2.47, 0, p, { schatten: false }); glueh(p, 0, 2.4, 0, 1.4);
+  punkt(p, 0, 2.3, 0, 3.5, 0xfff0d8, 8);
+  p.add(new THREE.HemisphereLight(0xfff4e2, 0x8a8678, .5));
+  p.fog = new THREE.Fog(0xffffff, 40, 80);
+}
+function spiegelMalen(beschlagen) {
+  const c = E.spiegelT.image.getContext('2d'), w = 512, h = 400;
+  const g = c.createLinearGradient(0, 0, w, h); g.addColorStop(0, '#9fb0b5'); g.addColorStop(.5, '#dfe7e8'); g.addColorStop(1, '#8a9a9f'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+  if (beschlagen) {
+    c.fillStyle = 'rgba(245,245,240,.82)'; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#7b8c91'; c.font = "800 62px 'Baloo 2', sans-serif"; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('DU WARST', w / 2, 160); c.fillText('SCHON MAL HIER', w / 2, 240);
+  }
+  E.spiegelT.needsUpdate = true;
+}
+function baueAussen() {
+  const p = new THREE.Group(); orte.aussen = { g: p, frei: [], block: [] };
+  const himmel = tex(1024, 512, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#0a0e28'); g.addColorStop(.55, '#1a1642'); g.addColorStop(.72, '#6b2c56'); g.addColorStop(1, '#2a0d17'); c.fillStyle = g; c.fillRect(0, 0, w, h); const z = zufall(51); c.fillStyle = '#fff'; for (let i = 0; i < 420; i++) c.fillRect(z() * w, z() * h * .62, 1 + z() * 1.6, 1 + z() * 1.6); });
+  const d = new THREE.Mesh(new THREE.SphereGeometry(55, 32, 16), new THREE.MeshBasicMaterial({ map: himmel, side: THREE.BackSide, fog: false })); p.add(d);
+  flaeche(80, 80, M({ map: tex(256, 256, (c, w, h) => { c.fillStyle = '#25272c'; c.fillRect(0, 0, w, h); const z = zufall(52); for (let i = 0; i < 900; i++) { c.fillStyle = `rgba(255,255,255,${z() * .05})`; c.fillRect(z() * w, z() * h, 3, 3); } }), roughness: .55, envMapIntensity: .5 }), 0, 0, 0, p, 20, 20, 0, -Math.PI / 2);
+  const fassade = tex(512, 1024, (c, w, h) => {
+    c.fillStyle = '#3a1a24'; c.fillRect(0, 0, w, h); c.fillStyle = '#2d121b'; for (let y = 0; y < h; y += 14) c.fillRect(0, y, w, 2);
+    const z = zufall(53);
+    for (let y = 40; y < h - 140; y += 74) for (let x = 34; x < w - 60; x += 72) { const an = z() < .3; c.fillStyle = an ? '#ffd778' : '#17121f'; c.fillRect(x, y, 46, 52); c.fillStyle = '#7a4a3a'; c.fillRect(x - 3, y + 52, 52, 5); }
+  });
+  const fg = M({ map: fassade, emissive: 0xffffff, emissiveMap: fassade, emissiveIntensity: .75, roughness: .8, envMapIntensity: .2 });
+  box(20, 40, 10, fg, 0, 20, -20, p); box(21, .8, 11, M({ color: 0x2a1018, roughness: .7 }), 0, 40.2, -20, p);
+  const schildM = new THREE.MeshBasicMaterial({ map: E.schildF }); flaeche(10, 1.55, schildM, 0, 7.4, -14.9, p);
+  glueh(p, 0, 7.4, -14.6, 16, 0x884422);
+  box(5.6, 4, .3, M({ color: 0x14100c, roughness: .4 }), 0, 2, -15, p); box(7, .25, 3, M({ color: 0xd9a441, metalness: 1, roughness: .3 }), 0, 4.2, -14, p);
+  [[-7, -9], [7, -9]].forEach(([x, z]) => {
+    const st = M({ color: 0x20262c, metalness: .7, roughness: .4 }); zyl(.08, .13, 4.4, st, x, 2.2, z, p, { seg: 12 });
+    kug(.24, new THREE.MeshBasicMaterial({ color: new THREE.Color(1.9, 1.5, 1) }), x, 4.5, z, p, { schatten: false }); glueh(p, x, 4.5, z, 3.2); punkt(p, x, 4.2, z, 34, 0xffc98a, 20);
+  });
+  const mond = glueh(p, 22, 26, -42, 15, 0xfff4da); mond.material.fog = false;
+  p.add(new THREE.HemisphereLight(0x7f8fd0, 0x2a1a24, .55));
+  spot(p, 3, 7, 3, 0, 0, -2, 90, .6, 0xffe2c0);
+  /* Konfetti */
+  const g = new THREE.PlaneGeometry(.09, .13), mt = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+  const ko = new THREE.InstancedMesh(g, mt, 220); ko.frustumCulled = false; const f = ['#f6d27a', '#a9dcc8', '#e8589b', '#ffffff', '#ff8a7a'].map(x => new THREE.Color(x));
+  E.ko = ko; E.koD = []; const z = zufall(54);
+  for (let i = 0; i < 220; i++) { ko.setColorAt(i, f[i % 5]); E.koD.push({ x: z() * 12 - 6, y: z() * 8, z: z() * 8 - 5, v: .9 + z() * 1.4, r: z() * 6 }); }
+  p.add(ko);
+  p.fog = new THREE.Fog(0x0d0a20, 25, 70);
+}
+const koHelfer = new THREE.Object3D();
+function konfetti(dt) {
+  if (!E.ko || !E.ko.visible) return;
+  E.koD.forEach((k, i) => {
+    k.y -= k.v * dt; if (k.y < 0) k.y = 8; k.r += dt * 3;
+    koHelfer.position.set(k.x + Math.sin(k.r) * .2, k.y, k.z); koHelfer.rotation.set(k.r, k.r * .7, 0); koHelfer.updateMatrix(); E.ko.setMatrixAt(i, koHelfer.matrix);
+  });
+  E.ko.instanceMatrix.needsUpdate = true;
+}
+
 /* Ziele im Spiel: ort = Markierung, steh = wo man hinläuft, blick = wohin man schaut */
 const Z = {
   rezeption: { id: 'rezeption', ort: [0, 1.95, -3.3], steh: [0, -1.9], blick: [0, 1.5, -3.2], weit: 'Zur Rezeption gehen', nah: 'Mit Herrn Freundlich sprechen', r: 2.3 },
   knopf: { id: 'knopf', ort: [.98, 1.75, -1.1], steh: [.45, -.6], blick: [.98, 1.3, -1.17], weit: 'Zum Knopf gehen', nah: 'Knopf 67 drücken', r: 1.4 },
   aussteigen: { id: 'aussteigen', ort: [0, 1.5, -1.1], steh: [0, -.75], blick: [0, 1.5, -1.2], weit: 'Zur Tür gehen', nah: 'Aussteigen', r: 1 },
+  saal: { id: 'saal', ort: [-7.5, 2.5, -4], steh: [-6.8, -4], blick: [-8, 1.5, -4], weit: 'Zum Frühstückssaal gehen', nah: 'Frühstückssaal betreten', r: 1.7 },
+  saalRaus: { id: 'saalRaus', ort: [0, 2.5, 5.7], steh: [0, 4.9], blick: [0, 1.5, 6], weit: 'Zur Tür gehen', nah: 'Zurück in die Lobby', r: 1.5 },
+  kuh: { id: 'kuh', ort: [0, 2.4, 2.2], steh: [-1.1, 3.4], blick: [0, 1.6, 2.2], weit: 'Zur Kuh gehen', nah: 'Die Kuh ansprechen', r: 1.8 },
+  saalDoku: { id: 'saalDoku', ort: [2.25, 1.5, -5], steh: [2.25, -4.3], blick: [2.25, 1, -5], weit: 'Zum Buffet gehen', nah: 'Speisekarte lesen', r: 1.3 },
+  kammer: { id: 'kammer', ort: [.9, 2.3, -2.2], steh: [.4, -2.2], blick: [1.2, 1.4, -2.2], weit: 'Zur Hausmeister-Tür gehen', nah: 'Hausmeister-Kammer betreten', r: 1.2 },
+  kammerRaus: { id: 'kammerRaus', ort: [0, 2, 1.8], steh: [0, 1.2], blick: [0, 1.4, 2], weit: 'Zur Tür gehen', nah: 'Zurück in den Flur', r: 1.1 },
+  plan: { id: 'plan', ort: [.4, 2.05, -1.8], steh: [.8, -1.2], blick: [.4, 1.5, -2], weit: 'Zum Dienstplan gehen', nah: 'Dienstplan lesen', r: 1.1 },
+  lampe: { id: 'lampe', ort: [1.2, 1.75, .9], steh: [.6, .9], blick: [1.5, 1.2, .9], weit: 'Zum Regal gehen', nah: 'Taschenlampe mitnehmen', r: 1 },
+  toilette: { id: 'toilette', ort: [1.15, 1.5, -1.3], steh: [.3, -.9], blick: [1.15, .6, -1.3], weit: 'Zum Klo gehen', nah: 'Aufs Klo setzen', r: 1.35 },
+  spiegel: { id: 'spiegel', ort: [-1.4, 2.3, 0], steh: [-.5, 0], blick: [-1.6, 1.65, 0], weit: 'Zum Spiegel gehen', nah: 'In den Spiegel schauen', r: 1.2 },
+  badRaus: { id: 'badRaus', ort: [-.2, 2.2, 1.6], steh: [-.2, 1.1], blick: [-.2, 1.4, 1.8], weit: 'Zur Tür gehen', nah: 'Zurück ins Zimmer', r: 1.1 },
   aufzug: { id: 'aufzug', ort: [7.6, 2.2, 0], steh: [6.6, 0], blick: [8, 1.5, 0], weit: 'Zum Aufzug gehen', nah: 'Aufzug nehmen', r: 2.3 },
   tuer67: { id: 'tuer67', ort: [0, 2.3, -8.7], steh: [0, -7.6], blick: [0, 1.5, -9], weit: 'Zu Raum 67 gehen', nah: 'Mit dem Schlüssel öffnen', r: 1.9 },
-  klo: { id: 'klo', ort: [-2.5, 2.3, -10.5], steh: [-1.7, -10.5], blick: [-2.7, 1.3, -10.5], weit: 'Zum Klo gehen', nah: 'Aufs Klo gehen', r: 1.7 },
+  klo: { id: 'klo', ort: [-2.5, 2.3, -10.5], steh: [-1.7, -10.5], blick: [-2.7, 1.3, -10.5], weit: 'Zum Bad gehen', nah: 'Ins Bad gehen', r: 1.7 },
   bild: { id: 'bild', ort: [-.9, 2.3, -14.7], steh: [-.9, -13.5], blick: [-.9, 1.7, -15], weit: 'Zum Bild gehen', nah: 'Hinter das Bild schauen', r: 1.7 },
   kalender: { id: 'kalender', ort: [-2.5, 2.3, -12.2], steh: [-1.6, -12.2], blick: [-2.7, 1.75, -12.2], weit: 'Zum Kalender gehen', nah: 'Kalender ansehen', r: 1.7 },
   bett: { id: 'bett', ort: [1.85, 1.5, -12.6], steh: [.45, -12.1], blick: [1.8, .7, -12.7], weit: 'Zum Bett gehen', nah: 'Ins Bett legen', r: 1.8 },
@@ -620,6 +814,12 @@ function schleife() {
       const h = E.spricht ? Math.abs(Math.sin(zeit * 9)) * .05 : Math.sin(zeit * 2) * .004;
       if (g === lobbyGlocke) { g.g.position.y = 1.15 + h; g.g.rotation.z = E.spricht ? Math.sin(zeit * 11) * .05 : 0; }
     }
+    if (E.fig && E.fig.g.parent) {
+      const f = E.fig, k = E.tanz ? Math.sin(zeit * 7) : 0;
+      if (E.tanz) { f.g.position.y = Math.abs(k) * .12; f.arme[0].rotation.z = -2.5 - k * .3; f.arme[1].rotation.z = 2.5 + k * .3; f.g.rotation.y = Math.sin(zeit * 1.6) * .5; }
+      else if (E.dreh) f.g.rotation.y = Math.sin(zeit * .7) * .55;
+    }
+    konfetti(dt);
     if (toni && toni.g.visible) {
       const w = E.tempo || 0;
       toni.arme[0].rotation.x = Math.sin(zeit * w) * .4; toni.arme[1].rotation.x = -Math.sin(zeit * w) * .4;
@@ -669,7 +869,8 @@ export const Welt = {
     kamera = new THREE.PerspectiveCamera(66, 1, .05, 60); uhr = new THREE.Clock();
     env = umgebung();
     szene.add(kamera);
-    baueLobby(); baueAufzug(); baueFlur(); baueZimmer(); baueSchacht();
+    baueLobby(); baueAufzug(); baueFlur(); baueZimmer(); baueSchacht(); baueSaal(); baueKammer(); baueBad(); baueAussen();
+    E.fig = baueFigur();
     glocke = baueGlocke(); toni = baueToni();
     E.sG = baueGlocke(); E.sG.setz(1); E.sG.g.visible = false; orte.schacht.g.add(E.sG.g);
     orte.flur.g.add(glocke.g, toni.g); glocke.g.visible = toni.g.visible = false;
@@ -689,6 +890,7 @@ export const Welt = {
     orte[n].g.visible = true;
     if (n === 'flur' || n === 'zimmer') { orte.flur.g.visible = orte.zimmer.g.visible = true; szene.fog = orte.flur.g.fog; }
     else szene.fog = orte[n].g.fog || null;
+    Welt.figurWeg();
     pos.set(x, n === 'schacht' ? .86 : AUGE, z); yaw = ry; pitch = 0; titelModus = false; if (n !== 'flur') E.fov = 0;
     groesse();
   },
@@ -700,7 +902,7 @@ export const Welt = {
     l.forEach(z => { const m = new THREE.Sprite(markeMat()); m.position.set(...z.ort); m.renderOrder = 10; orte[ort].g.add(m); marken.push(m); });
   },
   nah() { return nahId; },
-  wo() { return [pos.x, pos.z]; },
+  wo() { return [pos.x, pos.z, yaw]; },
   stopp() { auto = null; frei = false; tweens.length = 0; Welt.ziele([]); E.spricht = false; E.fans = []; E.endeZ = null; E.folge = null; if (E.sG) Welt.feindWeg(); tempoJetzt = TEMPO; },
   hin(z) { return new Promise(ok => { auto = { z: z.steh, ok }; }); },
   fokus(p, ms = 500) {
@@ -709,6 +911,21 @@ export const Welt = {
   },
   tween(ms, f) { return new Promise(ok => tweens.push({ a: 0, d: ms / 1000, f, ok })); },
   stock,
+  menu() {
+    Welt.ort('lobby', 0, 2.05, 0); pitch = -.3; pos.y = 1.5; E.fig.g.position.set(0, 0, -.1); E.fig.g.rotation.y = 0; E.fig.g.scale.setScalar(1);
+    E.tanz = false; E.dreh = true; orte.lobby.g.add(E.fig.g); E.ko.visible = false; E.fig.arme[0].rotation.z = -.12; E.fig.arme[1].rotation.z = .12;
+  },
+  figur(c) { E.fig.setz(c); },
+  figurWeg() { if (E.fig.g.parent) E.fig.g.parent.remove(E.fig.g); E.tanz = E.dreh = false; },
+  endeBild(art) {
+    Welt.ort('aussen', 1.1, 3.3, .32); pitch = -.04; pos.y = 1.5;
+    E.fig.g.position.set(0, 0, 0); E.fig.g.rotation.y = 0; orte.aussen.g.add(E.fig.g);
+    E.tanz = art === 'frei'; E.dreh = false; E.ko.visible = art === 'frei';
+    E.fig.arme[0].rotation.z = -.12; E.fig.arme[1].rotation.z = .12;
+  },
+  spiegel(b) { spiegelMalen(b); },
+  lampeWeg() { E.kammerLampe.visible = false; },
+  zimmerBildZu(b) { E.bild.rotation.z = b ? -1.25 : 0; },
   schachtStart() { Welt.ort('schacht', 0, 0, 0); duckt = false; immun = 0; },
   ducken(b) { duckt = b === undefined ? !duckt : b; return duckt; },
   tempoSetzen(f) { tempoJetzt = TEMPO * f; },

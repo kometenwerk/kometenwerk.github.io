@@ -110,7 +110,7 @@ body.laufen #text{font-size:16px;line-height:1.25}
 body.laufen #knoepfe{grid-template-columns:1fr;padding-top:8px}
 body.laufen .knopf{min-height:46px;font-size:16px;padding:7px 12px}
 body.laufen.touch #stick{display:block}
-#tipp{position:absolute;left:50%;top:12px;transform:translateX(-50%);max-width:calc(100% - 80px);padding:5px 12px;border-radius:7px;background:#0a0c10d9;color:var(--papier);font-size:15px;line-height:1.25;z-index:5;text-align:center}
+#tipp{position:absolute;left:50%;top:60px;transform:translateX(-50%);max-width:calc(100% - 80px);padding:5px 12px;border-radius:7px;background:#0a0c10d9;color:var(--papier);font-size:15px;line-height:1.25;z-index:5;text-align:center}
 
 .knopf[hidden]{display:none}
 #hud{z-index:5}
@@ -122,3 +122,6 @@ body.laufen.touch #stick{display:block}
 body.schacht3d #beutel{display:flex}
 body.schacht3d #duck{display:block}
 body.schacht3d.laufen #tafel{bottom:calc(88px + env(safe-area-inset-bottom,0px))}
+
+body.d3 .feld span,body.d3 .reihe legend{color:#f0dcc0}
+body.d3 #tafel>*{flex-shrink:0}
