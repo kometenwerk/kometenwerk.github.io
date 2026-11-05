@@ -2447,10 +2447,10 @@
   {
    "id": "app-hotelfreundlich-1",
    "gruppe": "app_hotelfreundlich",
-   "text": "Leute, bei FLARESSA entsteht gerade ein neues Grusel-Spiel: Hotel Freundlich!",
+   "text": "Leute, neu bei FLARESSA: Hotel Freundlich, unser 3D-Grusel-Spiel als Testversion!",
    "datei": "ton/app-hotelfreundlich-1.mp3",
-   "dauer": 4.39,
-   "hash": "08816ddb1d05",
+   "dauer": 5.28,
+   "hash": "152bd77f201a",
    "nr": 1
   },
   {
@@ -2465,10 +2465,10 @@
   {
    "id": "app-hotelfreundlich-3",
    "gruppe": "app_hotelfreundlich",
-   "text": "Dann müsst ihr durch den Lüftungsschacht fliehen. Ohne Werbung, im Browser.",
+   "text": "Dann flieht ihr durch 66 Etagen im Lüftungsschacht. Ohne Werbung, im Browser.",
    "datei": "ton/app-hotelfreundlich-3.mp3",
-   "dauer": 3.74,
-   "hash": "26b67cb2c346",
+   "dauer": 5.04,
+   "hash": "71771aea384b",
    "nr": 3
   }
  ]
