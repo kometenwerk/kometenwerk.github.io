@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="de" data-marke="fidelia">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FIDELIA Feed – deine Nachrichten ohne Werbung</title>
+<meta name="description" content="Stell dir deine Nachrichten-Quellen selbst zusammen: tagesschau, ZDFheute, heise, Spektrum und mehr – sortiert nach Zeit, ohne Werbung und ohne Algorithmus.">
+<meta name="theme-color" content="#475569">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Feed">
+<link rel="stylesheet" href="../shared/fonts/fonts.css">
+<link rel="stylesheet" href="../shared/kw.css">
+<style>:root{--app:#475569;--app-soft:rgba(71,85,105,.14)}</style>
+<style>
+.klein{font-size:.82rem}
+.leiste{display:flex;gap:8px;margin:4px 0 10px}
+.leiste .inp{flex:1;border-radius:999px}
+.filter{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}
+.filter::-webkit-scrollbar{display:none}
+.filter button{flex:none;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 13px;cursor:pointer;font-size:.88rem}
+.filter button[aria-selected="true"]{background:var(--app);border-color:var(--app);color:#fff;font-weight:600}
+.artikel-liste{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.artikel{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px}
+.artikel a{display:block;padding:12px 48px 12px 14px;color:inherit;text-decoration:none}
+.artikel h3{margin:3px 0 4px;font-size:1.02rem;line-height:1.3}
+.artikel p{margin:0 0 4px;font-size:.88rem;color:var(--muted);line-height:1.4}
+.artikel .quelle{color:var(--app);font-weight:600;font-size:.76rem}
+@media (prefers-color-scheme:dark){.artikel .quelle{color:#a5b4c8}}
+.artikel .host{color:var(--muted);font-size:.72rem}
+.artikel.gelesen h3{color:var(--muted);font-weight:500}
+.merk{position:absolute;top:8px;right:8px;width:36px;height:36px;border-radius:50%;border:0;background:transparent;font-size:1.2rem;cursor:pointer}
+.quellen{display:flex;flex-wrap:wrap;gap:6px}
+.quelle-wahl input{position:absolute;opacity:0}
+.quelle-wahl span{display:inline-block;border:2px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer}
+.quelle-wahl input:checked+span{background:var(--app);border-color:var(--app);color:#fff}
+.quelle-wahl input:focus-visible+span{outline:3px solid var(--accent)}
+.stand{text-align:center;margin-top:16px}
+</style>
+</head>
+<body>
+<script src="../shared/intro.js"></script>
+<header class="kw-bar">
+  <a class="kw-home" href="../" aria-label="Zurück zur Startseite der OMNIVIA Group"><img src="../shared/marken/omnivia-zeichen.webp" alt="" width="40" height="21" style="width:40px;height:auto;display:block"></a>
+  <h1>FIDELIA Feed</h1>
+  <button class="kw-install" id="kwInstall" type="button" hidden>Als App installieren</button>
+</header>
+<main class="kw-main"><div id="ansicht"><div class="empty">Wird geladen …</div></div></main>
+<dialog class="sheet" id="fenster"><div class="sheet-in" id="fensterIn"></div></dialog>
+<footer class="kw-foot"><span>Eine App von <a href="../apps/">FIDELIA Digital</a> · Überschriften und Links gehören den jeweiligen Medien · Für neutral erklärte Schul-Nachrichten: <a href="../ND/">Nachrichten-Heft</a></span></footer>
+<script src="../shared/kw.js"></script>
+<script src="feed.js"></script>
+</body>
+</html>

@@ -1738,6 +1738,24 @@
       "gruppe": "app_ride",
       "text": "Aber denk dran: Helm auf und während der Fahrt nicht aufs Handy schauen!",
       "nr": 3
+    },
+    {
+      "id": "app-feed-1",
+      "gruppe": "app_feed",
+      "text": "Nervt dich Clickbait auch so? Dann probier FIDELIA Feed!",
+      "nr": 1
+    },
+    {
+      "id": "app-feed-2",
+      "gruppe": "app_feed",
+      "text": "Du wählst deine Quellen selbst, und alles ist einfach nach Zeit sortiert.",
+      "nr": 2
+    },
+    {
+      "id": "app-feed-3",
+      "gruppe": "app_feed",
+      "text": "Kein Algorithmus, keine Werbung. Nur Nachrichten.",
+      "nr": 3
     }
   ]
 }

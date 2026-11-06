@@ -1,0 +1,22 @@
+{
+  "info": "Quellen für FIDELIA Feed. Der GitHub-Ablauf „Feed holen“ lädt sie jede Stunde. Neue Quelle: hier eintragen (id nur a-z, 0-9, -).",
+  "quellen": [
+    {"id": "tagesschau", "name": "tagesschau", "thema": "Nachrichten", "url": "https://www.tagesschau.de/index~rss2.xml"},
+    {"id": "zdfheute", "name": "ZDFheute", "thema": "Nachrichten", "url": "https://www.zdf.de/rss/zdf/nachrichten"},
+    {"id": "dlf", "name": "Deutschlandfunk", "thema": "Nachrichten", "url": "https://www.deutschlandfunk.de/nachrichten-100.rss"},
+    {"id": "spiegel", "name": "SPIEGEL", "thema": "Nachrichten", "url": "https://www.spiegel.de/schlagzeilen/index.rss"},
+    {"id": "zeit", "name": "ZEIT ONLINE", "thema": "Nachrichten", "url": "https://newsfeed.zeit.de/index"},
+    {"id": "faz", "name": "FAZ", "thema": "Nachrichten", "url": "https://www.faz.net/rss/aktuell/"},
+    {"id": "br24", "name": "BR24", "thema": "Bayern", "url": "https://www.br.de/nachrichten/meldungen/index~rss2.xml"},
+    {"id": "heise", "name": "heise online", "thema": "Technik", "url": "https://www.heise.de/rss/heise-atom.xml"},
+    {"id": "golem", "name": "Golem", "thema": "Technik", "url": "https://rss.golem.de/rss.php?feed=RSS2.0"},
+    {"id": "t3n", "name": "t3n", "thema": "Technik", "url": "https://t3n.de/rss.xml"},
+    {"id": "spektrum", "name": "Spektrum", "thema": "Wissen", "url": "https://www.spektrum.de/alias/rss/spektrum-de-rss-feed/996406"},
+    {"id": "quarks", "name": "Quarks", "thema": "Wissen", "url": "https://www.quarks.de/feed/"},
+    {"id": "nasa", "name": "NASA (englisch)", "thema": "Weltraum", "url": "https://www.nasa.gov/feed/"},
+    {"id": "esa", "name": "ESA (englisch)", "thema": "Weltraum", "url": "https://www.esa.int/rssfeed/Our_Activities/Space_News"},
+    {"id": "sportschau", "name": "Sportschau", "thema": "Sport", "url": "https://www.sportschau.de/index~rss2.xml"},
+    {"id": "kicker", "name": "kicker", "thema": "Sport", "url": "https://newsfeed.kicker.de/news/aktuell"},
+    {"id": "gamestar", "name": "GameStar", "thema": "Spiele", "url": "https://www.gamestar.de/news/rss/news.rss"}
+  ]
+}

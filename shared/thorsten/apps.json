@@ -408,6 +408,20 @@
         "Strecke & Rekorde",
         "Rad, Skate, Roller"
       ]
+    },
+    {
+      "id": "feed",
+      "name": "FIDELIA Feed",
+      "marke": "fidelia",
+      "farbe": "#475569",
+      "status": "fertig",
+      "pfad": "feed/",
+      "bilder": [],
+      "punkte": [
+        "Deine Quellen",
+        "Ohne Algorithmus",
+        "Ohne Werbung"
+      ]
     }
   ]
 }
