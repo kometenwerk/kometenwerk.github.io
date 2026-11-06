@@ -92,7 +92,7 @@
     "$ziel": {
       ".read": "auth != null && root.child('fchat/geraete/' + $ziel + '/' + auth.uid).exists()",
       "$m": {
-        ".write": "auth != null && (root.child('fchat/geraete/' + $ziel + '/' + auth.uid).exists() ? !newData.exists() : (!data.exists() && newData.exists() && root.child('fchat/geraete/' + newData.child('von').val() + '/' + auth.uid).exists() && root.child('fchat/kontakte/' + $ziel + '/' + newData.child('von').val()).val() === true))",
+        ".write": "auth != null && (root.child('fchat/geraete/' + $ziel + '/' + auth.uid).exists() ? !newData.exists() : (!data.exists() && newData.exists() && root.child('fchat/geraete/' + newData.child('von').val() + '/' + auth.uid).exists() && (root.child('fchat/kontakte/' + $ziel + '/' + newData.child('von').val()).val() === true || (newData.child('g').isString() && root.child('fchat/gruppen/' + newData.child('g').val() + '/m/' + $ziel).exists() && root.child('fchat/gruppen/' + newData.child('g').val() + '/m/' + newData.child('von').val()).exists() && root.child('fchat/kontakte/' + $ziel + '/' + newData.child('von').val()).val() !== 'blockiert'))))",
         ".validate": "newData.hasChildren(['von', 'iv', 'ct', 'zeit'])",
         "von": {
           ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{24}$/)"
@@ -108,6 +108,9 @@
         },
         "$sonst": {
           ".validate": false
+        },
+        "g": {
+          ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{24}$/)"
         }
       }
     }
@@ -174,6 +177,49 @@
       },
       "zeit": {
         ".validate": "newData.isNumber() && newData.val() <= now"
+      },
+      "$sonst": {
+        ".validate": false
+      }
+    }
+  },
+  "datei": {
+    "$ziel": {
+      ".read": "auth != null && root.child('fchat/geraete/' + $ziel + '/' + auth.uid).exists()",
+      "$f": {
+        ".write": "auth != null && $f.matches(/^[a-f0-9]{24}$/) && (root.child('fchat/geraete/' + $ziel + '/' + auth.uid).exists() ? !newData.exists() : (!data.exists() && newData.exists() && root.child('fchat/geraete/' + newData.child('von').val() + '/' + auth.uid).exists() && (root.child('fchat/kontakte/' + $ziel + '/' + newData.child('von').val()).val() === true || (newData.child('g').isString() && root.child('fchat/gruppen/' + newData.child('g').val() + '/m/' + $ziel).exists() && root.child('fchat/gruppen/' + newData.child('g').val() + '/m/' + newData.child('von').val()).exists() && root.child('fchat/kontakte/' + $ziel + '/' + newData.child('von').val()).val() !== 'blockiert'))))",
+        ".validate": "newData.hasChildren(['von', 'd', 'zeit'])",
+        "von": {
+          ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{24}$/)"
+        },
+        "g": {
+          ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{24}$/)"
+        },
+        "d": {
+          ".validate": "newData.isString() && newData.val().length <= 3000000"
+        },
+        "zeit": {
+          ".validate": "newData.isNumber() && newData.val() <= now"
+        },
+        "$sonst": {
+          ".validate": false
+        }
+      }
+    }
+  },
+  "gruppen": {
+    "$g": {
+      ".read": "auth != null",
+      ".write": "auth != null && $g.matches(/^[a-f0-9]{24}$/) && (data.exists() ? root.child('fchat/geraete/' + data.child('admin').val() + '/' + auth.uid).exists() && (!newData.exists() || newData.child('admin').val() === data.child('admin').val()) : (newData.exists() && root.child('fchat/geraete/' + newData.child('admin').val() + '/' + auth.uid).exists()))",
+      ".validate": "newData.hasChildren(['admin', 'm'])",
+      "admin": {
+        ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{24}$/)"
+      },
+      "m": {
+        "$cid": {
+          ".write": "auth != null && data.exists() && !newData.exists() && root.child('fchat/geraete/' + $cid + '/' + auth.uid).exists()",
+          ".validate": "newData.val() === true && $cid.matches(/^[a-f0-9]{24}$/)"
+        }
       },
       "$sonst": {
         ".validate": false

@@ -92,6 +92,18 @@
     }).then(function (pt) { return JSON.parse(TD.decode(pt)); });
   };
 
+  // Dateien (Fotos, Sprachnachrichten): eigener Zufalls-Schlüssel pro Datei, der Schlüssel reist verschlüsselt in der Nachricht mit
+  K.dateiZu = function (blob) {
+    var iv = K.zufall(12), roh;
+    return S.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt"]).then(function (k) { roh = k; return blob.arrayBuffer(); })
+      .then(function (buf) { return S.encrypt({ name: "AES-GCM", iv: iv }, roh, buf); })
+      .then(function (ct) { return S.exportKey("raw", roh).then(function (kr) { return { k: b64(kr), iv: b64(iv), ct: b64(ct) }; }); });
+  };
+  K.dateiAuf = function (k, iv, ct, mime) {
+    return S.importKey("raw", unb64(k), "AES-GCM", false, ["decrypt"]).then(function (key) { return S.decrypt({ name: "AES-GCM", iv: unb64(iv) }, key, unb64(ct)); })
+      .then(function (pt) { return new Blob([pt], { type: /^(image|audio)\/[a-z0-9.+-]+(;\s*codecs=[a-z0-9.,"-]+)?$/i.test(mime || "") ? mime : "application/octet-stream" }); });
+  };
+
   // Sicherheitsnummer zum Vergleichen (gleich auf beiden Handys)
   K.sicherheitsnummer = function (ekA, ekB) {
     return K.sha("fidelia-chat/sicherheit/" + [ekA, ekB].sort().join("|")).then(function (h) {

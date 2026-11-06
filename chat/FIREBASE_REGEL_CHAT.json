@@ -17,14 +17,30 @@
         ".read": "auth != null",
         ".write": "auth != null && root.child('fchat/geraete/' + $cid + '/' + auth.uid).exists() && newData.exists() && (data.exists() || !root.child('fchat/nutzer').exists() || (newData.child('per').isString() && root.child('fchat/codes/' + newData.child('per').val() + '/bis').val() > now))",
         ".validate": "newData.hasChildren(['name', 'em', 'farbe', 'ek', 'fp', 'zeit'])",
-        "name": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 30" },
-        "em": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 16" },
-        "farbe": { ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-f]{6}$/)" },
-        "ek": { ".validate": "newData.isString() && newData.val().length >= 80 && newData.val().length <= 100 && (!data.exists() || newData.val() === data.val())" },
-        "fp": { ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{32}$/) && (!data.exists() || newData.val() === data.val())" },
-        "per": { ".validate": "newData.isString() && newData.val().length <= 32" },
-        "zeit": { ".validate": "newData.isNumber() && (data.exists() ? newData.val() === data.val() : newData.val() <= now)" },
-        "$sonst": { ".validate": false }
+        "name": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 30"
+        },
+        "em": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 16"
+        },
+        "farbe": {
+          ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-f]{6}$/)"
+        },
+        "ek": {
+          ".validate": "newData.isString() && newData.val().length >= 80 && newData.val().length <= 100 && (!data.exists() || newData.val() === data.val())"
+        },
+        "fp": {
+          ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{32}$/) && (!data.exists() || newData.val() === data.val())"
+        },
+        "per": {
+          ".validate": "newData.isString() && newData.val().length <= 32"
+        },
+        "zeit": {
+          ".validate": "newData.isNumber() && (data.exists() ? newData.val() === data.val() : newData.val() <= now)"
+        },
+        "$sonst": {
+          ".validate": false
+        }
       }
     },
     "codes": {
@@ -32,10 +48,18 @@
         ".read": "auth != null",
         ".write": "auth != null && (data.exists() ? (root.child('fchat/geraete/' + data.child('cid').val() + '/' + auth.uid).exists() ? !newData.exists() : (!newData.exists() && data.child('einmal').val() === true)) : (newData.exists() && root.child('fchat/geraete/' + newData.child('cid').val() + '/' + auth.uid).exists()))",
         ".validate": "$k.matches(/^[A-Za-z0-9_-]{16,32}$/) && newData.hasChildren(['cid', 'bis', 'einmal'])",
-        "cid": { ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{24}$/)" },
-        "bis": { ".validate": "newData.isNumber() && newData.val() <= now + 90000000" },
-        "einmal": { ".validate": "newData.isBoolean()" },
-        "$sonst": { ".validate": false }
+        "cid": {
+          ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{24}$/)"
+        },
+        "bis": {
+          ".validate": "newData.isNumber() && newData.val() <= now + 90000000"
+        },
+        "einmal": {
+          ".validate": "newData.isBoolean()"
+        },
+        "$sonst": {
+          ".validate": false
+        }
       }
     },
     "anfragen": {
@@ -44,9 +68,15 @@
         "$von": {
           ".write": "auth != null && (root.child('fchat/geraete/' + $ziel + '/' + auth.uid).exists() ? !newData.exists() : (root.child('fchat/geraete/' + $von + '/' + auth.uid).exists() && (!newData.exists() || (root.child('fchat/codes/' + newData.child('code').val() + '/cid').val() === $ziel && root.child('fchat/codes/' + newData.child('code').val() + '/bis').val() > now && root.child('fchat/kontakte/' + $ziel + '/' + $von).val() !== 'blockiert'))))",
           ".validate": "newData.hasChildren(['code', 'zeit'])",
-          "code": { ".validate": "newData.isString() && newData.val().length <= 32" },
-          "zeit": { ".validate": "newData.isNumber() && newData.val() <= now" },
-          "$sonst": { ".validate": false }
+          "code": {
+            ".validate": "newData.isString() && newData.val().length <= 32"
+          },
+          "zeit": {
+            ".validate": "newData.isNumber() && newData.val() <= now"
+          },
+          "$sonst": {
+            ".validate": false
+          }
         }
       }
     },
@@ -63,13 +93,26 @@
       "$ziel": {
         ".read": "auth != null && root.child('fchat/geraete/' + $ziel + '/' + auth.uid).exists()",
         "$m": {
-          ".write": "auth != null && (root.child('fchat/geraete/' + $ziel + '/' + auth.uid).exists() ? !newData.exists() : (!data.exists() && newData.exists() && root.child('fchat/geraete/' + newData.child('von').val() + '/' + auth.uid).exists() && root.child('fchat/kontakte/' + $ziel + '/' + newData.child('von').val()).val() === true))",
+          ".write": "auth != null && (root.child('fchat/geraete/' + $ziel + '/' + auth.uid).exists() ? !newData.exists() : (!data.exists() && newData.exists() && root.child('fchat/geraete/' + newData.child('von').val() + '/' + auth.uid).exists() && (root.child('fchat/kontakte/' + $ziel + '/' + newData.child('von').val()).val() === true || (newData.child('g').isString() && root.child('fchat/gruppen/' + newData.child('g').val() + '/m/' + $ziel).exists() && root.child('fchat/gruppen/' + newData.child('g').val() + '/m/' + newData.child('von').val()).exists() && root.child('fchat/kontakte/' + $ziel + '/' + newData.child('von').val()).val() !== 'blockiert'))))",
           ".validate": "newData.hasChildren(['von', 'iv', 'ct', 'zeit'])",
-          "von": { ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{24}$/)" },
-          "iv": { ".validate": "newData.isString() && newData.val().length === 16" },
-          "ct": { ".validate": "newData.isString() && newData.val().length <= 24000" },
-          "zeit": { ".validate": "newData.isNumber() && newData.val() <= now" },
-          "$sonst": { ".validate": false }
+          "von": {
+            ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{24}$/)"
+          },
+          "iv": {
+            ".validate": "newData.isString() && newData.val().length === 16"
+          },
+          "ct": {
+            ".validate": "newData.isString() && newData.val().length <= 24000"
+          },
+          "zeit": {
+            ".validate": "newData.isNumber() && newData.val() <= now"
+          },
+          "$sonst": {
+            ".validate": false
+          },
+          "g": {
+            ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{24}$/)"
+          }
         }
       }
     },
@@ -79,9 +122,15 @@
         "$m": {
           ".write": "auth != null && (root.child('fchat/geraete/' + $an + '/' + auth.uid).exists() ? !newData.exists() : (newData.exists() && root.child('fchat/geraete/' + newData.child('von').val() + '/' + auth.uid).exists() && root.child('fchat/kontakte/' + newData.child('von').val() + '/' + $an).val() === true && root.child('fchat/kontakte/' + $an + '/' + newData.child('von').val()).val() === true))",
           ".validate": "newData.hasChildren(['von', 'a'])",
-          "von": { ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{24}$/)" },
-          "a": { ".validate": "newData.val() === 1 || newData.val() === 2" },
-          "$sonst": { ".validate": false }
+          "von": {
+            ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{24}$/)"
+          },
+          "a": {
+            ".validate": "newData.val() === 1 || newData.val() === 2"
+          },
+          "$sonst": {
+            ".validate": false
+          }
         }
       }
     },
@@ -90,10 +139,18 @@
         ".read": "auth != null",
         ".write": "auth != null && !data.exists() && newData.exists()",
         ".validate": "$t.matches(/^[a-f0-9]{64}$/) && newData.hasChildren(['s', 'iv', 'ct'])",
-        "s": { ".validate": "newData.isString() && newData.val().length <= 32" },
-        "iv": { ".validate": "newData.isString() && newData.val().length <= 24" },
-        "ct": { ".validate": "newData.isString() && newData.val().length <= 1000" },
-        "$sonst": { ".validate": false }
+        "s": {
+          ".validate": "newData.isString() && newData.val().length <= 32"
+        },
+        "iv": {
+          ".validate": "newData.isString() && newData.val().length <= 24"
+        },
+        "ct": {
+          ".validate": "newData.isString() && newData.val().length <= 1000"
+        },
+        "$sonst": {
+          ".validate": false
+        }
       }
     },
     "meldungen": {
@@ -101,14 +158,73 @@
       "$id": {
         ".write": "auth != null && ((!data.exists() && newData.exists() && root.child('fchat/geraete/' + newData.child('von').val() + '/' + auth.uid).exists()) || (!newData.exists() && root.child('team/meta/owner').val() === auth.uid))",
         ".validate": "newData.hasChildren(['von', 'ueber', 'name', 'grund', 'zeit'])",
-        "von": { ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{24}$/)" },
-        "ueber": { ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{24}$/)" },
-        "name": { ".validate": "newData.isString() && newData.val().length <= 30" },
-        "grund": { ".validate": "newData.isString() && newData.val().length <= 80" },
-        "notiz": { ".validate": "newData.isString() && newData.val().length <= 600" },
-        "text": { ".validate": "newData.isString() && newData.val().length <= 3600" },
-        "zeit": { ".validate": "newData.isNumber() && newData.val() <= now" },
-        "$sonst": { ".validate": false }
+        "von": {
+          ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{24}$/)"
+        },
+        "ueber": {
+          ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{24}$/)"
+        },
+        "name": {
+          ".validate": "newData.isString() && newData.val().length <= 30"
+        },
+        "grund": {
+          ".validate": "newData.isString() && newData.val().length <= 80"
+        },
+        "notiz": {
+          ".validate": "newData.isString() && newData.val().length <= 600"
+        },
+        "text": {
+          ".validate": "newData.isString() && newData.val().length <= 3600"
+        },
+        "zeit": {
+          ".validate": "newData.isNumber() && newData.val() <= now"
+        },
+        "$sonst": {
+          ".validate": false
+        }
+      }
+    },
+    "datei": {
+      "$ziel": {
+        ".read": "auth != null && root.child('fchat/geraete/' + $ziel + '/' + auth.uid).exists()",
+        "$f": {
+          ".write": "auth != null && $f.matches(/^[a-f0-9]{24}$/) && (root.child('fchat/geraete/' + $ziel + '/' + auth.uid).exists() ? !newData.exists() : (!data.exists() && newData.exists() && root.child('fchat/geraete/' + newData.child('von').val() + '/' + auth.uid).exists() && (root.child('fchat/kontakte/' + $ziel + '/' + newData.child('von').val()).val() === true || (newData.child('g').isString() && root.child('fchat/gruppen/' + newData.child('g').val() + '/m/' + $ziel).exists() && root.child('fchat/gruppen/' + newData.child('g').val() + '/m/' + newData.child('von').val()).exists() && root.child('fchat/kontakte/' + $ziel + '/' + newData.child('von').val()).val() !== 'blockiert'))))",
+          ".validate": "newData.hasChildren(['von', 'd', 'zeit'])",
+          "von": {
+            ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{24}$/)"
+          },
+          "g": {
+            ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{24}$/)"
+          },
+          "d": {
+            ".validate": "newData.isString() && newData.val().length <= 3000000"
+          },
+          "zeit": {
+            ".validate": "newData.isNumber() && newData.val() <= now"
+          },
+          "$sonst": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "gruppen": {
+      "$g": {
+        ".read": "auth != null",
+        ".write": "auth != null && $g.matches(/^[a-f0-9]{24}$/) && (data.exists() ? root.child('fchat/geraete/' + data.child('admin').val() + '/' + auth.uid).exists() && (!newData.exists() || newData.child('admin').val() === data.child('admin').val()) : (newData.exists() && root.child('fchat/geraete/' + newData.child('admin').val() + '/' + auth.uid).exists()))",
+        ".validate": "newData.hasChildren(['admin', 'm'])",
+        "admin": {
+          ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{24}$/)"
+        },
+        "m": {
+          "$cid": {
+            ".write": "auth != null && data.exists() && !newData.exists() && root.child('fchat/geraete/' + $cid + '/' + auth.uid).exists()",
+            ".validate": "newData.val() === true && $cid.matches(/^[a-f0-9]{24}$/)"
+          }
+        },
+        "$sonst": {
+          ".validate": false
+        }
       }
     }
   }

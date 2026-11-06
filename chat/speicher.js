@@ -13,13 +13,16 @@
   function db() {
     if (dbp) return dbp;
     dbp = new Promise(function (ok, nein) {
-      var r = indexedDB.open(DBNAME, 1);
-      r.onupgradeneeded = function () {
+      var r = indexedDB.open(DBNAME, 2);
+      r.onupgradeneeded = function (e) {
         var d = r.result;
-        d.createObjectStore("ich");
-        d.createObjectStore("kontakte", { keyPath: "cid" });
-        var n = d.createObjectStore("nachrichten", { keyPath: "id" });
-        n.createIndex("chat", "chat");
+        if (e.oldVersion < 1) {
+          d.createObjectStore("ich");
+          d.createObjectStore("kontakte", { keyPath: "cid" });
+          var n = d.createObjectStore("nachrichten", { keyPath: "id" });
+          n.createIndex("chat", "chat");
+        }
+        if (e.oldVersion < 2) d.createObjectStore("dateien", { keyPath: "id" });
       };
       r.onsuccess = function () { ok(r.result); };
       r.onerror = function () { nein(r.error); };

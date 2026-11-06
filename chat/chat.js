@@ -362,7 +362,7 @@
         await speichereKontakt(k); geaendert = true;
       } else if (k.status !== st) { k.status = st; await speichereKontakt(k); geaendert = true; }
     }
-    for (var c in kontakte) if (!(c in liste_) && kontakte[c].status !== "entfernt") { kontakte[c].status = "entfernt"; await speichereKontakt(kontakte[c]); geaendert = true; }
+    for (var c in kontakte) if (!kontakte[c].gruppe && !(c in liste_) && kontakte[c].status !== "entfernt") { kontakte[c].status = "entfernt"; await speichereKontakt(kontakte[c]); geaendert = true; }
     profileAuffrischen();
     if (geaendert) { liste(); if (aktiv) chatKopf(); }
     bilderVerteilen();
@@ -370,7 +370,7 @@
   var aufgefrischt = false;
   function profileAuffrischen() {
     if (aufgefrischt) return; aufgefrischt = true;
-    Object.keys(kontakte).forEach(function (cid) {
+    Object.keys(kontakte).filter(function (c) { return !kontakte[c].gruppe; }).forEach(function (cid) {
       B.hol("nutzer/" + cid).then(function (p) {
         var k = kontakte[cid]; if (!p || !k) return;
         if (p.ek !== k.ek) { k.schluesselNeu = true; } // darf nicht passieren – der Server erlaubt keinen Schlüsseltausch
@@ -425,8 +425,8 @@
     var gesamt = 0;
     $("chats").innerHTML = ids.length ? ids.map(function (cid) {
       var k = kontakte[cid], n = letzte(cid), u = ungelesen(cid); gesamt += u;
-      var vor = n ? (n.von === ich.cid ? "Du: " : "") + n.text : (k.status === "ok" ? "Sag Hallo 👋" : "");
-      var schild = k.status === "blockiert" ? '<span class="schild">blockiert</span>' : k.status === "entfernt" ? '<span class="schild">nicht mehr verbunden</span>' : "";
+      var vor = n ? (n.art === "info" ? "" : n.von === ich.cid ? "Du: " : k.gruppe ? nameVon(cid, n.von) + ": " : "") + vorschauText(n) : (k.status === "ok" ? (k.gruppe ? "Schreib der Gruppe 👋" : "Sag Hallo 👋") : "");
+      var schild = (k.gruppe ? '<span class="schild">Gruppe</span>' : "") + (k.status === "blockiert" ? '<span class="schild">blockiert</span>' : k.status === "entfernt" ? '<span class="schild">' + (k.gruppe ? "verlassen" : "nicht mehr verbunden") + "</span>" : "");
       return '<button class="chatzeile' + (u ? " ungelesen" : "") + '" type="button" data-c="' + cid + '">' + ava(k) + '<span class="mitte"><span class="name">' + esc(k.name) + (k.geprueft ? ' <span title="Schlüssel geprüft" aria-label="geprüft">✅</span>' : "") + schild + '</span><span class="vor">' + esc(vor) + '</span></span><span class="rechts">' + (n ? esc(kurzZeit(n.zeit)) : "") + (u ? '<span class="zahl" aria-label="' + u + ' ungelesen">' + u + "</span>" : "") + "</span></button>";
     }).join("") : '<div class="empty"><span class="gross" aria-hidden="true">👋</span><b>Noch keine Chats</b>Tippe auf ＋ und zeig deinen Kontakt-Code – oder scanne den von jemandem, den du kennst.</div>';
     document.title = (gesamt ? "(" + gesamt + ") " : "") + "FIDELIA Chat";
@@ -455,10 +455,11 @@
     return c;
   }
   function plusFenster(reiter) {
-    oeffne('<h2>Kontakt hinzufügen</h2><div class="tabs" role="tablist"><button type="button" role="tab" data-r="zeigen" aria-selected="' + (reiter === "zeigen") + '">📱 Mein Code</button><button type="button" role="tab" data-r="scannen" aria-selected="' + (reiter === "scannen") + '">📷 Code scannen</button></div><div id="plusInhalt" style="margin-top:14px"></div><div class="sheet-foot"><button class="btn primary" type="button" id="plusZu">Fertig</button></div>',
+    oeffne('<h2>Kontakt hinzufügen</h2><div class="tabs" role="tablist"><button type="button" role="tab" data-r="zeigen" aria-selected="' + (reiter === "zeigen") + '">📱 Mein Code</button><button type="button" role="tab" data-r="scannen" aria-selected="' + (reiter === "scannen") + '">📷 Code scannen</button></div><div id="plusInhalt" style="margin-top:14px"></div><div class="sheet-foot"><button class="btn" type="button" id="plusGruppe">👥 Neue Gruppe</button><span class="sp"></span><button class="btn primary" type="button" id="plusZu">Fertig</button></div>',
       function (w) {
         w.querySelector(".tabs").onclick = function (e) { var b = e.target.closest("[data-r]"); if (!b) return; w.querySelectorAll(".tabs button").forEach(function (x) { x.setAttribute("aria-selected", x === b); }); kameraAus(); (b.dataset.r === "zeigen" ? codeTab : scanTab)(w.querySelector("#plusInhalt")); };
         w.querySelector("#plusZu").onclick = zu;
+        w.querySelector("#plusGruppe").onclick = function () { zu(); gruppeNeuFenster(); };
         (reiter === "zeigen" ? codeTab : scanTab)(w.querySelector("#plusInhalt"));
       });
   }
@@ -551,108 +552,367 @@
   }
 
   /* ---------- Chat ---------- */
+  function istGruppe(c) { return String(c).indexOf("g:") === 0; }
   function chatOeffnen(cid) {
     if (!kontakte[cid]) return;
-    zu(); aktiv = cid; seite("seiteChat"); chatKopf(); verlauf(true); gelesenMarkieren();
+    zu(); aktiv = cid; antwortAuf = null; antwortZeigen(); seite("seiteChat"); chatKopf(); verlauf(true); gelesenMarkieren();
     history.pushState({ chat: cid }, "");
     if (matchMedia("(pointer:fine)").matches) $("text").focus();
   }
-  function chatZu() { aktiv = null; seite("seiteListe"); liste(); }
+  function chatZu() { aufnahmeStopp(false); aktiv = null; seite("seiteListe"); liste(); }
   $("chatZurueck").onclick = function () { if (history.state && history.state.chat) history.back(); else chatZu(); };
-  window.addEventListener("popstate", function () { if (aktiv) chatZu(); });
+  window.addEventListener("popstate", function () { if (bildAnsicht()) return; if (aktiv) chatZu(); });
+  var TIMER = { 0: "aus", 3600: "1 Stunde", 86400: "1 Tag", 604800: "1 Woche" };
   function chatKopf() {
     var k = kontakte[aktiv]; if (!k) return;
     $("chatAva").innerHTML = ava(k, true);
     $("chatName").textContent = k.name;
-    $("chatUnter").textContent = k.status === "blockiert" ? "blockiert" : k.status === "entfernt" ? "nicht mehr verbunden" : (k.geprueft ? "✅ geprüft · " : "") + "🔒 verschlüsselt";
+    var unter = k.gruppe ? Object.keys(k.mitglieder || {}).length + " Mitglieder" : (k.geprueft ? "✅ geprüft · " : "") + "🔒 verschlüsselt";
+    if (k.timer) unter = "⏱️ " + TIMER[k.timer] + " · " + unter;
+    $("chatUnter").textContent = k.status === "blockiert" ? "blockiert" : k.status === "entfernt" ? (k.gruppe ? "nicht mehr in der Gruppe" : "nicht mehr verbunden") : unter;
     var gesperrt = k.status !== "ok";
     $("eingabe").hidden = gesperrt; $("gesperrt").hidden = !gesperrt;
-    $("gesperrt").innerHTML = k.status === "blockiert" ? 'Du hast ' + esc(k.name) + ' blockiert. <button class="btn small" type="button" id="entsperren">Freigeben</button>' : "Ihr seid nicht mehr verbunden. Für einen neuen Chat braucht ihr einen neuen Kontakt-Code.";
+    $("gesperrt").innerHTML = k.status === "blockiert" ? 'Du hast ' + esc(k.name) + ' blockiert. <button class="btn small" type="button" id="entsperren">Freigeben</button>' : k.gruppe ? "Du bist nicht mehr in dieser Gruppe." : "Ihr seid nicht mehr verbunden. Für einen neuen Chat braucht ihr einen neuen Kontakt-Code.";
     var e = $("entsperren"); if (e) e.onclick = function () { blockieren(aktiv, false); };
   }
+  function nameVon(chat, cid) {
+    if (cid === ich.cid) return ich.name;
+    var g = kontakte[chat], m = g && g.mitglieder && g.mitglieder[cid];
+    return (kontakte[cid] && kontakte[cid].name) || (m && m.name) || "Jemand";
+  }
+  function farbeVon(chat, cid) { var g = kontakte[chat], m = g && g.mitglieder && g.mitglieder[cid]; return (kontakte[cid] && kontakte[cid].farbe) || (m && m.farbe) || "#6d3fd6"; }
+  function vorschauText(n) { return n.art === "bild" ? "📷 Foto" + (n.text ? ": " + n.text : "") : n.art === "ton" ? "🎤 Sprachnachricht" : n.art === "info" ? n.text : n.text; }
+  function dauerText(s) { s = Math.round(s || 0); return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2); }
+
   var gezeigt = {};
   function verlauf(nachUnten) {
     var el = $("verlauf"), unten = nachUnten || el.scrollHeight - el.scrollTop - el.clientHeight < 80;
-    var l = nachrichten[aktiv] || [], h = '<div class="info">🔒 Nachrichten in diesem Chat sind Ende-zu-Ende verschlüsselt. Nur ihr beide könnt sie lesen.</div>', tag = "";
+    var k = kontakte[aktiv] || {};
+    var l = nachrichten[aktiv] || [], h = '<div class="info">🔒 Nachrichten in diesem Chat sind Ende-zu-Ende verschlüsselt. Nur ' + (k.gruppe ? "die Mitglieder" : "ihr beide") + " könnt sie lesen.</div>", tag = "";
     var erstesMal = !gezeigt[aktiv]; gezeigt[aktiv] = gezeigt[aktiv] || {};
     l.forEach(function (n, i) {
       var t = tagText(n.zeit); if (t !== tag) { tag = t; h += '<div class="tag">' + esc(t) + "</div>"; }
-      var mein = n.von === ich.cid, nurEmoji = /^(\p{Extended_Pictographic}|\p{Emoji_Component}|\u200d|\ufe0f){1,8}$/u.test(n.text) && !/^[0-9#*]+$/.test(n.text);
-      var nx = l[i + 1], ende = !nx || nx.von !== n.von || nx.zeit - n.zeit > 300000 || tagText(nx.zeit) !== t;
+      if (n.art === "info") { h += '<div class="info klein-info">' + esc(n.text) + "</div>"; return; }
+      var mein = n.von === ich.cid, nurEmoji = !n.art && !n.r && /^(\p{Extended_Pictographic}|\p{Emoji_Component}|‍|️){1,8}$/u.test(n.text) && !/^[0-9#*]+$/.test(n.text);
+      var vx = l[i - 1], nx = l[i + 1];
+      var anfang = !vx || vx.von !== n.von || vx.art === "info" || n.zeit - vx.zeit > 300000 || tagText(vx.zeit) !== t;
+      var ende = !nx || nx.von !== n.von || nx.art === "info" || nx.zeit - n.zeit > 300000 || tagText(nx.zeit) !== t;
       var neu = !erstesMal && !gezeigt[aktiv][n.id]; gezeigt[aktiv][n.id] = 1;
       var st = mein ? (n.st === -1 ? "⚠️ " + esc(n.fehler || "nicht zugestellt") + " – antippen" : n.st === 0 ? '<span aria-label="wird gesendet">🕓</span>' : n.st === 1 ? '<span aria-label="gesendet">✓</span>' : n.st === 2 ? '<span aria-label="angekommen">✓✓</span>' : '<span class="st3" aria-label="gelesen">✓✓</span>') : "";
-      h += '<div class="blase' + (mein ? " ich" : "") + (ende ? " ende" : "") + (neu ? " neu" : "") + (n.st === -1 ? " fehler" : "") + (nurEmoji ? " gross" : "") + '" data-id="' + esc(n.id) + '"><span class="txt">' + esc(n.text) + '</span><span class="fuss">' + uhr(n.zeit) + (st ? " " + st : "") + "</span></div>";
+      var innen = "";
+      if (k.gruppe && !mein && anfang) innen += '<span class="absender" style="color:' + esc(farbeVon(aktiv, n.von)) + '">' + esc(nameVon(aktiv, n.von)) + "</span>";
+      if (n.r) innen += '<span class="zitat" data-zu="' + esc(n.r) + '"><b>' + esc(n.rv === ich.cid ? "Du" : nameVon(aktiv, n.rv)) + "</b>" + esc(String(n.rt || "").slice(0, 120)) + "</span>";
+      if (n.art === "bild") innen += '<span class="foto" data-datei="' + esc(n.datei) + '" style="aspect-ratio:' + (n.vh ? (1 / n.vh).toFixed(3) : "1") + '">' + (n.vorschau && bildSicher(n.vorschau) ? '<img class="unscharf" src="' + n.vorschau + '" alt="">' : "") + "</span>";
+      if (n.art === "ton") innen += '<span class="ton" data-datei="' + esc(n.datei) + '"><button type="button" class="spielen" aria-label="Abspielen">▶</button><span class="welle"><span class="lauf"></span></span><span class="zeit">' + dauerText(n.dauer) + "</span></span>";
+      if (n.text) innen += '<span class="txt">' + esc(n.text) + "</span>";
+      innen += '<span class="fuss">' + (n.weg ? "⏱️ " : "") + uhr(n.zeit) + (st ? " " + st : "") + "</span>";
+      var reak = n.reak ? Object.keys(n.reak).map(function (c) { return n.reak[c]; }).filter(Boolean) : [];
+      if (reak.length) { var z = {}; reak.forEach(function (e) { z[e] = (z[e] || 0) + 1; }); innen += '<span class="reak">' + Object.keys(z).map(function (e) { return esc(e) + (z[e] > 1 ? "<small>" + z[e] + "</small>" : ""); }).join("") + "</span>"; }
+      h += '<div class="blase' + (mein ? " ich" : "") + (ende ? " ende" : "") + (neu ? " neu" : "") + (reak.length ? " mit-reak" : "") + (n.art ? " art-" + n.art : "") + (n.st === -1 ? " fehler" : "") + (nurEmoji ? " gross" : "") + '" data-id="' + esc(n.id) + '">' + innen + "</div>";
     });
     if (erstesMal) l.forEach(function (n) { gezeigt[aktiv][n.id] = 1; });
     el.innerHTML = h;
+    el.querySelectorAll(".foto[data-datei]").forEach(fotoLaden);
     if (unten) el.scrollTop = el.scrollHeight;
   }
+
+  /* Dateien (Fotos, Sprachnachrichten): verschlüsselt, auf dem Handy gespeichert */
+  var dateiUrls = {};
+  async function dateiUrl(id) {
+    if (dateiUrls[id]) return dateiUrls[id];
+    var d = await L.hol("dateien", id).catch(function () { return null; });
+    if (!d || !d.blob) return null;
+    return (dateiUrls[id] = URL.createObjectURL(d.blob));
+  }
+  async function fotoLaden(el) {
+    var u = await dateiUrl(el.dataset.datei);
+    if (!u) { el.classList.add("laedt"); return; }
+    el.innerHTML = '<img src="' + u + '" alt="Foto">'; el.classList.remove("laedt");
+  }
+  var bildOffen = null;
+  function bildAnsicht() { if (bildOffen) { bildOffen.remove(); bildOffen = null; return true; } return false; }
+  async function bildZeigen(id) {
+    var u = await dateiUrl(id); if (!u) { KW.toast("Das Foto wird noch geladen …"); return; }
+    var d = document.createElement("div"); d.className = "vollbild"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Foto");
+    d.innerHTML = '<img src="' + u + '" alt="Foto"><div class="vb-leiste"><a class="btn" href="' + u + '" download="FIDELIA-Foto.jpg">⬇️ In Galerie speichern</a><button class="btn primary" type="button">Schließen</button></div>';
+    d.onclick = function (e) { if (e.target.tagName !== "A") { history.back(); } };
+    document.body.appendChild(d); bildOffen = d; history.pushState({ bild: 1 }, "");
+  }
+  var spielt = null;
+  async function tonSpielen(el) {
+    var id = el.dataset.datei;
+    if (spielt && spielt.id === id) { if (spielt.a.paused) spielt.a.play(); else spielt.a.pause(); return; }
+    if (spielt) { spielt.a.pause(); spielt = null; }
+    var u = await dateiUrl(id); if (!u) { KW.toast("Die Sprachnachricht wird noch geladen …"); return; }
+    var a = new Audio(u), knopf = el.querySelector(".spielen"), lauf = el.querySelector(".lauf"), zeit = el.querySelector(".zeit");
+    spielt = { id: id, a: a };
+    a.onplay = function () { knopf.textContent = "⏸"; };
+    a.onpause = function () { knopf.textContent = "▶"; };
+    a.ontimeupdate = function () { if (a.duration && isFinite(a.duration)) { lauf.style.width = (a.currentTime / a.duration * 100) + "%"; zeit.textContent = dauerText(a.currentTime); } };
+    a.onended = function () { knopf.textContent = "▶"; lauf.style.width = "0"; spielt = null; };
+    a.play().catch(function () { KW.toast("Abspielen geht gerade nicht."); });
+  }
+
+  /* Antippen einer Nachricht: Reaktion, Antworten, Kopieren, Löschen */
+  var REAKTIONEN = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
   $("verlauf").onclick = function (e) {
-    var b = e.target.closest(".blase.fehler"); if (!b) return;
-    var n = (nachrichten[aktiv] || []).filter(function (x) { return x.id === b.dataset.id; })[0];
-    if (n) { n.st = 0; speichereNachricht(n); verlauf(); zustellen(n); }
+    var zitat = e.target.closest(".zitat"); if (zitat) { var ziel = $("verlauf").querySelector('[data-id="' + CSS.escape(zitat.dataset.zu) + '"]'); if (ziel) { ziel.scrollIntoView({ block: "center", behavior: "smooth" }); ziel.classList.add("blink"); setTimeout(function () { ziel.classList.remove("blink"); }, 1200); } return; }
+    var ton = e.target.closest(".ton"); if (ton && e.target.closest(".spielen")) { tonSpielen(ton); return; }
+    var foto = e.target.closest(".foto"); if (foto) { bildZeigen(foto.dataset.datei); return; }
+    var b = e.target.closest(".blase"); if (!b) return;
+    var n = (nachrichten[aktiv] || []).filter(function (x) { return x.id === b.dataset.id; })[0]; if (!n) return;
+    if (n.st === -1) { n.st = 0; speichereNachricht(n); verlauf(); zustellen(n); return; }
+    nachrichtMenue(n);
   };
+  function nachrichtMenue(n) {
+    var meins = n.reak && n.reak[ich.cid], k = kontakte[aktiv], darf = k && k.status === "ok";
+    oeffne((darf ? '<div class="reak-wahl">' + REAKTIONEN.map(function (e) { return '<button type="button" data-r="' + e + '" aria-pressed="' + (meins === e) + '" aria-label="Reagieren mit ' + e + '">' + e + "</button>"; }).join("") + "</div>" : "") +
+      '<div class="menue">' + (darf ? '<button class="btn" type="button" data-m="antw">↩️ Antworten</button>' : "") + (n.text ? '<button class="btn" type="button" data-m="kopie">📋 Text kopieren</button>' : "") +
+      '<button class="btn danger" type="button" data-m="weg">🗑️ Bei mir löschen</button></div><div class="sheet-foot"><button class="btn" type="button" data-m="zu">Abbrechen</button></div>',
+      function (w) {
+        w.onclick = async function (e) {
+          var r = e.target.closest("[data-r]");
+          if (r) { zu(); reagieren(n, meins === r.dataset.r ? "" : r.dataset.r); return; }
+          var m = e.target.closest("[data-m]"); if (!m) return;
+          zu();
+          if (m.dataset.m === "antw") { antwortAuf = n; antwortZeigen(); feld.focus(); }
+          else if (m.dataset.m === "kopie") navigator.clipboard && navigator.clipboard.writeText(n.text).then(function () { KW.toast("Kopiert."); });
+          else if (m.dataset.m === "weg") { await nachrichtWeg(n); verlauf(); liste(); }
+        };
+      });
+  }
+  async function nachrichtWeg(n) {
+    var l = nachrichten[n.chat] || [], i = l.indexOf(n); if (i >= 0) l.splice(i, 1);
+    await L.weg("nachrichten", n.id).catch(function () {});
+    if (n.datei) { await L.weg("dateien", n.datei).catch(function () {}); if (dateiUrls[n.datei]) { URL.revokeObjectURL(dateiUrls[n.datei]); delete dateiUrls[n.datei]; } }
+  }
+  function reagieren(n, emoji) {
+    n.reak = n.reak || {}; if (emoji) n.reak[ich.cid] = emoji; else delete n.reak[ich.cid];
+    speichereNachricht(n); verlauf();
+    steuerSenden(n.chat, { typ: "reak", ziel: n.id, e: emoji });
+  }
+  var antwortAuf = null;
+  function antwortZeigen() {
+    var el = $("antwort");
+    if (!antwortAuf) { el.hidden = true; return; }
+    el.hidden = false;
+    el.innerHTML = '<span class="zitat"><b>' + esc(antwortAuf.von === ich.cid ? "Du" : nameVon(aktiv, antwortAuf.von)) + "</b>" + esc(vorschauText(antwortAuf).slice(0, 100)) + '</span><button type="button" class="kw-ico" aria-label="Antwort abbrechen">✕</button>';
+    el.querySelector("button").onclick = function () { antwortAuf = null; antwortZeigen(); };
+  }
+
+  /* Schreiben und Senden */
   var feld = $("text");
-  feld.addEventListener("input", function () { $("senden").disabled = !this.value.trim(); this.style.height = "auto"; this.style.height = Math.min(140, this.scrollHeight) + "px"; });
+  function knopfAnpassen() { var leer = !feld.value.trim(); $("senden").hidden = leer && !!window.MediaRecorder; $("mikro").hidden = !leer || !window.MediaRecorder; $("senden").disabled = leer; }
+  feld.addEventListener("input", function () { knopfAnpassen(); this.style.height = "auto"; this.style.height = Math.min(140, this.scrollHeight) + "px"; });
   feld.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey && matchMedia("(pointer:fine)").matches) { e.preventDefault(); $("eingabe").requestSubmit(); } });
+  knopfAnpassen();
+  function neueNachricht(teile) {
+    var k = kontakte[aktiv];
+    var n = Object.assign({ id: B.neuKey("post/x"), chat: aktiv, von: ich.cid, text: "", zeit: Date.now(), st: 0 }, teile);
+    if (antwortAuf) { n.r = antwortAuf.id; n.rv = antwortAuf.von; n.rt = vorschauText(antwortAuf).slice(0, 120); antwortAuf = null; antwortZeigen(); }
+    if (k.timer) { n.w = k.timer; n.weg = n.zeit + k.timer * 1000; }
+    (nachrichten[aktiv] = nachrichten[aktiv] || []).push(n);
+    return n;
+  }
   $("eingabe").onsubmit = function (e) {
     e.preventDefault();
-    var t = feld.value.trim(); if (!t || !aktiv || !B) { if (!B) KW.toast("Noch keine Verbindung – gleich nochmal."); return; }
-    var n = { id: B.neuKey("post/" + aktiv), chat: aktiv, von: ich.cid, text: t.slice(0, 4000), zeit: Date.now(), st: 0 };
-    (nachrichten[aktiv] = nachrichten[aktiv] || []).push(n);
-    speichereNachricht(n); feld.value = ""; feld.style.height = "auto"; $("senden").disabled = true;
+    var t = feld.value.trim(); if (!t || !aktiv) return;
+    if (!B) { KW.toast("Noch keine Verbindung – gleich nochmal."); return; }
+    var n = neueNachricht({ text: t.slice(0, 4000) });
+    speichereNachricht(n); feld.value = ""; feld.style.height = "auto"; knopfAnpassen();
     verlauf(true); zustellen(n);
   };
+
+  // An wen geht eine Nachricht? Kontakt → eine Person, Gruppe → alle Mitglieder außer mir
+  function empfaenger(chat) {
+    var k = kontakte[chat]; if (!k) return [];
+    if (!k.gruppe) return [{ cid: k.cid, ek: k.ek }];
+    return Object.keys(k.mitglieder || {}).filter(function (c) { return c !== ich.cid; }).map(function (c) { return { cid: c, ek: (kontakte[c] && kontakte[c].ek) || k.mitglieder[c].ek }; });
+  }
+  async function schicken(chat, id, inhalt, an) {
+    var k = kontakte[chat], g = k && k.gruppe ? chat.slice(2) : null;
+    var s = await K.gemeinsam(priv, ich.cid, an.cid, an.ek);
+    if (g) inhalt.g = g;
+    var v = await K.verschluesseln(s, inhalt, ich.cid + ">" + an.cid + ">" + id);
+    var post = { von: ich.cid, iv: v.iv, ct: v.ct, zeit: B.TS };
+    if (g) post.g = g;
+    await B.setz("post/" + an.cid + "/" + id, post);
+  }
+  // Steuer-Nachricht (Reaktion, Gruppe, Timer, …) an alle im Chat
+  async function steuerSenden(chat, inhalt, nur) {
+    if (!B) return;
+    var liste_ = nur || empfaenger(chat);
+    for (var i = 0; i < liste_.length; i++) { try { await schicken(chat, B.neuKey("post/x"), Object.assign({}, inhalt), liste_[i]); } catch (e) { /* egal */ } }
+  }
   async function zustellen(n) {
-    var k = kontakte[n.chat]; if (!k || !B) return;
+    if (!B || !kontakte[n.chat]) return;
+    var an = empfaenger(n.chat), fehler = 0, letzterFehler = null;
+    var inhalt = { t: n.text, z: n.zeit };
+    if (n.r) { inhalt.r = n.r; inhalt.rv = n.rv; inhalt.rt = n.rt; }
+    if (n.w) inhalt.w = n.w;
     try {
-      var s = await K.gemeinsam(priv, ich.cid, k.cid, k.ek);
-      var v = await K.verschluesseln(s, { t: n.text, z: n.zeit }, ich.cid + ">" + k.cid + ">" + n.id);
-      await B.setz("post/" + k.cid + "/" + n.id, { von: ich.cid, iv: v.iv, ct: v.ct, zeit: B.TS });
+      if (n.art) {
+        var d = await L.hol("dateien", n.datei);
+        if (!d) throw new Error("Die Datei fehlt.");
+        if (!n.dk) { var enc = await K.dateiZu(d.blob); n.dk = enc.k; n.div = enc.iv; n.dct = enc.ct; }
+        inhalt.art = n.art; inhalt.f = n.datei; inhalt.k = n.dk; inhalt.iv = n.div; inhalt.mime = d.blob.type;
+        if (n.vorschau) inhalt.vs = n.vorschau; if (n.vh) inhalt.vh = n.vh; if (n.dauer) inhalt.dauer = n.dauer;
+      }
+      for (var i = 0; i < an.length; i++) {
+        try {
+          if (n.art) { var dz = { von: ich.cid, d: n.dct, zeit: B.TS }; if (kontakte[n.chat].gruppe) dz.g = n.chat.slice(2); await B.setz("datei/" + an[i].cid + "/" + n.datei, dz); }
+          await schicken(n.chat, n.id, Object.assign({}, inhalt), an[i]);
+        } catch (e) { fehler++; letzterFehler = e; }
+      }
+      if (fehler && fehler === an.length) throw letzterFehler;
       if (n.st < 1) n.st = 1;
+      delete n.dct; delete n.fehler;
     } catch (e) { n.st = -1; n.fehler = fehlerText(e, "senden"); }
     speichereNachricht(n);
     if (aktiv === n.chat) verlauf(); else liste();
   }
 
+  /* Fotos */
+  $("anhang").onclick = function () { $("fotoWahl").click(); };
+  $("fotoWahl").onchange = async function () {
+    var f = this.files && this.files[0]; this.value = ""; if (!f || !aktiv || !B) return;
+    try {
+      var bild = await bildVerkleinern(f, 1600, 0.82), vs = await bildVerkleinern(f, 24, 0.5);
+      var n = neueNachricht({ art: "bild", datei: K.id(12), text: feld.value.trim().slice(0, 1000), vorschau: vs.url, vh: bild.h / bild.w });
+      feld.value = ""; knopfAnpassen();
+      await L.leg("dateien", { id: n.datei, blob: bild.blob });
+      speichereNachricht(n); verlauf(true); zustellen(n);
+    } catch (e) { KW.toast("Dieses Foto kann ich nicht verschicken."); }
+  };
+  function bildVerkleinern(datei, max, q) {
+    return new Promise(function (ok, nein) {
+      var u = URL.createObjectURL(datei), img = new Image();
+      img.onload = function () {
+        var k = Math.min(1, max / Math.max(img.width, img.height)), w = Math.max(1, Math.round(img.width * k)), h = Math.max(1, Math.round(img.height * k));
+        var c = document.createElement("canvas"); c.width = w; c.height = h; c.getContext("2d").drawImage(img, 0, 0, w, h); URL.revokeObjectURL(u);
+        if (max <= 64) { ok({ url: c.toDataURL("image/jpeg", q), w: w, h: h }); return; }
+        c.toBlob(function (b) { if (b) ok({ blob: b, w: w, h: h }); else nein(new Error("Bild")); }, "image/jpeg", q);
+      };
+      img.onerror = function () { URL.revokeObjectURL(u); nein(new Error("Bild")); };
+      img.src = u;
+    });
+  }
+
+  /* Sprachnachrichten (bis 5 Minuten) */
+  var aufnahme = null;
+  $("mikro").onclick = async function () {
+    if (aufnahme || !aktiv) return;
+    var strom;
+    try { strom = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+    catch (e) { KW.toast("Kein Zugriff aufs Mikrofon. Erlaube es in den Einstellungen deines Browsers."); return; }
+    var typ = ["audio/webm;codecs=opus", "audio/mp4", "audio/ogg;codecs=opus", "audio/webm"].filter(function (t) { return MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t); })[0];
+    var rec = new MediaRecorder(strom, Object.assign({ audioBitsPerSecond: 32000 }, typ ? { mimeType: typ } : {})), teile = [];
+    aufnahme = { rec: rec, strom: strom, start: Date.now(), senden: false, chat: aktiv };
+    rec.ondataavailable = function (e) { if (e.data && e.data.size) teile.push(e.data); };
+    rec.onstop = async function () {
+      var a = aufnahme; aufnahme = null; strom.getTracks().forEach(function (t) { t.stop(); }); clearInterval(a.uhr);
+      $("aufnahmeLeiste").hidden = true; $("eingabe").hidden = false;
+      var dauer = (Date.now() - a.start) / 1000;
+      if (!a.senden || dauer < 0.8 || aktiv !== a.chat) return;
+      var blob = new Blob(teile, { type: rec.mimeType || "audio/webm" });
+      var n = neueNachricht({ art: "ton", datei: K.id(12), dauer: Math.round(dauer) });
+      await L.leg("dateien", { id: n.datei, blob: blob });
+      speichereNachricht(n); verlauf(true); zustellen(n);
+    };
+    rec.start(1000);
+    $("eingabe").hidden = true; $("aufnahmeLeiste").hidden = false;
+    aufnahme.uhr = setInterval(function () { var s = (Date.now() - aufnahme.start) / 1000; $("aufnahmeZeit").textContent = dauerText(s); if (s >= 300) aufnahmeStopp(true); }, 250);
+    $("aufnahmeZeit").textContent = "0:00";
+  };
+  function aufnahmeStopp(senden) { if (!aufnahme) return; aufnahme.senden = senden; try { aufnahme.rec.stop(); } catch (e) { /* egal */ } }
+  $("aufnahmeWeg").onclick = function () { aufnahmeStopp(false); };
+  $("aufnahmeSenden").onclick = function () { aufnahmeStopp(true); };
+
+  /* Empfangen */
+  function schluesselVon(cid, g) {
+    if (kontakte[cid] && kontakte[cid].ek) return kontakte[cid].ek;
+    var gr = g && kontakte["g:" + g]; return gr && gr.mitglieder && gr.mitglieder[cid] ? gr.mitglieder[cid].ek : null;
+  }
   async function empfangen(key, m) {
     if (!m || !m.von) return;
-    var k = kontakte[m.von];
-    var schon = (nachrichten[m.von] || []).some(function (x) { return x.id === key; });
-    if (!k || !k.ek) { wartend[key] = m; return; } // Kontakt wird gerade noch geladen
-    if (k.status !== "ok" || schon) { B.weg("post/" + ich.cid + "/" + key).catch(function () {}); return; }
-    var text, inhalt = null;
+    var weg = function () { B.weg("post/" + ich.cid + "/" + key).catch(function () {}); };
+    var g = typeof m.g === "string" && /^[a-f0-9]{24}$/.test(m.g) ? m.g : null, chat = g ? "g:" + g : m.von;
+    var k = kontakte[m.von], gr = g ? kontakte[chat] : null;
+    var ek = schluesselVon(m.von, g);
+    if (!ek) { if (g && !kontakte[m.von]) { wartend[key] = m; return; } if (!k) { wartend[key] = m; return; } }
+    if (k && k.status === "blockiert") { weg(); return; }
+    if (!g && (!k || k.status !== "ok")) { weg(); return; }
+    var inhalt = null, text;
     try {
-      var s = await K.gemeinsam(priv, ich.cid, k.cid, k.ek);
+      var s = await K.gemeinsam(priv, ich.cid, m.von, ek);
       inhalt = await K.entschluesseln(s, m.iv, m.ct, m.von + ">" + ich.cid + ">" + key);
+      if (g && inhalt.g !== g) throw new Error("Gruppe passt nicht");
       text = String(inhalt.t || "");
-    } catch (e) { text = "⚠️ Diese Nachricht konnte nicht entschlüsselt werden."; }
-    if (inhalt && inhalt.typ === "profil") { // neues Profilbild – kommt nicht in den Verlauf
-      B.weg("post/" + ich.cid + "/" + key).catch(function () {});
-      if ((inhalt.v || 0) >= (k.bildV || 0)) {
-        k.bild = bildSicher(inhalt.bild); k.bildV = inhalt.v || 0;
-        if (typeof inhalt.name === "string" && inhalt.name.trim() && inhalt.name.length <= 30) k.name = inhalt.name;
-        if (typeof inhalt.em === "string" && inhalt.em && inhalt.em.length <= 16) k.em = inhalt.em;
-        if (/^#[0-9a-f]{6}$/.test(inhalt.farbe || "")) k.farbe = inhalt.farbe;
+    } catch (e) { inhalt = null; text = "⚠️ Diese Nachricht konnte nicht entschlüsselt werden."; }
+    if (inhalt && inhalt.typ) { weg(); await steuerDa(m.von, chat, inhalt); return; }
+    if (g && (!gr || gr.status !== "ok" || !gr.mitglieder || !gr.mitglieder[m.von])) { weg(); return; }
+    if ((nachrichten[chat] || []).some(function (x) { return x.id === key; })) { weg(); return; }
+    var n = { id: key, chat: chat, von: m.von, text: text.slice(0, 4000), zeit: m.zeit || Date.now(), gelesen: false };
+    if (inhalt) {
+      if (typeof inhalt.r === "string") { n.r = inhalt.r; n.rv = String(inhalt.rv || ""); n.rt = String(inhalt.rt || "").slice(0, 120); }
+      if (inhalt.w && TIMER[inhalt.w]) { n.w = inhalt.w; n.weg = Date.now() + inhalt.w * 1000; }
+      if ((inhalt.art === "bild" || inhalt.art === "ton") && /^[a-f0-9]{24}$/.test(inhalt.f || "")) {
+        n.art = inhalt.art; n.datei = inhalt.f; n.vorschau = bildSicher(inhalt.vs) || null; n.vh = +inhalt.vh || null; n.dauer = +inhalt.dauer || 0;
+        dateiHolen(n, inhalt);
+      }
+    }
+    (nachrichten[chat] = nachrichten[chat] || []).push(n);
+    nachrichten[chat].sort(function (a, b) { return a.zeit - b.zeit; });
+    await speichereNachricht(n);
+    weg();
+    if (!g) B.setz("quittung/" + m.von + "/" + key, { von: ich.cid, a: 1 }).catch(function () {});
+    if (aktiv === chat) { verlauf(); gelesenMarkieren(); }
+    else { liste(); if (!document.hidden) KW.toast((gr ? gr.em + " " + gr.name + " · " + nameVon(chat, m.von) : (k.em + " " + k.name)) + ": " + vorschauText(n).slice(0, 60), "Öffnen", function () { chatOeffnen(chat); }); }
+  }
+  async function dateiHolen(n, inhalt) {
+    try {
+      var d = await B.hol("datei/" + ich.cid + "/" + n.datei);
+      if (!d || !d.d) { setTimeout(function () { dateiHolen(n, inhalt); }, 4000); return; }
+      var blob = await K.dateiAuf(inhalt.k, inhalt.iv, d.d, String(inhalt.mime || "").slice(0, 40));
+      await L.leg("dateien", { id: n.datei, blob: blob });
+      B.weg("datei/" + ich.cid + "/" + n.datei).catch(function () {});
+      if (aktiv === n.chat) verlauf();
+    } catch (e) { /* bleibt als Vorschau */ }
+  }
+  // Steuer-Nachrichten: Profil, Reaktion, Timer, Gruppe
+  async function steuerDa(von, chat, x) {
+    var k = kontakte[von];
+    if (x.typ === "profil" && k && !x.g) {
+      if ((x.v || 0) >= (k.bildV || 0)) {
+        k.bild = bildSicher(x.bild); k.bildV = x.v || 0;
+        if (typeof x.name === "string" && x.name.trim() && x.name.length <= 30) k.name = x.name;
+        if (typeof x.em === "string" && x.em && x.em.length <= 16) k.em = x.em;
+        if (/^#[0-9a-f]{6}$/.test(x.farbe || "")) k.farbe = x.farbe;
         await speichereKontakt(k); liste(); if (aktiv === k.cid) chatKopf();
       }
-      return;
-    }
-    var n = { id: key, chat: m.von, von: m.von, text: text, zeit: m.zeit || Date.now(), gelesen: false };
-    (nachrichten[m.von] = nachrichten[m.von] || []).push(n);
-    nachrichten[m.von].sort(function (a, b) { return a.zeit - b.zeit; });
-    await speichereNachricht(n);
-    B.weg("post/" + ich.cid + "/" + key).catch(function () {});
-    B.setz("quittung/" + m.von + "/" + key, { von: ich.cid, a: 1 }).catch(function () {});
-    if (aktiv === m.von) { verlauf(); gelesenMarkieren(); }
-    else { liste(); if (!document.hidden) KW.toast(k.em + " " + k.name + ": " + text.slice(0, 60), "Öffnen", function () { chatOeffnen(k.cid); }); }
+    } else if (x.typ === "reak") {
+      var n = (nachrichten[chat] || []).filter(function (y) { return y.id === x.ziel; })[0];
+      if (n) { n.reak = n.reak || {}; if (x.e && REAKTIONEN.indexOf(x.e) >= 0) n.reak[von] = x.e; else delete n.reak[von]; await speichereNachricht(n); if (aktiv === chat) verlauf(); }
+    } else if (x.typ === "timer" && TIMER[x.s] !== undefined) {
+      var c = kontakte[chat]; if (!c) return;
+      if (c.gruppe && c.admin !== von) return;
+      c.timer = +x.s || 0; await speichereKontakt(c);
+      infoNachricht(chat, nameVon(chat, von) + (c.timer ? " hat verschwindende Nachrichten eingeschaltet: " + TIMER[c.timer] + "." : " hat verschwindende Nachrichten ausgeschaltet."));
+      if (aktiv === chat) chatKopf();
+    } else if (x.typ === "gruppe") await gruppeDa(von, x);
+  }
+  function infoNachricht(chat, text) {
+    var n = { id: "i" + K.id(8), chat: chat, von: "", art: "info", text: text, zeit: Date.now(), gelesen: true };
+    (nachrichten[chat] = nachrichten[chat] || []).push(n); speichereNachricht(n);
+    if (aktiv === chat) verlauf(); else liste();
   }
   function gelesenMarkieren() {
     if (!aktiv || document.hidden) return;
+    var gruppe = istGruppe(aktiv);
     (nachrichten[aktiv] || []).forEach(function (n) {
       if (n.von === ich.cid || n.gelesen) return;
       n.gelesen = true; speichereNachricht(n);
-      if (ich.lesen !== false && B) B.setz("quittung/" + n.von + "/" + n.id, { von: ich.cid, a: 2 }).catch(function () {});
+      if (!gruppe && ich.lesen !== false && B) B.setz("quittung/" + n.von + "/" + n.id, { von: ich.cid, a: 2 }).catch(function () {});
     });
   }
   document.addEventListener("visibilitychange", function () { if (!document.hidden) { gelesenMarkieren(); if (!aktiv) liste(); } });
@@ -662,17 +922,132 @@
     if (n && n.von === ich.cid && n.st < q.a + 1) { n.st = q.a + 1; speichereNachricht(n); if (aktiv === q.von) verlauf(); }
     B.weg("quittung/" + ich.cid + "/" + key).catch(function () {});
   }
+  // Verschwindende Nachrichten aufräumen
+  setInterval(async function () {
+    var jetzt = Date.now(), weg = false;
+    for (var c in nachrichten) {
+      var alt = nachrichten[c].filter(function (n) { return n.weg && n.weg < jetzt; });
+      for (var i = 0; i < alt.length; i++) { await nachrichtWeg(alt[i]); weg = true; }
+    }
+    if (weg) { if (aktiv) verlauf(); else liste(); }
+  }, 20000);
+
+  /* ---------- Gruppen ---------- */
+  function gruppeNeuFenster() {
+    var ok = Object.keys(kontakte).filter(function (c) { return !kontakte[c].gruppe && kontakte[c].status === "ok"; });
+    if (!ok.length) { KW.toast("Füge zuerst Kontakte hinzu – dann kannst du eine Gruppe machen."); return; }
+    var wahl = { em: "👨‍👩‍👧", farbe: FARBEN[Math.floor(Math.random() * FARBEN.length)] };
+    var GEM = ["👨‍👩‍👧", "🏠", "⚽", "🎮", "🎒", "🎉", "🚀", "🐾", "🎵", "🍕"];
+    oeffne('<h2>Neue Gruppe</h2><label class="field"><span>Name der Gruppe</span><input class="inp" id="gName" maxlength="30" placeholder="z. B. Familie" autofocus></label>' +
+      '<div class="field"><span>Bild</span><div class="emojis" id="gEm">' + GEM.map(function (e) { return '<button type="button" data-e="' + e + '" aria-pressed="' + (e === wahl.em) + '">' + e + "</button>"; }).join("") + "</div></div>" +
+      '<div class="field"><span>Wer soll rein? (nur deine Kontakte)</span><div class="wahlliste">' + ok.map(function (c) { var k = kontakte[c]; return '<label class="wahl">' + ava(k, true) + "<span>" + esc(k.name) + '</span><input type="checkbox" value="' + c + '"></label>'; }).join("") + "</div></div>" +
+      '<p class="muted klein">In der Gruppe sieht niemand die Kontakt-Codes der anderen – privat schreiben kann man sich nur, wenn man sich selbst hinzufügt.</p>' +
+      '<div class="sheet-foot"><button class="btn" type="button" id="gAbbr">Abbrechen</button><button class="btn primary" type="button" id="gOk">Gruppe erstellen</button></div>',
+      function (w) {
+        w.querySelector("#gEm").onclick = function (e) { var b = e.target.closest("[data-e]"); if (!b) return; wahl.em = b.dataset.e; w.querySelectorAll("#gEm button").forEach(function (x) { x.setAttribute("aria-pressed", x === b); }); };
+        w.querySelector("#gAbbr").onclick = zu;
+        w.querySelector("#gOk").onclick = async function () {
+          var name = w.querySelector("#gName").value.trim(), wer = Array.prototype.map.call(w.querySelectorAll(".wahl input:checked"), function (x) { return x.value; });
+          if (!name) { KW.toast("Gib der Gruppe einen Namen."); return; }
+          if (!wer.length) { KW.toast("Wähle mindestens eine Person aus."); return; }
+          this.disabled = true;
+          try { var c = await gruppeAnlegen(name, wahl.em, wahl.farbe, wer); zu(); chatOeffnen(c); }
+          catch (e) { this.disabled = false; KW.toast("Die Gruppe konnte nicht erstellt werden: " + fehlerText(e)); }
+        };
+      });
+  }
+  function mitgliedEintrag(cid) { var k = cid === ich.cid ? ich : kontakte[cid]; return { name: k.name, em: k.em, farbe: k.farbe, ek: k.ek }; }
+  async function gruppeAnlegen(name, em, farbe, wer) {
+    await server();
+    var gid = K.id(12), m = {}; m[ich.cid] = true; wer.forEach(function (c) { m[c] = true; });
+    await B.setz("gruppen/" + gid, { admin: ich.cid, m: m });
+    var mit = {}; Object.keys(m).forEach(function (c) { mit[c] = mitgliedEintrag(c); });
+    var c = "g:" + gid;
+    kontakte[c] = { cid: c, gruppe: true, name: name.slice(0, 30), em: em, farbe: farbe, admin: ich.cid, mitglieder: mit, v: Date.now(), status: "ok", seit: Date.now() };
+    await speichereKontakt(kontakte[c]);
+    infoNachricht(c, "Du hast die Gruppe „" + name + "“ erstellt.");
+    await gruppeVerteilen(c);
+    return c;
+  }
+  async function gruppeVerteilen(c, extra) {
+    var g = kontakte[c];
+    var x = { typ: "gruppe", name: g.name, em: g.em, farbe: g.farbe, admin: g.admin, mitglieder: g.mitglieder, timer: g.timer || 0, v: g.v };
+    await steuerSenden(c, x, (extra || []).concat(empfaenger(c)));
+  }
+  async function gruppeDa(von, x) {
+    if (typeof x.g !== "string" || !/^[a-f0-9]{24}$/.test(x.g) || !x.mitglieder || typeof x.mitglieder !== "object") return;
+    var c = "g:" + x.g, g = kontakte[c];
+    if (g && (g.v || 0) >= (x.v || 0)) return;
+    if (g ? g.admin !== von : x.admin !== von) return; // nur der Admin verschickt die Gruppe
+    var mit = {};
+    Object.keys(x.mitglieder).slice(0, 64).forEach(function (cid) {
+      var m = x.mitglieder[cid]; if (!/^[a-f0-9]{24}$/.test(cid) || !m) return;
+      mit[cid] = { name: String(m.name || "?").slice(0, 30), em: String(m.em || "🙂").slice(0, 16), farbe: /^#[0-9a-f]{6}$/.test(m.farbe || "") ? m.farbe : "#6d3fd6", ek: kontakte[cid] && kontakte[cid].ek ? kontakte[cid].ek : String(m.ek || "") };
+    });
+    var drin = !!mit[ich.cid], neu = !g;
+    g = kontakte[c] = Object.assign(g || { cid: c, gruppe: true, seit: Date.now() }, { name: String(x.name || "Gruppe").slice(0, 30), em: String(x.em || "👥").slice(0, 16), farbe: /^#[0-9a-f]{6}$/.test(x.farbe || "") ? x.farbe : "#6d3fd6", admin: von, mitglieder: mit, timer: TIMER[x.timer] !== undefined ? +x.timer : 0, v: x.v || Date.now(), status: drin ? "ok" : "entfernt" });
+    await speichereKontakt(g);
+    if (neu && drin) infoNachricht(c, nameVon(c, von) + " hat dich zur Gruppe „" + g.name + "“ hinzugefügt.");
+    else if (!drin) infoNachricht(c, "Du bist nicht mehr in dieser Gruppe.");
+    Object.keys(wartend).forEach(function (key) { var m = wartend[key]; delete wartend[key]; empfangen(key, m); });
+    liste(); if (aktiv === c) { chatKopf(); verlauf(); }
+  }
+  function gruppeFenster(c) {
+    var g = kontakte[c], admin = g.admin === ich.cid, ids = Object.keys(g.mitglieder || {});
+    var dazu = Object.keys(kontakte).filter(function (x) { return !kontakte[x].gruppe && kontakte[x].status === "ok" && !g.mitglieder[x]; });
+    oeffne('<div style="text-align:center">' + ava(g, false, true) + '<h2 style="margin:10px 0 2px">' + esc(g.name) + '</h2><p class="muted" style="margin:0 0 14px">' + ids.length + " Mitglieder" + (admin ? " · du bist Admin" : "") + "</p></div>" +
+      '<div class="wahlliste">' + ids.map(function (x) { var m = g.mitglieder[x]; return '<div class="wahl">' + ava(x === ich.cid ? ich : (kontakte[x] || m), true) + "<span>" + esc(x === ich.cid ? "Du" : nameVon(c, x)) + (x === g.admin ? ' <span class="schild">Admin</span>' : "") + "</span>" + (admin && x !== ich.cid ? '<button class="btn small danger" type="button" data-raus="' + x + '">Entfernen</button>' : "") + "</div>"; }).join("") + "</div>" +
+      (admin && dazu.length && g.status === "ok" ? '<div class="field" style="margin-top:12px"><span>Hinzufügen</span><div class="wahlliste">' + dazu.map(function (x) { var k = kontakte[x]; return '<div class="wahl">' + ava(k, true) + "<span>" + esc(k.name) + '</span><button class="btn small" type="button" data-rein="' + x + '">＋</button></div>'; }).join("") + "</div></div>" : "") +
+      '<div class="menue" style="margin-top:12px">' + (g.status === "ok" ? (admin ? '<button class="btn" type="button" data-m="timer">⏱️ Verschwindende Nachrichten: ' + TIMER[g.timer || 0] + "</button>" : "") + '<button class="btn danger" type="button" data-m="raus">🚪 Gruppe verlassen</button>' : "") + '<button class="btn danger" type="button" data-m="weg">🗑️ Chat bei mir löschen</button></div>' +
+      '<div class="sheet-foot"><button class="btn primary" type="button" data-m="zu">Schließen</button></div>',
+      function (w) {
+        w.onclick = async function (e) {
+          var b = e.target.closest("button"); if (!b) return;
+          try {
+            if (b.dataset.raus) { var raus = { cid: b.dataset.raus, ek: g.mitglieder[b.dataset.raus].ek }; infoNachricht(c, "Du hast " + nameVon(c, b.dataset.raus) + " entfernt."); delete g.mitglieder[b.dataset.raus]; g.v = Date.now(); await speichereKontakt(g); await gruppeVerteilen(c, [raus]); await B.weg("gruppen/" + c.slice(2) + "/m/" + raus.cid); zu(); gruppeFenster(c); chatKopf(); }
+            else if (b.dataset.rein) { await B.setz("gruppen/" + c.slice(2) + "/m/" + b.dataset.rein, true); g.mitglieder[b.dataset.rein] = mitgliedEintrag(b.dataset.rein); g.v = Date.now(); await speichereKontakt(g); infoNachricht(c, "Du hast " + kontakte[b.dataset.rein].name + " hinzugefügt."); await gruppeVerteilen(c); zu(); gruppeFenster(c); chatKopf(); }
+            else if (b.dataset.m === "zu") zu();
+            else if (b.dataset.m === "timer") { zu(); timerFenster(c); }
+            else if (b.dataset.m === "raus") {
+              if (!confirm("Gruppe „" + g.name + "“ verlassen?")) return;
+              if (admin) { // Admin geht: Gruppe für alle auflösen
+                await steuerSenden(c, { typ: "gruppe", name: g.name, em: g.em, farbe: g.farbe, admin: g.admin, mitglieder: {}, v: Date.now() });
+                await B.weg("gruppen/" + c.slice(2)).catch(function () {});
+              } else await B.weg("gruppen/" + c.slice(2) + "/m/" + ich.cid);
+              g.status = "entfernt"; await speichereKontakt(g); infoNachricht(c, "Du hast die Gruppe verlassen."); zu(); chatKopf();
+            } else if (b.dataset.m === "weg") { if (!confirm("Diesen Chat bei dir löschen?")) return; await L.chatWeg(c); await L.weg("kontakte", c); delete kontakte[c]; delete nachrichten[c]; zu(); chatZu(); }
+          } catch (err) { KW.toast("Das hat nicht geklappt: " + fehlerText(err)); }
+        };
+      });
+  }
+  function timerFenster(c) {
+    var k = kontakte[c];
+    oeffne('<h2>⏱️ Verschwindende Nachrichten</h2><p class="muted">Neue Nachrichten in diesem Chat verschwinden nach der gewählten Zeit – bei allen.</p><div class="menue">' +
+      Object.keys(TIMER).map(function (s) { return '<button class="btn" type="button" data-t="' + s + '" aria-pressed="' + ((k.timer || 0) === +s) + '">' + ((k.timer || 0) === +s ? "✅ " : "") + (s === "0" ? "Aus" : "Nach " + TIMER[s]) + "</button>"; }).join("") +
+      '</div><p class="muted klein" style="margin-top:10px">Achtung: Jemand könnte trotzdem ein Bildschirmfoto machen.</p><div class="sheet-foot"><button class="btn" type="button" data-t="zu">Schließen</button></div>',
+      function (w) {
+        w.onclick = async function (e) {
+          var b = e.target.closest("[data-t]"); if (!b) return;
+          if (b.dataset.t === "zu") { zu(); return; }
+          k.timer = +b.dataset.t; if (k.gruppe) k.v = Date.now(); await speichereKontakt(k); zu();
+          infoNachricht(c, k.timer ? "Du hast verschwindende Nachrichten eingeschaltet: " + TIMER[k.timer] + "." : "Du hast verschwindende Nachrichten ausgeschaltet.");
+          steuerSenden(c, { typ: "timer", s: k.timer }); chatKopf();
+        };
+      });
+  }
 
   /* ---------- Kontakt-Infos, Blockieren, Melden ---------- */
   $("chatWer").onclick = function () { kontaktFenster(aktiv); };
   async function kontaktFenster(cid) {
     var k = kontakte[cid]; if (!k) return;
+    if (k.gruppe) { gruppeFenster(cid); return; }
     var nr = await K.sicherheitsnummer(ich.ek, k.ek);
     oeffne('<div style="text-align:center">' + ava(k, false, true) + '<h2 style="margin:10px 0 2px">' + esc(k.name) + '</h2><p class="muted" style="margin:0 0 14px">' + (k.geprueft ? "✅ Schlüssel geprüft" : "Schlüssel noch nicht geprüft") + "</p></div>" +
       '<div class="field"><span>Sicherheitsnummer – auf beiden Handys muss dieselbe stehen</span><div class="sicher">' + esc(nr) + "</div></div>" +
       (k.geprueft ? "" : '<p class="muted" style="font-size:.88rem">Vergleicht die Zahlen, wenn ihr euch trefft. Wenn sie gleich sind, kann niemand eure Nachrichten mitlesen.</p>') +
       '<div class="menue">' + (k.geprueft ? "" : '<button class="btn" type="button" data-m="pruef">✅ Zahlen sind gleich – als geprüft markieren</button>') +
       (k.status === "ok" ? '<button class="btn" type="button" data-m="block">🚫 Blockieren</button>' : k.status === "blockiert" ? '<button class="btn" type="button" data-m="frei">✅ Blockierung aufheben</button>' : "") +
+      (k.status === "ok" ? '<button class="btn" type="button" data-m="timer">⏱️ Verschwindende Nachrichten: ' + TIMER[k.timer || 0] + "</button>" : "") +
       '<button class="btn" type="button" data-m="melden">🚩 Melden</button>' +
       '<button class="btn" type="button" data-m="leeren">🧹 Chat-Verlauf löschen</button>' +
       '<button class="btn danger" type="button" data-m="entfernen">🗑️ Kontakt entfernen</button></div>' +
@@ -686,7 +1061,8 @@
           else if (m === "block") { if (confirm(k.name + " blockieren? Dann kann " + k.name + " dir nichts mehr schicken.")) { zu(); blockieren(cid, true); } }
           else if (m === "frei") { zu(); blockieren(cid, false); }
           else if (m === "melden") meldenFenster(cid);
-          else if (m === "leeren") { if (confirm("Alle Nachrichten in diesem Chat auf diesem Handy löschen?")) { await L.chatWeg(cid); nachrichten[cid] = []; zu(); verlauf(true); liste(); } }
+          else if (m === "timer") { zu(); timerFenster(cid); }
+          else if (m === "leeren") { if (confirm("Alle Nachrichten in diesem Chat auf diesem Handy löschen?")) { var alle = (nachrichten[cid] || []).slice(); for (var i = 0; i < alle.length; i++) await nachrichtWeg(alle[i]); nachrichten[cid] = []; zu(); verlauf(true); liste(); } }
           else if (m === "entfernen") {
             if (!confirm(k.name + " entfernen? Ihr könnt euch dann nicht mehr schreiben, bis einer einen neuen Kontakt-Code schickt.")) return;
             try { await B.weg("kontakte/" + ich.cid + "/" + cid); await L.chatWeg(cid); await L.weg("kontakte", cid); delete kontakte[cid]; delete nachrichten[cid]; zu(); chatZu(); KW.toast(k.name + " wurde entfernt."); }
@@ -781,7 +1157,7 @@
       '<button class="btn" type="button" data-e="code">🔑 Wiederherstellungs-Code anzeigen</button>' +
       '<button class="btn" type="button" data-e="neucode">🔄 Alle meine Kontakt-Codes ungültig machen</button>' +
       '<button class="btn danger" type="button" data-e="abmelden">🚪 Von diesem Gerät abmelden</button></div>' +
-      '<p class="muted" style="font-size:.82rem;margin-top:14px">FIDELIA Chat – Schritt 1. Gruppen, Fotos und Sprachnachrichten kommen als Nächstes.</p>' +
+      '<p class="muted" style="font-size:.82rem;margin-top:14px">FIDELIA Chat – Testversion. Als Nächstes: Klassenzimmer-Modus, Benachrichtigungen und Backup.</p>' +
       '<div class="sheet-foot"><button class="btn primary" type="button" data-e="zu">Schließen</button></div>',
       function (w) {
         w.querySelector("#eLesen").onchange = function () { ich.lesen = this.checked; speichereIch(); KW.toast(this.checked ? "Andere sehen, wenn du gelesen hast." : "Andere sehen nicht mehr, wann du gelesen hast."); };

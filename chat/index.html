@@ -158,6 +158,53 @@ body{display:flex;flex-direction:column;min-height:100dvh}
 .menue .btn{justify-content:flex-start;padding:13px 14px}
 .meldung{padding:12px;margin:0 0 10px;font-size:.9rem}
 .meldung pre{white-space:pre-wrap;font:inherit;font-size:.85rem;background:var(--soft);padding:8px;border-radius:8px;max-height:200px;overflow:auto}
+
+.eingabe .rund{width:46px;height:46px;border-radius:50%;border:0;background:var(--card);font-size:1.2rem;cursor:pointer;flex:none;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.eingabe.aufnahme{align-items:center;background:var(--card);border-radius:28px;margin-bottom:10px;width:calc(100% - 20px);max-width:840px;padding:6px}
+.rec-punkt{width:12px;height:12px;border-radius:50%;background:#e11d48;animation:puls 1s infinite}
+@keyframes puls{50%{opacity:.25}}
+#aufnahmeZeit{font-variant-numeric:tabular-nums;font-weight:600}
+.antwort{display:flex;gap:8px;align-items:center;max-width:840px;width:calc(100% - 20px);margin:0 auto;background:var(--card);border-radius:14px 14px 0 0;padding:8px 8px 8px 12px}
+.antwort .zitat{flex:1;margin:0}
+.antwort .kw-ico{width:32px;height:32px;border-radius:50%;border:0;background:var(--soft);cursor:pointer}
+.absender{display:block;font-size:.8rem;font-weight:600;margin-bottom:2px}
+.zitat{display:block;border-left:3px solid var(--accent);background:rgba(0,0,0,.06);border-radius:8px;padding:4px 8px;margin:0 0 4px;font-size:.84rem;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.blase.ich .zitat{background:rgba(255,255,255,.16)}
+.zitat b{display:block;font-size:.78rem;color:var(--accent)}
+.blase.ich .zitat b{color:#ffd84a}
+.blase.art-bild{padding:4px 4px 5px;max-width:min(72%,320px)}
+.blase.art-bild .txt{display:block;padding:4px 6px 0}
+.blase.art-bild .fuss{margin-right:4px}
+.foto{display:block;width:260px;max-width:100%;border-radius:14px;overflow:hidden;background:rgba(0,0,0,.12);cursor:zoom-in;max-height:360px}
+.foto img{width:100%;height:100%;object-fit:cover;display:block}
+.foto img.unscharf{filter:blur(8px);transform:scale(1.1)}
+.foto.laedt{position:relative}
+.foto.laedt::after{content:"⏳";position:absolute;inset:0;display:grid;place-items:center;font-size:1.6rem}
+.ton{display:flex;align-items:center;gap:10px;min-width:210px;padding:2px 0}
+.ton .spielen{width:40px;height:40px;border-radius:50%;border:0;background:var(--app);color:#fff;font-size:1rem;cursor:pointer;flex:none}
+.blase.ich .ton .spielen{background:#fff;color:var(--app)}
+.ton .welle{flex:1;height:6px;border-radius:99px;background:rgba(0,0,0,.14);overflow:hidden}
+.blase.ich .ton .welle{background:rgba(255,255,255,.3)}
+.ton .lauf{display:block;height:100%;width:0;background:var(--accent);transition:width .2s linear}
+.ton .zeit{font-size:.78rem;font-variant-numeric:tabular-nums;opacity:.8}
+.blase.mit-reak{margin-bottom:16px}
+.reak{position:absolute;bottom:-14px;right:10px;background:var(--card);color:var(--ink);border-radius:999px;padding:1px 6px;font-size:.85rem;box-shadow:0 1px 4px rgba(0,0,0,.2);display:flex;gap:2px;align-items:center}
+.blase:not(.ich) .reak{right:auto;left:10px}
+.reak small{font-size:.7rem;color:var(--muted);margin-right:2px}
+.reak-wahl{display:flex;justify-content:space-between;gap:4px;background:var(--soft);border-radius:999px;padding:6px;margin:0 0 14px}
+.reak-wahl button{font-size:1.7rem;border:0;background:transparent;cursor:pointer;border-radius:50%;width:48px;height:48px;transition:transform .15s}
+.reak-wahl button:hover{transform:scale(1.2)}
+.reak-wahl button[aria-pressed="true"]{background:var(--app-soft)}
+.blase.blink{animation:blink 1.2s}
+@keyframes blink{30%{box-shadow:0 0 0 4px var(--accent)}}
+.klein-info{background:var(--card);font-size:.76rem}
+.vollbild{position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;animation:rein .2s}
+.vollbild img{max-width:100%;max-height:80vh;border-radius:8px}
+.vb-leiste{display:flex;gap:10px}
+.wahlliste{display:flex;flex-direction:column;gap:4px;max-height:280px;overflow:auto}
+.wahl{display:flex;gap:10px;align-items:center;padding:8px;border-radius:12px;background:var(--soft);cursor:pointer}
+.wahl span:not(.ava){flex:1}
+.wahl input{width:22px;height:22px;accent-color:var(--app)}
 </style>
 </head>
 <body>
@@ -195,10 +242,19 @@ body{display:flex;flex-direction:column;min-height:100dvh}
     <button class="wer" type="button" id="chatWer" aria-label="Kontakt-Infos"><span id="chatAva"></span><span style="min-width:0"><b id="chatName"></b><small id="chatUnter"></small></span></button>
   </div>
   <div id="verlauf" aria-live="polite"></div>
+  <div class="antwort" id="antwort" hidden></div>
   <form class="eingabe" id="eingabe" autocomplete="off">
+    <button class="rund" type="button" id="anhang" aria-label="Foto schicken">📷</button>
+    <input type="file" id="fotoWahl" accept="image/*" hidden>
     <textarea class="inp" id="text" rows="1" placeholder="Nachricht" aria-label="Nachricht schreiben" maxlength="4000"></textarea>
     <button class="senden" type="submit" id="senden" aria-label="Senden" disabled>➤</button>
+    <button class="senden" type="button" id="mikro" aria-label="Sprachnachricht aufnehmen" hidden>🎤</button>
   </form>
+  <div class="eingabe aufnahme" id="aufnahmeLeiste" hidden>
+    <button class="rund" type="button" id="aufnahmeWeg" aria-label="Aufnahme verwerfen">🗑️</button>
+    <span class="rec-punkt" aria-hidden="true"></span><span id="aufnahmeZeit" aria-live="off">0:00</span><span class="muted klein" style="flex:1">Nimmt auf … (bis 5 Minuten)</span>
+    <button class="senden" type="button" id="aufnahmeSenden" aria-label="Sprachnachricht senden">➤</button>
+  </div>
   <div class="gesperrt" id="gesperrt" hidden></div>
 </section>
 
