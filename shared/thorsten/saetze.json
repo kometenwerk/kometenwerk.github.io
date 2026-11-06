@@ -1702,6 +1702,24 @@
       "gruppe": "app_form",
       "text": "Und das Beste: Alles bleibt auf deinem Gerät. Kein Foto geht ins Internet.",
       "nr": 3
+    },
+    {
+      "id": "app-health-1",
+      "gruppe": "app_health",
+      "text": "Wie viel schläfst du eigentlich? Mit FIDELIA Health findest du es raus.",
+      "nr": 1
+    },
+    {
+      "id": "app-health-2",
+      "gruppe": "app_health",
+      "text": "Schlaf, Bewegung und Stimmung, alles in einem privaten Tagebuch.",
+      "nr": 2
+    },
+    {
+      "id": "app-health-3",
+      "gruppe": "app_health",
+      "text": "Und es ist mit deiner PIN verschlüsselt. Das geht niemanden etwas an!",
+      "nr": 3
     }
   ]
 }

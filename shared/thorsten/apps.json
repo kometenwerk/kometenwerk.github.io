@@ -372,6 +372,24 @@
         "Fristen im Blick",
         "Bleibt auf dem Gerät"
       ]
+    },
+    {
+      "id": "health",
+      "name": "FIDELIA Health",
+      "marke": "fidelia",
+      "farbe": "#2f6f4f",
+      "status": "fertig",
+      "pfad": "health/",
+      "bilder": [
+        "apps/bilder/health-1.webp",
+        "apps/bilder/health-2.webp",
+        "apps/bilder/health-3.webp"
+      ],
+      "punkte": [
+        "Schlaf & Bewegung",
+        "Mit PIN verschlüsselt",
+        "Nur auf deinem Gerät"
+      ]
     }
   ]
 }
