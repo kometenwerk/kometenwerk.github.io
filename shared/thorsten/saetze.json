@@ -1648,6 +1648,24 @@
       "gruppe": "app_arcade",
       "text": "Knack meinen Rekord. Ich warte!",
       "nr": 3
+    },
+    {
+      "id": "app-pet-1",
+      "gruppe": "app_pet",
+      "text": "Hast du ein Haustier? Dann schau dir FIDELIA Pet an!",
+      "nr": 1
+    },
+    {
+      "id": "app-pet-2",
+      "gruppe": "app_pet",
+      "text": "Impfungen, Gewicht und Tierarzt-Termine, alles an einem Ort. Mit Erinnerung!",
+      "nr": 2
+    },
+    {
+      "id": "app-pet-3",
+      "gruppe": "app_pet",
+      "text": "Und für den Tierarzt gibt es die ganze Akte auf einen Blick. Wuff!",
+      "nr": 3
     }
   ]
 }

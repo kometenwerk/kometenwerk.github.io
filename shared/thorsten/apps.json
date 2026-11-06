@@ -318,6 +318,24 @@
         "Ohne Werbung",
         "Mit Rekorden"
       ]
+    },
+    {
+      "id": "pet",
+      "name": "FIDELIA Pet",
+      "marke": "fidelia",
+      "farbe": "#8b5e34",
+      "status": "fertig",
+      "pfad": "pet/",
+      "bilder": [
+        "apps/bilder/pet-1.webp",
+        "apps/bilder/pet-2.webp",
+        "apps/bilder/pet-3.webp"
+      ],
+      "punkte": [
+        "Impfungen & Gewicht",
+        "Erinnerungen",
+        "Akte für den Tierarzt"
+      ]
     }
   ]
 }

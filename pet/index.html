@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="de" data-marke="fidelia">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FIDELIA Pet – die Haustier-Akte</title>
+<meta name="description" content="Impfungen, Gewicht, Medikamente und Tierarzt-Termine für dein Haustier an einem Ort – mit Erinnerungen. Alles bleibt auf deinem Gerät.">
+<meta name="theme-color" content="#8b5e34">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pet">
+<link rel="stylesheet" href="../shared/fonts/fonts.css">
+<link rel="stylesheet" href="../shared/kw.css">
+<style>:root{--app:#8b5e34;--app-soft:rgba(139,94,52,.14)}</style>
+<style>
+.klein{font-size:.85rem}
+.tiere{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 12px;scrollbar-width:none}
+.tiere::-webkit-scrollbar{display:none}
+.tier-knopf{flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:transparent;cursor:pointer;width:74px}
+.tier-knopf .bild{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font-size:2rem;background:var(--c,var(--app-soft));border:3px solid transparent;overflow:hidden}
+.tier-knopf[aria-pressed="true"] .bild{border-color:var(--app);box-shadow:0 0 0 3px var(--app-soft)}
+.tier-knopf .bild img{width:100%;height:100%;object-fit:cover}
+.tier-knopf small{font-size:.8rem;font-weight:600;max-width:74px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tier-knopf.plus .bild{background:var(--soft);border:2px dashed var(--line);font-size:1.6rem;color:var(--muted)}
+.profil{display:flex;gap:14px;align-items:center;padding:16px;margin-bottom:12px}
+.profil .bild{width:78px;height:78px;border-radius:22px;display:grid;place-items:center;font-size:2.6rem;background:var(--c);overflow:hidden;flex:none}
+.profil .bild img{width:100%;height:100%;object-fit:cover}
+.profil h2{margin:0;font-size:1.35rem}
+.profil p{margin:2px 0 0;color:var(--muted);font-size:.9rem}
+.profil .sp{flex:1;min-width:0}
+.faellig{padding:12px 14px;margin:0 0 12px;border-left:5px solid var(--accent)}
+.faellig.rot{border-left-color:var(--bad)}
+.faellig b{display:block}
+.faellig small{color:var(--muted)}
+.liste{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.eintrag{display:flex;gap:12px;align-items:center;padding:12px 14px;cursor:pointer;text-align:left;width:100%;border:1px solid var(--line);background:var(--card);border-radius:14px}
+.eintrag:hover{border-color:var(--muted)}
+.eintrag .i{font-size:1.5rem;flex:none}
+.eintrag .mitte{flex:1;min-width:0}
+.eintrag .mitte b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eintrag .mitte small{color:var(--muted)}
+.eintrag .rechts{text-align:right;font-size:.8rem;color:var(--muted);flex:none}
+.punkt{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.punkt.ok{background:var(--good)}.punkt.bald{background:var(--accent)}.punkt.weg{background:var(--bad)}
+.oben{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:14px;flex-wrap:wrap}
+.grafik{padding:12px;margin-top:12px}
+.grafik svg{width:100%;height:170px;display:block}
+.kacheln{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:12px}
+.kachel{padding:12px 14px}
+.kachel small{color:var(--muted);display:block;font-size:.78rem}
+.kachel b{font-size:1.05rem}
+.arten{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 12px}
+.arten button{border:2px solid var(--line);background:var(--card);border-radius:12px;padding:8px 10px;cursor:pointer;font-size:.9rem}
+.arten button[aria-pressed="true"]{border-color:var(--app);background:var(--app-soft);font-weight:600}
+.hallo{text-align:center;padding:30px 10px}
+.hallo .gross{font-size:4rem}
+.hallo h2{margin:8px 0 6px}
+.hallo p{color:var(--muted);max-width:380px;margin:0 auto 18px}
+/* Akte für den Tierarzt */
+.akte{position:fixed;inset:0;z-index:60;background:#fff;color:#101826;overflow:auto;padding:24px 20px 40px}
+.akte .in{max-width:640px;margin:0 auto}
+.akte h1{margin:0 0 2px;font-size:1.6rem}
+.akte h3{margin:18px 0 6px;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;color:#5b6578;border-bottom:1px solid #dfe3ea;padding-bottom:4px}
+.akte table{width:100%;border-collapse:collapse;font-size:.92rem}
+.akte td{padding:5px 4px;border-bottom:1px solid #eef1f6;vertical-align:top}
+.akte .qr{float:right;margin:0 0 10px 14px;text-align:center;font-size:.7rem;color:#5b6578}
+.akte .qr svg{width:120px;height:120px}
+.akte .knoepfe{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}
+@media print{body>*:not(.akte){display:none!important}.akte{position:static;padding:0}.akte .knoepfe{display:none}}
+</style>
+</head>
+<body>
+<script src="../shared/intro.js"></script>
+<header class="kw-bar">
+  <a class="kw-home" href="../" aria-label="Zurück zur Startseite der OMNIVIA Group"><img src="../shared/marken/omnivia-zeichen.webp" alt="" width="40" height="21" style="width:40px;height:auto;display:block"></a>
+  <h1>FIDELIA Pet</h1>
+  <button class="kw-install" id="kwInstall" type="button" hidden>Als App installieren</button>
+</header>
+<main class="kw-main">
+  <div class="tiere" id="tiere" role="group" aria-label="Deine Tiere"></div>
+  <div id="ansicht"></div>
+</main>
+<dialog class="sheet" id="fenster"><div class="sheet-in" id="fensterIn"></div></dialog>
+<script src="../shared/kw.js"></script>
+<script src="pet.js"></script>
+</body>
+</html>
