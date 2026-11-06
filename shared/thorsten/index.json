@@ -2470,6 +2470,33 @@
    "dauer": 5.04,
    "hash": "71771aea384b",
    "nr": 3
+  },
+  {
+   "id": "app-chat-1",
+   "gruppe": "app_chat",
+   "text": "Psst! Bald kommt FIDELIA Chat. Ein Messenger ganz ohne Telefonnummer!",
+   "datei": "ton/app-chat-1.mp3",
+   "dauer": 3.91,
+   "hash": "c9e4d6be7989",
+   "nr": 1
+  },
+  {
+   "id": "app-chat-2",
+   "gruppe": "app_chat",
+   "text": "Und das Beste: Kein Fremder kann dich anschreiben. Nur Leute, deren Kontakt-Code du hast.",
+   "datei": "ton/app-chat-2.mp3",
+   "dauer": 4.61,
+   "hash": "a41a060a18c5",
+   "nr": 2
+  },
+  {
+   "id": "app-chat-3",
+   "gruppe": "app_chat",
+   "text": "Alles ist Ende-zu-Ende verschlüsselt. Nicht mal wir können mitlesen!",
+   "datei": "ton/app-chat-3.mp3",
+   "dauer": 3.26,
+   "hash": "454de83ad34c",
+   "nr": 3
   }
  ]
 }
