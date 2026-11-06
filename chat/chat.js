@@ -29,7 +29,10 @@
   function zu() { zwang = false; kameraAus(); if (fenster.open) fenster.close(); fensterIn.innerHTML = ""; }
   fenster.addEventListener("close", function () { kameraAus(); if (!fenster.open) setTimeout(function () { if (!fenster.open) fensterIn.innerHTML = ""; }, 0); });
   fenster.addEventListener("click", function (e) { if (e.target === fenster && !zwang) zu(); });
-  function ava(k, klein) { return '<span class="ava' + (klein ? " klein" : "") + '" style="background:' + esc(k.farbe || "#4338ca") + '" aria-hidden="true">' + esc(k.em || "🙂") + "</span>"; }
+  function ava(k, klein, gross) {
+    var b = bildSicher(k.bild), em = k.em || "🙂", abc = /^[A-ZÄÖÜ0-9]{1,2}$/.test(em);
+    return '<span class="ava' + (klein ? " klein" : "") + (gross ? " riesig" : "") + (abc ? " abc" : "") + '" style="background:' + esc(/^#[0-9a-f]{6}$/i.test(k.farbe || "") ? k.farbe : "#4338ca") + '" aria-hidden="true">' + (b ? '<img src="' + b + '" alt="">' : esc(em)) + "</span>";
+  }
   function uhr(t) { var d = new Date(t); return ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2); }
   function tagText(t) {
     var d = new Date(t), h = new Date(); h.setHours(0, 0, 0, 0);
@@ -39,9 +42,11 @@
     return d.toLocaleDateString("de-DE", { weekday: diff < 7 ? "long" : undefined, day: "numeric", month: "long", year: d.getFullYear() !== h.getFullYear() ? "numeric" : undefined });
   }
   function kurzZeit(t) { var d = new Date(t); return Date.now() - t < TAG && d.getDate() === new Date().getDate() ? uhr(t) : tagText(t); }
-  function fehlerText(e) {
+  function istVerboten(e) { return /permission|PERMISSION_DENIED/i.test(String(e && (e.code || e.message) || e)); }
+  function fehlerText(e, wobei) {
     var m = String(e && (e.code || e.message) || e);
-    if (/permission|PERMISSION_DENIED/i.test(m)) return "Der Server hat das abgelehnt.";
+    if (istVerboten(e)) return wobei === "senden" ? "Die Nachricht kam nicht an – vielleicht seid ihr nicht mehr verbunden." : wobei === "anfrage" ? "Der Code gilt nicht mehr, oder du wurdest blockiert." : "Das ist gerade nicht erlaubt. Wenn das öfter passiert, sag dem OMNIVIA-Team Bescheid.";
+    if (/network|offline|timeout|antwortet nicht|Failed to fetch|Laden fehlgeschlagen/i.test(m)) return "Keine Verbindung – bist du online?";
     return m;
   }
   function speichereIch() { return L.leg("ich", ich, "profil"); }
@@ -63,6 +68,7 @@
       return;
     }
     if (!ich || !priv) { startSeite(); return; }
+    if (!ich.codeOk) { startSeite(3); return; }
     (await L.alle("kontakte")).forEach(function (k) { kontakte[k.cid] = k; });
     (await L.alle("nachrichten")).forEach(function (n) { (nachrichten[n.chat] = nachrichten[n.chat] || []).push(n); });
     Object.keys(nachrichten).forEach(function (c) { nachrichten[c].sort(function (a, b) { return a.zeit - b.zeit; }); });
@@ -104,81 +110,190 @@
     if (einladung) codeEinloesen(einladung);
   }
 
-  function startSeite() {
+  /* ---------- Profilbild: Foto, Emoji oder Buchstaben ---------- */
+  var BILD_OK = /^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/;
+  function bildSicher(b) { return typeof b === "string" && b.length < 40000 && BILD_OK.test(b) ? b : null; }
+  function initialen(name) { var t = String(name || "").trim().split(/\s+/); return ((t[0] || "?")[0] + (t[1] ? t[1][0] : (t[0] || "")[1] || "")).toUpperCase(); }
+  // Bild-Auswahl: baut sich in el ein, meldet Änderungen über onWahl({em, farbe, bild})
+  function bildWahl(el, wahl, name) {
+    var art = wahl.bild ? "foto" : /^[A-ZÄÖÜ0-9]{1,2}$/.test(wahl.em || "") ? "abc" : "emoji";
+    function vorschau() { el.querySelector(".bw-vor").innerHTML = ava({ em: art === "abc" ? initialen(name()) : wahl.em, farbe: wahl.farbe, bild: art === "foto" ? wahl.bild : null }, false, true); }
+    function malen() {
+      el.innerHTML = '<div class="bw-vor"></div>' +
+        '<div class="tabs bw-tabs" role="tablist"><button type="button" role="tab" data-a="foto" aria-selected="' + (art === "foto") + '">📷 Foto</button><button type="button" role="tab" data-a="emoji" aria-selected="' + (art === "emoji") + '">😀 Emoji</button><button type="button" role="tab" data-a="abc" aria-selected="' + (art === "abc") + '">Aa Buchstaben</button></div>' +
+        '<div class="bw-inhalt"></div>' +
+        (art === "foto" ? "" : '<div class="field" style="margin-top:12px"><span>Farbe</span><div class="farbwahl">' + FARBEN.map(function (x, i) { return '<button type="button" data-f="' + x + '" style="background:' + x + '" aria-label="Farbe ' + (i + 1) + '" aria-pressed="' + (x === wahl.farbe) + '"></button>'; }).join("") + "</div></div>");
+      var inh = el.querySelector(".bw-inhalt");
+      if (art === "emoji") inh.innerHTML = '<div class="emojis">' + EMOJIS.map(function (x) { return '<button type="button" data-e="' + x + '" aria-label="' + x + '" aria-pressed="' + (x === wahl.em) + '">' + x + "</button>"; }).join("") + "</div>";
+      else if (art === "abc") inh.innerHTML = '<p class="muted" style="font-size:.9rem;margin:10px 0 0">Deine Anfangsbuchstaben in deiner Farbe.</p>';
+      else inh.innerHTML = '<div class="bw-foto"><label class="btn"><input type="file" accept="image/*" hidden>' + (wahl.bild ? "Anderes Foto wählen" : "Foto auswählen") + '</label><p class="muted" style="font-size:.85rem;margin:8px 0 0">💡 Tipp: Ein Bild ohne dein Gesicht ist sicherer. Dein Foto sehen nur deine Kontakte – verschlüsselt.</p></div><div class="zuschnitt" hidden></div>';
+      vorschau();
+      var datei = inh.querySelector("input[type=file]");
+      if (datei) datei.onchange = function () { var f = this.files && this.files[0]; if (f) zuschneiden(f, inh.querySelector(".zuschnitt"), function (b) { wahl.bild = b; malen(); }); };
+    }
+    el.onclick = function (e) {
+      var t = e.target.closest("[data-a]"); if (t) { art = t.dataset.a; if (art !== "foto") wahl.bild = null; if (art === "abc") wahl.em = initialen(name()); else if (art === "emoji" && /^[A-ZÄÖÜ0-9]{1,2}$/.test(wahl.em)) wahl.em = EMOJIS[0]; malen(); return; }
+      var em = e.target.closest("[data-e]"); if (em) { wahl.em = em.dataset.e; el.querySelectorAll("[data-e]").forEach(function (x) { x.setAttribute("aria-pressed", x === em); }); vorschau(); return; }
+      var f = e.target.closest("[data-f]"); if (f) { wahl.farbe = f.dataset.f; el.querySelectorAll("[data-f]").forEach(function (x) { x.setAttribute("aria-pressed", x === f); }); vorschau(); }
+    };
+    malen();
+    return { neu: function () { if (art === "abc") { wahl.em = initialen(name()); vorschau(); } }, art: function () { return art; } };
+  }
+  // Foto im Kreis zurechtschieben und zoomen, dann klein rechnen
+  function zuschneiden(datei, el, fertig) {
+    var url = URL.createObjectURL(datei), img = new Image();
+    img.onload = function () {
+      var G = 260, s0 = Math.max(G / img.width, G / img.height), zoom = 1, x = 0, y = 0;
+      el.hidden = false;
+      el.innerHTML = '<canvas width="' + G + '" height="' + G + '" class="zs-flaeche" aria-label="Foto verschieben"></canvas><label class="field" style="margin:10px 0"><span>Zoom</span><input type="range" min="1" max="3" step="0.01" value="1" class="zs-zoom"></label><div class="sheet-foot" style="margin:0"><button class="btn" type="button" data-z="nein">Abbrechen</button><button class="btn primary" type="button" data-z="ja">Übernehmen</button></div>';
+      var c = el.querySelector("canvas"), g = c.getContext("2d");
+      function grenzen() { var w = img.width * s0 * zoom, h = img.height * s0 * zoom; x = Math.min((w - G) / 2, Math.max(-(w - G) / 2, x)); y = Math.min((h - G) / 2, Math.max(-(h - G) / 2, y)); }
+      function malen(ziel, gr) {
+        var k = gr / G, w = img.width * s0 * zoom * k, h = img.height * s0 * zoom * k;
+        ziel.clearRect(0, 0, gr, gr); ziel.drawImage(img, gr / 2 - w / 2 + x * k, gr / 2 - h / 2 + y * k, w, h);
+      }
+      function zeigen() { grenzen(); malen(g, G); g.save(); g.fillStyle = "rgba(0,0,0,.45)"; g.beginPath(); g.rect(0, 0, G, G); g.arc(G / 2, G / 2, G / 2 - 4, 0, Math.PI * 2, true); g.fill("evenodd"); g.strokeStyle = "#fff"; g.lineWidth = 2; g.beginPath(); g.arc(G / 2, G / 2, G / 2 - 4, 0, Math.PI * 2); g.stroke(); g.restore(); }
+      var ziehen = null;
+      c.onpointerdown = function (e) { ziehen = { x: e.clientX - x, y: e.clientY - y }; c.setPointerCapture(e.pointerId); };
+      c.onpointermove = function (e) { if (!ziehen) return; x = e.clientX - ziehen.x; y = e.clientY - ziehen.y; zeigen(); };
+      c.onpointerup = c.onpointercancel = function () { ziehen = null; };
+      c.onwheel = function (e) { e.preventDefault(); zoom = Math.min(3, Math.max(1, zoom * (e.deltaY < 0 ? 1.08 : 0.93))); el.querySelector(".zs-zoom").value = zoom; zeigen(); };
+      el.querySelector(".zs-zoom").oninput = function () { zoom = +this.value; zeigen(); };
+      el.onclick = function (e) {
+        var b = e.target.closest("[data-z]"); if (!b) return;
+        if (b.dataset.z === "nein") { el.hidden = true; el.innerHTML = ""; URL.revokeObjectURL(url); return; }
+        var gr = 160, q = 0.82, out, z = document.createElement("canvas");
+        for (var v = 0; v < 8; v++) {
+          z.width = z.height = gr; var zg = z.getContext("2d"); zg.fillStyle = "#fff"; zg.fillRect(0, 0, gr, gr); malen(zg, gr);
+          out = z.toDataURL("image/webp", q);
+          if (out.indexOf("data:image/webp") !== 0) out = z.toDataURL("image/jpeg", q);
+          if (out.length <= 14000) break;
+          q -= 0.1; if (q < 0.45) { q = 0.7; gr -= 24; }
+        }
+        URL.revokeObjectURL(url); fertig(out);
+      };
+      zeigen();
+    };
+    img.onerror = function () { KW.toast("Dieses Bild kann ich nicht öffnen. Versuch ein anderes."); };
+    img.src = url;
+  }
+
+  /* ---------- Start: Konto anlegen in Schritten ---------- */
+  var onb = { schritt: 0, name: "", wahl: null };
+  function startSeite(schritt) {
     seite("seiteStart");
-    var e = $("startEinladung");
-    if (einladung) { e.hidden = false; e.innerHTML = "<b>🎉 Du wurdest eingeladen!</b><br>Leg dir ein Konto an – danach geht die Kontaktanfrage automatisch raus."; }
-    else { e.hidden = false; e.innerHTML = "<b>Am Anfang nur mit Einladung:</b> Lass dir von jemandem, der FIDELIA Chat schon benutzt, den Kontakt-Code zeigen und scanne ihn mit der Kamera – oder öffne den Link, den er dir schickt."; }
+    onb.wahl = onb.wahl || { em: EMOJIS[Math.floor(Math.random() * EMOJIS.length)], farbe: FARBEN[Math.floor(Math.random() * FARBEN.length)], bild: null };
+    schrittZeigen(schritt || 0);
   }
-  $("knopfNeu").onclick = function () { profilFenster(null); };
-  $("knopfZurueck").onclick = zurueckholenFenster;
-
-  /* ---------- Konto anlegen ---------- */
-  function profilFenster(alt) {
-    var wahl = { em: alt ? alt.em : EMOJIS[Math.floor(Math.random() * EMOJIS.length)], farbe: alt ? alt.farbe : FARBEN[Math.floor(Math.random() * FARBEN.length)] };
-    oeffne('<h2>' + (alt ? "Dein Profil" : "Dein Konto") + '</h2>' +
-      '<label class="field"><span>Spitzname (den sehen deine Kontakte)</span><input class="inp" id="pName" maxlength="30" autocomplete="nickname" value="' + esc(alt ? alt.name : "") + '" autofocus></label>' +
-      '<div class="field"><span>Bild</span><div class="emojis" id="pEm">' + EMOJIS.map(function (x) { return '<button type="button" data-e="' + x + '" aria-label="' + x + '" aria-pressed="' + (x === wahl.em) + '">' + x + "</button>"; }).join("") + "</div></div>" +
-      '<div class="field"><span>Farbe</span><div class="farbwahl" id="pFarbe">' + FARBEN.map(function (x, i) { return '<button type="button" data-f="' + x + '" style="background:' + x + '" aria-label="Farbe ' + (i + 1) + '" aria-pressed="' + (x === wahl.farbe) + '"></button>'; }).join("") + "</div></div>" +
-      (alt ? "" : '<p class="muted" style="font-size:.88rem">Bitte nicht deinen echten vollen Namen. Bist du unter 16? Dann sprich vorher mit deinen Eltern – sie müssen zustimmen.</p>') +
-      '<div class="sheet-foot"><button class="btn" type="button" id="pAbbr">Abbrechen</button><button class="btn primary" type="button" id="pOk">' + (alt ? "Speichern" : "Weiter") + "</button></div>",
-      function (w) {
-        w.querySelector("#pEm").onclick = function (e) { var b = e.target.closest("[data-e]"); if (!b) return; wahl.em = b.dataset.e; w.querySelectorAll("#pEm button").forEach(function (x) { x.setAttribute("aria-pressed", x === b); }); };
-        w.querySelector("#pFarbe").onclick = function (e) { var b = e.target.closest("[data-f]"); if (!b) return; wahl.farbe = b.dataset.f; w.querySelectorAll("#pFarbe button").forEach(function (x) { x.setAttribute("aria-pressed", x === b); }); };
-        w.querySelector("#pAbbr").onclick = zu;
-        w.querySelector("#pOk").onclick = async function () {
-          var name = w.querySelector("#pName").value.trim().replace(/\s+/g, " ");
-          if (!name) { KW.toast("Bitte gib einen Spitznamen ein."); return; }
-          this.disabled = true;
-          if (alt) {
-            try { await server(); await B.setz("nutzer/" + ich.cid + "/name", name); await B.setz("nutzer/" + ich.cid + "/em", wahl.em); await B.setz("nutzer/" + ich.cid + "/farbe", wahl.farbe); ich.name = name; ich.em = wahl.em; ich.farbe = wahl.farbe; await speichereIch(); zu(); KW.toast("Profil gespeichert."); }
-            catch (e) { this.disabled = false; KW.toast("Speichern hat nicht geklappt: " + fehlerText(e)); }
-            return;
-          }
-          this.textContent = "Konto wird angelegt …";
-          try { await kontoAnlegen(name, wahl.em, wahl.farbe); }
-          catch (e) { this.disabled = false; this.textContent = "Weiter"; KW.toast(e.message || "Das hat nicht geklappt."); }
-        };
-      });
+  function punkte(n) { var h = '<div class="onb-punkte" aria-label="Schritt ' + n + ' von 4">'; for (var i = 1; i <= 4; i++) h += '<span class="' + (i <= n ? "an" : "") + '"></span>'; return h + "</div>"; }
+  function schrittZeigen(n, rueck) {
+    onb.schritt = n;
+    var el = $("onb"), h = "";
+    if (n === 0) {
+      h = '<div class="onb-hero"><div class="onb-logo" aria-hidden="true"><span class="b1">💬</span><span class="b2">🔒</span></div><h2>Chatten ohne<br>Telefonnummer</h2><p>Mit Familie und Freunden – verschlüsselt, ohne Werbung.</p></div>' +
+        '<div class="onb-chips"><span>🙈 Keine Nummer</span><span>🤝 Nur Leute, die du kennst</span><span>🔒 Ende-zu-Ende</span></div>' +
+        (einladung ? '<div class="onb-einl">🎉 <b>Du wurdest eingeladen!</b> Leg dir ein Konto an – die Kontaktanfrage geht danach automatisch raus.</div>' : '<div class="onb-einl leise">Am Anfang nur mit Einladung: Lass dir den Kontakt-Code von jemandem zeigen, der FIDELIA Chat schon benutzt.</div>') +
+        '<div class="knoepfe"><button class="btn primary gross" type="button" data-s="1">Los geht\'s</button><button class="btn" type="button" data-s="zurueck">Ich habe schon ein Konto</button></div>';
+    } else if (n === 1) {
+      h = punkte(1) + '<h2 class="onb-titel">Wie sollen dich deine Freunde sehen?</h2>' +
+        '<label class="field"><span>Dein Spitzname</span><input class="inp gross" id="oName" maxlength="30" autocomplete="nickname" value="' + esc(onb.name) + '" placeholder="z. B. Luki oder Mia"></label>' +
+        '<p class="muted klein">Bitte nicht deinen vollen echten Namen. Bist du unter 16? Dann sprich vorher mit deinen Eltern – sie müssen zustimmen.</p>' +
+        '<div class="onb-fuss"><button class="btn" type="button" data-s="0">Zurück</button><button class="btn primary" type="button" data-s="2">Weiter</button></div>';
+    } else if (n === 2) {
+      h = punkte(2) + '<h2 class="onb-titel">Dein Profilbild</h2><div id="oBild"></div><div class="fehler" id="oFehler" hidden></div>' +
+        '<div class="onb-fuss"><button class="btn" type="button" data-s="1">Zurück</button><button class="btn primary" type="button" data-s="anlegen" id="oAnlegen">Konto anlegen</button></div>';
+    } else if (n === 3) {
+      h = punkte(3) + '<h2 class="onb-titel">Dein geheimer Code</h2><p>Damit kommst du auf einem neuen Handy wieder in dein Konto. <b>Schreib ihn auf Papier</b> und heb ihn gut auf.</p>' +
+        '<div class="codebox" id="cCode">' + esc(ich.code) + '</div><button class="btn small" type="button" data-s="kopie">📋 Kopieren</button>' +
+        '<div class="warn">⚠️ Zeig ihn niemandem. Wir können ihn nicht zurücksetzen – wir kennen ihn selbst nicht.</div>' +
+        '<div class="onb-fuss"><span></span><button class="btn primary" type="button" data-s="4">Ich hab ihn aufgeschrieben</button></div>';
+    } else if (n === 4) {
+      onb.gruppe = onb.gruppe || 2 + Math.floor(Math.random() * 3);
+      h = punkte(4) + '<h2 class="onb-titel">Kurzer Test ✍️</h2><p>Schau auf deinen Zettel: Wie lautet die <b>' + onb.gruppe + '. Vierergruppe</b> deines Codes?</p>' +
+        '<input class="inp gross code-eingabe" id="oTest" maxlength="4" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="XXXX" aria-label="' + onb.gruppe + '. Vierergruppe">' +
+        '<div class="fehler" id="oFehler" hidden></div>' +
+        '<div class="onb-fuss"><button class="btn" type="button" data-s="3">Code nochmal zeigen</button><button class="btn primary" type="button" data-s="pruefen">Prüfen</button></div>';
+    } else if (n === 5) {
+      h = '<div class="onb-hero fertig"><div class="onb-ava">' + ava(ich, false, true) + '</div><h2>Willkommen, ' + esc(ich.name) + '! 🎉</h2><p>' + (onb.einlName ? "Deine Kontaktanfrage an " + esc(onb.einlName) + " ist unterwegs." : "Jetzt fehlen nur noch deine Freunde.") + "</p></div>" +
+        '<div class="knoepfe"><button class="btn primary gross" type="button" data-s="einladen">📲 Freunde einladen</button><button class="btn" type="button" data-s="chats">Zu meinen Chats</button></div>';
+      konfetti();
+    }
+    el.innerHTML = '<div class="onb-karte ' + (rueck ? "rueck" : "vor") + '">' + h + "</div>";
+    if (n === 1) { var f = $("oName"); setTimeout(function () { f.focus(); }, 250); f.onkeydown = function (e) { if (e.key === "Enter") weiter("2"); }; }
+    if (n === 2) onb.bw = bildWahl($("oBild"), onb.wahl, function () { return onb.name; });
+    if (n === 4) { var t = $("oTest"); setTimeout(function () { t.focus(); }, 250); t.onkeydown = function (e) { if (e.key === "Enter") weiter("pruefen"); }; }
+  }
+  $("onb").addEventListener("click", function (e) { var b = e.target.closest("[data-s]"); if (b) weiter(b.dataset.s, b); });
+  function onbFehler(text) { var f = $("oFehler"); if (!f) { KW.toast(text); return; } f.hidden = false; f.innerHTML = text; f.classList.remove("wackel"); void f.offsetWidth; f.classList.add("wackel"); }
+  async function weiter(s, knopf) {
+    if (s === "zurueck") { zurueckholenFenster(); return; }
+    if (s === "kopie") { if (navigator.clipboard) navigator.clipboard.writeText(ich.code).then(function () { KW.toast("Kopiert – füge ihn an einem sicheren Ort ein."); }); return; }
+    if (s === "einladen") { fertigZurListe(); plusFenster("zeigen"); return; }
+    if (s === "chats") { fertigZurListe(); return; }
+    if (s === "2" && onb.schritt === 1) {
+      onb.name = $("oName").value.trim().replace(/\s+/g, " ");
+      if (!onb.name) { $("oName").classList.add("wackel"); setTimeout(function () { $("oName").classList.remove("wackel"); }, 500); KW.toast("Bitte gib einen Spitznamen ein."); return; }
+    }
+    if (s === "anlegen") {
+      knopf.disabled = true; knopf.innerHTML = '<span class="dreh" aria-hidden="true"></span> Wird angelegt …';
+      try { await kontoAnlegen(onb.name, onb.bw.art() === "abc" ? initialen(onb.name) : onb.wahl.em, onb.wahl.farbe, onb.wahl.bild); schrittZeigen(3); }
+      catch (e) { knopf.disabled = false; knopf.textContent = "Nochmal versuchen"; onbFehler(e.message || "Das hat nicht geklappt."); }
+      return;
+    }
+    if (s === "pruefen") {
+      var soll = ich.code.split("-")[onb.gruppe - 1], ist = K.codeSauber("AAAA-AAAA-AAAA-AAAA-" + $("oTest").value);
+      if (ist && ist.slice(-4) === soll) { ich.codeOk = true; await speichereIch(); if (einladung) await codeEinloesen(einladung, true); schrittZeigen(5); }
+      else { onbFehler("Das stimmt nicht ganz. Schau nochmal auf deinen Zettel – oder lass dir den Code nochmal zeigen."); $("oTest").select(); }
+      return;
+    }
+    var n = +s; if (!isNaN(n)) schrittZeigen(n, n < onb.schritt);
+  }
+  function fertigZurListe() { seite("seiteListe"); $("knopfEinst").hidden = false; liste(); if (!abos.length) verbinden(); }
+  function konfetti() {
+    var c = document.createElement("canvas"), g = c.getContext("2d"), W = c.width = innerWidth, H = c.height = innerHeight, t0 = performance.now();
+    c.className = "konfetti"; document.body.appendChild(c);
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) { c.remove(); return; }
+    var farben = ["#a21caf", "#ff8a3c", "#ffcf33", "#3ef2a0", "#5b8cff"], st = [];
+    for (var i = 0; i < 140; i++) st.push({ x: W / 2 + (Math.random() - .5) * 80, y: H * .35, vx: (Math.random() - .5) * 13, vy: -Math.random() * 13 - 4, r: Math.random() * 6, w: 6 + Math.random() * 6, f: farben[i % 5] });
+    (function bild(jetzt) {
+      var t = (jetzt - t0) / 1000; g.clearRect(0, 0, W, H);
+      st.forEach(function (p) { p.vy += 0.35; p.x += p.vx; p.y += p.vy; p.vx *= .99; p.r += .15; g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.fillStyle = p.f; g.fillRect(-p.w / 2, -p.w / 4, p.w, p.w / 2); g.restore(); });
+      if (t < 3.2) requestAnimationFrame(bild); else c.remove();
+    })(t0);
   }
 
-  async function kontoAnlegen(name, em, farbe) {
-    await server().catch(function () { throw new Error("Keine Verbindung zum Chat-Server. Bist du online?"); });
+  async function kontoAnlegen(name, em, farbe, bild) {
+    try { await server(); } catch (e) { throw new Error("📡 Keine Verbindung zum Chat-Server. Bist du online? Dann versuch es gleich nochmal."); }
     var code = K.neuerCode(), paar = await K.neuesPaar(), ek = await K.oeffentlich(paar), fp = await K.fingerabdruck(ek), cid = K.id(12);
     var schloss = await K.schloss(code), tresor = await K.tresorName(code);
     var per = null;
     if (einladung) {
       var c = await B.hol("codes/" + einladung.k).catch(function () { return null; });
-      if (!c || c.bis < Date.now()) { einladung = null; throw new Error("Dieser Einladungs-Code ist abgelaufen. Lass dir einen neuen zeigen."); }
+      if (!c || c.bis < Date.now()) { einladung = null; throw new Error("⏰ Dieser Einladungs-Code ist abgelaufen oder wurde schon benutzt. Lass dir einen neuen zeigen."); }
       per = einladung.k;
     }
-    await B.setz("schloss/" + cid, schloss);
-    await B.setz("geraete/" + cid + "/" + B.uid, schloss);
+    try { await B.setz("schloss/" + cid, schloss); await B.setz("geraete/" + cid + "/" + B.uid, schloss); }
+    catch (e) { throw new Error(istVerboten(e) ? "🛠️ Der Chat-Server ist noch nicht eingerichtet. <small>(Für den Chef: Die Firebase-Regeln für den Chat fehlen noch – siehe ANLEITUNG.md.)</small>" : "📡 Keine Verbindung zum Chat-Server. Versuch es gleich nochmal."); }
     var profil = { name: name, em: em, farbe: farbe, ek: ek, fp: fp, zeit: B.TS };
     if (per) profil.per = per;
     try { await B.setz("nutzer/" + cid, profil); }
-    catch (e) { throw new Error(per ? "Das Anlegen wurde abgelehnt. Versuch es mit einem neuen Code." : "Du brauchst eine Einladung: Scanne zuerst den Kontakt-Code von jemandem, der FIDELIA Chat schon benutzt."); }
+    catch (e) { throw new Error(per ? "⏰ Die Einladung gilt nicht mehr. Lass dir einen neuen Kontakt-Code zeigen." : "✉️ Du brauchst eine Einladung: Lass dir von jemandem, der FIDELIA Chat schon benutzt, den Kontakt-Code zeigen und scanne ihn – oder öffne seinen Link."); }
     var jwk = await K.privatExport(paar);
     await B.setz("tresor/" + tresor, await K.tresorZu(code, { cid: cid, priv: jwk, v: 1 }));
     priv = await K.privatImport(jwk, false);
-    ich = { cid: cid, name: name, em: em, farbe: farbe, ek: ek, fp: fp, code: code, lesen: true, angelegt: Date.now() };
+    ich = { cid: cid, name: name, em: em, farbe: farbe, bild: bild || null, bildV: bild ? Date.now() : 0, ek: ek, fp: fp, code: code, codeOk: false, lesen: true, angelegt: Date.now() };
     await L.leg("ich", priv, "priv"); await speichereIch();
-    codeZeigenFenster(true);
   }
 
-  function codeZeigenFenster(neu) {
-    oeffne("<h2>" + (neu ? "Dein Wiederherstellungs-Code" : "Wiederherstellungs-Code") + "</h2>" +
-      "<p>Mit diesem Code kommst du auf einem neuen Handy wieder in dein Konto. <b>Schreib ihn auf Papier</b> und heb ihn gut auf.</p>" +
-      '<div class="codebox" id="cCode">' + esc(ich.code) + "</div>" +
-      '<div class="warn">⚠️ Zeig ihn niemandem – wer den Code hat, kann dein Konto benutzen. Wir können ihn nicht zurücksetzen, weil wir ihn nicht kennen.</div>' +
-      (neu ? '<label class="hak"><input type="checkbox" id="cOk"> Ich habe den Code aufgeschrieben.</label>' : "") +
-      '<div class="sheet-foot"><button class="btn" type="button" id="cKopie">Kopieren</button><span class="sp"></span><button class="btn primary" type="button" id="cWeiter"' + (neu ? " disabled" : "") + ">" + (neu ? "Fertig" : "Schließen") + "</button></div>",
+  function codeZeigenFenster() {
+    oeffne("<h2>Wiederherstellungs-Code</h2><p>Mit diesem Code kommst du auf einem neuen Handy wieder in dein Konto.</p>" +
+      '<div class="codebox">' + esc(ich.code) + "</div>" +
+      '<div class="warn">⚠️ Zeig ihn niemandem – wer den Code hat, kann dein Konto benutzen.</div>' +
+      '<div class="sheet-foot"><button class="btn" type="button" id="cKopie">Kopieren</button><span class="sp"></span><button class="btn primary" type="button" id="cWeiter">Schließen</button></div>',
       function (w) {
-        w.querySelector("#cKopie").onclick = function () { navigator.clipboard && navigator.clipboard.writeText(ich.code).then(function () { KW.toast("Kopiert – füge ihn an einem sicheren Ort ein."); }); };
-        if (neu) w.querySelector("#cOk").onchange = function () { w.querySelector("#cWeiter").disabled = !this.checked; };
-        w.querySelector("#cWeiter").onclick = function () { zu(); if (neu) { seite("seiteListe"); $("knopfEinst").hidden = false; liste(); verbinden(); } };
+        w.querySelector("#cKopie").onclick = function () { navigator.clipboard && navigator.clipboard.writeText(ich.code).then(function () { KW.toast("Kopiert."); }); };
+        w.querySelector("#cWeiter").onclick = zu;
       });
-    zwang = !!neu;
   }
 
   function zurueckholenFenster() {
@@ -201,13 +316,31 @@
             var p = await B.hol("nutzer/" + inhalt.cid);
             if (!p) throw new Error("Das Konto gibt es nicht mehr.");
             priv = await K.privatImport(inhalt.priv, false);
-            ich = { cid: inhalt.cid, name: p.name, em: p.em, farbe: p.farbe, ek: p.ek, fp: p.fp, code: code, lesen: true, angelegt: Date.now() };
+            ich = { cid: inhalt.cid, name: p.name, em: p.em, farbe: p.farbe, bild: null, bildV: 0, ek: p.ek, fp: p.fp, code: code, codeOk: true, lesen: true, angelegt: Date.now() };
             await L.leg("ich", priv, "priv"); await speichereIch();
             zu(); seite("seiteListe"); $("knopfEinst").hidden = false; liste(); verbinden();
             KW.toast("Willkommen zurück, " + p.name + "!");
           } catch (e) { knopf.disabled = false; knopf.textContent = "Zurückholen"; KW.toast(e.message || fehlerText(e)); }
         };
       });
+  }
+
+  /* Profilbild verschlüsselt an alle Kontakte schicken, die es noch nicht haben */
+  var verteilt = false;
+  async function bilderVerteilen() {
+    if (verteilt || !B || !ich) return; verteilt = true;
+    try {
+      for (var cid in kontakte) {
+        var k = kontakte[cid];
+        if (k.status !== "ok" || !k.ek || (k.meinBildV || 0) === (ich.bildV || 0)) continue;
+        try {
+          var s = await K.gemeinsam(priv, ich.cid, k.cid, k.ek), id = B.neuKey("post/" + cid);
+          var v = await K.verschluesseln(s, { typ: "profil", bild: ich.bild || "", name: ich.name, em: ich.em, farbe: ich.farbe, v: ich.bildV || 0 }, ich.cid + ">" + k.cid + ">" + id);
+          await B.setz("post/" + cid + "/" + id, { von: ich.cid, iv: v.iv, ct: v.ct, zeit: B.TS });
+          k.meinBildV = ich.bildV || 0; await speichereKontakt(k);
+        } catch (e) { /* nächstes Mal */ }
+      }
+    } finally { verteilt = false; }
   }
 
   /* ---------- Kontakte ---------- */
@@ -223,7 +356,7 @@
         var p = await B.hol("nutzer/" + cid).catch(function () { return null; });
         if (!p) continue;
         var geprueft = !!(ausstehend[cid] && ausstehend[cid] === (await K.fingerabdruck(p.ek)));
-        k = kontakte[cid] = { cid: cid, name: p.name, em: p.em, farbe: p.farbe, ek: p.ek, fp: p.fp, status: st, geprueft: geprueft, seit: Date.now() };
+        k = kontakte[cid] = Object.assign(k || {}, { cid: cid, name: p.name, em: p.em, farbe: p.farbe, ek: p.ek, fp: p.fp, status: st, geprueft: geprueft, seit: Date.now() });
         if (ausstehend[cid]) { delete ausstehend[cid]; eigeneDaten(); }
         if (st === "ok" && !(nachrichten[cid] || []).length) KW.toast(p.em + " " + p.name + " ist jetzt dein Kontakt.");
         await speichereKontakt(k); geaendert = true;
@@ -232,6 +365,7 @@
     for (var c in kontakte) if (!(c in liste_) && kontakte[c].status !== "entfernt") { kontakte[c].status = "entfernt"; await speichereKontakt(kontakte[c]); geaendert = true; }
     profileAuffrischen();
     if (geaendert) { liste(); if (aktiv) chatKopf(); }
+    bilderVerteilen();
   }
   var aufgefrischt = false;
   function profileAuffrischen() {
@@ -293,8 +427,8 @@
       var k = kontakte[cid], n = letzte(cid), u = ungelesen(cid); gesamt += u;
       var vor = n ? (n.von === ich.cid ? "Du: " : "") + n.text : (k.status === "ok" ? "Sag Hallo 👋" : "");
       var schild = k.status === "blockiert" ? '<span class="schild">blockiert</span>' : k.status === "entfernt" ? '<span class="schild">nicht mehr verbunden</span>' : "";
-      return '<button class="chatzeile" type="button" data-c="' + cid + '">' + ava(k) + '<span class="mitte"><span class="name">' + esc(k.name) + (k.geprueft ? ' <span title="Schlüssel geprüft" aria-label="geprüft">✅</span>' : "") + schild + '</span><span class="vor">' + esc(vor) + '</span></span><span class="rechts">' + (n ? esc(kurzZeit(n.zeit)) : "") + (u ? '<span class="zahl" aria-label="' + u + ' ungelesen">' + u + "</span>" : "") + "</span></button>";
-    }).join("") : '<div class="empty"><b>Noch keine Chats</b>Tippe auf ＋, um deinen Kontakt-Code zu zeigen oder den von jemand anderem zu scannen.</div>';
+      return '<button class="chatzeile' + (u ? " ungelesen" : "") + '" type="button" data-c="' + cid + '">' + ava(k) + '<span class="mitte"><span class="name">' + esc(k.name) + (k.geprueft ? ' <span title="Schlüssel geprüft" aria-label="geprüft">✅</span>' : "") + schild + '</span><span class="vor">' + esc(vor) + '</span></span><span class="rechts">' + (n ? esc(kurzZeit(n.zeit)) : "") + (u ? '<span class="zahl" aria-label="' + u + ' ungelesen">' + u + "</span>" : "") + "</span></button>";
+    }).join("") : '<div class="empty"><span class="gross" aria-hidden="true">👋</span><b>Noch keine Chats</b>Tippe auf ＋ und zeig deinen Kontakt-Code – oder scanne den von jemandem, den du kennst.</div>';
     document.title = (gesamt ? "(" + gesamt + ") " : "") + "FIDELIA Chat";
     installHinweis();
   }
@@ -381,7 +515,7 @@
   }
   function codeAusText(t) { var m = String(t || "").match(/k=([A-Za-z0-9_-]{16,32})\.([a-f0-9]{32})/); return m ? { k: m[1], fp: m[2] } : null; }
 
-  async function codeEinloesen(code) {
+  async function codeEinloesen(code, still) {
     einladung = null;
     if (!ich) { einladung = code; startSeite(); return; }
     try {
@@ -391,6 +525,12 @@
       if (c.cid === ich.cid) { KW.toast("Das ist dein eigener Code 😄"); return; }
       var p = await B.hol("nutzer/" + c.cid);
       if (!p || (await K.fingerabdruck(p.ek)) !== code.fp) { KW.toast("⚠️ Dieser Code passt nicht zum Konto. Benutze ihn lieber nicht."); return; }
+      if (still) { // direkt nach dem Anlegen mit Einladung: Anfrage ohne Rückfrage schicken
+        ausstehend[c.cid] = code.fp; await eigeneDaten();
+        await B.setz("anfragen/" + c.cid + "/" + ich.cid, { code: code.k, zeit: B.TS });
+        if (c.einmal) await B.weg("codes/" + code.k).catch(function () {});
+        onb.einlName = p.name; return;
+      }
       if (kontakte[c.cid] && kontakte[c.cid].status === "ok") { if (!kontakte[c.cid].geprueft) { kontakte[c.cid].geprueft = true; speichereKontakt(kontakte[c.cid]); } chatOeffnen(c.cid); return; }
       oeffne('<h2>Kontaktanfrage schicken?</h2><div class="card anfrage" style="box-shadow:none">' + ava(p) + '<div class="wer"><b>' + esc(p.name) + "</b><small>✅ Code geprüft – das ist wirklich dieses Konto.</small></div></div>" +
         '<p class="muted" style="font-size:.9rem">Kennst du diese Person? Schick nur Anfragen an Leute, die du wirklich kennst.</p>' +
@@ -404,10 +544,10 @@
               await B.setz("anfragen/" + c.cid + "/" + ich.cid, { code: code.k, zeit: B.TS });
               if (c.einmal) await B.weg("codes/" + code.k).catch(function () {});
               zu(); KW.toast("Anfrage an " + p.name + " geschickt. Sobald sie angenommen ist, könnt ihr chatten.");
-            } catch (e) { this.disabled = false; KW.toast("Die Anfrage ging nicht durch: " + fehlerText(e)); }
+            } catch (e) { this.disabled = false; KW.toast("Die Anfrage ging nicht durch: " + fehlerText(e, "anfrage")); }
           };
         });
-    } catch (e) { KW.toast("Das hat nicht geklappt: " + fehlerText(e)); }
+    } catch (e) { if (!still) KW.toast("Das hat nicht geklappt: " + fehlerText(e, "anfrage")); }
   }
 
   /* ---------- Chat ---------- */
@@ -422,7 +562,7 @@
   window.addEventListener("popstate", function () { if (aktiv) chatZu(); });
   function chatKopf() {
     var k = kontakte[aktiv]; if (!k) return;
-    $("chatAva").style.background = k.farbe; $("chatAva").textContent = k.em;
+    $("chatAva").innerHTML = ava(k, true);
     $("chatName").textContent = k.name;
     $("chatUnter").textContent = k.status === "blockiert" ? "blockiert" : k.status === "entfernt" ? "nicht mehr verbunden" : (k.geprueft ? "✅ geprüft · " : "") + "🔒 verschlüsselt";
     var gesperrt = k.status !== "ok";
@@ -430,15 +570,20 @@
     $("gesperrt").innerHTML = k.status === "blockiert" ? 'Du hast ' + esc(k.name) + ' blockiert. <button class="btn small" type="button" id="entsperren">Freigeben</button>' : "Ihr seid nicht mehr verbunden. Für einen neuen Chat braucht ihr einen neuen Kontakt-Code.";
     var e = $("entsperren"); if (e) e.onclick = function () { blockieren(aktiv, false); };
   }
+  var gezeigt = {};
   function verlauf(nachUnten) {
     var el = $("verlauf"), unten = nachUnten || el.scrollHeight - el.scrollTop - el.clientHeight < 80;
     var l = nachrichten[aktiv] || [], h = '<div class="info">🔒 Nachrichten in diesem Chat sind Ende-zu-Ende verschlüsselt. Nur ihr beide könnt sie lesen.</div>', tag = "";
-    l.forEach(function (n) {
+    var erstesMal = !gezeigt[aktiv]; gezeigt[aktiv] = gezeigt[aktiv] || {};
+    l.forEach(function (n, i) {
       var t = tagText(n.zeit); if (t !== tag) { tag = t; h += '<div class="tag">' + esc(t) + "</div>"; }
-      var mein = n.von === ich.cid, nurEmoji = /^(\p{Extended_Pictographic}|\p{Emoji_Component}|‍|️){1,8}$/u.test(n.text) && !/^[0-9#*]+$/.test(n.text);
-      var st = mein ? (n.st === -1 ? "⚠️ nicht zugestellt – antippen" : n.st === 0 ? "🕓" : n.st === 1 ? "✓" : n.st === 2 ? "✓✓" : '<span class="st3" aria-label="gelesen">✓✓</span>') : "";
-      h += '<div class="blase' + (mein ? " ich" : "") + (n.st === -1 ? " fehler" : "") + (nurEmoji ? " gross" : "") + '" data-id="' + esc(n.id) + '">' + esc(n.text) + '<div class="fuss">' + uhr(n.zeit) + (st ? " " + st : "") + "</div></div>";
+      var mein = n.von === ich.cid, nurEmoji = /^(\p{Extended_Pictographic}|\p{Emoji_Component}|\u200d|\ufe0f){1,8}$/u.test(n.text) && !/^[0-9#*]+$/.test(n.text);
+      var nx = l[i + 1], ende = !nx || nx.von !== n.von || nx.zeit - n.zeit > 300000 || tagText(nx.zeit) !== t;
+      var neu = !erstesMal && !gezeigt[aktiv][n.id]; gezeigt[aktiv][n.id] = 1;
+      var st = mein ? (n.st === -1 ? "⚠️ " + esc(n.fehler || "nicht zugestellt") + " – antippen" : n.st === 0 ? '<span aria-label="wird gesendet">🕓</span>' : n.st === 1 ? '<span aria-label="gesendet">✓</span>' : n.st === 2 ? '<span aria-label="angekommen">✓✓</span>' : '<span class="st3" aria-label="gelesen">✓✓</span>') : "";
+      h += '<div class="blase' + (mein ? " ich" : "") + (ende ? " ende" : "") + (neu ? " neu" : "") + (n.st === -1 ? " fehler" : "") + (nurEmoji ? " gross" : "") + '" data-id="' + esc(n.id) + '"><span class="txt">' + esc(n.text) + '</span><span class="fuss">' + uhr(n.zeit) + (st ? " " + st : "") + "</span></div>";
     });
+    if (erstesMal) l.forEach(function (n) { gezeigt[aktiv][n.id] = 1; });
     el.innerHTML = h;
     if (unten) el.scrollTop = el.scrollHeight;
   }
@@ -465,7 +610,7 @@
       var v = await K.verschluesseln(s, { t: n.text, z: n.zeit }, ich.cid + ">" + k.cid + ">" + n.id);
       await B.setz("post/" + k.cid + "/" + n.id, { von: ich.cid, iv: v.iv, ct: v.ct, zeit: B.TS });
       if (n.st < 1) n.st = 1;
-    } catch (e) { n.st = -1; }
+    } catch (e) { n.st = -1; n.fehler = fehlerText(e, "senden"); }
     speichereNachricht(n);
     if (aktiv === n.chat) verlauf(); else liste();
   }
@@ -476,11 +621,23 @@
     var schon = (nachrichten[m.von] || []).some(function (x) { return x.id === key; });
     if (!k || !k.ek) { wartend[key] = m; return; } // Kontakt wird gerade noch geladen
     if (k.status !== "ok" || schon) { B.weg("post/" + ich.cid + "/" + key).catch(function () {}); return; }
-    var text;
+    var text, inhalt = null;
     try {
       var s = await K.gemeinsam(priv, ich.cid, k.cid, k.ek);
-      text = String((await K.entschluesseln(s, m.iv, m.ct, m.von + ">" + ich.cid + ">" + key)).t || "");
+      inhalt = await K.entschluesseln(s, m.iv, m.ct, m.von + ">" + ich.cid + ">" + key);
+      text = String(inhalt.t || "");
     } catch (e) { text = "⚠️ Diese Nachricht konnte nicht entschlüsselt werden."; }
+    if (inhalt && inhalt.typ === "profil") { // neues Profilbild – kommt nicht in den Verlauf
+      B.weg("post/" + ich.cid + "/" + key).catch(function () {});
+      if ((inhalt.v || 0) >= (k.bildV || 0)) {
+        k.bild = bildSicher(inhalt.bild); k.bildV = inhalt.v || 0;
+        if (typeof inhalt.name === "string" && inhalt.name.trim() && inhalt.name.length <= 30) k.name = inhalt.name;
+        if (typeof inhalt.em === "string" && inhalt.em && inhalt.em.length <= 16) k.em = inhalt.em;
+        if (/^#[0-9a-f]{6}$/.test(inhalt.farbe || "")) k.farbe = inhalt.farbe;
+        await speichereKontakt(k); liste(); if (aktiv === k.cid) chatKopf();
+      }
+      return;
+    }
     var n = { id: key, chat: m.von, von: m.von, text: text, zeit: m.zeit || Date.now(), gelesen: false };
     (nachrichten[m.von] = nachrichten[m.von] || []).push(n);
     nachrichten[m.von].sort(function (a, b) { return a.zeit - b.zeit; });
@@ -511,7 +668,7 @@
   async function kontaktFenster(cid) {
     var k = kontakte[cid]; if (!k) return;
     var nr = await K.sicherheitsnummer(ich.ek, k.ek);
-    oeffne('<div style="text-align:center">' + ava(k).replace('class="ava"', 'class="ava" style="width:76px;height:76px;font-size:2.4rem;margin:0 auto;background:' + esc(k.farbe) + '"') + '<h2 style="margin:10px 0 2px">' + esc(k.name) + '</h2><p class="muted" style="margin:0 0 14px">' + (k.geprueft ? "✅ Schlüssel geprüft" : "Schlüssel noch nicht geprüft") + "</p></div>" +
+    oeffne('<div style="text-align:center">' + ava(k, false, true) + '<h2 style="margin:10px 0 2px">' + esc(k.name) + '</h2><p class="muted" style="margin:0 0 14px">' + (k.geprueft ? "✅ Schlüssel geprüft" : "Schlüssel noch nicht geprüft") + "</p></div>" +
       '<div class="field"><span>Sicherheitsnummer – auf beiden Handys muss dieselbe stehen</span><div class="sicher">' + esc(nr) + "</div></div>" +
       (k.geprueft ? "" : '<p class="muted" style="font-size:.88rem">Vergleicht die Zahlen, wenn ihr euch trefft. Wenn sie gleich sind, kann niemand eure Nachrichten mitlesen.</p>') +
       '<div class="menue">' + (k.geprueft ? "" : '<button class="btn" type="button" data-m="pruef">✅ Zahlen sind gleich – als geprüft markieren</button>') +
@@ -587,6 +744,34 @@
       });
   };
 
+  function profilFenster() {
+    var wahl = { em: ich.em, farbe: ich.farbe, bild: ich.bild || null }, bw;
+    oeffne('<h2>Dein Profil</h2><label class="field"><span>Spitzname</span><input class="inp" id="pName" maxlength="30" value="' + esc(ich.name) + '"></label><div id="pBild"></div>' +
+      '<div class="sheet-foot"><button class="btn" type="button" id="pAbbr">Abbrechen</button><button class="btn primary" type="button" id="pOk">Speichern</button></div>',
+      function (w) {
+        bw = bildWahl(w.querySelector("#pBild"), wahl, function () { return w.querySelector("#pName").value; });
+        w.querySelector("#pName").oninput = function () { bw.neu(); };
+        w.querySelector("#pAbbr").onclick = zu;
+        w.querySelector("#pOk").onclick = async function () {
+          var name = w.querySelector("#pName").value.trim().replace(/\s+/g, " ");
+          if (!name) { KW.toast("Bitte gib einen Spitznamen ein."); return; }
+          var em = bw.art() === "abc" ? initialen(name) : wahl.em, bild = bw.art() === "foto" ? wahl.bild : null;
+          this.disabled = true;
+          try {
+            await server();
+            if (name !== ich.name) await B.setz("nutzer/" + ich.cid + "/name", name);
+            if (em !== ich.em) await B.setz("nutzer/" + ich.cid + "/em", em);
+            if (wahl.farbe !== ich.farbe) await B.setz("nutzer/" + ich.cid + "/farbe", wahl.farbe);
+            var neuesBild = (bild || null) !== (ich.bild || null) || name !== ich.name || em !== ich.em || wahl.farbe !== ich.farbe;
+            ich.name = name; ich.em = em; ich.farbe = wahl.farbe;
+            if (neuesBild) { ich.bild = bild || null; ich.bildV = Date.now(); }
+            await speichereIch(); zu(); KW.toast("Profil gespeichert ✨");
+            if (neuesBild) bilderVerteilen();
+          } catch (e) { this.disabled = false; KW.toast("Speichern hat nicht geklappt: " + fehlerText(e)); }
+        };
+      });
+  }
+
   /* ---------- Einstellungen ---------- */
   $("knopfEinst").onclick = function () {
     oeffne('<div style="display:flex;gap:12px;align-items:center;margin-bottom:14px">' + ava(ich) + '<div><b style="font-size:1.1rem">' + esc(ich.name) + '</b><br><small class="muted">Dein Profil</small></div></div>' +
@@ -605,7 +790,7 @@
           var a = b.dataset.e;
           if (a === "zu") zu();
           else if (a === "profil") profilFenster(ich);
-          else if (a === "code") codeZeigenFenster(false);
+          else if (a === "code") codeZeigenFenster();
           else if (a === "neucode") { try { await server(); for (var i = 0; i < meineCodes.length; i++) await B.weg("codes/" + meineCodes[i].k).catch(function () {}); meineCodes = []; await eigeneDaten(); KW.toast("Erledigt – alte Kontakt-Codes und Links gelten nicht mehr."); } catch (err) { KW.toast("Gerade keine Verbindung."); } }
           else if (a === "abmelden") {
             if (!confirm("Wirklich abmelden? Deine Nachrichten auf diesem Gerät werden gelöscht. Zurück kommst du nur mit deinem Wiederherstellungs-Code.")) return;
