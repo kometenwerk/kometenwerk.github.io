@@ -2632,6 +2632,33 @@
    "dauer": 3.48,
    "hash": "7b13662a5cf0",
    "nr": 3
+  },
+  {
+   "id": "app-ride-1",
+   "gruppe": "app_ride",
+   "text": "Wie schnell fährst du eigentlich Fahrrad? FLARESSA Ride verrät es dir!",
+   "datei": "ton/app-ride-1.mp3",
+   "dauer": 3.5,
+   "hash": "c01186e21ffc",
+   "nr": 1
+  },
+  {
+   "id": "app-ride-2",
+   "gruppe": "app_ride",
+   "text": "Ein riesiger Tacho, deine Strecke und deine schnellste Fahrt. Für Rad, Skateboard und Roller.",
+   "datei": "ton/app-ride-2.mp3",
+   "dauer": 5.25,
+   "hash": "a6b697f9ead6",
+   "nr": 2
+  },
+  {
+   "id": "app-ride-3",
+   "gruppe": "app_ride",
+   "text": "Aber denk dran: Helm auf und während der Fahrt nicht aufs Handy schauen!",
+   "datei": "ton/app-ride-3.mp3",
+   "dauer": 3.73,
+   "hash": "82e4ff0b76cc",
+   "nr": 3
   }
  ]
 }
