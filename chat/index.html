@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="de" data-marke="fidelia">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<title>FIDELIA Chat</title>
+<meta name="description" content="Der Messenger ohne Telefonnummer: Ende-zu-Ende verschlüsselt, und kein Fremder kann dich anschreiben.">
+<meta name="theme-color" content="#a21caf">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Chat">
+<link rel="stylesheet" href="../shared/fonts/fonts.css">
+<link rel="stylesheet" href="../shared/kw.css">
+<style>:root{--app:#a21caf;--app-soft:rgba(162,28,175,.14)}</style>
+<style>
+:root{--blase-ich:#a21caf;--blase-du:var(--card);--grund-chat:#e9ecf5}
+@media (prefers-color-scheme:dark){:root{--blase-ich:#86198f;--grund-chat:#0d1422}}
+body{display:flex;flex-direction:column;min-height:100dvh}
+.kw-main{width:100%;flex:1}
+.seite{display:none}.seite.an{display:block}
+/* Start */
+.hallo{text-align:center;padding:26px 8px 8px}
+.hallo .gross{font-size:3.4rem;line-height:1}
+.hallo h2{margin:12px 0 6px;font-size:1.45rem}
+.hallo p{margin:0 auto 18px;max-width:420px;color:var(--muted)}
+.vorteile{display:grid;gap:10px;margin:0 0 20px}
+.vorteile>div{display:flex;gap:12px;align-items:flex-start;padding:12px 14px}
+.vorteile b{display:block}
+.vorteile span{font-size:.9rem;color:var(--muted)}
+.vorteile .i{font-size:1.4rem;line-height:1.2;flex:none}
+.knoepfe{display:flex;flex-direction:column;gap:10px;max-width:420px;margin:0 auto}
+.knoepfe .btn{padding:14px 16px;font-size:1rem}
+.einladung{padding:12px 14px;margin:0 0 16px;border-color:var(--app)}
+.emojis,.farbwahl{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px}
+.emojis button{width:46px;height:46px;border-radius:12px;border:2px solid var(--line);background:var(--card);font-size:1.5rem;cursor:pointer}
+.emojis button[aria-pressed="true"]{border-color:var(--app);box-shadow:0 0 0 3px var(--app-soft)}
+.farbwahl button{width:36px;height:36px;border-radius:50%;border:3px solid transparent;cursor:pointer;padding:0}
+.farbwahl button[aria-pressed="true"]{border-color:var(--ink)}
+.codebox{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.25rem;letter-spacing:.06em;text-align:center;padding:16px;border-radius:12px;background:var(--soft);border:2px dashed var(--app);margin:10px 0;user-select:all;word-break:break-all}
+.warn{background:rgba(255,138,60,.12);border:1px solid rgba(255,138,60,.5);border-radius:12px;padding:10px 12px;font-size:.92rem;margin:10px 0}
+.hak{display:flex;gap:10px;align-items:flex-start;margin:12px 0;font-size:.95rem}
+.hak input{width:22px;height:22px;accent-color:var(--app);flex:none;margin:0}
+/* Liste */
+.leiste{display:flex;gap:8px;align-items:center;margin:0 0 12px}
+.leiste .inp{border-radius:999px}
+.banner{display:flex;gap:10px;align-items:center;padding:10px 12px;margin:0 0 12px;font-size:.9rem}
+.banner .sp{flex:1}
+.offline{background:var(--bad);color:#fff;text-align:center;font-size:.85rem;padding:6px;border-radius:10px;margin:0 0 10px}
+.anfrage{display:flex;gap:10px;align-items:center;padding:12px;margin:0 0 10px;flex-wrap:wrap}
+.anfrage .wer{flex:1;min-width:150px}
+.anfrage .wer small{display:block;color:var(--muted)}
+.chats{display:flex;flex-direction:column}
+.chatzeile{display:flex;gap:12px;align-items:center;padding:10px 6px;border:0;border-bottom:1px solid var(--line);background:transparent;cursor:pointer;text-align:left;width:100%}
+.chatzeile:hover{background:var(--soft)}
+.chatzeile:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.ava{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:1.55rem;flex:none;color:#fff}
+.ava.klein{width:38px;height:38px;font-size:1.2rem}
+.chatzeile .mitte{flex:1;min-width:0}
+.chatzeile .name{font-weight:600;display:flex;gap:6px;align-items:center}
+.chatzeile .vor{font-size:.88rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chatzeile .rechts{display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:.75rem;color:var(--muted);flex:none}
+.zahl{background:var(--accent);color:#101826;font-weight:700;border-radius:999px;min-width:22px;height:22px;display:grid;place-items:center;padding:0 6px;font-size:.78rem}
+.schild{font-size:.7rem;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--soft);color:var(--muted)}
+.fab{position:fixed;right:max(18px,calc((100vw - 860px)/2 + 18px));bottom:calc(22px + env(safe-area-inset-bottom,0px));width:60px;height:60px;border-radius:50%;border:0;background:var(--accent);color:#101826;font-size:1.7rem;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.25);z-index:20}
+/* Chat */
+#seiteChat{position:fixed;inset:0;z-index:40;background:var(--grund-chat);flex-direction:column}
+#seiteChat.an{display:flex}
+.chatkopf{display:flex;align-items:center;gap:10px;padding:calc(8px + env(safe-area-inset-top,0px)) 10px 8px;background:var(--app);color:#fff}
+.chatkopf .wer{flex:1;min-width:0;border:0;background:transparent;color:inherit;display:flex;gap:10px;align-items:center;cursor:pointer;text-align:left;padding:4px;border-radius:10px}
+.chatkopf .wer b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chatkopf .wer small{opacity:.8;font-size:.78rem}
+.chatkopf .kw-ico{width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:inherit;cursor:pointer;font-size:1.2rem;flex:none}
+#verlauf{flex:1;overflow-y:auto;padding:12px 10px 6px;display:flex;flex-direction:column;gap:4px;max-width:860px;width:100%;margin:0 auto;overscroll-behavior:contain}
+.tag{align-self:center;font-size:.75rem;color:var(--muted);background:var(--card);border-radius:999px;padding:3px 10px;margin:8px 0}
+.info{align-self:center;font-size:.8rem;color:var(--muted);text-align:center;max-width:340px;margin:6px 0;padding:8px 12px;background:var(--card);border-radius:12px}
+.blase{max-width:min(80%,520px);padding:7px 10px 5px;border-radius:16px;background:var(--blase-du);box-shadow:0 1px 1px rgba(0,0,0,.06);align-self:flex-start;white-space:pre-wrap;overflow-wrap:anywhere;position:relative}
+.blase.ich{align-self:flex-end;background:var(--blase-ich);color:#fff;border-bottom-right-radius:5px}
+.blase:not(.ich){border-bottom-left-radius:5px}
+.blase .fuss{display:flex;gap:4px;justify-content:flex-end;align-items:center;font-size:.7rem;opacity:.75;margin-top:2px;white-space:nowrap}
+.blase .st3{color:#ffcf33;opacity:1}
+.blase.fehler{background:var(--bad);cursor:pointer}
+.blase.gross{font-size:2.4rem;background:transparent;box-shadow:none;padding:0 4px}
+.blase.gross .fuss{color:var(--muted)}
+.eingabe{display:flex;gap:8px;align-items:flex-end;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));max-width:860px;width:100%;margin:0 auto}
+.eingabe textarea{flex:1;resize:none;border-radius:22px;padding:11px 16px;max-height:140px;min-height:46px;line-height:1.35}
+.eingabe .senden{width:46px;height:46px;border-radius:50%;border:0;background:var(--app);color:#fff;font-size:1.2rem;cursor:pointer;flex:none}
+.eingabe .senden:disabled{opacity:.45;cursor:default}
+.gesperrt{text-align:center;padding:14px;color:var(--muted);font-size:.9rem}
+/* Code / QR */
+.qr{display:grid;place-items:center;margin:8px 0}
+.qr svg{width:220px;height:220px;background:#fff;border-radius:14px;padding:10px}
+.codezeile{display:flex;gap:8px;margin:8px 0}
+.codezeile .inp{font-size:.85rem}
+#kamera{width:100%;max-height:340px;border-radius:14px;background:#000;object-fit:cover}
+.sicher{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.15rem;line-height:1.7;text-align:center;padding:12px;background:var(--soft);border-radius:12px;word-spacing:.3em}
+.menue{display:flex;flex-direction:column;gap:6px}
+.menue .btn{justify-content:flex-start;padding:13px 14px}
+.meldung{padding:12px;margin:0 0 10px;font-size:.9rem}
+.meldung pre{white-space:pre-wrap;font:inherit;font-size:.85rem;background:var(--soft);padding:8px;border-radius:8px;max-height:200px;overflow:auto}
+.lade{display:grid;place-items:center;padding:60px 0;color:var(--muted)}
+</style>
+</head>
+<body>
+<script src="../shared/intro.js"></script>
+<header class="kw-bar">
+  <a class="kw-home" href="../" aria-label="Zurück zur Startseite der OMNIVIA Group"><img src="../shared/marken/omnivia-zeichen.webp" alt="" width="40" height="21" style="width:40px;height:auto;display:block"></a>
+  <h1>FIDELIA Chat</h1>
+  <span id="kwBarExtra" style="display:contents"></span>
+  <button class="kw-install" id="kwInstall" type="button" hidden>Als App installieren</button>
+  <button class="kw-ico" id="knopfEinst" type="button" aria-label="Einstellungen" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+</header>
+
+<main class="kw-main">
+  <div class="lade" id="lade">Wird geladen …</div>
+
+  <!-- Start: noch kein Konto auf diesem Gerät -->
+  <section class="seite" id="seiteStart" aria-label="Willkommen">
+    <div class="hallo">
+      <div class="gross" aria-hidden="true">💬🔒</div>
+      <h2>Chatten ohne Telefonnummer</h2>
+      <p>Mit FIDELIA Chat schreibst du mit Familie und Freunden – verschlüsselt, ohne Werbung und ohne dass Fremde dich finden können.</p>
+    </div>
+    <div class="card einladung" id="startEinladung" hidden></div>
+    <div class="vorteile">
+      <div class="card"><span class="i" aria-hidden="true">🙈</span><div><b>Keine Nummer, keine E-Mail</b><span>Du brauchst nur einen Spitznamen.</span></div></div>
+      <div class="card"><span class="i" aria-hidden="true">🤝</span><div><b>Nur Leute, die du kennst</b><span>Kontakte kommen nur per Kontakt-Code dazu – und du musst sie annehmen.</span></div></div>
+      <div class="card"><span class="i" aria-hidden="true">🔒</span><div><b>Ende-zu-Ende verschlüsselt</b><span>Nur eure Handys können die Nachrichten lesen. Der Server leitet sie nur weiter und löscht sie nach dem Abholen.</span></div></div>
+    </div>
+    <div class="knoepfe">
+      <button class="btn primary" type="button" id="knopfNeu">Los geht's – Konto anlegen</button>
+      <button class="btn" type="button" id="knopfZurueck">Ich habe schon ein Konto</button>
+    </div>
+  </section>
+
+  <!-- Chat-Liste -->
+  <section class="seite" id="seiteListe" aria-label="Deine Chats">
+    <div class="offline" id="offline" hidden>Keine Verbindung – Nachrichten werden gesendet, sobald du wieder online bist.</div>
+    <div class="card banner" id="installBanner" hidden><span aria-hidden="true">📲</span><span class="sp"><b>Installiere FIDELIA Chat,</b> damit deine Nachrichten sicher gespeichert bleiben.</span><button class="btn small" type="button" id="bannerWeg" aria-label="Hinweis schließen">✕</button></div>
+    <div class="card banner" id="meldeBanner" hidden><span aria-hidden="true">🛡️</span><span class="sp" id="meldeText">Meldungen</span><button class="btn small" type="button" id="meldeOeffnen">Ansehen</button></div>
+    <div id="anfragen"></div>
+    <div class="leiste" id="sucheLeiste" hidden><input class="inp" id="suche" type="search" placeholder="Chats durchsuchen" aria-label="Chats durchsuchen" autocomplete="off"></div>
+    <div class="chats" id="chats"></div>
+    <button class="fab" type="button" id="knopfPlus" aria-label="Kontakt hinzufügen">＋</button>
+  </section>
+</main>
+
+<!-- Chat-Fenster -->
+<section class="seite" id="seiteChat" aria-label="Chat">
+  <div class="chatkopf">
+    <button class="kw-ico" type="button" id="chatZurueck" aria-label="Zurück zur Liste">←</button>
+    <button class="wer" type="button" id="chatWer" aria-label="Kontakt-Infos"><span class="ava klein" id="chatAva"></span><span style="min-width:0"><b id="chatName"></b><small id="chatUnter"></small></span></button>
+  </div>
+  <div id="verlauf" aria-live="polite"></div>
+  <form class="eingabe" id="eingabe" autocomplete="off">
+    <textarea class="inp" id="text" rows="1" placeholder="Nachricht" aria-label="Nachricht schreiben" maxlength="4000"></textarea>
+    <button class="senden" type="submit" id="senden" aria-label="Senden" disabled>➤</button>
+  </form>
+  <div class="gesperrt" id="gesperrt" hidden></div>
+</section>
+
+<dialog class="sheet" id="fenster"><div class="sheet-in" id="fensterIn"></div></dialog>
+
+<footer class="kw-foot" id="fuss"><span>Ein Projekt von OMNIVIA · FIDELIA</span><span>🔒 Nachrichten sind Ende-zu-Ende verschlüsselt und bleiben auf deinen Geräten</span></footer>
+
+<script src="../shared/kw.js"></script>
+<script src="krypto.js"></script>
+<script src="speicher.js"></script>
+<script src="chat.js"></script>
+</body>
+</html>

@@ -80,6 +80,19 @@ In der Firebase-Konsole unter Realtime Database → Regeln innerhalb von `"rules
 },
 ```
 
+## FIDELIA Chat freischalten
+Adresse: https://kometenwerk.github.io/chat/
+
+1. https://console.firebase.google.com → Projekt **krawallzoo** → links „Realtime Database“ → oben „Regeln“.
+2. Den Inhalt von `chat/FIREBASE_REGEL_CHAT.json` **ohne** die äußeren geschweiften Klammern
+   innerhalb von `"rules": { ... }` einfügen (wie bei Hotel Freundlich), die übrigen Regeln bleiben.
+3. „Veröffentlichen“.
+4. Chat öffnen → **du zuerst!** Das erste Konto braucht keine Einladung. Alle anderen kommen nur
+   über einen Kontakt-Code (QR oder Link) von jemandem rein, der schon dabei ist.
+5. Meldungen siehst du nur auf dem Gerät, auf dem du den Team-Chat gegründet hast (Chef-Ansicht oben in der Chat-Liste).
+
+Zum Ausprobieren ohne Server: `chat/?demo=anna` und in einem zweiten Fenster `chat/?demo=ben`.
+
 ## Achtung: kunden/einstellungen.json
 Wenn du deine Kunden-Einstellungen (E-Mail, Sprechzeiten, Impressum) schon auf GitHub geändert hast,
 diese eine Datei beim Hochladen NICHT ersetzen.

@@ -1612,6 +1612,24 @@
       "gruppe": "app_hotelfreundlich",
       "nr": 3,
       "text": "Dann flieht ihr durch 66 Etagen im Lüftungsschacht. Ohne Werbung, im Browser."
+    },
+    {
+      "id": "app-chat-1",
+      "gruppe": "app_chat",
+      "text": "Psst! Bald kommt FIDELIA Chat. Ein Messenger ganz ohne Telefonnummer!",
+      "nr": 1
+    },
+    {
+      "id": "app-chat-2",
+      "gruppe": "app_chat",
+      "text": "Und das Beste: Kein Fremder kann dich anschreiben. Nur Leute, deren Kontakt-Code du hast.",
+      "nr": 2
+    },
+    {
+      "id": "app-chat-3",
+      "gruppe": "app_chat",
+      "text": "Alles ist Ende-zu-Ende verschlüsselt. Nicht mal wir können mitlesen!",
+      "nr": 3
     }
   ]
 }

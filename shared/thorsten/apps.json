@@ -286,6 +286,20 @@
         "66 Etagen Flucht",
         "Ohne Werbung"
       ]
+    },
+    {
+      "id": "chat",
+      "name": "FIDELIA Chat",
+      "marke": "fidelia",
+      "farbe": "#a21caf",
+      "status": "bald",
+      "pfad": "chat/",
+      "bilder": [],
+      "punkte": [
+        "Ohne Telefonnummer",
+        "Ende-zu-Ende verschlüsselt",
+        "Keine Fremden"
+      ]
     }
   ]
 }
