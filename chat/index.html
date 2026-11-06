@@ -205,6 +205,12 @@ body{display:flex;flex-direction:column;min-height:100dvh}
 .wahl{display:flex;gap:10px;align-items:center;padding:8px;border-radius:12px;background:var(--soft);cursor:pointer}
 .wahl span:not(.ava){flex:1}
 .wahl input{width:22px;height:22px;accent-color:var(--app)}
+.banner.schul{background:var(--app-soft);border-color:transparent}
+.tage{display:flex;gap:6px;flex-wrap:wrap}
+.tag-wahl input{position:absolute;opacity:0;pointer-events:none}
+.tag-wahl span{display:grid;place-items:center;width:46px;height:40px;border-radius:10px;border:2px solid var(--line);cursor:pointer;font-weight:600}
+.tag-wahl input:checked+span{background:var(--app);border-color:var(--app);color:#fff}
+.tag-wahl input:focus-visible+span{outline:3px solid var(--accent)}
 </style>
 </head>
 <body>
@@ -227,6 +233,7 @@ body{display:flex;flex-direction:column;min-height:100dvh}
   <section class="seite" id="seiteListe" aria-label="Deine Chats">
     <div class="offline" id="offline" hidden>Keine Verbindung – Nachrichten werden gesendet, sobald du wieder online bist.</div>
     <div class="card banner" id="installBanner" hidden><span aria-hidden="true">📲</span><span class="sp"><b>Installiere FIDELIA Chat,</b> damit deine Nachrichten sicher gespeichert bleiben.</span><button class="btn small" type="button" id="bannerWeg" aria-label="Hinweis schließen">✕</button></div>
+    <div class="card banner schul" id="schulBanner" hidden><span class="sp"></span></div>
     <div class="card banner" id="meldeBanner" hidden><span aria-hidden="true">🛡️</span><span class="sp" id="meldeText">Meldungen</span><button class="btn small" type="button" id="meldeOeffnen">Ansehen</button></div>
     <div id="anfragen"></div>
     <div class="leiste" id="sucheLeiste" hidden><input class="inp" id="suche" type="search" placeholder="Chats durchsuchen" aria-label="Chats durchsuchen" autocomplete="off"></div>

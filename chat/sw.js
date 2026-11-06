@@ -1,5 +1,5 @@
 // Offline-Speicher für FIDELIA Chat
-const V = "kw-chat-2026-11-06c";
+const V = "kw-chat-2026-11-06d";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "../shared/kw.css", "../shared/kw.js", "krypto.js", "speicher.js", "chat.js", "../shared/vendor/qr/qrcode.js", "../shared/intro.js", "../shared/marken/fidelia.webp", "../shared/marken/omnivia-zeichen.webp", "../shared/fonts/fonts.css", "../shared/fonts/space-grotesk-latin-400-normal.woff2", "../shared/fonts/space-grotesk-latin-500-normal.woff2", "../shared/fonts/space-grotesk-latin-600-normal.woff2"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -31,5 +31,16 @@ self.addEventListener("fetch", e => {
       return r;
     }).catch(() => hit);
     return hit || net;
+  }));
+});
+
+// Tippen auf eine Benachrichtigung öffnet den Chat
+self.addEventListener("notificationclick", e => {
+  e.notification.close();
+  const chat = e.notification.data && e.notification.data.chat;
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(l => {
+    const w = l.find(c => new URL(c.url).pathname.indexOf("/chat/") >= 0);
+    if (w) { w.postMessage({ chat }); return w.focus(); }
+    return self.clients.openWindow("./");
   }));
 });

@@ -72,7 +72,7 @@
     (await L.alle("kontakte")).forEach(function (k) { kontakte[k.cid] = k; });
     (await L.alle("nachrichten")).forEach(function (n) { (nachrichten[n.chat] = nachrichten[n.chat] || []).push(n); });
     Object.keys(nachrichten).forEach(function (c) { nachrichten[c].sort(function (a, b) { return a.zeit - b.zeit; }); });
-    seite("seiteListe"); $("knopfEinst").hidden = false; liste();
+    seite("seiteListe"); $("knopfEinst").hidden = false; liste(); stummAnzeigen();
     verbinden();
   }
   function lesHash() {
@@ -867,7 +867,7 @@
     weg();
     if (!g) B.setz("quittung/" + m.von + "/" + key, { von: ich.cid, a: 1 }).catch(function () {});
     if (aktiv === chat) { verlauf(); gelesenMarkieren(); }
-    else { liste(); if (!document.hidden) KW.toast((gr ? gr.em + " " + gr.name + " · " + nameVon(chat, m.von) : (k.em + " " + k.name)) + ": " + vorschauText(n).slice(0, 60), "Öffnen", function () { chatOeffnen(chat); }); }
+    else { liste(); hinweis(chat, gr ? gr.name + " · " + nameVon(chat, m.von) : k.name, vorschauText(n).slice(0, 80)); }
   }
   async function dateiHolen(n, inhalt) {
     try {
@@ -1148,18 +1148,124 @@
       });
   }
 
+  /* ---------- Klassenzimmer-Modus ---------- */
+  function planerEnde(wd) { // letzte Stunde aus dem FIDELIA Planer (gleiche Website)
+    try { var p = JSON.parse(localStorage.getItem("kw-planer") || "null"); var z = p && p.plan && p.plan.zellen; if (!z) return 0; var max = 0; Object.keys(z).forEach(function (k) { var t = k.split("-"); if (+t[0] === wd && z[k]) max = Math.max(max, +t[1]); }); return max; } catch (e) { return 0; }
+  }
+  function minuten(hhmm) { var t = String(hhmm || "0:0").split(":"); return (+t[0]) * 60 + (+t[1] || 0); }
+  function schulfenster(d) {
+    var s = ich && ich.schule; if (!s || !s.an) return null;
+    var wd = d.getDay(); if ((s.tage || [1, 2, 3, 4, 5]).indexOf(wd) < 0) return null;
+    var a = minuten(s.start || "07:45"), e = minuten(s.ende || "13:00");
+    if (s.ausPlaner) { var st = planerEnde(wd); if (!st) return null; e = a + st * 50; }
+    return { a: a, e: e };
+  }
+  function stumm() { var d = new Date(), f = schulfenster(d); if (!f) return false; var m = d.getHours() * 60 + d.getMinutes(); return m >= f.a && m < f.e; }
+  function stummAnzeigen() { var el = $("schulBanner"); if (!el) return; var an = stumm(); el.hidden = !an; if (an) { var f = schulfenster(new Date()); el.querySelector(".sp").innerHTML = "<b>🏫 Klassenzimmer-Modus</b> bis " + ("0" + Math.floor(f.e / 60)).slice(-2) + ":" + ("0" + (f.e % 60)).slice(-2) + " – Nachrichten kommen an, aber leise."; } }
+  setInterval(stummAnzeigen, 30000);
+  function schuleFenster() {
+    var s = Object.assign({ an: false, start: "07:45", ende: "13:00", tage: [1, 2, 3, 4, 5], ausPlaner: false }, ich.schule || {});
+    var TG = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"], planerDa = [1, 2, 3, 4, 5].some(function (w) { return planerEnde(w) > 0; });
+    oeffne('<h2>🏫 Klassenzimmer-Modus</h2><p class="muted">In der Schulzeit bleibt FIDELIA Chat still: keine Töne, keine Hinweise. Nachrichten kommen trotzdem an – du siehst sie in der Pause.</p>' +
+      '<label class="hak"><input type="checkbox" id="sAn"' + (s.an ? " checked" : "") + "> Klassenzimmer-Modus einschalten</label>" +
+      '<div class="field"><span>Schultage</span><div class="tage">' + [1, 2, 3, 4, 5, 6].map(function (w) { return '<label class="tag-wahl"><input type="checkbox" value="' + w + '"' + (s.tage.indexOf(w) >= 0 ? " checked" : "") + "><span>" + TG[w] + "</span></label>"; }).join("") + "</div></div>" +
+      '<div class="row"><label class="field"><span>Schule beginnt</span><input class="inp" type="time" id="sStart" value="' + esc(s.start) + '"></label><label class="field"><span>Schule endet</span><input class="inp" type="time" id="sEnde" value="' + esc(s.ende) + '"' + (s.ausPlaner ? " disabled" : "") + "></label></div>" +
+      (planerDa ? '<label class="hak"><input type="checkbox" id="sPlaner"' + (s.ausPlaner ? " checked" : "") + "> Ende aus meinem FIDELIA Planer nehmen (letzte Stunde × 50 Minuten)</label>" : '<p class="muted klein">Tipp: Wenn du deinen Stundenplan im FIDELIA Planer einträgst, kann der Chat das Schulende selbst ausrechnen.</p>') +
+      '<div class="sheet-foot"><button class="btn" type="button" id="sAbbr">Abbrechen</button><button class="btn primary" type="button" id="sOk">Speichern</button></div>',
+      function (w) {
+        var pl = w.querySelector("#sPlaner"); if (pl) pl.onchange = function () { w.querySelector("#sEnde").disabled = this.checked; };
+        w.querySelector("#sAbbr").onclick = zu;
+        w.querySelector("#sOk").onclick = async function () {
+          ich.schule = { an: w.querySelector("#sAn").checked, start: w.querySelector("#sStart").value || "07:45", ende: w.querySelector("#sEnde").value || "13:00", ausPlaner: !!(pl && pl.checked), tage: Array.prototype.map.call(w.querySelectorAll(".tage input:checked"), function (x) { return +x.value; }) };
+          await speichereIch(); zu(); stummAnzeigen(); KW.toast(ich.schule.an ? "Klassenzimmer-Modus ist an 🏫" : "Klassenzimmer-Modus ist aus.");
+        };
+      });
+  }
+
+  /* ---------- Hinweise auf neue Nachrichten ---------- */
+  var tonCtx = null;
+  function ping() {
+    try {
+      tonCtx = tonCtx || new (window.AudioContext || window.webkitAudioContext)();
+      var t = tonCtx.currentTime;
+      [880, 1320].forEach(function (f, i) { var o = tonCtx.createOscillator(), g = tonCtx.createGain(); o.type = "sine"; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t + i * 0.09); g.gain.exponentialRampToValueAtTime(0.12, t + i * 0.09 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.09 + 0.25); o.connect(g); g.connect(tonCtx.destination); o.start(t + i * 0.09); o.stop(t + i * 0.09 + 0.3); });
+    } catch (e) { /* egal */ }
+  }
+  function hinweis(chat, titel, text) {
+    if (stumm()) return;
+    if (document.hidden) {
+      if (ich.benachr && window.Notification && Notification.permission === "granted") {
+        var opt = { body: text, tag: chat, icon: "icons/icon-192.png", badge: "icons/icon-192.png", data: { chat: chat } };
+        if (navigator.serviceWorker && navigator.serviceWorker.ready) navigator.serviceWorker.ready.then(function (r) { r.showNotification(titel, opt); }).catch(function () { try { new Notification(titel, opt); } catch (e) { /* egal */ } });
+        else try { new Notification(titel, opt); } catch (e) { /* egal */ }
+      }
+      return;
+    }
+    if (ich.ton !== false) ping();
+    KW.toast(titel + ": " + text, "Öffnen", function () { chatOeffnen(chat); });
+  }
+  if (navigator.serviceWorker) navigator.serviceWorker.addEventListener("message", function (e) { if (e.data && e.data.chat && kontakte[e.data.chat]) chatOeffnen(e.data.chat); });
+  async function benachrichtigungen(an) {
+    if (an) {
+      if (!window.Notification) { KW.toast("Dein Browser kann keine Benachrichtigungen."); return false; }
+      var p = await Notification.requestPermission();
+      if (p !== "granted") { KW.toast("Benachrichtigungen sind im Browser gesperrt."); return false; }
+    }
+    ich.benachr = an; await speichereIch(); return true;
+  }
+
+  /* ---------- Verschlüsseltes Backup ---------- */
+  function b64Blob(blob) { return new Promise(function (ok) { var r = new FileReader(); r.onload = function () { ok(String(r.result)); }; r.readAsDataURL(blob); }); }
+  async function backupSpeichern() {
+    KW.toast("Backup wird erstellt …");
+    var dateien = [], alle = await L.alle("dateien");
+    for (var i = 0; i < alle.length; i++) dateien.push({ id: alle[i].id, url: await b64Blob(alle[i].blob) });
+    var inhalt = { v: 1, cid: ich.cid, zeit: Date.now(), kontakte: await L.alle("kontakte"), nachrichten: await L.alle("nachrichten"), dateien: dateien };
+    var t = await K.tresorZu(ich.code, inhalt);
+    var blob = new Blob([JSON.stringify({ fidelia: "chat-backup", v: 1, s: t.s, iv: t.iv, ct: t.ct })], { type: "application/octet-stream" });
+    var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "FIDELIA-Chat-Backup-" + new Date().toISOString().slice(0, 10) + ".fidelia";
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+    ich.backupZeit = Date.now(); await speichereIch();
+    KW.toast("Backup gespeichert 🔒 – es ist mit deinem Wiederherstellungs-Code verschlüsselt.");
+  }
+  function backupLaden() {
+    var i = document.createElement("input"); i.type = "file"; i.accept = ".fidelia,application/octet-stream,application/json";
+    i.onchange = async function () {
+      var f = i.files && i.files[0]; if (!f) return;
+      try {
+        var j = JSON.parse(await f.text()); if (j.fidelia !== "chat-backup") throw new Error("Das ist kein FIDELIA-Chat-Backup.");
+        var x = await K.tresorAuf(ich.code, j).catch(function () { throw new Error("Dieses Backup gehört zu einem anderen Konto."); });
+        if (x.cid !== ich.cid) throw new Error("Dieses Backup gehört zu einem anderen Konto.");
+        var n = 0;
+        for (var a = 0; a < (x.kontakte || []).length; a++) { var k = x.kontakte[a]; if (!kontakte[k.cid]) { kontakte[k.cid] = k; await speichereKontakt(k); } }
+        for (var b = 0; b < (x.nachrichten || []).length; b++) { var m = x.nachrichten[b]; if (!(nachrichten[m.chat] || []).some(function (y) { return y.id === m.id; })) { (nachrichten[m.chat] = nachrichten[m.chat] || []).push(m); await speichereNachricht(m); n++; } }
+        for (var c = 0; c < (x.dateien || []).length; c++) { var d = x.dateien[c]; var r = await fetch(d.url); await L.leg("dateien", { id: d.id, blob: await r.blob() }); }
+        Object.keys(nachrichten).forEach(function (q) { nachrichten[q].sort(function (u, v) { return u.zeit - v.zeit; }); });
+        zu(); liste(); KW.toast(n + " Nachrichten aus dem Backup geladen ✅");
+      } catch (e) { KW.toast(e.message || "Das Backup ließ sich nicht laden."); }
+    };
+    i.click();
+  }
+
   /* ---------- Einstellungen ---------- */
   $("knopfEinst").onclick = function () {
     oeffne('<div style="display:flex;gap:12px;align-items:center;margin-bottom:14px">' + ava(ich) + '<div><b style="font-size:1.1rem">' + esc(ich.name) + '</b><br><small class="muted">Dein Profil</small></div></div>' +
       '<div class="menue">' +
       '<button class="btn" type="button" data-e="profil">✏️ Name, Bild und Farbe ändern</button>' +
       '<label class="btn" style="cursor:pointer"><input type="checkbox" id="eLesen"' + (ich.lesen !== false ? " checked" : "") + ' style="width:20px;height:20px;accent-color:var(--app);margin:0 6px 0 0"> Lesebestätigungen senden</label>' +
+      '<label class="btn" style="cursor:pointer"><input type="checkbox" id="eBen"' + (ich.benachr ? " checked" : "") + ' style="width:20px;height:20px;accent-color:var(--app);margin:0 6px 0 0"> Benachrichtigungen, wenn die App im Hintergrund ist</label>' +
+      '<label class="btn" style="cursor:pointer"><input type="checkbox" id="eTon"' + (ich.ton !== false ? " checked" : "") + ' style="width:20px;height:20px;accent-color:var(--app);margin:0 6px 0 0"> Ton bei neuen Nachrichten</label>' +
+      '<button class="btn" type="button" data-e="schule">🏫 Klassenzimmer-Modus' + (ich.schule && ich.schule.an ? " · an" : "") + '</button>' +
+      '<button class="btn" type="button" data-e="backup">💾 Backup speichern' + (ich.backupZeit ? ' <small class="muted">· zuletzt ' + esc(kurzZeit(ich.backupZeit)) + "</small>" : "") + '</button>' +
+      '<button class="btn" type="button" data-e="laden">📂 Backup laden</button>' +
       '<button class="btn" type="button" data-e="code">🔑 Wiederherstellungs-Code anzeigen</button>' +
       '<button class="btn" type="button" data-e="neucode">🔄 Alle meine Kontakt-Codes ungültig machen</button>' +
       '<button class="btn danger" type="button" data-e="abmelden">🚪 Von diesem Gerät abmelden</button></div>' +
-      '<p class="muted" style="font-size:.82rem;margin-top:14px">FIDELIA Chat – Testversion. Als Nächstes: Klassenzimmer-Modus, Benachrichtigungen und Backup.</p>' +
+      '<p class="muted" style="font-size:.82rem;margin-top:14px">FIDELIA Chat – Testversion. Benachrichtigungen bei ganz geschlossener App kommen später.</p>' +
       '<div class="sheet-foot"><button class="btn primary" type="button" data-e="zu">Schließen</button></div>',
       function (w) {
+        w.querySelector("#eBen").onchange = async function () { var cb = this, ok = await benachrichtigungen(cb.checked); if (!ok) cb.checked = false; else if (cb.checked) KW.toast("Benachrichtigungen sind an. Hinweis: Wenn die App ganz geschlossen ist, kommen sie noch nicht."); };
+        w.querySelector("#eTon").onchange = function () { ich.ton = this.checked; speichereIch(); if (this.checked) ping(); };
         w.querySelector("#eLesen").onchange = function () { ich.lesen = this.checked; speichereIch(); KW.toast(this.checked ? "Andere sehen, wenn du gelesen hast." : "Andere sehen nicht mehr, wann du gelesen hast."); };
         w.onclick = async function (e) {
           var b = e.target.closest("[data-e]"); if (!b) return;
@@ -1167,6 +1273,9 @@
           if (a === "zu") zu();
           else if (a === "profil") profilFenster(ich);
           else if (a === "code") codeZeigenFenster();
+          else if (a === "schule") schuleFenster();
+          else if (a === "backup") { zu(); backupSpeichern().catch(function () { KW.toast("Das Backup hat nicht geklappt."); }); }
+          else if (a === "laden") backupLaden();
           else if (a === "neucode") { try { await server(); for (var i = 0; i < meineCodes.length; i++) await B.weg("codes/" + meineCodes[i].k).catch(function () {}); meineCodes = []; await eigeneDaten(); KW.toast("Erledigt – alte Kontakt-Codes und Links gelten nicht mehr."); } catch (err) { KW.toast("Gerade keine Verbindung."); } }
           else if (a === "abmelden") {
             if (!confirm("Wirklich abmelden? Deine Nachrichten auf diesem Gerät werden gelöscht. Zurück kommst du nur mit deinem Wiederherstellungs-Code.")) return;
