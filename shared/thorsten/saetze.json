@@ -1684,6 +1684,24 @@
       "gruppe": "app_events",
       "text": "Und jeder trägt ein, was er mitbringt. Nie wieder fünf Nudelsalate!",
       "nr": 3
+    },
+    {
+      "id": "app-form-1",
+      "gruppe": "app_form",
+      "text": "Mal ehrlich: Wer versteht eigentlich Briefe vom Amt? Ich nicht. Na gut, ich schon. Aber du vielleicht nicht!",
+      "nr": 1
+    },
+    {
+      "id": "app-form-2",
+      "gruppe": "app_form",
+      "text": "Mit FIDELIA Form machst du einfach ein Foto. Dann erklärt die KI den Brief in einfacher Sprache.",
+      "nr": 2
+    },
+    {
+      "id": "app-form-3",
+      "gruppe": "app_form",
+      "text": "Und das Beste: Alles bleibt auf deinem Gerät. Kein Foto geht ins Internet.",
+      "nr": 3
     }
   ]
 }

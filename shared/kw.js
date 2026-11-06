@@ -143,7 +143,7 @@
 
 
   /* Altersempfehlung in der Kopfleiste */
-  var ALTER = { karten: 8, planer: 8, notizen: 8, quiz: 8, fokus: 8, taschengeld: 8, beats: 6, werkstatt: 10, kueche: 10, ki: 12, chat: 12, arcade: 6, pet: 8, events: 10 };
+  var ALTER = { karten: 8, planer: 8, notizen: 8, quiz: 8, fokus: 8, taschengeld: 8, beats: 6, werkstatt: 10, kueche: 10, ki: 12, chat: 12, arcade: 6, pet: 8, events: 10, form: 10 };
   function setupAlter() {
     var teil = location.pathname.split("/").filter(Boolean), ordner = teil[teil.length - 1] === "index.html" ? teil[teil.length - 2] : teil[teil.length - 1];
     var a = ALTER[ordner], bar = document.querySelector(".kw-bar h1");

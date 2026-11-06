@@ -354,6 +354,24 @@
         "Wer bringt was mit?",
         "Ohne Anmeldung"
       ]
+    },
+    {
+      "id": "form",
+      "name": "FIDELIA Form",
+      "marke": "fidelia",
+      "farbe": "#1e3a8a",
+      "status": "fertig",
+      "pfad": "form/",
+      "bilder": [
+        "apps/bilder/form-1.webp",
+        "apps/bilder/form-2.webp",
+        "apps/bilder/form-3.webp"
+      ],
+      "punkte": [
+        "Briefe einfach erklärt",
+        "Fristen im Blick",
+        "Bleibt auf dem Gerät"
+      ]
     }
   ]
 }
