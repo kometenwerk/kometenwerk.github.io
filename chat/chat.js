@@ -70,6 +70,7 @@
     if (!ich || !priv) { startSeite(); return; }
     if (!ich.codeOk) { startSeite(3); return; }
     (await L.alle("kontakte")).forEach(function (k) { kontakte[k.cid] = k; });
+    sofieAnlegen();
     (await L.alle("nachrichten")).forEach(function (n) { (nachrichten[n.chat] = nachrichten[n.chat] || []).push(n); });
     Object.keys(nachrichten).forEach(function (c) { nachrichten[c].sort(function (a, b) { return a.zeit - b.zeit; }); });
     seite("seiteListe"); $("knopfEinst").hidden = false; liste(); stummAnzeigen();
@@ -362,7 +363,7 @@
         await speichereKontakt(k); geaendert = true;
       } else if (k.status !== st) { k.status = st; await speichereKontakt(k); geaendert = true; }
     }
-    for (var c in kontakte) if (!kontakte[c].gruppe && !(c in liste_) && kontakte[c].status !== "entfernt") { kontakte[c].status = "entfernt"; await speichereKontakt(kontakte[c]); geaendert = true; }
+    for (var c in kontakte) if (!kontakte[c].gruppe && !kontakte[c].ki && !(c in liste_) && kontakte[c].status !== "entfernt") { kontakte[c].status = "entfernt"; await speichereKontakt(kontakte[c]); geaendert = true; }
     profileAuffrischen();
     if (geaendert) { liste(); if (aktiv) chatKopf(); }
     bilderVerteilen();
@@ -370,7 +371,7 @@
   var aufgefrischt = false;
   function profileAuffrischen() {
     if (aufgefrischt) return; aufgefrischt = true;
-    Object.keys(kontakte).filter(function (c) { return !kontakte[c].gruppe; }).forEach(function (cid) {
+    Object.keys(kontakte).filter(function (c) { return !kontakte[c].gruppe && !kontakte[c].ki; }).forEach(function (cid) {
       B.hol("nutzer/" + cid).then(function (p) {
         var k = kontakte[cid]; if (!p || !k) return;
         if (p.ek !== k.ek) { k.schluesselNeu = true; } // darf nicht passieren – der Server erlaubt keinen Schlüsseltausch
@@ -417,6 +418,7 @@
   function ungelesen(cid) { return (nachrichten[cid] || []).filter(function (n) { return n.von !== ich.cid && !n.gelesen; }).length; }
   function liste() {
     if (!ich) return;
+    sofieAnlegen();
     var q = ($("suche").value || "").trim().toLowerCase();
     var ids = Object.keys(kontakte).filter(function (c) { return kontakte[c].status !== "entfernt" || (nachrichten[c] || []).length; });
     $("sucheLeiste").hidden = ids.length < 6;
@@ -575,6 +577,7 @@
     $("gesperrt").innerHTML = k.status === "blockiert" ? 'Du hast ' + esc(k.name) + ' blockiert. <button class="btn small" type="button" id="entsperren">Freigeben</button>' : k.gruppe ? "Du bist nicht mehr in dieser Gruppe." : "Ihr seid nicht mehr verbunden. Für einen neuen Chat braucht ihr einen neuen Kontakt-Code.";
     var e = $("entsperren"); if (e) e.onclick = function () { blockieren(aktiv, false); };
     listenKnopf();
+    var istKi = !!k.ki; $("anhang").hidden = istKi; if (istKi) { $("mikro").hidden = true; $("senden").hidden = false; $("chatListen").hidden = true; $("chatUnter").textContent = sofieMotor ? "🤖 KI · läuft auf deinem Gerät" : "🤖 KI aus deinem Team · Planer-Hilfe"; } else knopfAnpassen();
   }
   function nameVon(chat, cid) {
     if (cid === ich.cid) return ich.name;
@@ -590,7 +593,7 @@
   function verlauf(nachUnten) {
     var el = $("verlauf"), unten = nachUnten || el.scrollHeight - el.scrollTop - el.clientHeight < 80;
     var k = kontakte[aktiv] || {};
-    var l = nachrichten[aktiv] || [], h = '<div class="info">🔒 Nachrichten in diesem Chat sind Ende-zu-Ende verschlüsselt. Nur ' + (k.gruppe ? "die Mitglieder" : "ihr beide") + " könnt sie lesen.</div>", tag = "";
+    var l = nachrichten[aktiv] || [], h = k.ki ? '<div class="info">🤖 Sofie ist eine KI aus deinem Kometen-Team. Eure Nachrichten bleiben auf deinem Gerät. Frag sie z. B. „Was steht diese Woche an?“</div>' : '<div class="info">🔒 Nachrichten in diesem Chat sind Ende-zu-Ende verschlüsselt. Nur ' + (k.gruppe ? "die Mitglieder" : "ihr beide") + " könnt sie lesen.</div>", tag = "";
     var erstesMal = !gezeigt[aktiv]; gezeigt[aktiv] = gezeigt[aktiv] || {};
     l.forEach(function (n, i) {
       var t = tagText(n.zeit); if (t !== tag) { tag = t; h += '<div class="tag">' + esc(t) + "</div>"; }
@@ -712,7 +715,7 @@
   knopfAnpassen();
   function neueNachricht(teile) {
     var k = kontakte[aktiv];
-    var n = Object.assign({ id: B.neuKey("post/x"), chat: aktiv, von: ich.cid, text: "", zeit: Date.now(), st: 0 }, teile);
+    var n = Object.assign({ id: B ? B.neuKey("post/x") : "m" + K.id(10), chat: aktiv, von: ich.cid, text: "", zeit: Date.now(), st: 0 }, teile);
     if (antwortAuf) { n.r = antwortAuf.id; n.rv = antwortAuf.von; n.rt = vorschauText(antwortAuf).slice(0, 120); antwortAuf = null; antwortZeigen(); }
     if (k.timer) { n.w = k.timer; n.weg = n.zeit + k.timer * 1000; }
     (nachrichten[aktiv] = nachrichten[aktiv] || []).push(n);
@@ -721,7 +724,7 @@
   $("eingabe").onsubmit = function (e) {
     e.preventDefault();
     var t = feld.value.trim(); if (!t || !aktiv) return;
-    if (!B) { KW.toast("Noch keine Verbindung – gleich nochmal."); return; }
+    if (!B && !(kontakte[aktiv] && kontakte[aktiv].ki)) { KW.toast("Noch keine Verbindung – gleich nochmal."); return; }
     var n = neueNachricht({ text: t.slice(0, 4000) });
     speichereNachricht(n); feld.value = ""; feld.style.height = "auto"; knopfAnpassen();
     verlauf(true); zustellen(n);
@@ -749,6 +752,7 @@
     for (var i = 0; i < liste_.length; i++) { try { await schicken(chat, B.neuKey("post/x"), Object.assign({}, inhalt), liste_[i]); } catch (e) { /* egal */ } }
   }
   async function zustellen(n) {
+    if (kontakte[n.chat] && kontakte[n.chat].ki) { n.st = 3; speichereNachricht(n); verlauf(); sofieAntwort(n.text); return; }
     if (!B || !kontakte[n.chat]) return;
     var an = empfaenger(n.chat), fehler = 0, letzterFehler = null;
     var inhalt = { t: n.text, z: n.zeit };
@@ -987,6 +991,81 @@
     el.innerHTML = ids.length ? '<div class="wahlliste" style="max-height:340px">' + ids.map(function (i) { var x = l[i]; return '<label class="wahl listen-eintrag' + (x.ok ? " erledigt" : "") + '"><input type="checkbox" data-i="' + esc(i) + '"' + (x.ok ? " checked" : "") + "><span>" + esc(x.t) + (x.ok && x.wer ? ' <small class="muted">– ' + (x.art === "teilen" ? "geht an " : "") + esc(x.wer) + "</small>" : !x.ok && x.art === "teilen" && x.von ? ' <small class="muted">von ' + esc(nameVon(aktiv, x.von)) + "</small>" : "") + '</span><button class="btn small" type="button" data-weg="' + esc(i) + '" aria-label="Löschen">✕</button></label>'; }).join("") + "</div>" : '<p class="muted" style="text-align:center;padding:16px 0">' + (listenArt === "einkauf" ? "Die Einkaufsliste ist leer 🛒" : listenArt === "teilen" ? "Noch nichts zum Verschenken oder Leihen. Trag ein, was du nicht mehr brauchst – wer es haben will, hakt es ab 🎁" : "Keine Aufgaben – super! 🎉") + "</p>";
   }
 
+  /* ---------- Sofie: KI-Kontakt auf dem Gerät (aus dem Kometen-Team) ---------- */
+  var SOFIE = { cid: "sofie", ki: true, name: "Sofie", em: "🗂️", farbe: "#0f766e", status: "ok", seit: 0 };
+  function sofieAnlegen() { if (!kontakte.sofie) { kontakte.sofie = Object.assign({}, SOFIE); speichereKontakt(kontakte.sofie); } }
+  var sofieMotor = null, sofieLaedt = null;
+  function planerJetzt() {
+    try { var p = JSON.parse(localStorage.getItem("kw-planer") || "null"); var h = KW.today(), bis = KW.addDays(h, 21);
+      return ((p && p.eintraege) || []).filter(function (e) { return !e.erledigt && e.datum && e.datum >= h && e.datum <= bis; }).sort(function (a, b) { return (a.datum + (a.zeit || "")) < (b.datum + (b.zeit || "")) ? -1 : 1; }).slice(0, 25);
+    } catch (e) { return []; }
+  }
+  function planerText(l) { return l.length ? l.map(function (e) { return "- " + e.datum.split("-").reverse().join(".") + (e.zeit ? " " + e.zeit : "") + ": " + e.titel; }).join("\n") : "(keine Einträge in den nächsten 3 Wochen)"; }
+  // „Trag Zahnarzt am 12.11. um 15 Uhr ein“ – klappt auch ohne KI
+  function terminAusText(t) {
+    var m = t.match(/(\d{1,2})\.\s?(\d{1,2})\.?(\d{2,4})?/); if (!m) return null;
+    var j = m[3] ? (+m[3] < 100 ? 2000 + +m[3] : +m[3]) : new Date().getFullYear(), d = j + "-" + ("0" + m[2]).slice(-2) + "-" + ("0" + m[1]).slice(-2);
+    if (!m[3] && d < KW.today()) d = (j + 1) + d.slice(4);
+    var rest = t.replace(m[0], " ");
+    var u = rest.match(/(\d{1,2})(?::|\.)(\d{2})\s*(uhr)?|(\d{1,2})\s*uhr/i), zeit = u ? ("0" + (u[1] || u[4])).slice(-2) + ":" + (u[2] || "00") : "";
+    var titel = rest.replace(u ? u[0] : "", "").replace(/\b(trag|trage|bitte|mir|einen?|termin|am|um|ein|eintragen|in den planer|planer|sofie|,|\.|!)\b/gi, " ").replace(/\s+/g, " ").trim();
+    return { datum: d, zeit: zeit, titel: titel ? titel.charAt(0).toUpperCase() + titel.slice(1) : "Termin" };
+  }
+  function sofieRegeln(t) {
+    var k = t.toLowerCase();
+    if (/(trag|eintragen|notier|merk dir|erinner)/.test(k)) { var x = terminAusText(t); if (x) { KW.planerTermine([{ quelle: "sofie-" + Date.now(), titel: x.titel, datum: x.datum, zeit: x.zeit, notiz: "Von Sofie eingetragen" }]); return "Erledigt! 📋 Ich habe „" + x.titel + "“ am " + x.datum.split("-").reverse().join(".") + (x.zeit ? " um " + x.zeit + " Uhr" : "") + " in deinen FIDELIA Planer eingetragen."; } }
+    if (/(was steht|termine|diese woche|morgen|heute|planer|was ist los|was habe ich)/.test(k)) return "Das steht in deinem Planer an:\n" + planerText(planerJetzt());
+    if (/^(hi|hallo|hey|moin|servus)/.test(k)) return "Hallo! 👋 Ich bin Sofie, die Büroleitung bei OMNIVIA. Ich kann dir sagen, was in deinem Planer ansteht, oder Termine eintragen – zum Beispiel: „Trag Zahnarzt am 12.11. um 15:00 ein“.";
+    return null;
+  }
+  async function sofieKi() {
+    if (sofieMotor) return sofieMotor;
+    if (!ich.sofieKi) return null;
+    if (!sofieLaedt) sofieLaedt = (async function () {
+      var m = await import("../ki/motor.js"), g = await m.geraetPruefen(), id = m.empfehlung(g);
+      if (!id) throw new Error("kein-geraet");
+      var mo = await m.starten(id, g, function (p) { $("chatUnter").textContent = "🤖 KI wird geladen … " + Math.round((p || 0) * 100) + " %"; });
+      mo.ohneDenken = m.ohneDenken; sofieMotor = mo; chatKopf(); return mo;
+    })();
+    try { return await sofieLaedt; } catch (e) { sofieLaedt = null; if (String(e.message) === "kein-geraet") { ich.sofieKi = false; speichereIch(); } return null; }
+  }
+  async function sofieAntwort(frage) {
+    var n = { id: "s" + K.id(10), chat: "sofie", von: "sofie", text: "…", zeit: Date.now(), gelesen: true };
+    (nachrichten.sofie = nachrichten.sofie || []).push(n); if (aktiv === "sofie") verlauf(true);
+    var antwort = null, motor = await sofieKi();
+    if (motor) {
+      try {
+        var verlaufTxt = (nachrichten.sofie || []).slice(-9, -1).map(function (x) { return { role: x.von === "sofie" ? "assistant" : "user", content: x.text }; });
+        var sys = "Du bist Sofie, die freundliche Büroleitung von OMNIVIA (dem Studio des Nutzers). Du bist eine KI und sagst das ehrlich, wenn man fragt. Antworte kurz, auf Deutsch, in Du-Form. Heute ist " + KW.today().split("-").reverse().join(".") + ".\nDer FIDELIA Planer des Nutzers (nächste 3 Wochen):\n" + planerText(planerJetzt()) +
+          "\nWenn der Nutzer einen Termin eintragen will, schreib am Ende eine eigene Zeile genau so: TERMIN: JJJJ-MM-TT | HH:MM | Titel (Uhrzeit leer lassen, wenn keine genannt). Erfinde keine Termine. Bei Gesundheit, Geld oder Recht: rate, einen Erwachsenen zu fragen.";
+        var txt = "";
+        for await (var st of motor.antworte([{ role: "system", content: sys }].concat(verlaufTxt), {})) { txt += st; n.text = motor.ohneDenken(txt).replace(/TERMIN:.*$/m, "").trim() || "…"; if (aktiv === "sofie") verlauf(); }
+        txt = motor.ohneDenken(txt);
+        var tm = txt.match(/TERMIN:\s*(\d{4}-\d{2}-\d{2})\s*\|\s*(\d{1,2}:\d{2})?\s*\|\s*(.+)$/m);
+        antwort = txt.replace(/TERMIN:.*$/m, "").trim();
+        if (tm) { KW.planerTermine([{ quelle: "sofie-" + Date.now(), titel: tm[3].trim().slice(0, 100), datum: tm[1], zeit: tm[2] || "", notiz: "Von Sofie eingetragen" }]); antwort += "\n\n📋 Eingetragen: " + tm[3].trim() + " am " + tm[1].split("-").reverse().join(".") + (tm[2] ? " um " + tm[2] : ""); }
+      } catch (e) { antwort = null; }
+    }
+    if (!antwort) antwort = sofieRegeln(frage) || (ich.sofieKi === false ? "Auf diesem Gerät kann ich leider nicht frei antworten (es fehlt die nötige Grafik-Technik). Aber ich kann dir sagen, was ansteht („Was steht an?“), oder Termine eintragen („Trag Training am 14.11. um 17 Uhr ein“)." : "Damit ich richtig antworten kann, lade mich zuerst aufs Gerät: Tipp oben auf meinen Namen → „KI laden“. Bis dahin kann ich dir sagen, was ansteht, oder Termine eintragen – z. B. „Trag Zahnarzt am 12.11. um 15:00 ein“.");
+    n.text = antwort.slice(0, 4000); n.zeit = Date.now(); speichereNachricht(n);
+    if (aktiv === "sofie") verlauf(true); else { liste(); hinweis("sofie", "Sofie", n.text.slice(0, 80)); }
+  }
+  function sofieFenster() {
+    oeffne('<div style="text-align:center">' + ava(kontakte.sofie, false, true) + '<h2 style="margin:10px 0 2px">Sofie</h2><p class="muted" style="margin:0 0 12px">🤖 KI aus deinem Kometen-Team · läuft auf deinem Gerät</p></div>' +
+      '<p>Sofie kennt deinen <b>FIDELIA Planer</b>: Sie sagt dir, was ansteht, und trägt Termine ein. Eure Nachrichten gehen nicht ins Internet.</p>' +
+      '<div class="menue">' + (sofieMotor ? '<p class="muted klein">✅ Die KI ist geladen.</p>' : '<button class="btn primary" type="button" data-s="laden">🤖 KI laden (einmalig ca. 0,5–1,5 GB, am besten im WLAN)</button>') +
+      '<a class="btn" href="../planer/">📋 Planer öffnen</a><button class="btn danger" type="button" data-s="leeren">🧹 Verlauf mit Sofie löschen</button></div>' +
+      '<div class="sheet-foot"><button class="btn" type="button" data-s="zu">Schließen</button></div>',
+      function (w) {
+        w.onclick = async function (e) {
+          var b = e.target.closest("[data-s]"); if (!b) return;
+          if (b.dataset.s === "zu") zu();
+          else if (b.dataset.s === "laden") { ich.sofieKi = true; await speichereIch(); zu(); KW.toast("Sofie wird geladen …"); var m = await sofieKi(); KW.toast(m ? "Sofie ist bereit 🤖" : "Auf diesem Gerät geht die KI leider nicht – Sofie hilft dir trotzdem mit Planer und Terminen."); chatKopf(); }
+          else if (b.dataset.s === "leeren") { if (!confirm("Verlauf mit Sofie löschen?")) return; await L.chatWeg("sofie"); nachrichten.sofie = []; zu(); verlauf(true); liste(); }
+        };
+      });
+  }
+
   /* ---------- Gruppen ---------- */
   function gruppeNeuFenster() {
     var ok = Object.keys(kontakte).filter(function (c) { return !kontakte[c].gruppe && kontakte[c].status === "ok"; });
@@ -1097,6 +1176,7 @@
   async function kontaktFenster(cid) {
     var k = kontakte[cid]; if (!k) return;
     if (k.gruppe) { gruppeFenster(cid); return; }
+    if (k.ki) { sofieFenster(); return; }
     var nr = await K.sicherheitsnummer(ich.ek, k.ek);
     oeffne('<div style="text-align:center">' + ava(k, false, true) + '<h2 style="margin:10px 0 2px">' + esc(k.name) + '</h2><p class="muted" style="margin:0 0 14px">' + (k.geprueft ? "✅ Schlüssel geprüft" : "Schlüssel noch nicht geprüft") + "</p></div>" +
       '<div class="field"><span>Sicherheitsnummer – auf beiden Handys muss dieselbe stehen</span><div class="sicher">' + esc(nr) + "</div></div>" +
