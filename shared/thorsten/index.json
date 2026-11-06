@@ -2524,6 +2524,33 @@
    "dauer": 1.88,
    "hash": "01363eb503ac",
    "nr": 3
+  },
+  {
+   "id": "app-pet-1",
+   "gruppe": "app_pet",
+   "text": "Hast du ein Haustier? Dann schau dir FIDELIA Pet an!",
+   "datei": "ton/app-pet-1.mp3",
+   "dauer": 3.05,
+   "hash": "400580349407",
+   "nr": 1
+  },
+  {
+   "id": "app-pet-2",
+   "gruppe": "app_pet",
+   "text": "Impfungen, Gewicht und Tierarzt-Termine, alles an einem Ort. Mit Erinnerung!",
+   "datei": "ton/app-pet-2.mp3",
+   "dauer": 4.33,
+   "hash": "67260463614f",
+   "nr": 2
+  },
+  {
+   "id": "app-pet-3",
+   "gruppe": "app_pet",
+   "text": "Und für den Tierarzt gibt es die ganze Akte auf einen Blick. Wuff!",
+   "datei": "ton/app-pet-3.mp3",
+   "dauer": 3.44,
+   "hash": "a519fc7d4b75",
+   "nr": 3
   }
  ]
 }
