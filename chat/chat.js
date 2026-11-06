@@ -574,6 +574,7 @@
     $("eingabe").hidden = gesperrt; $("gesperrt").hidden = !gesperrt;
     $("gesperrt").innerHTML = k.status === "blockiert" ? 'Du hast ' + esc(k.name) + ' blockiert. <button class="btn small" type="button" id="entsperren">Freigeben</button>' : k.gruppe ? "Du bist nicht mehr in dieser Gruppe." : "Ihr seid nicht mehr verbunden. Für einen neuen Chat braucht ihr einen neuen Kontakt-Code.";
     var e = $("entsperren"); if (e) e.onclick = function () { blockieren(aktiv, false); };
+    listenKnopf();
   }
   function nameVon(chat, cid) {
     if (cid === ich.cid) return ich.name;
@@ -900,6 +901,7 @@
       infoNachricht(chat, nameVon(chat, von) + (c.timer ? " hat verschwindende Nachrichten eingeschaltet: " + TIMER[c.timer] + "." : " hat verschwindende Nachrichten ausgeschaltet."));
       if (aktiv === chat) chatKopf();
     } else if (x.typ === "gruppe") await gruppeDa(von, x);
+    else if (x.typ === "liste") await listeDa(von, chat, x);
   }
   function infoNachricht(chat, text) {
     var n = { id: "i" + K.id(8), chat: chat, von: "", art: "info", text: text, zeit: Date.now(), gelesen: true };
@@ -931,6 +933,44 @@
     }
     if (weg) { if (aktiv) verlauf(); else liste(); }
   }, 20000);
+
+  /* ---------- FIDELIA Circle: gemeinsame Listen (Einkauf, Aufgaben) in jedem Chat ---------- */
+  var LISTEN = { einkauf: "🛒 Einkauf", aufgabe: "✅ Aufgaben" }, listenArt = "einkauf";
+  function listeVon(c) { var k = kontakte[c]; if (!k) return {}; k.listen = k.listen || {}; return k.listen; }
+  function listeOffen(c) { var l = listeVon(c); return Object.keys(l).filter(function (i) { return !l[i].weg && !l[i].ok; }).length; }
+  function listenKnopf() { var b = $("chatListen"); if (!b) return; var k = kontakte[aktiv]; b.hidden = !k || k.status !== "ok"; var n = k ? listeOffen(aktiv) : 0; b.innerHTML = "📋" + (n ? '<span class="mini-zahl">' + n + "</span>" : ""); }
+  async function listeAendern(c, item) {
+    var l = listeVon(c); item.z = Date.now(); item.von = ich.cid; l[item.id] = item;
+    await speichereKontakt(kontakte[c]); listenKnopf();
+    steuerSenden(c, { typ: "liste", item: { id: item.id, t: item.t, art: item.art, ok: !!item.ok, weg: !!item.weg, z: item.z, wer: item.wer || "" } });
+  }
+  async function listeDa(von, chat, x) {
+    var it = x.item, k = kontakte[chat]; if (!k || !it || typeof it.id !== "string" || it.id.length > 40) return;
+    var l = listeVon(chat), alt = l[it.id];
+    if (alt && alt.z >= it.z) return;
+    l[it.id] = { id: it.id, t: String(it.t || "").slice(0, 120), art: LISTEN[it.art] ? it.art : "einkauf", ok: !!it.ok, weg: !!it.weg, z: +it.z || Date.now(), von: von, wer: String(it.wer || "").slice(0, 30) };
+    await speichereKontakt(k);
+    if (aktiv === chat) listenKnopf();
+    if (fensterIn.querySelector("#listenInhalt") && aktiv === chat) listenMalen();
+  }
+  function listenFenster() {
+    oeffne('<h2>📋 Gemeinsame Listen</h2><p class="muted klein">Alle im Chat sehen und ändern sie – verschlüsselt wie eure Nachrichten.</p><div class="tabs" role="tablist" id="listenReiter"></div><form class="codezeile" id="listeNeu" style="margin:12px 0"><input class="inp" id="listeText" maxlength="120" placeholder="Neuer Eintrag …" autocomplete="off"><button class="btn primary" type="submit">＋</button></form><div id="listenInhalt"></div><div class="sheet-foot"><button class="btn" type="button" id="listeAufr">Erledigte löschen</button><span class="sp"></span><button class="btn primary" type="button" id="listeZu">Fertig</button></div>',
+      function (w) {
+        w.querySelector("#listeZu").onclick = zu;
+        w.querySelector("#listeNeu").onsubmit = function (e) { e.preventDefault(); var f = w.querySelector("#listeText"), t = f.value.trim(); if (!t) return; f.value = ""; listeAendern(aktiv, { id: K.id(8), t: t, art: listenArt, ok: false }).then(listenMalen); listenMalen(); };
+        w.querySelector("#listeAufr").onclick = function () { var l = listeVon(aktiv); Object.keys(l).forEach(function (i) { if (l[i].ok && !l[i].weg) { var x = Object.assign({}, l[i], { weg: true }); listeAendern(aktiv, x); } }); setTimeout(listenMalen, 50); };
+        w.querySelector("#listenReiter").onclick = function (e) { var b = e.target.closest("[data-l]"); if (b) { listenArt = b.dataset.l; listenMalen(); w.querySelector("#listeText").placeholder = listenArt === "einkauf" ? "Was soll eingekauft werden?" : "Welche Aufgabe? (z. B. Müll rausbringen)"; } };
+        w.querySelector("#listenInhalt").onchange = function (e) { var cb = e.target.closest("[data-i]"); if (!cb) return; var x = Object.assign({}, listeVon(aktiv)[cb.dataset.i], { ok: cb.checked, wer: cb.checked ? ich.name : "" }); listeAendern(aktiv, x).then(listenMalen); };
+        w.querySelector("#listenInhalt").onclick = function (e) { var b = e.target.closest("[data-weg]"); if (!b) return; var x = Object.assign({}, listeVon(aktiv)[b.dataset.weg], { weg: true }); listeAendern(aktiv, x).then(listenMalen); };
+        listenMalen();
+      });
+  }
+  function listenMalen() {
+    var l = listeVon(aktiv), r = fensterIn.querySelector("#listenReiter"), el = fensterIn.querySelector("#listenInhalt"); if (!el) return;
+    r.innerHTML = Object.keys(LISTEN).map(function (a) { var n = Object.keys(l).filter(function (i) { return l[i].art === a && !l[i].weg && !l[i].ok; }).length; return '<button type="button" role="tab" data-l="' + a + '" aria-selected="' + (listenArt === a) + '">' + LISTEN[a] + (n ? " (" + n + ")" : "") + "</button>"; }).join("");
+    var ids = Object.keys(l).filter(function (i) { return l[i].art === listenArt && !l[i].weg; }).sort(function (a, b) { return (l[a].ok - l[b].ok) || (l[a].z - l[b].z); });
+    el.innerHTML = ids.length ? '<div class="wahlliste" style="max-height:340px">' + ids.map(function (i) { var x = l[i]; return '<label class="wahl listen-eintrag' + (x.ok ? " erledigt" : "") + '"><input type="checkbox" data-i="' + esc(i) + '"' + (x.ok ? " checked" : "") + "><span>" + esc(x.t) + (x.ok && x.wer ? ' <small class="muted">– ' + esc(x.wer) + "</small>" : "") + '</span><button class="btn small" type="button" data-weg="' + esc(i) + '" aria-label="Löschen">✕</button></label>'; }).join("") + "</div>" : '<p class="muted" style="text-align:center;padding:16px 0">' + (listenArt === "einkauf" ? "Die Einkaufsliste ist leer 🛒" : "Keine Aufgaben – super! 🎉") + "</p>";
+  }
 
   /* ---------- Gruppen ---------- */
   function gruppeNeuFenster() {
@@ -1038,6 +1078,7 @@
 
   /* ---------- Kontakt-Infos, Blockieren, Melden ---------- */
   $("chatWer").onclick = function () { kontaktFenster(aktiv); };
+  $("chatListen").onclick = listenFenster;
   async function kontaktFenster(cid) {
     var k = kontakte[cid]; if (!k) return;
     if (k.gruppe) { gruppeFenster(cid); return; }

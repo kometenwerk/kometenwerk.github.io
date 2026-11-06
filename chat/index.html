@@ -205,6 +205,9 @@ body{display:flex;flex-direction:column;min-height:100dvh}
 .wahl{display:flex;gap:10px;align-items:center;padding:8px;border-radius:12px;background:var(--soft);cursor:pointer}
 .wahl span:not(.ava){flex:1}
 .wahl input{width:22px;height:22px;accent-color:var(--app)}
+.chatkopf #chatListen{position:relative}
+.mini-zahl{position:absolute;top:-3px;right:-3px;background:var(--accent);color:#101826;font-size:.65rem;font-weight:700;border-radius:999px;min-width:17px;height:17px;display:grid;place-items:center;padding:0 4px}
+.listen-eintrag.erledigt span{text-decoration:line-through;color:var(--muted)}
 .banner.schul{background:var(--app-soft);border-color:transparent}
 .tage{display:flex;gap:6px;flex-wrap:wrap}
 .tag-wahl input{position:absolute;opacity:0;pointer-events:none}
@@ -247,6 +250,7 @@ body{display:flex;flex-direction:column;min-height:100dvh}
   <div class="chatkopf">
     <button class="kw-ico" type="button" id="chatZurueck" aria-label="Zurück zur Liste">←</button>
     <button class="wer" type="button" id="chatWer" aria-label="Kontakt-Infos"><span id="chatAva"></span><span style="min-width:0"><b id="chatName"></b><small id="chatUnter"></small></span></button>
+    <button class="kw-ico" type="button" id="chatListen" aria-label="Gemeinsame Listen" hidden>📋</button>
   </div>
   <div id="verlauf" aria-live="polite"></div>
   <div class="antwort" id="antwort" hidden></div>
