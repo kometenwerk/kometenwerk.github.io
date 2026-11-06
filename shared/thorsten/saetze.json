@@ -1630,6 +1630,24 @@
       "gruppe": "app_chat",
       "text": "Alles ist Ende-zu-Ende verschlüsselt. Nicht mal wir können mitlesen!",
       "nr": 3
+    },
+    {
+      "id": "app-arcade-1",
+      "gruppe": "app_arcade",
+      "text": "Neu von FLARESSA: die Arcade! Sechs schnelle Spiele direkt im Browser.",
+      "nr": 1
+    },
+    {
+      "id": "app-arcade-2",
+      "gruppe": "app_arcade",
+      "text": "Klötzchen, Schlange, Ufos und Pong. Und alles ganz ohne Werbung!",
+      "nr": 2
+    },
+    {
+      "id": "app-arcade-3",
+      "gruppe": "app_arcade",
+      "text": "Knack meinen Rekord. Ich warte!",
+      "nr": 3
     }
   ]
 }

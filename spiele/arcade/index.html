@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="de" data-marke="flaressa">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FLARESSA Arcade – 6 Spiele ohne Werbung</title>
+<meta name="description" content="Sechs schnelle Retro-Spiele im Browser: Klötzchen, Schlange, Flatterfunke, Sternen-Abwehr, Plasma-Pong und Ziegelbrecher. Kostenlos, ohne Werbung, ohne Käufe.">
+<meta name="theme-color" content="#e11d48">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Arcade">
+<link rel="stylesheet" href="../../shared/fonts/fonts.css">
+<style>
+:root{--app:#e11d48;--bg:#07070f;--card:#141428;--ink:#fff;--muted:#a5a8c8;--line:#2a2a4a;--accent:#ff8a3c}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{background:radial-gradient(ellipse at top,#1d1240,#07070f 60%) fixed;color:var(--ink);font-family:'Space Grotesk',Arial,sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit}
+.kopf{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;position:sticky;top:0;z-index:5;background:rgba(7,7,15,.7);backdrop-filter:blur(10px)}
+.kopf a{color:inherit;text-decoration:none;display:flex;align-items:center;gap:8px;opacity:.85}
+.kopf h1{margin:0;font-size:1.15rem;flex:1;letter-spacing:.02em}
+.kopf h1 b{background:linear-gradient(90deg,#ff8a3c,#e11d48,#a855f7);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ico{width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.1);cursor:pointer;font-size:1.1rem;display:grid;place-items:center}
+.ico:focus-visible,.karte:focus-visible,.btn:focus-visible,.kn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.kw-install{border:0;background:#fff;color:var(--app);font-weight:600;font-size:.85rem;padding:8px 12px;border-radius:999px;cursor:pointer}
+main{max-width:900px;margin:0 auto;padding:8px 16px 40px}
+.hallo{text-align:center;padding:18px 0 8px}
+.hallo .logo{font-size:2.6rem;font-weight:800;letter-spacing:.06em;line-height:1;background:linear-gradient(90deg,#ff8a3c,#e11d48 45%,#a855f7);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 30px rgba(225,29,72,.25)}
+.hallo p{color:var(--muted);margin:8px 0 0}
+.chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:12px 0 18px}
+.chips span{font-size:.8rem;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid var(--line)}
+.raster{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.karte{position:relative;border:1px solid var(--line);background:linear-gradient(160deg,color-mix(in srgb,var(--c) 26%,#141428),#141428 70%);border-radius:20px;padding:16px 14px;text-align:left;cursor:pointer;overflow:hidden;transition:transform .15s,box-shadow .15s;min-height:168px;display:flex;flex-direction:column;gap:6px}
+.karte:hover{transform:translateY(-3px);box-shadow:0 10px 30px color-mix(in srgb,var(--c) 35%,transparent)}
+.karte .em{font-size:2.4rem;line-height:1}
+.karte b{font-size:1.05rem}
+.karte small{color:var(--muted);font-size:.82rem;line-height:1.35}
+.karte .best{margin-top:auto;font-size:.78rem;color:var(--c);font-weight:700}
+.karte::after{content:"";position:absolute;right:-30px;top:-30px;width:110px;height:110px;border-radius:50%;background:var(--c);opacity:.18;filter:blur(6px)}
+.fuss{color:var(--muted);font-size:.8rem;text-align:center;margin-top:26px;line-height:1.6}
+.fuss a{color:inherit}
+/* Spiel */
+#buehne{position:fixed;inset:0;z-index:20;background:#000;display:flex;flex-direction:column;align-items:center;touch-action:none;user-select:none;-webkit-user-select:none}
+.leiste{display:flex;align-items:center;gap:10px;width:100%;max-width:520px;padding:calc(8px + env(safe-area-inset-top,0px)) 12px 6px}
+.leiste .titel{flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.leiste .zahl{font-variant-numeric:tabular-nums;font-weight:700;font-size:1.2rem}
+.leiste .rekord{font-size:.75rem;color:var(--muted);text-align:right;line-height:1.1}
+#rahmen{flex:1;width:100%;display:grid;place-items:center;min-height:0;position:relative}
+canvas{display:block;border-radius:14px;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 20px 60px rgba(0,0,0,.5)}
+.knoepfe{display:flex;gap:10px;justify-content:center;padding:8px 12px calc(12px + env(safe-area-inset-bottom,0px));width:100%;max-width:520px}
+.kn{flex:1;max-width:84px;height:58px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.08);font-size:1.4rem;cursor:pointer;touch-action:none}
+.kn:active,.kn.an{background:rgba(255,255,255,.2)}
+@media (pointer:fine){.knoepfe{display:none}}
+.schicht{position:absolute;inset:0;display:grid;place-items:center;background:rgba(5,5,15,.72);backdrop-filter:blur(3px);animation:auf .2s}
+@keyframes auf{from{opacity:0}}
+.box{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px;text-align:center;width:min(330px,88vw)}
+.box h2{margin:0 0 6px;font-size:1.5rem}
+.box p{color:var(--muted);margin:6px 0 14px;font-size:.92rem;line-height:1.45}
+.box .gross{font-size:3.2rem;font-weight:800;line-height:1.1;margin:6px 0}
+.box .rek{display:inline-block;background:linear-gradient(90deg,#ff8a3c,#e11d48);border-radius:999px;padding:4px 12px;font-weight:700;font-size:.85rem;margin-bottom:8px;animation:hopp .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes hopp{from{transform:scale(.4)}}
+.btn{display:block;width:100%;border:0;border-radius:14px;padding:13px;font-weight:700;cursor:pointer;margin-top:8px;background:rgba(255,255,255,.1)}
+.btn.haupt{background:linear-gradient(90deg,#ff8a3c,#e11d48);color:#fff}
+.wackel{animation:wackel .3s}
+@keyframes wackel{25%{transform:translate(-4px,2px)}50%{transform:translate(4px,-2px)}75%{transform:translate(-2px,-2px)}}
+</style>
+</head>
+<body>
+<script src="../../shared/intro.js"></script>
+<header class="kopf">
+  <a href="../" aria-label="Zurück zu den FLARESSA-Spielen"><img src="../../shared/marken/omnivia-zeichen.webp" alt="" width="40" height="21" style="width:40px;height:auto"></a>
+  <h1><b>FLARESSA</b> Arcade</h1>
+  <button class="kw-install" id="kwInstall" type="button" hidden>Als App installieren</button>
+  <button class="ico" id="tonKnopf" type="button" aria-label="Ton aus">🔊</button>
+</header>
+<main>
+  <div class="hallo"><div class="logo">ARCADE</div><p>Sechs schnelle Spiele. Einfach antippen und los.</p></div>
+  <div class="chips"><span>🚫 Keine Werbung</span><span>💸 Keine Käufe</span><span>📴 Spielt auch offline</span><span>🏆 Rekorde bleiben auf deinem Gerät</span></div>
+  <div class="raster" id="raster"></div>
+  <p class="fuss">Ein Spiel von FLARESSA Gaming · <a href="../../">OMNIVIA Group</a><br>Alle Spiele sind eigene Ideen im Stil alter Spielhallen-Klassiker.</p>
+</main>
+
+<section id="buehne" hidden aria-label="Spiel">
+  <div class="leiste">
+    <button class="ico" type="button" id="zurueck" aria-label="Zurück zum Menü">←</button>
+    <span class="titel" id="spielName"></span>
+    <span class="rekord" id="rekord"></span>
+    <span class="zahl" id="punkte" aria-live="off">0</span>
+    <button class="ico" type="button" id="pause" aria-label="Pause">⏸</button>
+  </div>
+  <div id="rahmen"><canvas id="lw" aria-label="Spielfeld"></canvas><div class="schicht" id="schicht" hidden></div></div>
+  <div class="knoepfe" id="knoepfe"></div>
+</section>
+
+<script src="../../shared/kw.js"></script>
+<script src="spiele.js"></script>
+<script src="arcade.js"></script>
+</body>
+</html>

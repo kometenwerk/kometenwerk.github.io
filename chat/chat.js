@@ -209,7 +209,7 @@
         '<div class="onb-fuss"><span></span><button class="btn primary" type="button" data-s="4">Ich hab ihn aufgeschrieben</button></div>';
     } else if (n === 4) {
       onb.gruppe = onb.gruppe || 2 + Math.floor(Math.random() * 3);
-      h = punkte(4) + '<h2 class="onb-titel">Kurzer Test ✍️</h2><p>Schau auf deinen Zettel: Wie lautet die <b>' + onb.gruppe + '. Vierergruppe</b> deines Codes?</p>' +
+      h = punkte(4) + '<h2 class="onb-titel">Kurzer Test ✍️</h2><p>Schau auf deinen Zettel: Wie lautet die <b>' + onb.gruppe + '. Vierergruppe</b> deines Codes?</p><p class="muted klein">Beispiel: Bei <code>K7PM-X4QA-9TRB-…</code> ist die 2. Gruppe <b>X4QA</b>.</p>' +
         '<input class="inp gross code-eingabe" id="oTest" maxlength="4" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="XXXX" aria-label="' + onb.gruppe + '. Vierergruppe">' +
         '<div class="fehler" id="oFehler" hidden></div>' +
         '<div class="onb-fuss"><button class="btn" type="button" data-s="3">Code nochmal zeigen</button><button class="btn primary" type="button" data-s="pruefen">Prüfen</button></div>';

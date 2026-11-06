@@ -198,3 +198,9 @@
   .org-zentrale{margin-bottom:12px}
   .org-panel{padding:14px}
 }
+.neu-apps .neu-app{text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:6px;transition:transform .2s,box-shadow .2s}
+.neu-apps .neu-app:hover{transform:translateY(-4px)}
+.neu-app .ico img{width:52px;height:52px;border-radius:14px;display:block}
+.neu-app h3{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.neu-st{font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--c);color:#fff}
+.neu-los{margin-top:auto;font-weight:600;color:var(--c)}

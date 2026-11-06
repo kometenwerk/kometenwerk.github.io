@@ -300,6 +300,24 @@
         "Ende-zu-Ende verschlüsselt",
         "Keine Fremden"
       ]
+    },
+    {
+      "id": "arcade",
+      "name": "FLARESSA Arcade",
+      "marke": "flaressa",
+      "farbe": "#e11d48",
+      "status": "fertig",
+      "pfad": "spiele/arcade/",
+      "bilder": [
+        "apps/bilder/arcade-1.webp",
+        "apps/bilder/arcade-2.webp",
+        "apps/bilder/arcade-3.webp"
+      ],
+      "punkte": [
+        "6 Retro-Spiele",
+        "Ohne Werbung",
+        "Mit Rekorden"
+      ]
     }
   ]
 }
