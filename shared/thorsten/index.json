@@ -2497,6 +2497,33 @@
    "dauer": 3.26,
    "hash": "454de83ad34c",
    "nr": 3
+  },
+  {
+   "id": "app-arcade-1",
+   "gruppe": "app_arcade",
+   "text": "Neu von FLARESSA: die Arcade! Sechs schnelle Spiele direkt im Browser.",
+   "datei": "ton/app-arcade-1.mp3",
+   "dauer": 3.85,
+   "hash": "6cef3cd522a9",
+   "nr": 1
+  },
+  {
+   "id": "app-arcade-2",
+   "gruppe": "app_arcade",
+   "text": "Klötzchen, Schlange, Ufos und Pong. Und alles ganz ohne Werbung!",
+   "datei": "ton/app-arcade-2.mp3",
+   "dauer": 3.88,
+   "hash": "f3a00e773214",
+   "nr": 2
+  },
+  {
+   "id": "app-arcade-3",
+   "gruppe": "app_arcade",
+   "text": "Knack meinen Rekord. Ich warte!",
+   "datei": "ton/app-arcade-3.mp3",
+   "dauer": 1.88,
+   "hash": "01363eb503ac",
+   "nr": 3
   }
  ]
 }
