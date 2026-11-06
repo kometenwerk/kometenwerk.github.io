@@ -73,6 +73,17 @@ ARTEN = [
 ]
 
 
+def schild_aus(tag):
+    """Erlaubte Geschwindigkeit laut Schild (0 = unbekannt) – für die Anzeige im Navi."""
+    v = tag.get("maxspeed", "")
+    m = re.match(r"^(\d+)", v)
+    if m:
+        z = int(m.group(1))
+        if "mph" in v: z = int(z * 1.609)
+        return max(5, min(200, z))
+    return {"DE:urban": 50, "de:urban": 50, "DE:rural": 100, "de:rural": 100, "DE:living_street": 7}.get(v, 0)
+
+
 def tempo_aus(tag, klasse, link):
     v = tag.get("maxspeed", "")
     m = re.match(r"^(\d+)", v)
@@ -217,7 +228,7 @@ class Leser(osmium.SimpleHandler):
         ah, ar, rh, rr, fu = zugang(t, hw)
         if not (ah or ar or rh or rr or fu): return
         link = hw.endswith("_link")
-        tempo = tempo_aus(t, k, link)
+        tempo = tempo_aus(t, k, link) | (schild_aus(t) << 8)  # unten: Rechentempo, oben: Schild
         b = 0
         if hw in ("residential", "living_street"): b |= B_WOHN
         if hw == "track" or (hw == "service" and t.get("service") in ("driveway", "alley")) or (t.get("width", "9").replace(",", ".").split(" ")[0].replace(".", "", 1).isdigit() and float(t.get("width", "9").replace(",", ".").split(" ")[0]) < 3): b |= B_ENG
@@ -345,7 +356,7 @@ def bauen(quelle, ziel):
 
     def schreiben(pfad, ids):
         namen, nidx = [], {}
-        to, ln, tla, tlo, gs, gc, nm, kl, fl, sp, f2 = ([] for _ in range(11))
+        to, ln, tla, tlo, gs, gc, nm, kl, fl, sp, f2, ms = ([] for _ in range(12))
         geo = []
         start = [0]
         for k in ids:
@@ -355,17 +366,17 @@ def bauen(quelle, ziel):
                 for la, lo in zw[:65535]: geo += [round(la * 1e6), round(lo * 1e6)]
                 if name not in nidx:
                     nidx[name] = len(namen); namen.append(name)
-                nm.append(min(nidx[name], 65535)); kl.append(kk); fl.append(bits); sp.append(min(tempo, 255)); f2.append(b2)
+                nm.append(min(nidx[name], 65535)); kl.append(kk); fl.append(bits); sp.append(min(tempo & 255, 255)); ms.append(tempo >> 8); f2.append(b2)
             start.append(len(to))
         n, m = len(ids), len(to)
         nb = json.dumps(namen, ensure_ascii=False, separators=(",", ":")).encode()
-        teile = [struct.pack("<4sIIII", b"KWN1", n, m, len(geo) // 2, len(nb))]
+        teile = [struct.pack("<4sIIII", b"KWN2", n, m, len(geo) // 2, len(nb))]
         def feld(fmt, werte):
             d = struct.pack("<%d%s" % (len(werte), fmt), *werte)
             return d + b"\0" * (-len(d) % 4)
         teile += [feld("I", ids), feld("i", [round(lat_von[k] * 1e6) for k in ids]), feld("i", [round(lon_von[k] * 1e6) for k in ids]), feld("I", start),
                   feld("I", to), feld("f", ln), feld("i", tla), feld("i", tlo), feld("I", gs), feld("H", gc), feld("H", nm),
-                  feld("B", kl), feld("B", fl), feld("B", sp), feld("B", f2), feld("i", geo), nb]
+                  feld("B", kl), feld("B", fl), feld("B", sp), feld("B", f2), feld("B", ms), feld("i", geo), nb]
         roh = b"".join(teile)
         with gzip.open(pfad, "wb", compresslevel=9) as f: f.write(roh)
         return os.path.getsize(pfad)

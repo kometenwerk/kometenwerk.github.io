@@ -16,7 +16,11 @@ export function vorbereiten(route) {
     }
     stellen.push(d[best]); ab = best;
   }
-  return { punkte: p, d, gesamt: d[d.length - 1], schritte: route.schritte, stellen, index: 0 };
+  // Tempo-Schilder entlang der Strecke (aus OpenStreetMap, 0 = unbekannt)
+  const schilder = [];
+  let acc = 0;
+  for (const t of route.teile || []) { acc += t.meter; schilder.push([acc, t.k.ms ? t.k.ms[t.e] : 0]); }
+  return { punkte: p, d, gesamt: d[d.length - 1], schritte: route.schritte, stellen, index: 0, schilder };
 }
 
 /** Wo auf der Route bin ich? { neben (m Abstand zur Linie), entlang (m ab Start), index, grad (Richtung der Route hier) } */
@@ -42,6 +46,17 @@ export function fortschritt(v, lat, lon) {
   b.grad = richtung(a[0], a[1], c[0], c[1]);
   b.rest = Math.max(0, v.gesamt - b.entlang);
   return b;
+}
+
+/** Erlaubtes Tempo an dieser Stelle (km/h) oder 0, wenn unbekannt. */
+export function tempoSchild(v, entlang) {
+  const l = v.schilder || [];
+  // Strecke der Teile und der Linie weichen leicht ab – auf die Gesamtlänge umrechnen
+  const faktor = l.length ? l[l.length - 1][0] / Math.max(1, v.gesamt) : 1;
+  const m = entlang * faktor;
+  let lo = 0, hi = l.length - 1;
+  while (lo < hi) { const mi = (lo + hi) >> 1; if (l[mi][0] < m) lo = mi + 1; else hi = mi; }
+  return l.length ? l[lo][1] : 0;
 }
 
 /** Nächste Abbiegung ab einer Stelle: { nr, schritt, bis } – oder null, wenn nur noch das Ziel kommt. */

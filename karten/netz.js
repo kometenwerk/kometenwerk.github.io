@@ -21,11 +21,11 @@ export function richtung(la1, lo1, la2, lo2) {
   return (Math.atan2(x, y) * 180 / Math.PI + 360) % 360;
 }
 
-/** Liest eine Netz-Datei (KWN1). */
+/** Liest eine Netz-Datei (KWN1, KWN2 = mit Tempo-Schildern). */
 export function netzLesen(buf) {
   const dv = new DataView(buf);
   const magie = String.fromCharCode(dv.getUint8(0), dv.getUint8(1), dv.getUint8(2), dv.getUint8(3));
-  if (magie !== "KWN1") throw new Error("Keine Netz-Datei");
+  if (magie !== "KWN1" && magie !== "KWN2") throw new Error("Keine Netz-Datei");
   const n = dv.getUint32(4, true), m = dv.getUint32(8, true), g = dv.getUint32(12, true), nb = dv.getUint32(16, true);
   let o = 20;
   const feld = (Typ, anzahl) => {
@@ -39,6 +39,7 @@ export function netzLesen(buf) {
     to: feld(Uint32Array, m), len: feld(Float32Array, m), tla: feld(Int32Array, m), tlo: feld(Int32Array, m),
     gs: feld(Uint32Array, m), gc: feld(Uint16Array, m), nm: feld(Uint16Array, m),
     kl: feld(Uint8Array, m), fl: feld(Uint8Array, m), sp: feld(Uint8Array, m), f2: feld(Uint8Array, m),
+    ms: magie === "KWN2" ? feld(Uint8Array, m) : new Uint8Array(m),
     geo: feld(Int32Array, 2 * g),
   };
   k.namen = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, o, nb)));
@@ -106,6 +107,27 @@ class Haufen {
     }
     return [tf, top];
   }
+}
+
+/** Echte Fahrzeit einer Kante in Sekunden – ohne Vorlieben wie „ruhige Wege“. */
+export function fahrzeit(k, e, modus) {
+  const fl = k.fl[e], kl = k.kl[e], f2 = k.f2[e], len = k.len[e], ampeln = f2 >> 4;
+  if (modus === "auto") {
+    let t = len / (Math.max(5, k.sp[e]) / 3.6);
+    if (fl & BIT.UNBEF) t *= 1.5;
+    if (kl === 8) t *= 1.3;
+    if (kl >= 2) t += 4;
+    return t + ampeln * 15;
+  }
+  if (modus === "rad") {
+    let t = len / (16 / 3.6);
+    if (f2 & BIT2.TREPPE) t *= 6;
+    if (fl & BIT.UNBEF) t *= 1.2;
+    return t + ampeln * 12;
+  }
+  let t = len / (4.8 / 3.6) + ampeln * 15;
+  if (f2 & BIT2.TREPPE) t *= 1.4;
+  return t;
 }
 
 /** Kosten einer Kante in Sekunden (Infinity = verboten). */
@@ -257,6 +279,7 @@ export class Netz {
         if (m === Infinity) return m;
         c += m;
       }
+      if (opt.strafe) { const f = opt.strafe.get(k.ids[i] * 2097152 + k.to[e]); if (f) c *= f; }
       return c;
     };
 
@@ -324,7 +347,33 @@ export class Netz {
       }
     }
     if (bestKnoten === null) return { fehler: "weg", schritte };
-    return this.zusammenbauen(s, z, bestKnoten, bestWert, zurueck, zielRest, { schritte, geladen, gerade, modus });
+    const r = this.zusammenbauen(s, z, bestKnoten, bestWert, zurueck, zielRest, { schritte, geladen, gerade, modus });
+    r.kosten = bestWert;
+    const echt = this.restKosten(r, 0, { modus, meldungen: opt.meldungen });
+    r.sekunden = Number.isFinite(echt) ? echt : bestWert;   // angezeigt wird die echte Fahrzeit
+    return r;
+  }
+
+  /**
+   * Bis zu „anzahl“ wirklich verschiedene Routen. Trick: Straßen der schon gefundenen Routen
+   * werden für die nächste Suche teurer gemacht, dann sucht der Planer einen anderen Weg.
+   */
+  async alternativen(von, nach, opt = {}, anzahl = 3) {
+    const erste = await this.route(von, nach, opt);
+    if (erste.fehler) return [erste];
+    const routen = [erste], strafe = new Map();
+    const merken = r => { for (const t of r.teile) { const a = t.k.ids[t.i], b = t.k.to[t.e]; for (const x of [a * 2097152 + b, b * 2097152 + a]) strafe.set(x, (strafe.get(x) || 1) * 1.8); } };
+    merken(erste);
+    for (let versuch = 0; versuch < anzahl + 2 && routen.length < anzahl; versuch++) {
+      const r = await this.route(von, nach, { ...opt, strafe });
+      if (r.fehler) break;
+      merken(r);
+      if (r.sekunden > erste.sekunden * 1.6 + 180) continue;           // viel zu langsam
+      if (routen.some(x => gemeinsam(x, r) > 0.72)) continue;           // fast gleich
+      routen.push(r);
+    }
+    routen.sort((a, b) => a.sekunden - b.sekunden);
+    return routen;
   }
 
   /** Wie lange dauert der Rest einer schon berechneten Route – mit den aktuellen Meldungen? */
@@ -334,7 +383,7 @@ export class Netz {
       const ende = acc + t.meter;
       if (ende > entlang) {
         const anteil = t.meter ? Math.min(1, (ende - entlang) / t.meter) : 1;
-        const c = kosten(t.k, t.e, opt.modus || "auto", opt);
+        const c = (t.k.fl[t.e] & MODUS_BIT[opt.modus || "auto"]) ? fahrzeit(t.k, t.e, opt.modus || "auto") : Infinity;
         const m = (opt.modus || "auto") === "auto" ? this.meldungsKosten(t.k, t.e, opt.meldungen, t.i ?? -1) : 0;
         if (c === Infinity || m === Infinity) return Infinity;
         sek += c * anteil + m;
@@ -375,6 +424,38 @@ export class Netz {
 }
 
 function name(t) { return t.k.namen[t.k.nm[t.e]] || ""; }
+
+/** Anteil der Strecke von b, der auch in a vorkommt (0..1). */
+export function gemeinsam(a, b) {
+  const set = new Set();
+  for (const t of a.teile) set.add(t.k.ids[t.i] * 2097152 + t.k.to[t.e]);
+  let g = 0, alle = 0;
+  for (const t of b.teile) { alle += t.meter; if (set.has(t.k.ids[t.i] * 2097152 + t.k.to[t.e])) g += t.meter; }
+  return alle ? g / alle : 1;
+}
+
+/** Kurze Beschreibung, wodurch sich eine Route von der schnellsten unterscheidet. */
+export function unterschied(r, beste, alle) {
+  if (r === beste) return "Schnellste";
+  const teile = [];
+  const kurz = alle.reduce((a, x) => (x.meter < a.meter ? x : a), alle[0]);
+  const autobahnB = beste.teile.some(t => t.k.kl[t.e] === 0), autobahnR = r.teile.some(t => t.k.kl[t.e] === 0);
+  if (autobahnB && !autobahnR) teile.push("ohne Autobahn");
+  if (r === kurz && r.meter < beste.meter - 300) teile.push("kürzeste Strecke");
+  const mass = x => { let m = 0, rw = 0, ub = 0, am = 0, li = 0, wohn = 0;
+    for (const t of x.teile) { const fl = t.k.fl[t.e]; m += t.meter; if (fl & BIT.RADWEG) rw += t.meter; if (fl & BIT.UNBEF) ub += t.meter; if (fl & BIT.LICHT) li += t.meter; if (fl & BIT.WOHN) wohn += t.meter; am += t.k.f2[t.e] >> 4; }
+    return { rw: rw / m, ub: ub / m, li: li / m, wohn: wohn / m, am }; };
+  const a = mass(r), b = mass(beste), modus = r.info?.modus;
+  if (modus === "rad" && a.rw > b.rw + 0.12) teile.push("mehr Radwege");
+  if (modus !== "auto" && a.ub < b.ub - 0.12) teile.push("weniger Schotter");
+  if (modus === "fuss" && a.li > b.li + 0.15) teile.push("heller beleuchtet");
+  if (modus !== "fuss" && a.am + 2 < b.am) teile.push("weniger Ampeln");
+  if (modus === "auto" && a.wohn + 0.1 < b.wohn) teile.push("weniger Wohngebiet");
+  const bekannt = new Set(beste.strassen.map(s => s.name));
+  const neu = r.strassen.find(s => !bekannt.has(s.name));
+  if (neu) teile.push(`über ${neu.name}`);
+  return teile.join(" · ") || "anderer Weg";
+}
 
 /** Fasst gleiche Straßen zusammen und beschreibt die Abbiegungen. */
 export function anweisungen(teile, modus = "auto") {
