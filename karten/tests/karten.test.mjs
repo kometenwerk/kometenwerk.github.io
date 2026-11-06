@@ -204,7 +204,8 @@ test("Ansagen für Kreisverkehr, Ampel, Seitenstraße und danach", () => {
   assert.equal(ansage2({ typ: "kreisel", ausfahrt: 2, name: "B 3" }, 200), "In 200 Metern in den Kreisverkehr, dann die zweite Ausfahrt auf B 3.");
   assert.equal(ansage2({ typ: "kreisel", ausfahrt: 3, name: "" }, 10), "Im Kreisverkehr die dritte Ausfahrt nehmen.");
   assert.equal(ansage2({ typ: "abbiegen", dreh: 90, ampel: true, name: "Hauptstraße" }, 300), "In 300 Metern an der Ampel rechts abbiegen auf Hauptstraße.");
-  assert.equal(ansage2({ typ: "abbiegen", dreh: -90, ordinal: 2, name: "Bachweg" }, 100), "In 100 Metern die zweite Straße links auf Bachweg.");
+  assert.equal(ansage2({ typ: "abbiegen", dreh: -90, ordinal: 2, name: "Bachweg" }, 200), "In 200 Metern die zweite Straße links auf Bachweg.");
+  assert.equal(ansage2({ typ: "abbiegen", dreh: -90, ordinal: 2, name: "Bachweg" }, 40), "In 40 Metern links abbiegen auf Bachweg.");
   assert.equal(ansage2({ typ: "abbiegen", dreh: 90, bei: { art: "Tankstelle" }, name: "" }, 50, { typ: "abbiegen", dreh: -90 }), "In 50 Metern bei der Tankstelle rechts abbiegen. Danach gleich links.");
   assert.equal(ansage2({ typ: "abfahrt", name: "die Abfahrt Freiburg-Mitte", richtungZiel: "Titisee" }, 1000), "In 1 Kilometer die Abfahrt Freiburg-Mitte nehmen, Richtung Titisee.");
   assert.equal(pfeilVon({ typ: "kreisel" }), "⟳");
