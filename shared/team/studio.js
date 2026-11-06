@@ -658,7 +658,7 @@
         g.save(); g.globalAlpha = (1 - raus) * bt; g.translate(bx + vor + cw / 2, ty + (1 - easeOut(bt)) * 30 * k); schrift(g, name[b], 0, 0, "#ffffff", 10 * k); g.restore();
       }
       var st = Math.max(0, Math.min(1, (tt - 0.5) / 0.4));
-      if (st) { g.globalAlpha = (1 - raus) * st; g.font = "600 " + Math.round((hoch ? 46 : 30) * k / (hoch ? 1.35 : 1)) + "px 'Space Grotesk', Arial, sans-serif"; g.fillStyle = "#ff8a3c"; g.fillText("KI-YOUTUBER · OMNIVIA", cx, ty + (hoch ? 110 : 70) * k / (hoch ? 1.35 : 1)); }
+      if (st) { g.globalAlpha = (1 - raus) * st; g.font = "600 " + Math.round((hoch ? 46 : 30) * k / (hoch ? 1.35 : 1)) + "px 'Space Grotesk', Arial, sans-serif"; g.fillStyle = "#ff8a3c"; g.fillText("KI-YOUTUBER · OMNIVIA GROUP", cx, ty + (hoch ? 110 : 70) * k / (hoch ? 1.35 : 1)); }
     }
     g.restore();
   }
@@ -742,7 +742,7 @@
     if (seg.art === "hook") {
       var s = 420 * (0.7 + 0.3 * rein); avatar(g, W / 2 - s / 2, 520 - (1 - rein) * 200, s, z.mund || 0, t, true);
       g.font = "900 110px 'Space Grotesk', Arial, sans-serif"; g.save(); g.translate(W / 2, 1140); g.rotate(-0.05); g.scale(rein, rein); schrift(g, bald ? "PSST! 🤫" : "NEU? 👀", 0, 0, "#ffcf33", 16); g.restore();
-      g.font = "700 56px 'Space Grotesk', Arial, sans-serif"; g.globalAlpha = rein; schrift(g, bald ? "Bald bei OMNIVIA:" : "Kennst du schon …", W / 2, 1270, "#ffffff", 8); g.globalAlpha = 1;
+      g.font = "700 56px 'Space Grotesk', Arial, sans-serif"; g.globalAlpha = rein; schrift(g, bald ? "Bald bei der OMNIVIA Group:" : "Kennst du schon …", W / 2, 1270, "#ffffff", 8); g.globalAlpha = 1;
     } else if (seg.art === "name") {
       var sk = 0.6 + 0.4 * rein;
       g.save(); g.translate(W / 2, 760); g.scale(sk, sk);
@@ -941,14 +941,14 @@
     var tier = st.tiere[0] || "Zufallstier";
     var titel, beschreibung, tags, dateiName = "thorsten-zockt-";
     if (z.spiel === "werbung") {
-      var ap = z.appDaten || { name: "OMNIVIA", pfad: "", punkte: [] }, bald = ap.status === "bald", link = "https://kometenwerk.github.io/" + (ap.pfad || "");
+      var ap = z.appDaten || { name: "OMNIVIA Group", pfad: "", punkte: [] }, bald = ap.status === "bald", link = "https://kometenwerk.github.io/" + (ap.pfad || "");
       dateiName = "thorsten-werbung-" + (ap.id || "app") + "-";
       titel = bald ? ap.name + " – bald verfügbar! 🚀 #Shorts" : ap.name + ": kostenlos & ohne Werbung ✨ #Shorts";
-      beschreibung = (bald ? "Vorschau: " + ap.name + " ist bei OMNIVIA in Entwicklung. Noch gibt es keine fertige App – im Video siehst du nur die Idee, keine echten Spielszenen.\n" : "Thorsten stellt " + ap.name + " vor – kostenlos, ohne Werbung, direkt im Browser.\n") +
+      beschreibung = (bald ? "Vorschau: " + ap.name + " ist bei der OMNIVIA Group in Entwicklung. Noch gibt es keine fertige App – im Video siehst du nur die Idee, keine echten Spielszenen.\n" : "Thorsten stellt " + ap.name + " vor – kostenlos, ohne Werbung, direkt im Browser.\n") +
         (ap.punkte && ap.punkte.length ? "• " + ap.punkte.join("\n• ") + "\n" : "") +
-        "\n" + (bald ? "🌐 Mehr von OMNIVIA: https://kometenwerk.github.io" : "👉 Ausprobieren: " + link + "\n🌐 Mehr von OMNIVIA: https://kometenwerk.github.io") + "\n\n" +
+        "\n" + (bald ? "🌐 Mehr von der OMNIVIA Group: https://kometenwerk.github.io" : "👉 Ausprobieren: " + link + "\n🌐 Mehr von der OMNIVIA Group: https://kometenwerk.github.io") + "\n\n" +
         "ℹ️ Werbung in eigener Sache: " + ap.name + " ist ein Projekt der OMNIVIA Group. Thorsten ist eine KI-Figur, seine Stimme eine Computerstimme (Piper „Thorsten“, CC0). Musik selbst erzeugt.";
-      tags = ap.name + ", OMNIVIA, App, kostenlos, werbefrei, Thorsten, KI, Shorts";
+      tags = ap.name + ", OMNIVIA Group, App, kostenlos, werbefrei, Thorsten, KI, Shorts";
     } else if (z.spiel !== "krawallzoo") {
       var stadt = z.tier || "Horizonte", ew = st.einwohner || 0, bau = z.spiel === "bauen";
       dateiName = bau ? "thorsten-baut-" : "thorsten-zeigt-";
@@ -958,24 +958,24 @@
         : st.probleme.indexOf("stau") >= 0 && bau ? "Thorsten baut eine Stadt – und versinkt im Stau! 🚗 (Horizonte, KI-Städtebau)"
         : bau ? "Thorsten baut eine Stadt in Horizonte – von leerem Land" + (ew ? " zu " + ew + " Einwohnern" : " zur Stadt") + "! (KI-Städtebau)"
           : "Thorsten zeigt seine Stadt in Horizonte – " + (st.momente.indexOf("nacht") >= 0 ? "Rundflug bei Tag und Nacht" : "der große Rundflug") + " (KI-Städtebau)";
-      beschreibung = "Thorsten – der KI-YouTuber von OMNIVIA – " + (bau ? "baut eine Stadt in Horizonte, von leerem Land bis zur lebendigen Stadt im Zeitraffer" : "zeigt seine Stadt „" + stadt + "“ in Horizonte") + ".\n" +
+      beschreibung = "Thorsten – der KI-YouTuber der OMNIVIA Group – " + (bau ? "baut eine Stadt in Horizonte, von leerem Land bis zur lebendigen Stadt im Zeitraffer" : "zeigt seine Stadt „" + stadt + "“ in Horizonte") + ".\n" +
         (ew ? "Einwohner am Ende: " + ew + ".\n" : "") +
         (st.probleme.length ? "Unterwegs ging auch was schief (" + st.probleme.map(function (x) { return { brand: "Feuer", stau: "Stau", strom: "Stromausfall", wasser: "Wassermangel", abwasser: "Abwasser", muell: "Müll", wegzug: "Wegzug", krimi: "Kriminalität", krank: "Kranke" }[x] || x; }).join(", ") + ") – " + (st.geloest.length ? "Thorsten hat " + st.geloest.length + " davon selbst repariert." : "ganz retten konnte Thorsten es nicht.") + "\n" : "") +
-        "\n🏙️ Horizonte kostenlos im Browser spielen: https://kometenwerk.github.io/spiele/horizonte/\n🌐 Mehr von OMNIVIA: https://kometenwerk.github.io\n\n" +
+        "\n🏙️ Horizonte kostenlos im Browser spielen: https://kometenwerk.github.io/spiele/horizonte/\n🌐 Mehr von der OMNIVIA Group: https://kometenwerk.github.io\n\n" +
         "ℹ️ Thorsten ist eine KI-Figur, kein echter Mensch. Seine Stimme ist eine Computerstimme (Piper-Sprachmodell „Thorsten“ von Thorsten-Voice, CC0). " +
         (bau ? "Gebaut wird nach einem automatischen Bauplan. " : "") + "Horizonte ist ein Spiel von FLARESSA Gaming (OMNIVIA Group).";
-      tags = "Horizonte, Städtebau, City Builder, Thorsten, KI, Browserspiel, OMNIVIA, FLARESSA" + (kurz ? ", Shorts" : "");
+      tags = "Horizonte, Städtebau, City Builder, Thorsten, KI, Browserspiel, OMNIVIA Group, FLARESSA" + (kurz ? ", Shorts" : "");
     } else {
     titel = kurz
       ? (st.siege ? "Thorsten gewinnt mit dem " + tier + "! 🏆 #Shorts" : st.kos ? "Erwischt! Thorstens " + tier + " räumt auf 😂 #Shorts" : "Krawallzoo-Chaos in " + Math.round(z.dauer) + " Sekunden 😂 #Shorts")
       : "Thorsten zockt Krawallzoo – " + (z.modusName || "Zoo-Chaos") + (st.siege ? ", " + st.siege + (st.siege === 1 ? " Sieg" : " Siege") + "!" : " mit dem " + tier + "!") + " (KI-Let's-Play)";
     beschreibung =
-      "Thorsten – der KI-YouTuber von OMNIVIA – zockt " + (z.modusName || "Krawallzoo") + " in Krawallzoo.\n" +
+      "Thorsten – der KI-YouTuber der OMNIVIA Group – zockt " + (z.modusName || "Krawallzoo") + " in Krawallzoo.\n" +
       (st.runden ? "In diesem Video: " + st.runden + (st.runden === 1 ? " Runde" : " Runden") + ", " + st.siege + (st.siege === 1 ? " Sieg" : " Siege") + " und " + st.kos + " K.O.s von Thorstens " + (st.tiere.length > 1 ? "Tieren (" + st.tiere.join(", ") + ")" : tier) + ".\n" : "") +
-      "\n🎮 Krawallzoo kostenlos im Browser spielen: https://kometenwerk.github.io/Krawallzoo/\n🌐 Mehr von OMNIVIA: https://kometenwerk.github.io\n\n" +
+      "\n🎮 Krawallzoo kostenlos im Browser spielen: https://kometenwerk.github.io/Krawallzoo/\n🌐 Mehr von der OMNIVIA Group: https://kometenwerk.github.io\n\n" +
       "ℹ️ Thorsten ist eine KI-Figur, kein echter Mensch. Seine Stimme ist eine Computerstimme (Piper-Sprachmodell „Thorsten“ von Thorsten-Voice, CC0). " +
       "Alle Tiere werden von Computer-Gegnern (Bots) gesteuert. Krawallzoo ist ein Spiel von FLARESSA Gaming (OMNIVIA Group).";
-    tags = "Krawallzoo, Lets Play, Thorsten, KI, Browserspiel, Tiere, OMNIVIA, FLARESSA" + (kurz ? ", Shorts" : "");
+    tags = "Krawallzoo, Lets Play, Thorsten, KI, Browserspiel, Tiere, OMNIVIA Group, FLARESSA" + (kurz ? ", Shorts" : "");
     }
     vorschaubild(z).then(function (bild) {
       if (ergebnis) { URL.revokeObjectURL(ergebnis.url); if (ergebnis.vorschauUrl) URL.revokeObjectURL(ergebnis.vorschauUrl); }

@@ -454,8 +454,8 @@
       var fr = T.firmen[r.firma];
       return "Du bist " + r.name + ", eine KI-Rolle im Team von " + fr.voll + " (Teil der OMNIVIA Group). Deine Aufgabe: " + r.rolle + " (Abteilung " + r.abt + "). " +
         (r.achtet && r.achtet.length ? "Du achtest besonders auf: " + r.achtet.join("; ") + ". " : "") +
-        "Der Chef von OMNIVIA ist ein junger Gründer; sprich ihn mit du an. Antworte auf Deutsch, freundlich und konkret, in höchstens 5 kurzen Sätzen. " +
-        "Regeln: OMNIVIA ist sicher, ehrlich und werbefrei. Alles soll kostenlos bleiben (GitHub Pages, Firebase Spark). Erfinde keine Fakten, Preise oder Testergebnisse; sag ehrlich, wenn du etwas nicht weißt. " +
+        "Der Chef der OMNIVIA Group ist ein junger Gründer; sprich ihn mit du an. Antworte auf Deutsch, freundlich und konkret, in höchstens 5 kurzen Sätzen. " +
+        "Regeln: Die OMNIVIA Group ist sicher, ehrlich und werbefrei. Alles soll kostenlos bleiben (GitHub Pages, Firebase Spark). Erfinde keine Fakten, Preise oder Testergebnisse; sag ehrlich, wenn du etwas nicht weißt. " +
         "Keine Geheimnisse, Passwörter oder Schlüssel in den Chat. Du bist eine KI und gibst dich nicht als Mensch aus. Bleib in deinem Fachgebiet und nenne sonst, wer zuständig ist. " +
         (r.abt === "Werbung" ? "Wenn es um ein Video für YouTube geht, schreib am Ende drei eigene Zeilen: 'Titel: …' (höchstens 70 Zeichen), 'Beschreibung: …' (2 ehrliche Sätze) und 'Tags: …' (5 Wörter mit Komma). Der Chef lädt das Video selbst hoch, es ist zuerst privat. " : "") + (zusatz || "");
     }
@@ -929,7 +929,7 @@
           : '<div class="feld"><label for="ytDatei">Videodatei</label><input id="ytDatei" type="file" accept="video/*" required></div>') +
         '<div class="feld"><label for="ytTitel">Titel <small id="ytTitelZ" style="float:right"></small></label><input id="ytTitel" required maxlength="100" placeholder="z. B. Kometen-Quiz: Vokabeln lernen in 30 Sekunden" value="' + esc(v.titel) + '"></div>' +
         '<div class="feld"><label for="ytBeschr">Beschreibung <small id="ytBeschrZ" style="float:right"></small></label><textarea id="ytBeschr" rows="6" maxlength="4800">' + esc(v.beschreibung) + '</textarea></div>' +
-        '<div class="feld"><label for="ytTags">Tags (mit Komma getrennt)</label><input id="ytTags" maxlength="480" value="' + esc(v.tags) + '" placeholder="z. B. App, Programmieren, OMNIVIA"></div>' +
+        '<div class="feld"><label for="ytTags">Tags (mit Komma getrennt)</label><input id="ytTags" maxlength="480" value="' + esc(v.tags) + '" placeholder="z. B. App, Programmieren, OMNIVIA Group"></div>' +
         '<fieldset class="feld yt-wahl"><legend>Ist das Video speziell für Kinder gemacht?</legend>' +
         '<label><input type="radio" name="ytKind" value="nein" required> Nein, für alle</label><label><input type="radio" name="ytKind" value="ja"> Ja, speziell für Kinder</label>' +
         '<small>Das verlangt YouTube bei jedem Video. Bei „Ja“ sind z. B. Kommentare aus.</small></fieldset>' +
