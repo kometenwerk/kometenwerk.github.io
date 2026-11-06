@@ -24,4 +24,7 @@ Navigation: „Los“ folgt dem GPS, sagt Abbiegungen an (Ansagen abschaltbar), 
 umplant (von der Route abgekommen: Neuberechnung nach 10 s, wenn du nichts sagst; neue Staus: nur auf Nachfrage).
 „Probefahrt“ fährt die Route im Zeitraffer ab. Ampeln aus OSM kosten je ca. 15 s.
 
+Routenwahl: bis zu 3 wirklich verschiedene Routen (Straßen der ersten Route werden für die nächste Suche teurer).
+Zuhause, Schule und die letzten Ziele bleiben nur auf dem Gerät. Im Navi zeigt ein Schild das erlaubte Tempo (aus OSM).
+
 Kartendaten © OpenStreetMap-Mitwirkende (ODbL 1.0). Verkehrsdaten: Autobahn GmbH des Bundes.
