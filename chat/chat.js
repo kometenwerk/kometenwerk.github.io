@@ -582,7 +582,8 @@
     return (kontakte[cid] && kontakte[cid].name) || (m && m.name) || "Jemand";
   }
   function farbeVon(chat, cid) { var g = kontakte[chat], m = g && g.mitglieder && g.mitglieder[cid]; return (kontakte[cid] && kontakte[cid].farbe) || (m && m.farbe) || "#6d3fd6"; }
-  function vorschauText(n) { return n.art === "bild" ? "📷 Foto" + (n.text ? ": " + n.text : "") : n.art === "ton" ? "🎤 Sprachnachricht" : n.art === "info" ? n.text : n.text; }
+  function groesse(b) { return b > 1048576 ? (b / 1048576).toFixed(1).replace(".", ",") + " MB" : Math.max(1, Math.round(b / 1024)) + " KB"; }
+  function vorschauText(n) { return n.art === "bild" ? "📷 Foto" + (n.text ? ": " + n.text : "") : n.art === "ton" ? "🎤 Sprachnachricht" : n.art === "datei" ? "📄 " + (n.name || "Datei") : n.art === "info" ? n.text : n.text; }
   function dauerText(s) { s = Math.round(s || 0); return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2); }
 
   var gezeigt = {};
@@ -604,6 +605,7 @@
       if (k.gruppe && !mein && anfang) innen += '<span class="absender" style="color:' + esc(farbeVon(aktiv, n.von)) + '">' + esc(nameVon(aktiv, n.von)) + "</span>";
       if (n.r) innen += '<span class="zitat" data-zu="' + esc(n.r) + '"><b>' + esc(n.rv === ich.cid ? "Du" : nameVon(aktiv, n.rv)) + "</b>" + esc(String(n.rt || "").slice(0, 120)) + "</span>";
       if (n.art === "bild") innen += '<span class="foto" data-datei="' + esc(n.datei) + '" style="aspect-ratio:' + (n.vh ? (1 / n.vh).toFixed(3) : "1") + '">' + (n.vorschau && bildSicher(n.vorschau) ? '<img class="unscharf" src="' + n.vorschau + '" alt="">' : "") + "</span>";
+      if (n.art === "datei") innen += '<span class="dok" data-datei="' + esc(n.datei) + '" data-name="' + esc(n.name || "Datei") + '"><span class="dok-i" aria-hidden="true">📄</span><span class="dok-t"><b>' + esc(n.name || "Datei") + "</b><small>" + groesse(n.groesse || 0) + " · antippen zum Öffnen</small></span></span>";
       if (n.art === "ton") innen += '<span class="ton" data-datei="' + esc(n.datei) + '"><button type="button" class="spielen" aria-label="Abspielen">▶</button><span class="welle"><span class="lauf"></span></span><span class="zeit">' + dauerText(n.dauer) + "</span></span>";
       if (n.text) innen += '<span class="txt">' + esc(n.text) + "</span>";
       innen += '<span class="fuss">' + (n.weg ? "⏱️ " : "") + uhr(n.zeit) + (st ? " " + st : "") + "</span>";
@@ -660,6 +662,7 @@
     var zitat = e.target.closest(".zitat"); if (zitat) { var ziel = $("verlauf").querySelector('[data-id="' + CSS.escape(zitat.dataset.zu) + '"]'); if (ziel) { ziel.scrollIntoView({ block: "center", behavior: "smooth" }); ziel.classList.add("blink"); setTimeout(function () { ziel.classList.remove("blink"); }, 1200); } return; }
     var ton = e.target.closest(".ton"); if (ton && e.target.closest(".spielen")) { tonSpielen(ton); return; }
     var foto = e.target.closest(".foto"); if (foto) { bildZeigen(foto.dataset.datei); return; }
+    var dok = e.target.closest(".dok"); if (dok) { dateiUrl(dok.dataset.datei).then(function (u) { if (!u) { KW.toast("Die Datei wird noch geladen …"); return; } var a = document.createElement("a"); a.href = u; a.download = dok.dataset.name; document.body.appendChild(a); a.click(); a.remove(); }); return; }
     var b = e.target.closest(".blase"); if (!b) return;
     var n = (nachrichten[aktiv] || []).filter(function (x) { return x.id === b.dataset.id; })[0]; if (!n) return;
     if (n.st === -1) { n.st = 0; speichereNachricht(n); verlauf(); zustellen(n); return; }
@@ -757,7 +760,7 @@
         if (!d) throw new Error("Die Datei fehlt.");
         if (!n.dk) { var enc = await K.dateiZu(d.blob); n.dk = enc.k; n.div = enc.iv; n.dct = enc.ct; }
         inhalt.art = n.art; inhalt.f = n.datei; inhalt.k = n.dk; inhalt.iv = n.div; inhalt.mime = d.blob.type;
-        if (n.vorschau) inhalt.vs = n.vorschau; if (n.vh) inhalt.vh = n.vh; if (n.dauer) inhalt.dauer = n.dauer;
+        if (n.vorschau) inhalt.vs = n.vorschau; if (n.vh) inhalt.vh = n.vh; if (n.dauer) inhalt.dauer = n.dauer; if (n.name) { inhalt.name = n.name; inhalt.groesse = n.groesse; }
       }
       for (var i = 0; i < an.length; i++) {
         try {
@@ -774,7 +777,18 @@
   }
 
   /* Fotos */
-  $("anhang").onclick = function () { $("fotoWahl").click(); };
+  $("anhang").onclick = function () {
+    oeffne('<h2>Was willst du schicken?</h2><div class="menue"><button class="btn" type="button" data-w="foto">📷 Foto</button><button class="btn" type="button" data-w="datei">📄 Datei (PDF, Dokument, …)</button></div><p class="muted klein">Alles wird verschlüsselt verschickt und nach dem Abholen vom Server gelöscht. Dateien bis 2 MB.</p><div class="sheet-foot"><button class="btn" type="button" data-w="zu">Abbrechen</button></div>',
+      function (w) { w.onclick = function (e) { var b = e.target.closest("[data-w]"); if (!b) return; zu(); if (b.dataset.w === "foto") $("fotoWahl").click(); else if (b.dataset.w === "datei") $("dateiWahl").click(); }; });
+  };
+  $("dateiWahl").onchange = async function () {
+    var f = this.files && this.files[0]; this.value = ""; if (!f || !aktiv || !B) return;
+    if (f.size > 2 * 1048576) { KW.toast("Die Datei ist zu groß (höchstens 2 MB)."); return; }
+    var n = neueNachricht({ art: "datei", datei: K.id(12), name: String(f.name || "Datei").replace(/[\\/:*?"<>|]/g, "_").slice(0, 80), groesse: f.size, text: feld.value.trim().slice(0, 1000) });
+    feld.value = ""; knopfAnpassen();
+    await L.leg("dateien", { id: n.datei, blob: f });
+    speichereNachricht(n); verlauf(true); zustellen(n);
+  };
   $("fotoWahl").onchange = async function () {
     var f = this.files && this.files[0]; this.value = ""; if (!f || !aktiv || !B) return;
     try {
@@ -857,7 +871,8 @@
     if (inhalt) {
       if (typeof inhalt.r === "string") { n.r = inhalt.r; n.rv = String(inhalt.rv || ""); n.rt = String(inhalt.rt || "").slice(0, 120); }
       if (inhalt.w && TIMER[inhalt.w]) { n.w = inhalt.w; n.weg = Date.now() + inhalt.w * 1000; }
-      if ((inhalt.art === "bild" || inhalt.art === "ton") && /^[a-f0-9]{24}$/.test(inhalt.f || "")) {
+      if ((inhalt.art === "bild" || inhalt.art === "ton" || inhalt.art === "datei") && /^[a-f0-9]{24}$/.test(inhalt.f || "")) {
+        if (inhalt.art === "datei") { n.name = String(inhalt.name || "Datei").replace(/[\\/:*?"<>|]/g, "_").slice(0, 80); n.groesse = +inhalt.groesse || 0; }
         n.art = inhalt.art; n.datei = inhalt.f; n.vorschau = bildSicher(inhalt.vs) || null; n.vh = +inhalt.vh || null; n.dauer = +inhalt.dauer || 0;
         dateiHolen(n, inhalt);
       }
@@ -935,7 +950,7 @@
   }, 20000);
 
   /* ---------- FIDELIA Circle: gemeinsame Listen (Einkauf, Aufgaben) in jedem Chat ---------- */
-  var LISTEN = { einkauf: "🛒 Einkauf", aufgabe: "✅ Aufgaben" }, listenArt = "einkauf";
+  var LISTEN = { einkauf: "🛒 Einkauf", aufgabe: "✅ Aufgaben", teilen: "🎁 Verschenken" }, listenArt = "einkauf";
   function listeVon(c) { var k = kontakte[c]; if (!k) return {}; k.listen = k.listen || {}; return k.listen; }
   function listeOffen(c) { var l = listeVon(c); return Object.keys(l).filter(function (i) { return !l[i].weg && !l[i].ok; }).length; }
   function listenKnopf() { var b = $("chatListen"); if (!b) return; var k = kontakte[aktiv]; b.hidden = !k || k.status !== "ok"; var n = k ? listeOffen(aktiv) : 0; b.innerHTML = "📋" + (n ? '<span class="mini-zahl">' + n + "</span>" : ""); }
@@ -959,7 +974,7 @@
         w.querySelector("#listeZu").onclick = zu;
         w.querySelector("#listeNeu").onsubmit = function (e) { e.preventDefault(); var f = w.querySelector("#listeText"), t = f.value.trim(); if (!t) return; f.value = ""; listeAendern(aktiv, { id: K.id(8), t: t, art: listenArt, ok: false }).then(listenMalen); listenMalen(); };
         w.querySelector("#listeAufr").onclick = function () { var l = listeVon(aktiv); Object.keys(l).forEach(function (i) { if (l[i].ok && !l[i].weg) { var x = Object.assign({}, l[i], { weg: true }); listeAendern(aktiv, x); } }); setTimeout(listenMalen, 50); };
-        w.querySelector("#listenReiter").onclick = function (e) { var b = e.target.closest("[data-l]"); if (b) { listenArt = b.dataset.l; listenMalen(); w.querySelector("#listeText").placeholder = listenArt === "einkauf" ? "Was soll eingekauft werden?" : "Welche Aufgabe? (z. B. Müll rausbringen)"; } };
+        w.querySelector("#listenReiter").onclick = function (e) { var b = e.target.closest("[data-l]"); if (b) { listenArt = b.dataset.l; listenMalen(); w.querySelector("#listeText").placeholder = listenArt === "einkauf" ? "Was soll eingekauft werden?" : listenArt === "teilen" ? "Was verschenkst oder verleihst du? (z. B. Fahrradhelm)" : "Welche Aufgabe? (z. B. Müll rausbringen)"; } };
         w.querySelector("#listenInhalt").onchange = function (e) { var cb = e.target.closest("[data-i]"); if (!cb) return; var x = Object.assign({}, listeVon(aktiv)[cb.dataset.i], { ok: cb.checked, wer: cb.checked ? ich.name : "" }); listeAendern(aktiv, x).then(listenMalen); };
         w.querySelector("#listenInhalt").onclick = function (e) { var b = e.target.closest("[data-weg]"); if (!b) return; var x = Object.assign({}, listeVon(aktiv)[b.dataset.weg], { weg: true }); listeAendern(aktiv, x).then(listenMalen); };
         listenMalen();
@@ -969,7 +984,7 @@
     var l = listeVon(aktiv), r = fensterIn.querySelector("#listenReiter"), el = fensterIn.querySelector("#listenInhalt"); if (!el) return;
     r.innerHTML = Object.keys(LISTEN).map(function (a) { var n = Object.keys(l).filter(function (i) { return l[i].art === a && !l[i].weg && !l[i].ok; }).length; return '<button type="button" role="tab" data-l="' + a + '" aria-selected="' + (listenArt === a) + '">' + LISTEN[a] + (n ? " (" + n + ")" : "") + "</button>"; }).join("");
     var ids = Object.keys(l).filter(function (i) { return l[i].art === listenArt && !l[i].weg; }).sort(function (a, b) { return (l[a].ok - l[b].ok) || (l[a].z - l[b].z); });
-    el.innerHTML = ids.length ? '<div class="wahlliste" style="max-height:340px">' + ids.map(function (i) { var x = l[i]; return '<label class="wahl listen-eintrag' + (x.ok ? " erledigt" : "") + '"><input type="checkbox" data-i="' + esc(i) + '"' + (x.ok ? " checked" : "") + "><span>" + esc(x.t) + (x.ok && x.wer ? ' <small class="muted">– ' + esc(x.wer) + "</small>" : "") + '</span><button class="btn small" type="button" data-weg="' + esc(i) + '" aria-label="Löschen">✕</button></label>'; }).join("") + "</div>" : '<p class="muted" style="text-align:center;padding:16px 0">' + (listenArt === "einkauf" ? "Die Einkaufsliste ist leer 🛒" : "Keine Aufgaben – super! 🎉") + "</p>";
+    el.innerHTML = ids.length ? '<div class="wahlliste" style="max-height:340px">' + ids.map(function (i) { var x = l[i]; return '<label class="wahl listen-eintrag' + (x.ok ? " erledigt" : "") + '"><input type="checkbox" data-i="' + esc(i) + '"' + (x.ok ? " checked" : "") + "><span>" + esc(x.t) + (x.ok && x.wer ? ' <small class="muted">– ' + (x.art === "teilen" ? "geht an " : "") + esc(x.wer) + "</small>" : !x.ok && x.art === "teilen" && x.von ? ' <small class="muted">von ' + esc(nameVon(aktiv, x.von)) + "</small>" : "") + '</span><button class="btn small" type="button" data-weg="' + esc(i) + '" aria-label="Löschen">✕</button></label>'; }).join("") + "</div>" : '<p class="muted" style="text-align:center;padding:16px 0">' + (listenArt === "einkauf" ? "Die Einkaufsliste ist leer 🛒" : listenArt === "teilen" ? "Noch nichts zum Verschenken oder Leihen. Trag ein, was du nicht mehr brauchst – wer es haben will, hakt es ab 🎁" : "Keine Aufgaben – super! 🎉") + "</p>";
   }
 
   /* ---------- Gruppen ---------- */
