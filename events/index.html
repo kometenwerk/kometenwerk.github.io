@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="de" data-marke="omnivia">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OMNIVIA Events – einladen leicht gemacht</title>
+<meta name="description" content="Einladung erstellen, Link schicken – Gäste sagen ohne Anmeldung zu und tragen ein, was sie mitbringen. Verschlüsselt und ohne Werbung.">
+<meta name="theme-color" content="#0e7490">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Events">
+<link rel="stylesheet" href="../shared/fonts/fonts.css">
+<link rel="stylesheet" href="../shared/kw.css">
+<style>:root{--app:#0e7490;--app-soft:rgba(14,116,144,.14)}</style>
+<style>
+.klein{font-size:.85rem}
+.hallo{text-align:center;padding:28px 10px 10px}
+.hallo .gross{font-size:4rem;animation:hopp 2.4s ease-in-out infinite}
+@keyframes hopp{50%{transform:translateY(-8px) rotate(-6deg)}}
+.hallo h2{margin:8px 0 6px}
+.hallo p{color:var(--muted);max-width:400px;margin:0 auto 18px}
+.liste{display:flex;flex-direction:column;gap:8px}
+.eintrag{display:flex;gap:12px;align-items:center;padding:12px 14px;text-align:left;width:100%;border:1px solid var(--line);background:var(--card);border-radius:14px;cursor:pointer}
+.eintrag.statisch{cursor:default}
+.eintrag .i{font-size:1.5rem;flex:none}
+.eintrag .mitte{flex:1;min-width:0}
+.eintrag .mitte b{display:block;overflow-wrap:anywhere}
+.eintrag .mitte small{color:var(--muted)}
+.eintrag .rechts{display:flex;gap:6px;flex:none}
+.karte-ev{padding:22px 18px;text-align:center;background:linear-gradient(160deg,var(--app-soft),var(--card) 60%)}
+.ev-em{font-size:3.6rem;line-height:1}
+.karte-ev h2{margin:8px 0 6px;font-size:1.6rem}
+.karte-ev .wann{margin:2px 0;font-weight:500}
+.karte-ev .nachricht{margin:12px auto 0;max-width:420px;white-space:pre-wrap;background:var(--card);border-radius:12px;padding:10px 12px;text-align:left}
+.antwort{padding:16px;margin-top:12px;text-align:center}
+.antwort h3{margin:0 0 10px}
+.knopfreihe{justify-content:center}
+.zahlen{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:14px;margin-top:12px;text-align:center}
+.zahlen b{display:block;font-size:1.6rem;color:var(--app)}
+.zahlen small{color:var(--muted)}
+.emojis{display:flex;flex-wrap:wrap;gap:6px}
+.emojis button{width:44px;height:44px;border-radius:12px;border:2px solid var(--line);background:var(--card);font-size:1.4rem;cursor:pointer}
+.emojis button[aria-pressed="true"]{border-color:var(--app);box-shadow:0 0 0 3px var(--app-soft)}
+.qr{display:grid;place-items:center;margin:6px 0 12px}
+.qr svg{width:200px;height:200px;background:#fff;border-radius:14px;padding:8px}
+</style>
+</head>
+<body>
+<script src="../shared/intro.js"></script>
+<header class="kw-bar">
+  <a class="kw-home" href="../" aria-label="Zurück zur Startseite der OMNIVIA Group"><img src="../shared/marken/omnivia-zeichen.webp" alt="" width="40" height="21" style="width:40px;height:auto;display:block"></a>
+  <h1>OMNIVIA Events</h1>
+  <button class="kw-install" id="kwInstall" type="button" hidden>Als App installieren</button>
+</header>
+<main class="kw-main"><div id="ansicht"></div></main>
+<dialog class="sheet" id="fenster"><div class="sheet-in" id="fensterIn"></div></dialog>
+<footer class="kw-foot"><span>Ein Angebot der <a href="../">OMNIVIA Group</a> · Einladungen sind Ende-zu-Ende verschlüsselt – lesen kann sie nur, wer den Link hat.</span></footer>
+<script src="../shared/kw.js"></script>
+<script src="events.js"></script>
+</body>
+</html>

@@ -1666,6 +1666,24 @@
       "gruppe": "app_pet",
       "text": "Und für den Tierarzt gibt es die ganze Akte auf einen Blick. Wuff!",
       "nr": 3
+    },
+    {
+      "id": "app-events-1",
+      "gruppe": "app_events",
+      "text": "Du planst eine Party? Dann brauchst du OMNIVIA Events!",
+      "nr": 1
+    },
+    {
+      "id": "app-events-2",
+      "gruppe": "app_events",
+      "text": "Einladung machen, Link verschicken, fertig. Deine Gäste sagen einfach zu.",
+      "nr": 2
+    },
+    {
+      "id": "app-events-3",
+      "gruppe": "app_events",
+      "text": "Und jeder trägt ein, was er mitbringt. Nie wieder fünf Nudelsalate!",
+      "nr": 3
     }
   ]
 }

@@ -336,6 +336,24 @@
         "Erinnerungen",
         "Akte für den Tierarzt"
       ]
+    },
+    {
+      "id": "events",
+      "name": "OMNIVIA Events",
+      "marke": "omnivia",
+      "farbe": "#0e7490",
+      "status": "fertig",
+      "pfad": "events/",
+      "bilder": [
+        "apps/bilder/events-1.webp",
+        "apps/bilder/events-2.webp",
+        "apps/bilder/events-3.webp"
+      ],
+      "punkte": [
+        "Einladen per Link",
+        "Wer bringt was mit?",
+        "Ohne Anmeldung"
+      ]
     }
   ]
 }

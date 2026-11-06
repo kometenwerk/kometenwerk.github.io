@@ -1,0 +1,69 @@
+{
+  "events": {
+    "$e": {
+      ".read": "auth != null",
+      ".write": "auth != null && !newData.exists() && data.child('meta/admin').val() === auth.uid",
+      "meta": {
+        ".write": "auth != null && (!data.exists() ? newData.child('admin').val() === auth.uid : (data.child('admin').val() === auth.uid && (!newData.exists() || newData.child('admin').val() === auth.uid)))",
+        ".validate": "$e.matches(/^[A-Za-z0-9_-]{16}$/) && newData.hasChildren(['admin', 'iv', 'ct', 'zeit'])",
+        "admin": {
+          ".validate": "newData.isString() && newData.val().length <= 128"
+        },
+        "iv": {
+          ".validate": "newData.isString() && newData.val().length === 16"
+        },
+        "ct": {
+          ".validate": "newData.isString() && newData.val().length <= 6000"
+        },
+        "zeit": {
+          ".validate": "newData.isNumber() && newData.val() <= now"
+        },
+        "$sonst": {
+          ".validate": false
+        }
+      },
+      "gaeste": {
+        "$g": {
+          ".write": "auth != null && root.child('events/' + $e + '/meta').exists() && (!data.exists() ? newData.child('uid').val() === auth.uid : (data.child('uid').val() === auth.uid ? (!newData.exists() || newData.child('uid').val() === auth.uid) : (!newData.exists() && root.child('events/' + $e + '/meta/admin').val() === auth.uid)))",
+          ".validate": "$g.matches(/^[A-Za-z0-9_-]{12}$/) && newData.hasChildren(['uid', 'iv', 'ct', 'zeit'])",
+          "uid": {
+            ".validate": "newData.isString() && newData.val().length <= 128"
+          },
+          "iv": {
+            ".validate": "newData.isString() && newData.val().length === 16"
+          },
+          "ct": {
+            ".validate": "newData.isString() && newData.val().length <= 2000"
+          },
+          "zeit": {
+            ".validate": "newData.isNumber() && newData.val() <= now"
+          },
+          "$sonst": {
+            ".validate": false
+          }
+        }
+      },
+      "mit": {
+        "$m": {
+          ".write": "auth != null && root.child('events/' + $e + '/meta').exists() && (!data.exists() ? newData.child('uid').val() === auth.uid : (newData.exists() ? newData.child('uid').val() === data.child('uid').val() : (data.child('uid').val() === auth.uid || root.child('events/' + $e + '/meta/admin').val() === auth.uid)))",
+          ".validate": "$m.matches(/^[A-Za-z0-9_-]{12}$/) && newData.hasChildren(['uid', 'iv', 'ct', 'zeit'])",
+          "uid": {
+            ".validate": "newData.isString() && newData.val().length <= 128"
+          },
+          "iv": {
+            ".validate": "newData.isString() && newData.val().length === 16"
+          },
+          "ct": {
+            ".validate": "newData.isString() && newData.val().length <= 1000"
+          },
+          "zeit": {
+            ".validate": "newData.isNumber() && newData.val() <= now"
+          },
+          "$sonst": {
+            ".validate": false
+          }
+        }
+      }
+    }
+  }
+}
