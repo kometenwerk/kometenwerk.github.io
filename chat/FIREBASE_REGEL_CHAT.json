@@ -15,7 +15,7 @@
     "nutzer": {
       "$cid": {
         ".read": "auth != null",
-        ".write": "auth != null && root.child('fchat/geraete/' + $cid + '/' + auth.uid).exists() && newData.exists() && (data.exists() || !root.child('fchat/nutzer').exists() || (newData.child('per').isString() && root.child('fchat/codes/' + newData.child('per').val() + '/bis').val() > now))",
+        ".write": "auth != null && root.child('fchat/geraete/' + $cid + '/' + auth.uid).exists() && newData.exists()",
         ".validate": "newData.hasChildren(['name', 'em', 'farbe', 'ek', 'fp', 'zeit'])",
         "name": {
           ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 30"

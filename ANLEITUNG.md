@@ -87,8 +87,7 @@ Adresse: https://kometenwerk.github.io/chat/
 2. Den Inhalt von `chat/FIREBASE_REGEL_CHAT.json` **ohne** die äußeren geschweiften Klammern
    innerhalb von `"rules": { ... }` einfügen (wie bei Hotel Freundlich), die übrigen Regeln bleiben.
 3. „Veröffentlichen“.
-4. Chat öffnen → **du zuerst!** Das erste Konto braucht keine Einladung. Alle anderen kommen nur
-   über einen Kontakt-Code (QR oder Link) von jemandem rein, der schon dabei ist.
+4. Jeder kann ein Konto anlegen. Anschreiben kann man aber nur, wer den Kontakt-Code bekommen hat und angenommen wurde.
 5. Meldungen siehst du nur auf dem Gerät, auf dem du den Team-Chat gegründet hast (Chef-Ansicht oben in der Chat-Liste).
 
 Zum Ausprobieren ohne Server: `chat/?demo=anna` und in einem zweiten Fenster `chat/?demo=ben`.

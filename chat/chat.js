@@ -192,7 +192,7 @@
     if (n === 0) {
       h = '<div class="onb-hero"><div class="onb-logo" aria-hidden="true"><span class="b1">💬</span><span class="b2">🔒</span></div><h2>Chatten ohne<br>Telefonnummer</h2><p>Mit Familie und Freunden – verschlüsselt, ohne Werbung.</p></div>' +
         '<div class="onb-chips"><span>🙈 Keine Nummer</span><span>🤝 Nur Leute, die du kennst</span><span>🔒 Ende-zu-Ende</span></div>' +
-        (einladung ? '<div class="onb-einl">🎉 <b>Du wurdest eingeladen!</b> Leg dir ein Konto an – die Kontaktanfrage geht danach automatisch raus.</div>' : '<div class="onb-einl leise">Am Anfang nur mit Einladung: Lass dir den Kontakt-Code von jemandem zeigen, der FIDELIA Chat schon benutzt.</div>') +
+        (einladung ? '<div class="onb-einl">🎉 <b>Du wurdest eingeladen!</b> Leg dir ein Konto an – die Kontaktanfrage geht danach automatisch raus.</div>' : '<div class="onb-einl leise">Leg einfach los. Fremde können dich trotzdem nicht anschreiben – nur Leute, denen du deinen Kontakt-Code gibst und die du annimmst.</div>') +
         '<div class="knoepfe"><button class="btn primary gross" type="button" data-s="1">Los geht\'s</button><button class="btn" type="button" data-s="zurueck">Ich habe schon ein Konto</button></div>';
     } else if (n === 1) {
       h = punkte(1) + '<h2 class="onb-titel">Wie sollen dich deine Freunde sehen?</h2>' +
@@ -277,7 +277,7 @@
     var profil = { name: name, em: em, farbe: farbe, ek: ek, fp: fp, zeit: B.TS };
     if (per) profil.per = per;
     try { await B.setz("nutzer/" + cid, profil); }
-    catch (e) { throw new Error(per ? "⏰ Die Einladung gilt nicht mehr. Lass dir einen neuen Kontakt-Code zeigen." : "✉️ Du brauchst eine Einladung: Lass dir von jemandem, der FIDELIA Chat schon benutzt, den Kontakt-Code zeigen und scanne ihn – oder öffne seinen Link."); }
+    catch (e) { throw new Error(per ? "⏰ Die Einladung gilt nicht mehr. Lass dir einen neuen Kontakt-Code zeigen." : "🛠️ Das Konto konnte nicht angelegt werden. (Für den Chef: Sind die neuesten Firebase-Regeln für den Chat eingefügt?)"); }
     var jwk = await K.privatExport(paar);
     await B.setz("tresor/" + tresor, await K.tresorZu(code, { cid: cid, priv: jwk, v: 1 }));
     priv = await K.privatImport(jwk, false);
