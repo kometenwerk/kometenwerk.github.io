@@ -563,9 +563,9 @@ function seitenstrassen(teile, von, bis, seite, bit) {
 }
 
 /** Fahrspuren aus OSM („left|through|through;right“) → [{pfeile, passt}] */
-export function spurenLesen(text, dreh) {
+export function spurenLesen(text, dreh, rausRechts = false) {
   if (!text) return null;
-  const w = drehWort(dreh);
+  const w = rausRechts ? "rechts" : drehWort(dreh);
   const ziel = w.includes("rechts") ? /right/ : w.includes("links") ? /left/ : /through|^$|none/;
   const spuren = text.split("|").map(x => ({ pfeile: x || "through", passt: ziel.test(x || "through") }));
   if (spuren.length < 2 || !spuren.some(x => x.passt) || spuren.every(x => x.passt)) return null;
@@ -576,7 +576,7 @@ export function spurenLesen(text, dreh) {
 export function ausfahrtLesen(n) {
   if (!n || !n.startsWith("⇢")) return null;
   const [aus, ziel] = n.slice(1).split("|");
-  return { aus: aus || "", ziel: ziel || "" };
+  return { aus: aus || "", ziel: (ziel || "").replace(/\s*,\s*/g, ", ").replace(/^, |, $/g, "") };
 }
 
 /** Fasst gleiche Straßen zusammen und beschreibt die Abbiegungen, Kreisverkehre und Ausfahrten. */
@@ -602,6 +602,13 @@ export function anweisungen(teile, modus = "auto") {
       out.push({ typ: "weiter", nachKreisel: true, name: n, klasse: kl, meter: t.meter, punkt: t.punkte[0], dreh: null, letzteRichtung: endRichtung(t.punkte), vonTeil: j, bisTeil: j });
       continue;
     }
+    // Auf-/Abfahrten bestehen oft aus mehreren Stücken mit verschiedenen Schildern: zusammenfassen
+    const istRampe = x => x.startsWith("⇢");
+    const rampe = l && l.typ !== "kreisel" && l.name && istRampe(l.name) && (istRampe(n) || !n);
+    if (rampe) {
+      if (istRampe(n)) { const a = ausfahrtLesen(l.name), b = ausfahrtLesen(n); l.name = "⇢" + (a.aus || b.aus) + "|" + (a.ziel || b.ziel); }
+      l.meter += t.meter; l.letzteRichtung = endRichtung(t.punkte); l.bisTeil = j; continue;
+    }
     const gleich = l && l.typ !== "kreisel" && ((n && l.name === n) || (!n && !l.name && l.klasse === kl));
     if (gleich) { l.meter += t.meter; l.letzteRichtung = endRichtung(t.punkte); l.bisTeil = j; continue; }
     let dreh = null;
@@ -615,7 +622,7 @@ export function anweisungen(teile, modus = "auto") {
       const f3 = davor.k.f3 ? davor.k.f3[davor.e] : 0;
       schritt.ampel = (f3 & BIT3.AMPEL_ENDE) !== 0;
       const sp = davor.k.spur ? davor.k.spur[davor.e] : 65535;
-      if (sp !== 65535) schritt.spuren = spurenLesen(davor.k.namen[sp], dreh);
+      if (sp !== 65535) schritt.spuren = spurenLesen(davor.k.namen[sp], dreh, istRampe(n) && davor.k.kl[davor.e] <= 1);
       const w = drehWort(dreh);
       if (w && w !== "geradeaus" && Math.abs(dreh) >= 60 && kl > 1 && l.typ !== "kreisel") {
         const vor = seitenstrassen(teile, l.vonTeil, j, dreh > 0 ? 1 : -1, bit);

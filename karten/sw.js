@@ -1,5 +1,5 @@
 // Offline-Speicher für OMNIVIA Karten
-const V = "kw-karten-2026-11-06b";
+const V = "kw-karten-2026-11-06c";
 const DATEN = "kw-karten-daten";   // Straßennetz und Suche, bleibt über Versionen erhalten
 const SHELL = ["./", "index.html", "app.js", "netz.js", "suche.js", "verkehr.js", "navi.js", "karten.css", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png",
   "../shared/kw.css", "../shared/kw.js", "../shared/intro.js", "../shared/marken/omnivia-zeichen.webp", "../shared/fonts/fonts.css",
