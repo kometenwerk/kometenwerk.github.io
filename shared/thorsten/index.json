@@ -2578,6 +2578,33 @@
    "dauer": 3.9,
    "hash": "68a98e33c7ce",
    "nr": 3
+  },
+  {
+   "id": "app-form-1",
+   "gruppe": "app_form",
+   "text": "Mal ehrlich: Wer versteht eigentlich Briefe vom Amt? Ich nicht. Na gut, ich schon. Aber du vielleicht nicht!",
+   "datei": "ton/app-form-1.mp3",
+   "dauer": 5.45,
+   "hash": "d0e0ab6632dc",
+   "nr": 1
+  },
+  {
+   "id": "app-form-2",
+   "gruppe": "app_form",
+   "text": "Mit FIDELIA Form machst du einfach ein Foto. Dann erklärt die KI den Brief in einfacher Sprache.",
+   "datei": "ton/app-form-2.mp3",
+   "dauer": 4.96,
+   "hash": "f5b606527e58",
+   "nr": 2
+  },
+  {
+   "id": "app-form-3",
+   "gruppe": "app_form",
+   "text": "Und das Beste: Alles bleibt auf deinem Gerät. Kein Foto geht ins Internet.",
+   "datei": "ton/app-form-3.mp3",
+   "dauer": 4.15,
+   "hash": "45cb143b62ac",
+   "nr": 3
   }
  ]
 }
