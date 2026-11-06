@@ -66,32 +66,103 @@ export function naechste(v, entlang) {
 }
 
 function meterSprechen(m) {
-  if (m >= 950) { const km = Math.round(m / 100) / 10; return `${String(km).replace(".", ",")} Kilometern`; }
+  if (m >= 950) { const km = Math.round(m / 100) / 10; return km === 1 ? "1 Kilometer" : `${String(km).replace(".", ",")} Kilometern`; }
   if (m >= 100) return `${Math.round(m / 50) * 50} Metern`;
   return `${Math.max(10, Math.round(m / 10) * 10)} Metern`;
+}
+
+const ORD = ["", "erste", "zweite", "dritte", "vierte", "fünfte", "sechste", "siebte"];
+const BEI = { Tankstelle: "bei der Tankstelle", Kirche: "bei der Kirche", Supermarkt: "beim Supermarkt", Apotheke: "bei der Apotheke", Rathaus: "beim Rathaus", Bahnhof: "beim Bahnhof", Schule: "bei der Schule" };
+const sprechName = n => String(n || "").replace(/ · /g, ", ").replace(/\bB (\d)/g, "B $1").replace(/\bA (\d)/g, "A $1");
+
+/** Wo genau? „an der Ampel“, „die zweite Straße“, „bei der Tankstelle“ */
+function wo(s, bis = 999) {
+  if (s.ampel) return "an der Ampel";
+  if (s.bei && BEI[s.bei.art]) return BEI[s.bei.art];
+  if (s.ordinal && bis >= 150) return `die ${ORD[s.ordinal]} Straße`;   // kurz vorher: nur noch „jetzt links“
+  return "";
 }
 
 /** Kurzer Text für die Anzeige oben, z. B. „Rechts auf Hauptstraße“. */
 export function kurzText(schritt) {
   if (!schritt) return "Ziel";
+  if (schritt.typ === "zwischenziel") return `Zwischenziel: ${schritt.name || ""}`;
+  if (schritt.typ === "kreisel") return `Kreisverkehr: ${schritt.ausfahrt}. Ausfahrt${schritt.name ? " · " + schritt.name : ""}`;
+  if (schritt.typ === "abfahrt") return `Abfahrt${schritt.name && schritt.name !== "die Abfahrt" ? " " + schritt.name.replace(/^die Abfahrt /, "") : ""}${schritt.richtungZiel ? " → " + schritt.richtungZiel : ""}`;
+  if (schritt.typ === "auffahrt" && schritt.richtungZiel) return `Auffahrt → ${schritt.richtungZiel}`;
   const w = drehWort(schritt.dreh);
-  const ziel = schritt.name ? (schritt.name.startsWith("die ") ? schritt.name : schritt.name) : "die Straße";
-  if (schritt.name === "die Abfahrt") return "Abfahrt nehmen";
+  const ziel = schritt.name || "die Straße";
   if (!w || w === "geradeaus") return `Weiter auf ${ziel}`;
   if (w === "wenden") return "Wenden";
-  return `${w[0].toUpperCase() + w.slice(1)} auf ${ziel}`;
+  const ort = wo(schritt);
+  return `${ort ? ort[0].toUpperCase() + ort.slice(1) + " " + w : w[0].toUpperCase() + w.slice(1)} · ${ziel}`;
 }
 
-/** Gesprochene Ansage: „In 300 Metern rechts abbiegen auf Hauptstraße.“ */
-export function ansage(schritt, bis) {
+/** Gesprochene Ansage, z. B. „In 300 Metern an der Ampel rechts abbiegen auf Hauptstraße. Danach gleich links.“ */
+export function ansage(schritt, bis, danach = null) {
   const vorne = bis < 25 ? "Jetzt" : `In ${meterSprechen(bis)}`;
+  let t;
   if (!schritt) return bis < 25 ? "Du hast dein Ziel erreicht." : `${vorne} hast du dein Ziel erreicht.`;
-  if (schritt.name === "die Abfahrt") return `${vorne} die Abfahrt nehmen.`;
+  const name = schritt.name ? ` auf ${sprechName(schritt.name)}` : "";
+  if (schritt.typ === "zwischenziel") return bis < 25 ? `Du hast dein Zwischenziel erreicht${schritt.name ? ": " + schritt.name : ""}.` : `${vorne} erreichst du dein Zwischenziel.`;
+  if (schritt.typ === "kreisel") {
+    const aus = `die ${ORD[schritt.ausfahrt] || schritt.ausfahrt + "."} Ausfahrt`;
+    t = bis < 25 ? `Im Kreisverkehr ${aus} nehmen${name}.` : `${vorne} in den Kreisverkehr, dann ${aus}${name}.`;
+  } else if (schritt.typ === "abfahrt") {
+    t = `${vorne} ${sprechName(schritt.name || "die Abfahrt")} nehmen${schritt.richtungZiel ? ", Richtung " + schritt.richtungZiel : ""}.`;
+  } else if (schritt.typ === "auffahrt") {
+    t = `${vorne} auf ${sprechName(schritt.name || "die Auffahrt").replace(/^die /, "die ")}${schritt.richtungZiel ? ", Richtung " + schritt.richtungZiel : ""}.`;
+  } else {
+    const w = drehWort(schritt.dreh);
+    if (!w || w === "geradeaus") t = `${vorne} geradeaus weiter${name}.`;
+    else if (w === "wenden") t = `${vorne} bitte wenden.`;
+    else {
+      const o = wo(schritt, bis);
+      t = o.startsWith("die ") ? `${vorne} ${o} ${w}${name}.` : `${vorne} ${o ? o + " " : ""}${w} abbiegen${name}.`;
+    }
+  }
+  if (danach) {
+    const w2 = danach.typ === "kreisel" ? "in den Kreisverkehr" : drehWort(danach.dreh);
+    if (w2 && w2 !== "geradeaus") t += ` Danach gleich ${w2}.`;
+  }
+  return t;
+}
+
+/** Symbol für die Anzeige oben */
+export function pfeilVon(schritt) {
+  if (!schritt) return "🏁";
+  if (schritt.typ === "zwischenziel") return "📍";
+  if (schritt.typ === "kreisel") return "⟳";
+  if (schritt.typ === "abfahrt") return "↗";
   const w = drehWort(schritt.dreh);
-  const name = schritt.name ? ` auf ${schritt.name.replace(/ · /g, ", ")}` : "";
-  if (!w || w === "geradeaus") return `${vorne} geradeaus weiter${name}.`;
-  if (w === "wenden") return `${vorne} bitte wenden.`;
-  return `${vorne} ${w} abbiegen${name}.`;
+  if (w === "wenden") return "↶";
+  if (w.startsWith("scharf")) return w.endsWith("links") ? "↙" : "↘";
+  if (w.startsWith("leicht")) return w.endsWith("links") ? "↖" : "↗";
+  return w.includes("links") ? "↰" : w.includes("rechts") ? "↱" : "↑";
+}
+
+/** Steht gleich danach (unter 150 m) noch eine Abbiegung an? */
+export function danachVon(v, nr) {
+  const a = v.schritte[nr + 1];
+  if (!a || a.typ === "zwischenziel") return null;
+  if (v.stellen[nr + 1] - v.stellen[nr] > 150) return null;
+  return a;
+}
+
+/** Bekannte Orte an Abbiegungen eintragen („bei der Tankstelle“). pois: [[name, ort, lat, lon, art], …] */
+export function wahrzeichen(schritte, pois) {
+  if (!pois?.length) return;
+  for (const s of schritte) {
+    if (s.typ !== "abbiegen" || s.ampel || !s.punkt) continue;
+    const w = drehWort(s.dreh); if (!w || w === "geradeaus") continue;
+    let best = null, bd = 35;
+    for (const p of pois) {
+      if (Math.abs(p[2] - s.punkt[0]) > 0.0005 || Math.abs(p[3] - s.punkt[1]) > 0.0008) continue;
+      const d = abstand(p[2], p[3], s.punkt[0], s.punkt[1]);
+      if (d < bd) { bd = d; best = p; }
+    }
+    if (best) s.bei = { art: best[4], name: best[0] };
+  }
 }
 
 /** Bei welchen Entfernungen wird angesagt? */

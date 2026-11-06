@@ -140,3 +140,27 @@ body.navi .kk-suche,body.navi .kk-blatt,body.navi .kk-knoepfe{display:none}
 .kk-einst{margin:6px 0;border:1px solid var(--line);border-radius:12px;padding:2px 12px}
 .kk-einst summary{cursor:pointer;padding:9px 0;font-size:.93rem;font-weight:500}
 .kk-ergebnis{border-top:0;margin-top:2px;padding-top:4px}
+
+/* Zwischenziele, Runde, Ankunft */
+.kk-punkte .pkt.stopp{width:20px;height:20px;border-width:2px;font-size:.7rem;font-weight:700;display:grid;place-items:center;color:var(--app)}
+.kk-stopp{display:flex;align-items:center;gap:6px;border:1px dashed var(--line);border-radius:10px;padding:6px 6px 6px 12px;font-size:.93rem}
+.kk-stopp span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kk-stopp button{border:0;background:none;width:32px;height:32px;border-radius:50%;font-size:1.2rem;color:var(--muted);cursor:pointer}
+.kk-plus{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:-2px 0 8px}
+.kk-runde{display:flex;gap:4px;align-items:center;flex-wrap:wrap;font-size:.88rem;color:var(--muted)}
+.kk-runde .btn[aria-pressed="true"]{background:var(--app);color:#fff;border-color:var(--app)}
+.kk-ankunft{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:.9rem;margin:6px 0;color:var(--muted)}
+.kk-ankunft input{padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit}
+.kk-ankunft span{color:var(--ink);font-weight:500}
+.kk-radinfo{margin:6px 0;font-size:.92rem}
+.kk-frage-pin{width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid #f59e0b;color:#b45309;font-weight:700;display:grid;place-items:center;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+/* Navi: danach, Spuren, Abbiege-Pfeil */
+.kk-navi-oben .pf sup{font-size:1rem;font-weight:700;margin-left:-4px}
+.kk-navi-oben .danach{display:block;font-size:.9rem;opacity:.85;margin-top:2px}
+.kk-spuren{position:absolute;left:10px;top:116px;z-index:8;display:flex;gap:4px;background:#1e1b4b;border-radius:12px;padding:6px 8px;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.kk-spuren span{min-width:30px;text-align:center;font-size:1.3rem;color:rgba(255,255,255,.35);border-right:1px dashed rgba(255,255,255,.3);padding:0 4px}
+.kk-spuren span:last-child{border-right:0}
+.kk-spuren span.an{color:#fff}
+.kk-abbiege-pin{width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:1.6rem;font-weight:700;border:3px solid #fff;box-shadow:0 0 0 6px rgba(255,138,60,.35),0 4px 10px rgba(0,0,0,.35);animation:kkpuls 1.4s ease-in-out infinite}
+@keyframes kkpuls{50%{box-shadow:0 0 0 12px rgba(255,138,60,.12),0 4px 10px rgba(0,0,0,.35)}}
+@media (prefers-reduced-motion:reduce){.kk-abbiege-pin{animation:none}}

@@ -27,4 +27,9 @@ umplant (von der Route abgekommen: Neuberechnung nach 10 s, wenn du nichts sagst
 Routenwahl: bis zu 3 wirklich verschiedene Routen (Straßen der ersten Route werden für die nächste Suche teurer).
 Zuhause, Schule und die letzten Ziele bleiben nur auf dem Gerät. Im Navi zeigt ein Schild das erlaubte Tempo (aus OSM).
 
+Ansagen: Kreisverkehr mit Ausfahrt-Nummer, „an der Ampel“, „die zweite Straße rechts“, „bei der Tankstelle“,
+Abfahrten mit Richtung von den Schildern, „danach gleich links“, Fahrspuren (wenn in OSM), Pfeil an der Abbiegung.
+Planung: Zwischenziele, Rundweg (Rad/zu Fuß), „Ankommen um“, Bundesstraßen/Tunnel meiden, spritsparend,
+Rad: nicht auf der Straße, nur geteert, E-Bike; zu Fuß: Wege mit Bänken und Toiletten. Netzformat KWN3.
+
 Kartendaten © OpenStreetMap-Mitwirkende (ODbL 1.0). Verkehrsdaten: Autobahn GmbH des Bundes.

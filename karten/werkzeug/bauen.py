@@ -34,6 +34,9 @@ LINK_TEMPO = 50
 # Bits für eine Richtung
 B_AUTO, B_RAD, B_FUSS, B_WOHN, B_ENG, B_LICHT, B_RADWEG, B_UNBEF = 1, 2, 4, 8, 16, 32, 64, 128
 B2_TREPPE, B2_AUTOBAHN, B2_TUNNEL, B2_BRUECKE = 1, 2, 4, 8
+# bits3 (eigenes Feld ab KWN3)
+B3_KREISEL, B3_AUTOVERKEHR, B3_GETEERT, B3_RAST, B3_AMPEL_ENDE = 1, 2, 4, 8, 16
+GETEERT = {"asphalt", "paved", "concrete", "concrete:plates", "concrete:lanes", "paving_stones", "sett", "chipseal", "metal", "unhewn_cobblestone", "cobblestone"}
 
 UNBEFESTIGT = {"unpaved", "gravel", "fine_gravel", "dirt", "earth", "grass", "ground", "mud", "sand", "compacted", "woodchips", "pebblestone", "grass_paver"}
 NEIN = {"no", "private", "agricultural", "forestry", "delivery", "destination_no"}
@@ -165,6 +168,8 @@ class Leser(osmium.SimpleHandler):
         self.bbox = [90, 180, -90, -180]
         self.anschluesse = []     # (name, lat, lon) Autobahn-Anschlussstellen, Kreuze, Raststätten
         self.ampeln = set()       # Knoten mit Ampel
+        self.ausfahrten = {}      # Knoten-ID -> Name der Autobahn-Ausfahrt
+        self.rast = []            # Bänke und Toiletten (lat, lon)
 
     def node(self, n):
         t = n.tags
@@ -174,6 +179,10 @@ class Leser(osmium.SimpleHandler):
             self.ampeln.add(n.id)
         if t.get("highway") in ("motorway_junction", "services", "rest_area") and "name" in t:
             self.anschluesse.append((t["name"], lat, lon))
+        if t.get("highway") == "motorway_junction" and ("name" in t or "ref" in t):
+            self.ausfahrten[n.id] = t.get("name") or t.get("ref")
+        if t.get("amenity") in ("bench", "toilets", "shelter") or t.get("leisure") == "picnic_table" or t.get("bench") == "yes":
+            self.rast.append((lat, lon))
         if "addr:housenumber" in t and ("addr:street" in t or "addr:place" in t):
             self.adressen.append((t.get("addr:street") or t.get("addr:place"), t["addr:housenumber"], t.get("addr:city", ""), t.get("addr:postcode", ""), lat, lon))
         p = t.get("place")
@@ -240,6 +249,10 @@ class Leser(osmium.SimpleHandler):
         if k == 0: b2 |= B2_AUTOBAHN
         if t.get("tunnel") in ("yes", "building_passage"): b2 |= B2_TUNNEL
         if t.get("bridge") == "yes": b2 |= B2_BRUECKE
+        b3 = 0
+        if t.get("junction") in ("roundabout", "circular"): b3 |= B3_KREISEL
+        if ah or ar: b3 |= B3_AUTOVERKEHR
+        if t.get("surface") in GETEERT or ("surface" not in t and (k <= 8 or hw == "cycleway")): b3 |= B3_GETEERT
         hin = b | (B_AUTO if ah else 0) | (B_RAD if rh else 0) | (B_FUSS if fu else 0)
         rueck = b | (B_AUTO if ar else 0) | (B_RAD if rr else 0) | (B_FUSS if fu else 0)
         ref = t.get("ref", "").split(";")[0].strip()
@@ -247,7 +260,14 @@ class Leser(osmium.SimpleHandler):
         anzeige = (ref + (" · " + name if name and k >= 2 else "")) if ref else name
         ids = [p[0] for p in pkt]
         ko = [(p[1], p[2]) for p in pkt]
-        self.wege.append((ids, ko, k, tempo, hin, rueck, b2, anzeige))
+        if link and not anzeige:
+            # Auf- und Abfahrten: Name der Ausfahrt und Richtung von den Schildern
+            ziel = (t.get("destination") or t.get("destination:ref") or "").replace(";", ", ")
+            aus = self.ausfahrten.get(ids[0], "")
+            if ziel or aus: anzeige = "⇢" + aus + "|" + ziel
+        sp_hin = t.get("turn:lanes:forward") or t.get("turn:lanes") or ""
+        sp_rueck = t.get("turn:lanes:backward") or ("" if t.get("oneway") in ("yes", "-1") else "")
+        self.wege.append((ids, ko, k, tempo, hin, rueck, b2, anzeige, b3, sp_hin, sp_rueck))
         for i, nid in enumerate(ids):
             self.nutzung[nid] += 1 if 0 < i < len(ids) - 1 else 2
         if name and k >= 2 and k <= 8:
@@ -329,8 +349,25 @@ def bauen(quelle, ziel):
     print(f"Knoten: {n_knoten}, Kacheln: {len(kacheln)}")
 
     # 2) Kanten
-    nachbarn = defaultdict(list)  # knoten -> [(ziel, laenge, zwischenpunkte, klasse, tempo, bits, bits2, name)]
-    for ids, ko, k, tempo, hin, rueck, b2, name in r.wege:
+    nachbarn = defaultdict(list)  # knoten -> [(ziel, laenge, zwischenpunkte, klasse, tempo, bits, bits2, name, bits3, spuren)]
+    rast = defaultdict(int)
+    for la, lo in r.rast: rast[(int(la * 1000), int(lo * 1000))] += 1
+    def rast_nah(punkte):
+        for la, lo in punkte[::max(1, len(punkte) // 6)] + punkte[-1:]:
+            gy, gx = int(la * 1000), int(lo * 1000)
+            for dy in (-1, 0, 1):
+                for dx in (-1, 0, 1):
+                    if rast.get((gy + dy, gx + dx)): return True
+        return False
+    def ampel_am_ende(ids_teil, ko_teil):
+        # Ampel in den letzten 40 m vor dem Endknoten?
+        d = 0.0
+        for j in range(len(ids_teil) - 1, 0, -1):
+            if ids_teil[j] in r.ampeln: return True
+            d += abstand(ko_teil[j - 1][0], ko_teil[j - 1][1], ko_teil[j][0], ko_teil[j][1])
+            if d > 40: break
+        return False
+    for ids, ko, k, tempo, hin, rueck, b2, name, b3, sp_hin, sp_rueck in r.wege:
         start = 0
         laenge = 0.0
         for i in range(1, len(ids)):
@@ -342,41 +379,46 @@ def bauen(quelle, ziel):
                     # Ampeln auf dem Stück (oberes Halbbyte von bits2), jeweils ohne den Startknoten
                     am_hin = min(15, sum(1 for x in ids[start + 1:i + 1] if x in r.ampeln)) << 4
                     am_rueck = min(15, sum(1 for x in ids[start:i] if x in r.ampeln)) << 4
+                    stueck_ids, stueck_ko = ids[start:i + 1], ko[start:i + 1]
+                    b3s = b3 | (B3_RAST if rast and rast_nah(stueck_ko) else 0)
                     if hin & (B_AUTO | B_RAD | B_FUSS):
-                        nachbarn[a].append((b, laenge, zw, k, tempo, hin, b2 | am_hin, name))
+                        nachbarn[a].append((b, laenge, zw, k, tempo, hin, b2 | am_hin, name, b3s | (B3_AMPEL_ENDE if ampel_am_ende(stueck_ids, stueck_ko) else 0), sp_hin))
                     if rueck & (B_AUTO | B_RAD | B_FUSS):
-                        nachbarn[b].append((a, laenge, zw[::-1], k, tempo, rueck, b2 | am_rueck, name))
+                        nachbarn[b].append((a, laenge, zw[::-1], k, tempo, rueck, b2 | am_rueck, name, b3s | (B3_AMPEL_ENDE if ampel_am_ende(stueck_ids[::-1], stueck_ko[::-1]) else 0), sp_rueck))
                 start = i
                 laenge = 0.0
     print(f"Ampeln: {len(r.ampeln)}")
-    r.wege = None; r.ampeln = None
+    r.wege = None; r.ampeln = None; r.rast = None
     inseln_entfernen(nachbarn, n_knoten)
 
     os.makedirs(os.path.join(ziel, "netz"), exist_ok=True)
 
     def schreiben(pfad, ids):
         namen, nidx = [], {}
-        to, ln, tla, tlo, gs, gc, nm, kl, fl, sp, f2, ms = ([] for _ in range(12))
+        to, ln, tla, tlo, gs, gc, nm, kl, fl, sp, f2, ms, f3, spur = ([] for _ in range(14))
         geo = []
         start = [0]
         for k in ids:
-            for (b, l, zw, kk, tempo, bits, b2, name) in nachbarn.get(k, ()):
+            for (b, l, zw, kk, tempo, bits, b2, name, b3, spuren) in nachbarn.get(k, ()):
                 to.append(b); ln.append(l); tla.append(round(lat_von[b] * 1e6)); tlo.append(round(lon_von[b] * 1e6))
                 gs.append(len(geo) // 2); gc.append(min(len(zw), 65535))
                 for la, lo in zw[:65535]: geo += [round(la * 1e6), round(lo * 1e6)]
                 if name not in nidx:
                     nidx[name] = len(namen); namen.append(name)
+                if spuren and spuren not in nidx:
+                    nidx[spuren] = len(namen); namen.append(spuren)
+                spur.append(min(nidx[spuren], 65534) if spuren else 65535); f3.append(b3)
                 nm.append(min(nidx[name], 65535)); kl.append(kk); fl.append(bits); sp.append(min(tempo & 255, 255)); ms.append(tempo >> 8); f2.append(b2)
             start.append(len(to))
         n, m = len(ids), len(to)
         nb = json.dumps(namen, ensure_ascii=False, separators=(",", ":")).encode()
-        teile = [struct.pack("<4sIIII", b"KWN2", n, m, len(geo) // 2, len(nb))]
+        teile = [struct.pack("<4sIIII", b"KWN3", n, m, len(geo) // 2, len(nb))]
         def feld(fmt, werte):
             d = struct.pack("<%d%s" % (len(werte), fmt), *werte)
             return d + b"\0" * (-len(d) % 4)
         teile += [feld("I", ids), feld("i", [round(lat_von[k] * 1e6) for k in ids]), feld("i", [round(lon_von[k] * 1e6) for k in ids]), feld("I", start),
                   feld("I", to), feld("f", ln), feld("i", tla), feld("i", tlo), feld("I", gs), feld("H", gc), feld("H", nm),
-                  feld("B", kl), feld("B", fl), feld("B", sp), feld("B", f2), feld("B", ms), feld("i", geo), nb]
+                  feld("B", kl), feld("B", fl), feld("B", sp), feld("B", f2), feld("B", ms), feld("B", f3), feld("H", spur), feld("i", geo), nb]
         roh = b"".join(teile)
         with gzip.open(pfad, "wb", compresslevel=9) as f: f.write(roh)
         return os.path.getsize(pfad)

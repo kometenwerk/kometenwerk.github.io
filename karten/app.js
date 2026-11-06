@@ -1,8 +1,8 @@
 // OMNIVIA Karten – Oberfläche
-import { Netz, meterText, drehWort, unterschied } from "./netz.js";
+import { Netz, meterText, drehWort, unterschied, radInfo } from "./netz.js";
 import { Suche } from "./suche.js";
 import { meldungenLaden, meldungenAnRoute, routeErklaeren, zeitText } from "./verkehr.js";
-import { vorbereiten, fortschritt, naechste, ansage, faellig, kurzText, tempoSchild } from "./navi.js";
+import { vorbereiten, fortschritt, naechste, ansage, faellig, kurzText, tempoSchild, pfeilVon, danachVon, wahrzeichen } from "./navi.js";
 
 const DATEN = "daten/";
 const STIL_HELL = "https://tiles.openfreemap.org/styles/liberty";
@@ -15,7 +15,7 @@ const gespeichert = (window.KW && KW.load("kw-karten", null)) || {};
 const S = {
   modus: gespeichert.modus || "auto",
   opt: Object.assign({ auto: { keineSchleichwege: true, keineEngen: true, keineAutobahn: false }, rad: { ruhig: true }, fuss: { hell: false, barrierefrei: false } }, gespeichert.opt || {}),
-  von: null, nach: null, route: null, routen: null, wahl: null, verkehrAn: gespeichert.verkehrAn !== false, autoStart: !!gespeichert.autoStart,
+  von: null, nach: null, stopps: [], runde: 0, ankunft: "", route: null, routen: null, wahl: null, verkehrAn: gespeichert.verkehrAn !== false, autoStart: !!gespeichert.autoStart,
   meldungen: [], meldStand: null, meldLive: false, ich: null, ansicht: "start", ort: null,
 };
 // Letzte Ziele, Zuhause und Schule – bleiben nur auf diesem Gerät
@@ -108,6 +108,7 @@ function routeZeichnen(einpassen = true) {
   if (!karte || !karte.getSource("route")) return;
   const r = S.route;
   karte.getSource("route").setData(r ? { type: "Feature", geometry: { type: "LineString", coordinates: r.punkte.map(p => [p[1], p[0]]) } } : { type: "FeatureCollection", features: [] });
+  radEbenen(N.an ? null : r);
   const andere = N.an ? [] : (S.routen || []).map((x, nr) => ({ x, nr })).filter(o => o.x !== r);
   karte.getSource("alt")?.setData({ type: "FeatureCollection", features: andere.map(o => ({ type: "Feature", properties: { nr: o.nr }, geometry: { type: "LineString", coordinates: o.x.punkte.map(p => [p[1], p[0]]) } })) });
   if (r && einpassen) {
@@ -173,6 +174,7 @@ function trefferWaehlen(x) {
   $("#q").value = ""; $("#qWeg").hidden = true; $("#q").blur();
   const p = { lat: x.lat, lon: x.lon, name: x.titel, unter: x.unter };
   if (S.wahl?.startsWith("fav:")) return favSetzen(S.wahl.slice(4), p);
+  if (S.wahl === "stopp") { S.stopps.push(p); S.wahl = null; planerZeigen(); routeRechnen(); return; }
   if (S.wahl) { S[S.wahl] = p; S.wahl = null; planerZeigen(); routeRechnen(); return; }
   karte?.flyTo({ center: [p.lon, p.lat], zoom: x.zoom || 16, padding: randAbstand(), duration: 800 });
   ortZeigen(p);
@@ -243,15 +245,17 @@ function favSetzen(k, p) {
 function punktGewaehlt(p) {
   $("#treffer").hidden = true;
   if (S.wahl?.startsWith("fav:")) return favSetzen(S.wahl.slice(4), { ...p, name: "Punkt auf der Karte" });
+  if (S.wahl === "stopp") { S.stopps.push({ ...p, name: "Punkt auf der Karte" }); S.wahl = null; planerZeigen(); routeRechnen(); return; }
   if (S.wahl) { S[S.wahl] = { ...p, name: "Punkt auf der Karte" }; S.wahl = null; planerZeigen(); routeRechnen(); return; }
   ortZeigen(p);
 }
 
 const MODI = [["auto", "🚗", "Auto"], ["rad", "🚲", "Rad"], ["fuss", "🚶", "Zu Fuß"]];
 const OPTIONEN = {
-  auto: [["keineSchleichwege", "Keine Schleichwege durch Wohngebiete"], ["keineEngen", "Keine engen Feld- und Waldwege"], ["keineAutobahn", "Keine Autobahn"]],
-  rad: [["ruhig", "Ruhige Wege statt großer Straßen"]],
-  fuss: [["hell", "Lieber beleuchtete Wege (nachts)"], ["barrierefrei", "Ohne Treppen (Kinderwagen, Rollstuhl)"]],
+  auto: [["keineSchleichwege", "Keine Schleichwege durch Wohngebiete"], ["keineEngen", "Keine engen Feld- und Waldwege"], ["keineAutobahn", "Keine Autobahn"],
+    ["keineBundes", "Bundesstraßen meiden"], ["keineTunnel", "Tunnel meiden"], ["oeko", "Spritsparend (ruhiger fahren, weniger Ampeln)"]],
+  rad: [["abseits", "Nicht auf der Straße (Rad- und Feldwege)"], ["geteert", "Nur geteerte Wege"], ["ruhig", "Ruhige Wege statt großer Straßen"], ["ebike", "E-Bike (schneller unterwegs)"]],
+  fuss: [["hell", "Lieber beleuchtete Wege (nachts)"], ["barrierefrei", "Ohne Treppen (Kinderwagen, Rollstuhl)"], ["rast", "Wege mit Bänken und Toiletten"]],
 };
 function name(p, leer) { return p ? (p.name || "Punkt auf der Karte") : leer; }
 function planerZeigen() {
@@ -260,25 +264,35 @@ function planerZeigen() {
     <div class="kk-punkte">
       <span class="pkt" aria-hidden="true"></span><button class="inp" id="feldVon" style="text-align:left">${esc(name(S.von, "📍 Mein Standort"))}</button>
       <button class="tausch" id="tausch" aria-label="Start und Ziel tauschen">⇅</button>
-      <span class="pkt ziel" aria-hidden="true"></span><button class="inp" id="feldNach" style="text-align:left">${esc(name(S.nach, "Ziel wählen …"))}</button>
+      ${S.stopps.map((x, i) => `<span class="pkt stopp" aria-hidden="true">${i + 1}</span><div class="kk-stopp"><span>${esc(name(x))}</span><button data-sw="${i}" aria-label="Zwischenziel ${esc(name(x))} entfernen">×</button></div>`).join("")}
+      <span class="pkt ziel" aria-hidden="true"></span><button class="inp" id="feldNach" style="text-align:left">${esc(S.runde ? "🔁 Runde " + S.runde + " km" : name(S.nach, "Ziel wählen …"))}</button>
     </div>
+    <div class="kk-plus">${S.runde ? "" : `<button class="btn small" id="stoppPlus">＋ Zwischenziel</button>`}${S.modus !== "auto" ? `<span class="kk-runde">🔁 Runde: ${[3, 5, 10, 20].map(k => `<button class="btn small" data-runde="${k}" aria-pressed="${S.runde === k}">${k} km</button>`).join("")}</span>` : ""}</div>
     <div class="kk-modi" role="group" aria-label="Wie bist du unterwegs?">${MODI.map(([m, s, t]) => `<button data-m="${m}" aria-pressed="${S.modus === m}"><span aria-hidden="true">${s}</span>${t}</button>`).join("")}</div>
     <div id="ergebnis"></div>
-    <details class="kk-einst" ${S.route ? "" : "open"}><summary>⚙️ Einstellungen</summary>
+    <details class="kk-einst" ${!S.route || S.einstOffen ? "open" : ""}><summary>⚙️ Einstellungen</summary>
       <div class="kk-optionen">${OPTIONEN[S.modus].map(([k, t]) => `<label><input type="checkbox" data-o="${k}" ${S.opt[S.modus][k] ? "checked" : ""}>${esc(t)}</label>`).join("")}
       <label><input type="checkbox" id="autoStart" ${S.autoStart ? "checked" : ""}> Navi startet von selbst nach 10 Sekunden</label></div>
     </details>
     <div class="kk-reihe"><button class="btn small" id="zurueck">← Zurück</button></div>
     <div class="kk-startleiste" id="startleiste" hidden><button class="btn primary" id="los">▶ Starten</button></div>`;
   $("#los").onclick = () => { countdownStopp(); naviStarten(false); };
+  inhalt.querySelector(".kk-einst").addEventListener("toggle", e => { if (e.isTrusted || e.target.open) S.einstOffen = e.target.open; });
   $("#autoStart").onchange = e => { S.autoStart = e.target.checked; merken(); if (!S.autoStart) countdownStopp(); };
-  const waehle = was => { S.wahl = was; $("#q").placeholder = was === "von" ? "Start suchen oder auf die Karte tippen …" : "Ziel suchen oder auf die Karte tippen …"; $("#q").focus(); blattGroesse("klein"); };
+  const waehle = was => { S.wahl = was; $("#q").placeholder = was === "von" ? "Start suchen oder auf die Karte tippen …" : was === "stopp" ? "Zwischenziel suchen oder auf die Karte tippen …" : "Ziel suchen oder auf die Karte tippen …"; $("#q").focus(); blattGroesse("klein"); };
   $("#feldVon").onclick = () => waehle("von");
-  $("#feldNach").onclick = () => waehle("nach");
+  $("#feldNach").onclick = () => { S.runde = 0; waehle("nach"); };
+  $("#stoppPlus") && ($("#stoppPlus").onclick = () => { if (S.stopps.length >= 5) return KW.toast("Höchstens 5 Zwischenziele."); waehle("stopp"); });
+  inhalt.querySelectorAll("[data-sw]").forEach(b => b.onclick = () => { S.stopps.splice(+b.dataset.sw, 1); planerZeigen(); routeRechnen(); });
+  inhalt.querySelectorAll("[data-runde]").forEach(b => b.onclick = () => {
+    const k = +b.dataset.runde;
+    if (S.runde === k) { S.runde = 0; S.nach = null; } else { S.runde = k; S.stopps = []; S.nach = { name: `Runde ${k} km`, lat: 0, lon: 0, runde: true }; }
+    planerZeigen(); routeRechnen();
+  });
   $("#tausch").onclick = () => { [S.von, S.nach] = [S.nach, S.von]; if (!S.nach && S.von === null) {} planerZeigen(); routeRechnen(); };
-  inhalt.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { S.modus = b.dataset.m; merken(); planerZeigen(); routeRechnen(); });
+  inhalt.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { S.modus = b.dataset.m; if (S.modus === "auto" && S.runde) { S.runde = 0; S.nach = null; } merken(); planerZeigen(); routeRechnen(); });
   inhalt.querySelectorAll("[data-o]").forEach(c => c.onchange = () => { S.opt[S.modus][c.dataset.o] = c.checked; merken(); routeRechnen(); });
-  $("#zurueck").onclick = () => { countdownStopp(); S.route = null; S.routen = null; S.von = S.nach = null; routeZeichnen(); markerVon = marker(markerVon, "von", null); markerNach = marker(markerNach, "ziel", null); history.replaceState(null, "", location.pathname); zeigeStart(); };
+  $("#zurueck").onclick = () => { countdownStopp(); S.route = null; S.routen = null; S.von = S.nach = null; S.stopps = []; S.runde = 0; radEbenen(null); routeZeichnen(); markerVon = marker(markerVon, "von", null); markerNach = marker(markerNach, "ziel", null); history.replaceState(null, "", location.pathname); zeigeStart(); };
   blattGroesse("");
   if (S.route) ergebnisZeigen();
 }
@@ -314,7 +328,8 @@ async function routeRechnen() {
   if (!netz) return fehler("Die Straßendaten werden gerade vorbereitet. Routen gehen bald.");
   let von = S.von;
   if (!von) { try { von = { ...(await standortHolen()), name: "Mein Standort" }; } catch (e) { return fehler(e.message); } }
-  if (!imGebiet(von) || !imGebiet(S.nach)) return fehler("Routen gibt es bisher nur in Südbaden (Regierungsbezirk Freiburg). Weitere Gebiete kommen später.");
+  if (S.runde) S.nach = { name: `Runde ${S.runde} km`, lat: von.lat, lon: von.lon, runde: true };
+  if (!imGebiet(von) || !imGebiet(S.nach) || S.stopps.some(x => !imGebiet(x))) return fehler("Routen gibt es bisher nur in Südbaden (Regierungsbezirk Freiburg). Weitere Gebiete kommen später.");
   markerVon = marker(markerVon, "von", von); markerNach = marker(markerNach, "ziel", S.nach);
   const luft = Math.hypot((S.nach.lat - von.lat) * 111, (S.nach.lon - von.lon) * 74);
   if (S.modus === "fuss" && luft > 30) return fehler("Zu Fuß rechne ich Wege bis etwa 30 km Luftlinie. Nimm für weitere Strecken lieber Rad oder Auto.");
@@ -324,14 +339,17 @@ async function routeRechnen() {
   countdownStopp();
   let r, ohne = null, routen;
   try {
-    routen = await netz.alternativen(von, S.nach, opt, 3);
+    if (S.runde) routen = [await netz.runde(von, S.runde, opt)];
+    else if (S.stopps.length) routen = [await netz.ueber([von, ...S.stopps, S.nach], opt)];
+    else routen = await netz.alternativen(von, S.nach, opt, 3);
     r = routen[0];
     if (!r.fehler && S.modus === "auto" && S.meldungen.length) ohne = await netz.route(von, S.nach, { ...opt, meldungen: [] });
   } catch (e) { console.error(e); return fehler("Beim Rechnen ist etwas schiefgegangen. Hast du Internet für die Kartendaten?"); }
   if (nr !== rechenNr) return;
   if (r.fehler) return fehler({ start: "Am Start ist keine passende Straße in der Nähe.", ziel: "Am Ziel ist keine passende Straße in der Nähe.", weg: "Ich habe keinen erlaubten Weg gefunden. Probier ein anderes Verkehrsmittel oder weniger Einstellungen." }[r.fehler]);
   r.ms = Math.round(performance.now() - t0);
-  for (const x of routen) { x.anRoute = meldungenAnRoute(x, S.meldungen); x.ms = r.ms; x.wort = unterschied(x, r, routen); }
+  for (const x of routen) { x.anRoute = meldungenAnRoute(x, S.meldungen); x.ms = r.ms; x.wort = routen.length > 1 ? unterschied(x, r, routen) : ""; }
+  try { const pois = await wahrzeichenLaden(); for (const x of routen) wahrzeichen(x.schritte, pois); } catch {}
   // Wurde wegen Meldungen umgeplant? Dann ehrlich vergleichen: die direkte Route mit ihren Verzögerungen
   if (ohne && !ohne.fehler) {
     const anOhne = meldungenAnRoute(ohne, S.meldungen);
@@ -341,11 +359,36 @@ async function routeRechnen() {
     if (Math.abs(ohne.meter - r.meter) < 50) r.vergleich = null;
   }
   S.route = r; S.routen = routen; S.routeVon = von;
-  zielMerken(S.nach);
-  history.replaceState(null, "", `#route=${von.lat.toFixed(5)},${von.lon.toFixed(5)};${S.nach.lat.toFixed(5)},${S.nach.lon.toFixed(5)}&m=${S.modus}`);
+  if (!S.runde) zielMerken(S.nach);
+  if (!S.runde && !S.stopps.length) history.replaceState(null, "", `#route=${von.lat.toFixed(5)},${von.lon.toFixed(5)};${S.nach.lat.toFixed(5)},${S.nach.lon.toFixed(5)}&m=${S.modus}`);
   routeZeichnen();
   ergebnisZeigen();
   if (S.autoStart && !S.von) countdownStarten();
+}
+
+let poiCache = null;
+function wahrzeichenLaden() {
+  if (!poiCache) poiCache = Promise.all(["tankstelle", "kirche", "supermarkt", "apotheke", "rathaus", "bahnhof", "schule"]
+    .filter(k => index?.kategorien?.[k]).map(k => ladenJSON(`kategorie/${k}.json.gz`).catch(() => []))).then(l => l.flat());
+  return poiCache;
+}
+
+// Rad: Stücke auf der Straße orange, unbekannter Belag mit „?“
+let fragenMarker = [];
+function radEbenen(r) {
+  if (!karte || !karte.getSource("route")) return;
+  if (!karte.getSource("strasse")) {
+    karte.addSource("strasse", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+    karte.addLayer({ id: "strasse", type: "line", source: "strasse", layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": "#f97316", "line-width": ["interpolate", ["linear"], ["zoom"], 8, 4, 16, 10] } });
+  }
+  fragenMarker.forEach(m => m.remove()); fragenMarker = [];
+  const info = r && S.modus === "rad" ? radInfo(r) : null;
+  karte.getSource("strasse").setData({ type: "FeatureCollection", features: info && S.opt.rad.abseits ? info.stuecke.map(x => ({ type: "Feature", geometry: { type: "LineString", coordinates: x.punkte.map(p => [p[1], p[0]]) } })) : [] });
+  if (info && S.opt.rad.geteert) for (const p of info.fragen) {
+    const el = document.createElement("div"); el.className = "kk-frage-pin"; el.textContent = "?"; el.title = "Belag unbekannt";
+    fragenMarker.push(new maplibregl.Marker({ element: el }).setLngLat([p[1], p[0]]).addTo(karte));
+  }
+  return info;
 }
 
 function routeWaehlen(nr) {
@@ -370,6 +413,29 @@ function meldListe(l) {
   const wichtig = l.filter(m => m.art === "stau" || m.gesperrt), rest = l.filter(m => !(m.art === "stau" || m.gesperrt));
   return wichtig.map(meldKarte).join("") + (rest.length ? `<details class="kk-mehr"><summary>${rest.length} ${rest.length === 1 ? "weitere Meldung" : "weitere Meldungen"} (Baustellen, Einschränkungen)</summary>${rest.map(meldKarte).join("")}</details>` : "");
 }
+const BEI_TEXT = { Tankstelle: "Bei der Tankstelle", Kirche: "Bei der Kirche", Supermarkt: "Beim Supermarkt", Apotheke: "Bei der Apotheke", Rathaus: "Beim Rathaus", Bahnhof: "Beim Bahnhof", Schule: "Bei der Schule" };
+function listenText(s) {
+  if (s.bei && s.typ === "abbiegen" && !s.ampel && !s.ordinal && BEI_TEXT[s.bei.art]) return `${BEI_TEXT[s.bei.art]} ${s.text[0].toLowerCase() + s.text.slice(1)}`;
+  return s.text;
+}
+function radText(r) {
+  if (S.modus !== "rad") return "";
+  const i = radInfo(r);
+  const teile = [`${Math.round(i.ohneAutos * 100)} % ohne Autos`];
+  if (i.stuecke.length) teile.push(`${i.stuecke.length} ${i.stuecke.length === 1 ? "Stück" : "Stücke"} auf der Straße${S.opt.rad.abseits ? " (orange)" : ""}`);
+  if (i.schotter > 50) teile.push(`${meterText(i.schotter)} Schotter/Kies`);
+  if (S.opt.rad.geteert && i.unbekannt > 100) teile.push(`${meterText(i.unbekannt)} Belag unbekannt (?)`);
+  return `<p class="kk-radinfo">🚲 ${esc(teile.join(" · "))}</p>`;
+}
+function losUmText(r) {
+  if (!S.ankunft) return "";
+  const [h, m] = S.ankunft.split(":").map(Number);
+  const ziel = new Date(); ziel.setHours(h, m, 0, 0);
+  if (ziel < Date.now()) ziel.setDate(ziel.getDate() + 1);
+  const los = new Date(ziel - r.sekunden * 1000 - (S.modus === "auto" ? 5 : 2) * 60000); // kleiner Puffer
+  const t = los.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  return los < Date.now() ? `→ Du bist spät dran! Am besten sofort los.` : `→ Losfahren um ${t} Uhr`;
+}
 const PFEIL = d => { const w = drehWort(d); return w.includes("links") ? "↰" : w.includes("rechts") ? "↱" : w === "wenden" ? "↶" : "↑"; };
 function ergebnisZeigen() {
   const r = S.route, erg = $("#ergebnis");
@@ -378,17 +444,20 @@ function ergebnisZeigen() {
   const wahl = (S.routen || []).length > 1 ? `<div class="kk-wahl" role="radiogroup" aria-label="Routen zur Auswahl">${S.routen.map((x, i) => `<button role="radio" aria-checked="${x === r}" data-r="${i}"><b>${esc(zeitText(x.sekunden))}</b><span>${x === S.routen[0] ? "Schnellste" : "+" + esc(zeitText(x.sekunden - S.routen[0].sekunden))}</span><small>${esc(meterText(x.meter))} · ${esc(x === S.routen[0] ? (x.strassen[0] ? "über " + x.strassen.slice(0, 2).map(s => s.name).join(", ") : "kürzester Weg") : x.wort)}</small></button>`).join("")}</div>` : "";
   erg.innerHTML = `<div class="kk-ergebnis">
     ${wahl}
-    <div class="kk-zeit"><b>${esc(zeitText(r.sekunden))}</b><span>${esc(meterText(r.meter))} · an ${ankunft} Uhr</span></div>
+    <div class="kk-zeit"><b>${esc(zeitText(r.sekunden))}</b><span>${esc(meterText(r.meter))} · an ${ankunft} Uhr${S.stopps.length ? " · " + S.stopps.length + " Zwischenziel" + (S.stopps.length > 1 ? "e" : "") : ""}</span></div>
+    ${radText(r)}
+    <label class="kk-ankunft">⏰ Ankommen um <input type="time" id="ankunftZeit" value="${esc(S.ankunft)}"> <span id="losUm">${losUmText(r)}</span></label>
     <div class="kk-erklaer"><span class="wer">Warum diese Route</span>${esc(routeErklaeren(r, r.anRoute, S.modus, r.vergleich))}</div>
     ${meldListe(r.anRoute)}
     <div class="kk-reihe"><button class="btn small" id="teilen">Route teilen</button><button class="btn small" id="probe">🎬 Probefahrt</button></div>
     <h3 style="margin:14px 0 0;font-size:1rem">So geht's</h3>
-    <ol class="kk-schritte">${r.schritte.map((s, i) => `<li data-i="${i}"><span class="pfeil" aria-hidden="true">${i ? PFEIL(s.dreh) : "●"}</span><span>${esc(s.text)}</span><small>${esc(meterText(s.meter))}</small></li>`).join("")}
+    <ol class="kk-schritte">${r.schritte.map((s, i) => `<li data-i="${i}"><span class="pfeil" aria-hidden="true">${i ? pfeilVon(s) : "●"}</span><span>${esc(listenText(s))}</span><small>${esc(meterText(s.meter))}</small></li>`).join("")}
       <li><span class="pfeil" aria-hidden="true">🏁</span><span>Ziel: ${esc(name(S.nach))}</span><small></small></li></ol>
     <p class="kk-hinweis">${S.modus === "auto" ? "Staus und Baustellen kennen wir nur von den Autobahnen und rechnen sie ungefähr ein. " : ""}Achte immer auf Schilder und Verkehr – die Karte kann sich irren. Gerechnet in ${r.ms} ms auf deinem Gerät.</p></div>`;
   $("#startleiste").hidden = false;
-  const einst = inhalt.querySelector(".kk-einst"); if (einst) einst.open = false;
+  const einst = inhalt.querySelector(".kk-einst"); if (einst && !S.einstOffen) einst.open = false;
   erg.querySelectorAll("[data-r]").forEach(b => b.onclick = () => routeWaehlen(+b.dataset.r));
+  $("#ankunftZeit").onchange = e => { S.ankunft = e.target.value; $("#losUm").textContent = losUmText(r); };
   erg.querySelectorAll(".kk-schritte li[data-i]").forEach(li => li.onclick = () => { const s = r.schritte[+li.dataset.i]; karte?.flyTo({ center: [s.punkt[1], s.punkt[0]], zoom: 17, padding: randAbstand() }); });
   $("#probe").onclick = () => { countdownStopp(); naviStarten(true); };
   $("#teilen").onclick = async () => {
@@ -457,9 +526,10 @@ function naviPosition(lat, lon, tempo, genau) {
   if (!N.an || !N.v) return;
   S.ich = { lat, lon }; ichZeigen(); N.tempo = tempo;
   const f = fortschritt(N.v, lat, lon); N.f = f;
+  { const n0 = naechste(N.v, f.entlang); N.nah = !!(n0 && n0.bis < 150 && drehWort(n0.schritt.dreh) !== "geradeaus"); }
   // Kamera folgt, Fahrtrichtung zeigt nach oben
   if (karte) karte.easeTo({ center: [lon, lat], bearing: f.neben < 60 ? f.grad : karte.getBearing(), pitch: S.modus === "auto" ? 50 : 30,
-    zoom: S.modus === "auto" ? (tempo > 22 ? 14.8 : 16) : 17.3, padding: { top: 150, bottom: 160, left: 0, right: 0 }, duration: 900 });
+    zoom: N.nah ? (S.modus === "auto" ? 17.6 : 18.2) : S.modus === "auto" ? (tempo > 22 ? 14.8 : 16) : 17.3, padding: { top: 150, bottom: 160, left: 0, right: 0 }, duration: 900 });
   // Von der Route abgekommen? Erst fragen, nicht still umplanen
   const grenze = Math.max(S.modus === "auto" ? 50 : 30, (genau || 20) * 1.5);
   N.weg = f.neben > grenze ? N.weg + 1 : 0;
@@ -470,7 +540,14 @@ function naviPosition(lat, lon, tempo, genau) {
   if (f.rest < 25 && f.neben < 60) return ankommen();
   const n = naechste(N.v, f.entlang);
   const bis = n ? n.bis : f.rest;
-  $("#nPfeil").textContent = n ? PFEIL(n.schritt.dreh) : "🏁";
+  const danach = n ? danachVon(N.v, n.nr) : null;
+  $("#nPfeil").innerHTML = esc(n ? pfeilVon(n.schritt) : "🏁") + (n && n.schritt.typ === "kreisel" ? `<sup>${n.schritt.ausfahrt}</sup>` : "");
+  $("#nDanach").hidden = !danach || bis > 400;
+  if (danach) $("#nDanach").textContent = `danach ${pfeilVon(danach)} ${drehWort(danach.dreh) || ""}`;
+  const sp = n && n.schritt.spuren && bis < 700 ? n.schritt.spuren : null;
+  $("#nSpuren").hidden = !sp;
+  if (sp) $("#nSpuren").innerHTML = sp.map(x => `<span class="${x.passt ? "an" : ""}">${spurPfeil(x.pfeile)}</span>`).join("");
+  abbiegeMarker(n && bis < 400 ? n.schritt : null);
   $("#nBis").textContent = meterText(bis);
   $("#nText").textContent = n ? kurzText(n.schritt) : `Ziel: ${name(S.nach)}`;
   const restSek = S.route.sekunden * (f.rest / Math.max(1, N.v.gesamt));
@@ -482,13 +559,26 @@ function naviPosition(lat, lon, tempo, genau) {
   const key = n ? n.nr : "ziel";
   if (!N.gesagt.has(key)) N.gesagt.set(key, new Set());
   // Geradeaus wird nicht angesagt (außer Auf- und Abfahrten) – sonst redet das Navi zu viel
-  const still = n && drehWort(n.schritt.dreh) === "geradeaus" && !/^die (Auf|Ab)fahrt/.test(n.schritt.name || "");
+  const still = n && ["abbiegen", "weiter"].includes(n.schritt.typ) && (drehWort(n.schritt.dreh) === "geradeaus" || n.schritt.nachKreisel);
   if (!still && f.neben < grenze && faellig(bis, S.modus, N.gesagt.get(key), tempo)) {
-    const t = ansage(n ? n.schritt : null, bis);
+    const t = ansage(n ? n.schritt : null, bis, danach);
     const kern = t.replace(/^(In [^ ]+ [^ ]+|Jetzt) /, "");
     if (!(N.zuletzt && N.zuletzt.kern === kern && N.zuletzt.stufe === bis > 120 && Date.now() - N.zuletzt.zeit < 25000)) sprechen(t);
     N.zuletzt = { kern, stufe: bis > 120, zeit: Date.now() };
   }
+}
+function spurPfeil(p) {
+  const t = p.split(";");
+  return t.map(x => ({ left: "↰", slight_left: "↖", sharp_left: "↙", right: "↱", slight_right: "↗", sharp_right: "↘", through: "↑", reverse: "↶", merge_to_left: "↖", merge_to_right: "↗", none: "↑" }[x] || "↑")).join("");
+}
+let abbiegeM = null, abbiegeS = null;
+function abbiegeMarker(s) {
+  if (!karte || s === abbiegeS) return;
+  abbiegeS = s;
+  if (abbiegeM) { abbiegeM.remove(); abbiegeM = null; }
+  if (!s || !s.punkt || s.typ === "zwischenziel") return;
+  const el = document.createElement("div"); el.className = "kk-abbiege-pin"; el.textContent = pfeilVon(s);
+  abbiegeM = new maplibregl.Marker({ element: el }).setLngLat([s.punkt[1], s.punkt[0]]).addTo(karte);
 }
 function ankommen() {
   if (N.fertig) return; N.fertig = true;
@@ -503,6 +593,7 @@ function naviEnde() {
   frageWeg(); wachHalten(false);
   try { speechSynthesis.cancel(); } catch {}
   document.body.classList.remove("navi");
+  abbiegeMarker(null);
   $("#naviOben").hidden = true; $("#naviUnten").hidden = true;
   if (karte) { karte.setPadding({ top: 0, right: 0, bottom: 0, left: 0 }); karte.easeTo({ pitch: 0, bearing: 0, duration: 400 }); }
   routeZeichnen(true);

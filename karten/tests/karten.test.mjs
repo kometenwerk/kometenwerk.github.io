@@ -184,7 +184,7 @@ test("Navigation: Fortschritt, nächste Abbiegung und Ansagen", () => {
   assert.equal(n.schritt.name, "Hauptstraße"); assert.ok(Math.abs(n.bis - 500) < 15);
   assert.equal(ansage(n.schritt, 300), "In 300 Metern rechts abbiegen auf Hauptstraße.");
   assert.equal(ansage(null, 10), "Du hast dein Ziel erreicht.");
-  assert.equal(kurzText(n.schritt), "Rechts auf Hauptstraße");
+  assert.equal(kurzText(n.schritt), "Rechts · Hauptstraße");
   const gesagt = new Set();
   assert.equal(faellig(900, "auto", gesagt), true);
   assert.equal(faellig(850, "auto", gesagt), false);
@@ -197,4 +197,15 @@ test("Navigation: Fortschritt, nächste Abbiegung und Ansagen", () => {
   const weg = fortschritt(v, 48.01, 7.805);
   assert.ok(weg.neben > 1000);
   assert.equal(naechste(v, 1490), null);
+});
+
+import { ansage as ansage2, pfeilVon } from "../navi.js";
+test("Ansagen für Kreisverkehr, Ampel, Seitenstraße und danach", () => {
+  assert.equal(ansage2({ typ: "kreisel", ausfahrt: 2, name: "B 3" }, 200), "In 200 Metern in den Kreisverkehr, dann die zweite Ausfahrt auf B 3.");
+  assert.equal(ansage2({ typ: "kreisel", ausfahrt: 3, name: "" }, 10), "Im Kreisverkehr die dritte Ausfahrt nehmen.");
+  assert.equal(ansage2({ typ: "abbiegen", dreh: 90, ampel: true, name: "Hauptstraße" }, 300), "In 300 Metern an der Ampel rechts abbiegen auf Hauptstraße.");
+  assert.equal(ansage2({ typ: "abbiegen", dreh: -90, ordinal: 2, name: "Bachweg" }, 100), "In 100 Metern die zweite Straße links auf Bachweg.");
+  assert.equal(ansage2({ typ: "abbiegen", dreh: 90, bei: { art: "Tankstelle" }, name: "" }, 50, { typ: "abbiegen", dreh: -90 }), "In 50 Metern bei der Tankstelle rechts abbiegen. Danach gleich links.");
+  assert.equal(ansage2({ typ: "abfahrt", name: "die Abfahrt Freiburg-Mitte", richtungZiel: "Titisee" }, 1000), "In 1 Kilometer die Abfahrt Freiburg-Mitte nehmen, Richtung Titisee.");
+  assert.equal(pfeilVon({ typ: "kreisel" }), "⟳");
 });

@@ -4,6 +4,7 @@
 
 export const BIT = { AUTO: 1, RAD: 2, FUSS: 4, WOHN: 8, ENG: 16, LICHT: 32, RADWEG: 64, UNBEF: 128 };
 export const BIT2 = { TREPPE: 1, AUTOBAHN: 2, TUNNEL: 4, BRUECKE: 8 };
+export const BIT3 = { KREISEL: 1, AUTOVERKEHR: 2, GETEERT: 4, RAST: 8, AMPEL_ENDE: 16 };
 const MODUS_BIT = { auto: BIT.AUTO, rad: BIT.RAD, fuss: BIT.FUSS };
 const VMAX = { auto: 130 / 3.6, rad: 22 / 3.6, fuss: 5.5 / 3.6 };
 const NAH_AUTO = 7000;       // so weit um Start und Ziel werden alle Straßen benutzt
@@ -25,7 +26,7 @@ export function richtung(la1, lo1, la2, lo2) {
 export function netzLesen(buf) {
   const dv = new DataView(buf);
   const magie = String.fromCharCode(dv.getUint8(0), dv.getUint8(1), dv.getUint8(2), dv.getUint8(3));
-  if (magie !== "KWN1" && magie !== "KWN2") throw new Error("Keine Netz-Datei");
+  if (!["KWN1", "KWN2", "KWN3"].includes(magie)) throw new Error("Keine Netz-Datei");
   const n = dv.getUint32(4, true), m = dv.getUint32(8, true), g = dv.getUint32(12, true), nb = dv.getUint32(16, true);
   let o = 20;
   const feld = (Typ, anzahl) => {
@@ -39,7 +40,9 @@ export function netzLesen(buf) {
     to: feld(Uint32Array, m), len: feld(Float32Array, m), tla: feld(Int32Array, m), tlo: feld(Int32Array, m),
     gs: feld(Uint32Array, m), gc: feld(Uint16Array, m), nm: feld(Uint16Array, m),
     kl: feld(Uint8Array, m), fl: feld(Uint8Array, m), sp: feld(Uint8Array, m), f2: feld(Uint8Array, m),
-    ms: magie === "KWN2" ? feld(Uint8Array, m) : new Uint8Array(m),
+    ms: magie !== "KWN1" ? feld(Uint8Array, m) : new Uint8Array(m),
+    f3: magie === "KWN3" ? feld(Uint8Array, m) : new Uint8Array(m),
+    spur: magie === "KWN3" ? feld(Uint16Array, m) : new Uint16Array(m).fill(65535),
     geo: feld(Int32Array, 2 * g),
   };
   k.namen = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, o, nb)));
@@ -110,7 +113,7 @@ class Haufen {
 }
 
 /** Echte Fahrzeit einer Kante in Sekunden – ohne Vorlieben wie „ruhige Wege“. */
-export function fahrzeit(k, e, modus) {
+export function fahrzeit(k, e, modus, opt = {}) {
   const fl = k.fl[e], kl = k.kl[e], f2 = k.f2[e], len = k.len[e], ampeln = f2 >> 4;
   if (modus === "auto") {
     let t = len / (Math.max(5, k.sp[e]) / 3.6);
@@ -120,7 +123,7 @@ export function fahrzeit(k, e, modus) {
     return t + ampeln * 15;
   }
   if (modus === "rad") {
-    let t = len / (16 / 3.6);
+    let t = len / ((opt.ebike ? 22 : 16) / 3.6);
     if (f2 & BIT2.TREPPE) t *= 6;
     if (fl & BIT.UNBEF) t *= 1.2;
     return t + ampeln * 12;
@@ -134,9 +137,12 @@ export function fahrzeit(k, e, modus) {
 export function kosten(k, e, modus, opt = {}) {
   const fl = k.fl[e];
   if (!(fl & MODUS_BIT[modus])) return Infinity;
-  const kl = k.kl[e], f2 = k.f2[e], len = k.len[e], ampeln = f2 >> 4;
+  const kl = k.kl[e], f2 = k.f2[e], len = k.len[e], ampeln = f2 >> 4, f3 = k.f3 ? k.f3[e] : 0;
   if (modus === "auto") {
     let t = len / (Math.max(5, k.sp[e]) / 3.6);
+    if (opt.keineTunnel && (f2 & BIT2.TUNNEL)) t *= 8;
+    if (opt.keineBundes && kl <= 3 && /^B ?\d/.test(k.namen[k.nm[e]] || "")) t *= 3;
+    if (opt.oeko) { const v = k.sp[e]; if (v > 100) t *= 1 + (v - 100) / 50; t += ampeln * 8; }
     if (fl & BIT.UNBEF) t *= 1.5;
     if (kl === 8) t *= 1.3;
     if (kl >= 2) t += 4; // Kreuzungen und Abbiegen
@@ -146,8 +152,10 @@ export function kosten(k, e, modus, opt = {}) {
     return t;
   }
   if (modus === "rad") {
-    let t = len / (16 / 3.6);
+    let t = len / ((opt.ebike ? 22 : 16) / 3.6);
     if (f2 & BIT2.TREPPE) t *= 6;
+    if (opt.abseits && (f3 & BIT3.AUTOVERKEHR)) t *= 6;            // nicht auf der Straße
+    if (opt.geteert) { if (fl & BIT.UNBEF) t *= 8; else if (!(f3 & BIT3.GETEERT)) t *= 1.5; }
     if (fl & BIT.UNBEF) t *= opt.ruhig ? 1.15 : 1.35;
     if (fl & BIT.RADWEG) t *= 0.85;
     else if (kl <= 2) t *= opt.ruhig ? 3 : 1.8;
@@ -159,6 +167,7 @@ export function kosten(k, e, modus, opt = {}) {
   if (opt.barrierefrei && (fl & BIT.UNBEF)) t *= 3;
   if (opt.hell && !(fl & BIT.LICHT) && (kl >= 9 || kl === 5)) t *= 2.5;
   if (kl <= 2) t *= 1.15;
+  if (opt.rast) t *= (f3 & BIT3.RAST) ? 0.8 : 1.1;
   return t;
 }
 
@@ -349,7 +358,7 @@ export class Netz {
     if (bestKnoten === null) return { fehler: "weg", schritte };
     const r = this.zusammenbauen(s, z, bestKnoten, bestWert, zurueck, zielRest, { schritte, geladen, gerade, modus });
     r.kosten = bestWert;
-    const echt = this.restKosten(r, 0, { modus, meldungen: opt.meldungen });
+    const echt = this.restKosten(r, 0, { modus, meldungen: opt.meldungen, ebike: opt.ebike });
     r.sekunden = Number.isFinite(echt) ? echt : bestWert;   // angezeigt wird die echte Fahrzeit
     return r;
   }
@@ -376,6 +385,38 @@ export class Netz {
     return routen;
   }
 
+  /** Route über Zwischenziele: punkte = [start, stopp1, …, ziel] */
+  async ueber(punkte, opt = {}) {
+    const teilRouten = [];
+    const strafe = opt.strafe || null;
+    for (let i = 0; i < punkte.length - 1; i++) {
+      const r = await this.route(punkte[i], punkte[i + 1], { ...opt, strafe });
+      if (r.fehler) return { fehler: r.fehler, abschnitt: i };
+      teilRouten.push(r);
+      if (strafe) for (const t of r.teile) { const a = t.k.ids[t.i], b = t.k.to[t.e]; for (const x of [a * 2097152 + b, b * 2097152 + a]) strafe.set(x, (strafe.get(x) || 1) * 2.5); }
+    }
+    return verbinden(teilRouten, punkte.slice(1, -1), opt.modus || "auto");
+  }
+
+  /** Rundweg ab einem Punkt mit ungefähr „km“ Länge (zu Fuß oder mit dem Rad). */
+  async runde(start, km, opt = {}) {
+    const ziel = km * 1000;
+    let best = null;
+    for (const grad of [20, 140, 260, 80]) {
+      for (const faktor of [1, best && best.meter > ziel * 1.25 ? 0.75 : best && best.meter < ziel * 0.8 ? 1.3 : 1]) {
+        const d = ziel / 3 / 1.25 * faktor;
+        const p = (g, m) => ({ lat: start.lat + Math.cos(g * Math.PI / 180) * m / 110540, lon: start.lon + Math.sin(g * Math.PI / 180) * m / (111320 * Math.cos(start.lat * Math.PI / 180)) });
+        const r = await this.ueber([start, p(grad, d), p(grad + 60, d), start], { ...opt, strafe: new Map() });
+        if (r.fehler) continue;
+        r.zwischen = []; r.schritte = r.schritte.filter(x => x.typ !== "zwischenziel");
+        const abw = Math.abs(r.meter - ziel) / ziel;
+        if (!best || abw < best.abw) { best = r; best.abw = abw; }
+        if (abw < 0.12) return best;
+      }
+    }
+    return best || { fehler: "weg" };
+  }
+
   /** Wie lange dauert der Rest einer schon berechneten Route – mit den aktuellen Meldungen? */
   restKosten(route, entlang, opt = {}) {
     let acc = 0, sek = 0;
@@ -383,7 +424,7 @@ export class Netz {
       const ende = acc + t.meter;
       if (ende > entlang) {
         const anteil = t.meter ? Math.min(1, (ende - entlang) / t.meter) : 1;
-        const c = (t.k.fl[t.e] & MODUS_BIT[opt.modus || "auto"]) ? fahrzeit(t.k, t.e, opt.modus || "auto") : Infinity;
+        const c = (t.k.fl[t.e] & MODUS_BIT[opt.modus || "auto"]) ? fahrzeit(t.k, t.e, opt.modus || "auto", opt) : Infinity;
         const m = (opt.modus || "auto") === "auto" ? this.meldungsKosten(t.k, t.e, opt.meldungen, t.i ?? -1) : 0;
         if (c === Infinity || m === Infinity) return Infinity;
         sek += c * anteil + m;
@@ -425,6 +466,39 @@ export class Netz {
 
 function name(t) { return t.k.namen[t.k.nm[t.e]] || ""; }
 
+/** Fügt Teilrouten (über Zwischenziele) zu einer Route zusammen. */
+export function verbinden(routen, stopps = [], modus = "auto") {
+  if (routen.length === 1) return routen[0];
+  const punkte = [], teile = [], schritte = [];
+  let meter = 0, sekunden = 0;
+  routen.forEach((r, i) => {
+    for (const p of r.punkte) { const l = punkte[punkte.length - 1]; if (!l || l[0] !== p[0] || l[1] !== p[1]) punkte.push(p); }
+    teile.push(...r.teile); meter += r.meter; sekunden += r.sekunden;
+    schritte.push(...(i ? r.schritte.map((x, j) => j === 0 ? { ...x, typ: "weiter", text: x.text.replace(/^(Fahr|Geh) los/, "Weiter") } : x) : r.schritte));
+    if (i < routen.length - 1) {
+      const st = stopps[i] || {}, ende = r.punkte[r.punkte.length - 1];
+      schritte.push({ typ: "zwischenziel", text: `Zwischenziel: ${st.name || "Stopp " + (i + 1)}`, name: st.name || "", meter: 0, punkt: ende, dreh: null });
+    }
+  });
+  return { punkte, teile, meter, sekunden, schritte, strassen: hauptStrassen(teile), info: { ...routen[0].info, modus }, zwischen: stopps, kosten: routen.reduce((a, r) => a + (r.kosten || r.sekunden), 0) };
+}
+
+/** Für Rad-Routen: Wie viel davon mit Autoverkehr, welcher Belag? */
+export function radInfo(route) {
+  let gesamt = 0, strasse = 0, unbekannt = 0, schotter = 0;
+  const stuecke = [], fragen = [];
+  let akt = null;
+  for (const t of route.teile) {
+    const f3 = t.k.f3 ? t.k.f3[t.e] : 0, fl = t.k.fl[t.e];
+    gesamt += t.meter;
+    if (f3 & BIT3.AUTOVERKEHR) { strasse += t.meter; if (!akt) { akt = { punkte: [], meter: 0 }; stuecke.push(akt); } akt.punkte.push(...t.punkte); akt.meter += t.meter; }
+    else akt = null;
+    if (fl & BIT.UNBEF) schotter += t.meter;
+    else if (!(f3 & BIT3.GETEERT)) { unbekannt += t.meter; if (t.meter > 80) fragen.push(t.punkte[Math.floor(t.punkte.length / 2)]); }
+  }
+  return { ohneAutos: gesamt ? 1 - strasse / gesamt : 1, stuecke: stuecke.filter(x => x.meter > 15), strasse, unbekannt, schotter, fragen: fragen.slice(0, 15) };
+}
+
 /** Anteil der Strecke von b, der auch in a vorkommt (0..1). */
 export function gemeinsam(a, b) {
   const set = new Set();
@@ -457,34 +531,122 @@ export function unterschied(r, beste, alle) {
   return teile.join(" · ") || "anderer Weg";
 }
 
-/** Fasst gleiche Straßen zusammen und beschreibt die Abbiegungen. */
-export function anweisungen(teile, modus = "auto") {
-  const out = [];
-  for (const t of teile) {
-    if (t.meter < 0.5 && out.length) continue;
-    const n = name(t);
-    const kl = t.k.kl[t.e];
-    const l = out[out.length - 1];
-    const gleich = l && ((n && l.name === n) || (!n && !l.name && l.klasse === kl));
-    if (gleich) { l.meter += t.meter; l.ende = t.punkte[t.punkte.length - 1]; l.letzteRichtung = endRichtung(t.punkte); continue; }
-    let dreh = null;
-    if (l) {
-      const a = l.letzteRichtung, b = startRichtung(t.punkte);
-      if (a !== null && b !== null) dreh = ((b - a + 540) % 360) - 180;
+const istKreisel = t => ((t.k.f3 ? t.k.f3[t.e] : 0) & BIT3.KREISEL) !== 0;
+const ORDINAL = ["", "erste", "zweite", "dritte", "vierte", "fünfte", "sechste"];
+
+/** Ausfahrten an einem Knoten zählen: Kanten, die den Kreisverkehr verlassen. */
+function ausfahrtenAm(k, i, bit) {
+  let n = 0;
+  for (let e = k.start[i]; e < k.start[i + 1]; e++) if (!((k.f3 ? k.f3[e] : 0) & BIT3.KREISEL) && (k.fl[e] & bit) && k.kl[e] <= 8) n++;
+  return n;
+}
+
+/** Seitenstraßen auf der Abbiege-Seite zählen (für „die zweite Straße rechts“). */
+function seitenstrassen(teile, von, bis, seite, bit) {
+  let n = 0, rest = 0;
+  for (let j = bis - 1; j >= von; j--) {
+    rest += teile[j].meter;
+    if (rest > 350) break;
+    const t = teile[j], nach = teile[j + 1];
+    if (!nach || nach.k.key === "fern") return -1;   // im Fernnetz fehlen kleine Straßen
+    const k = nach.k, i = nach.i;
+    const rein = endRichtung(t.punkte); if (rein === null) continue;
+    const zurueck = t.k.ids[t.i];
+    for (let e = k.start[i]; e < k.start[i + 1]; e++) {
+      if (e === nach.e || k.to[e] === zurueck || !(k.fl[e] & bit) || k.kl[e] > 8 || k.kl[e] === 8) continue;
+      const g = richtung(k.lat[i] / 1e6, k.lon[i] / 1e6, (k.gc[e] ? k.geo[2 * k.gs[e]] : k.tla[e]) / 1e6, (k.gc[e] ? k.geo[2 * k.gs[e] + 1] : k.tlo[e]) / 1e6);
+      const rel = ((g - rein + 540) % 360) - 180;
+      if (seite > 0 ? rel > 25 && rel < 155 : rel < -25 && rel > -155) { n++; break; }
     }
-    out.push({ name: n, klasse: kl, meter: t.meter, punkt: t.punkte[0], ende: t.punkte[t.punkte.length - 1], dreh, letzteRichtung: endRichtung(t.punkte) });
+  }
+  return n;
+}
+
+/** Fahrspuren aus OSM („left|through|through;right“) → [{pfeile, passt}] */
+export function spurenLesen(text, dreh) {
+  if (!text) return null;
+  const w = drehWort(dreh);
+  const ziel = w.includes("rechts") ? /right/ : w.includes("links") ? /left/ : /through|^$|none/;
+  const spuren = text.split("|").map(x => ({ pfeile: x || "through", passt: ziel.test(x || "through") }));
+  if (spuren.length < 2 || !spuren.some(x => x.passt) || spuren.every(x => x.passt)) return null;
+  return spuren;
+}
+
+/** Name einer Auf-/Abfahrt aus „⇢Freiburg-Mitte|Titisee, Freiburg“ */
+export function ausfahrtLesen(n) {
+  if (!n || !n.startsWith("⇢")) return null;
+  const [aus, ziel] = n.slice(1).split("|");
+  return { aus: aus || "", ziel: ziel || "" };
+}
+
+/** Fasst gleiche Straßen zusammen und beschreibt die Abbiegungen, Kreisverkehre und Ausfahrten. */
+export function anweisungen(teile, modus = "auto") {
+  const bit = MODUS_BIT[modus] || BIT.AUTO;
+  const out = [];
+  for (let j = 0; j < teile.length; j++) {
+    const t = teile[j];
+    if (t.meter < 0.5 && out.length && !istKreisel(t)) continue;
+    const l = out[out.length - 1];
+    // Kreisverkehr: alle Stücke zusammen, Ausfahrten zählen
+    if (istKreisel(t)) {
+      if (l && l.typ === "kreisel") { l.meter += t.meter; l.bisTeil = j; continue; }
+      out.push({ typ: "kreisel", name: "", klasse: t.k.kl[t.e], meter: t.meter, punkt: t.punkte[0], vonTeil: j, bisTeil: j, dreh: null, letzteRichtung: null });
+      continue;
+    }
+    const n = name(t), kl = t.k.kl[t.e];
+    if (l && l.typ === "kreisel" && l.ausfahrt === undefined) {
+      // Ausfahrt-Nummer: an jedem Knoten im Kreisel die abgehenden Straßen zählen
+      let nr = 0;
+      for (let x = l.vonTeil; x < j; x++) { const nach = teile[x + 1]; nr += x + 1 === j ? 1 : ausfahrtenAm(nach.k, nach.i, bit); }
+      l.ausfahrt = Math.max(1, nr); l.ausName = n; l.letzteRichtung = endRichtung(t.punkte);
+      out.push({ typ: "weiter", nachKreisel: true, name: n, klasse: kl, meter: t.meter, punkt: t.punkte[0], dreh: null, letzteRichtung: endRichtung(t.punkte), vonTeil: j, bisTeil: j });
+      continue;
+    }
+    const gleich = l && l.typ !== "kreisel" && ((n && l.name === n) || (!n && !l.name && l.klasse === kl));
+    if (gleich) { l.meter += t.meter; l.letzteRichtung = endRichtung(t.punkte); l.bisTeil = j; continue; }
+    let dreh = null;
+    if (l && l.letzteRichtung !== null) {
+      const b = startRichtung(t.punkte);
+      if (b !== null) dreh = ((b - l.letzteRichtung + 540) % 360) - 180;
+    }
+    const schritt = { typ: "abbiegen", name: n, klasse: kl, meter: t.meter, punkt: t.punkte[0], dreh, letzteRichtung: endRichtung(t.punkte), vonTeil: j, bisTeil: j };
+    if (l && j > 0) {
+      const davor = teile[j - 1];
+      const f3 = davor.k.f3 ? davor.k.f3[davor.e] : 0;
+      schritt.ampel = (f3 & BIT3.AMPEL_ENDE) !== 0;
+      const sp = davor.k.spur ? davor.k.spur[davor.e] : 65535;
+      if (sp !== 65535) schritt.spuren = spurenLesen(davor.k.namen[sp], dreh);
+      const w = drehWort(dreh);
+      if (w && w !== "geradeaus" && Math.abs(dreh) >= 60 && kl > 1 && l.typ !== "kreisel") {
+        const vor = seitenstrassen(teile, l.vonTeil, j, dreh > 0 ? 1 : -1, bit);
+        if (vor >= 1 && vor <= 2) schritt.ordinal = vor + 1;
+      }
+    }
+    out.push(schritt);
   }
   // Kurze namenlose Stücke (< 30 m) in die Nachbarn schieben
-  const sauber = out.filter((x, i) => !(i > 0 && i < out.length - 1 && !x.name && x.meter < 30));
-  // namenlose Stücke an großen Straßen sind Auf- und Abfahrten
+  const sauber = out.filter((x, i) => x.typ === "kreisel" || !(i > 0 && i < out.length - 1 && !x.name && x.meter < 30 && out[i - 1].typ !== "kreisel"));
+  // Auf- und Abfahrten erkennen
   sauber.forEach((x, i) => {
-    if (x.name || x.klasse > 3) return;
+    if (x.typ === "kreisel") return;
+    const af = ausfahrtLesen(x.name);
     const vor = sauber[i - 1], nach = sauber[i + 1];
-    if (nach && nach.klasse <= 1 && nach.name) x.name = `die Auffahrt (${nach.name.split(" · ")[0]})`, x.ohneAuf = true;
-    else if (vor && vor.klasse <= 1) x.name = "die Abfahrt", x.ohneAuf = true;
-    else x.name = "die Verbindungsstraße", x.ohneAuf = true;
+    if (af) {
+      x.ohneAuf = true;
+      if (vor && vor.klasse <= 1 && vor.typ !== "kreisel") { x.typ = "abfahrt"; x.ausfahrt = af.aus; x.richtungZiel = af.ziel; x.name = af.aus ? `die Abfahrt ${af.aus}` : "die Abfahrt"; }
+      else { x.typ = "auffahrt"; x.richtungZiel = af.ziel; x.name = `die Auffahrt${nach && nach.name ? " (" + nach.name.split(" · ")[0] + ")" : ""}`; }
+      return;
+    }
+    if (x.name || x.klasse > 3) return;
+    x.ohneAuf = true;
+    if (nach && nach.klasse <= 1 && nach.name) { x.typ = "auffahrt"; x.name = `die Auffahrt (${nach.name.split(" · ")[0]})`; }
+    else if (vor && vor.klasse <= 1) { x.typ = "abfahrt"; x.name = "die Abfahrt"; }
+    else x.name = "die Verbindungsstraße";
   });
-  return sauber.map((x, i) => ({ text: anweisungsText(x, i, modus), name: x.name, meter: x.meter, punkt: x.punkt, dreh: x.dreh, klasse: x.klasse }));
+  return sauber.map((x, i) => ({
+    text: anweisungsText(x, i, modus), typ: i === 0 ? "start" : x.typ, name: x.typ === "kreisel" ? x.ausName : x.name, meter: x.meter, punkt: x.punkt,
+    dreh: x.dreh, klasse: x.klasse, ausfahrt: x.ausfahrt, richtungZiel: x.richtungZiel, ordinal: x.ordinal, ampel: x.ampel, spuren: x.spuren, nachKreisel: x.nachKreisel,
+  }));
 }
 
 function startRichtung(p) {
@@ -518,15 +680,20 @@ function strassenName(x) {
   return { 8: "die Zufahrt", 9: "den Feldweg", 10: "den Radweg", 11: "den Fußweg" }[x.klasse] || "die Straße";
 }
 
+/** Text in der Liste „So geht's“ */
 function anweisungsText(x, i, modus) {
-  const was = strassenName(x);
-  const auf = x.ohneAuf ? `auf ${x.name}` : x.name ? `auf ${x.name}` : `auf ${was}`;
-  const weiter = modus === "fuss" ? "Geh" : modus === "rad" ? "Fahr" : "Fahr";
+  const auf = `auf ${strassenName(x)}`;
+  const weiter = modus === "fuss" ? "Geh" : "Fahr";
   if (i === 0) return `${weiter} los ${auf}`;
-  if (x.name === "die Abfahrt") return "Nimm die Abfahrt";
+  if (x.typ === "kreisel") return `Im Kreisverkehr die ${ORDINAL[x.ausfahrt] || x.ausfahrt + "."} Ausfahrt${x.ausName ? " auf " + x.ausName : ""}`;
+  if (x.nachKreisel) return `Weiter ${auf}`;
+  if (x.typ === "abfahrt") return `Nimm ${x.name}${x.richtungZiel ? ", Richtung " + x.richtungZiel : ""}`;
+  if (x.typ === "auffahrt" && x.richtungZiel) return `Auf ${x.name.replace(/^die /, "die ")} Richtung ${x.richtungZiel}`;
   const w = drehWort(x.dreh);
   if (!w || w === "geradeaus") return `Weiter geradeaus ${auf}`;
   if (w === "wenden") return `Wenden und weiter ${auf}`;
+  if (x.ampel) return `An der Ampel ${w} ${auf}`;
+  if (x.ordinal) return `${ORDINAL[x.ordinal][0].toUpperCase() + ORDINAL[x.ordinal].slice(1)} Straße ${w} ${auf}`;
   return `${w[0].toUpperCase() + w.slice(1)} abbiegen ${auf}`;
 }
 
