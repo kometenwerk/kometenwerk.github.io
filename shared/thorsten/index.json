@@ -2605,6 +2605,33 @@
    "dauer": 4.15,
    "hash": "45cb143b62ac",
    "nr": 3
+  },
+  {
+   "id": "app-health-1",
+   "gruppe": "app_health",
+   "text": "Wie viel schläfst du eigentlich? Mit FIDELIA Health findest du es raus.",
+   "datei": "ton/app-health-1.mp3",
+   "dauer": 3.54,
+   "hash": "71457c047930",
+   "nr": 1
+  },
+  {
+   "id": "app-health-2",
+   "gruppe": "app_health",
+   "text": "Schlaf, Bewegung und Stimmung, alles in einem privaten Tagebuch.",
+   "datei": "ton/app-health-2.mp3",
+   "dauer": 3.57,
+   "hash": "58ba177f3ccc",
+   "nr": 2
+  },
+  {
+   "id": "app-health-3",
+   "gruppe": "app_health",
+   "text": "Und es ist mit deiner PIN verschlüsselt. Das geht niemanden etwas an!",
+   "datei": "ton/app-health-3.mp3",
+   "dauer": 3.48,
+   "hash": "7b13662a5cf0",
+   "nr": 3
   }
  ]
 }
