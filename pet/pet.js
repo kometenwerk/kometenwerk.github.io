@@ -52,7 +52,7 @@
     var h = '<h2 class="sec">Was ansteht</h2>' + (f.length ? f.map(function (x) { return '<div class="card faellig' + (x.bis && tage(x.bis) < 0 ? " rot" : "") + '"><b>' + esc(x.text) + "</b><small>" + (x.medi ? "läuft gerade" : datum(x.bis) + " · " + wannText(x.bis)) + "</small></div>"; }).join("") : '<div class="card faellig" style="border-left-color:var(--good)"><b>✅ Gerade steht nichts an</b><small>Neue Impfungen und Termine trägst du in den Reitern oben ein.</small></div>');
     h += '<div class="kacheln"><div class="card kachel"><small>Geburtstag</small><b>' + (a.geb ? datum(a.geb) : "–") + '</b></div><div class="card kachel"><small>Gewicht</small><b>' + (lw ? esc(String(lw.kg).replace(".", ",")) + " kg" : "–") + '</b></div><div class="card kachel"><small>Chip-Nummer</small><b>' + esc(a.chip || "–") + '</b></div><div class="card kachel"><small>Tierarzt</small><b>' + esc(a.arzt || "–") + "</b>" + (a.arztTel ? '<br><a href="tel:' + esc(a.arztTel.replace(/[^0-9+]/g, "")) + '">📞 ' + esc(a.arztTel) + "</a>" : "") + "</div></div>";
     if (a.allergien || a.futter) h += '<div class="card kachel" style="margin-top:10px">' + (a.allergien ? "<small>⚠️ Allergien / Unverträglichkeiten</small><b>" + esc(a.allergien) + "</b>" : "") + (a.futter ? '<small style="margin-top:6px">🥣 Futter</small><b>' + esc(a.futter) + "</b>" : "") + "</div>";
-    h += '<div class="oben"><button class="btn primary" type="button" data-a="akte">📋 Akte für den Tierarzt</button><button class="btn" type="button" data-a="ics">📅 Erinnerungen in meinen Kalender</button></div>';
+    h += '<div class="oben"><button class="btn primary" type="button" data-a="akte">📋 Akte für den Tierarzt</button><button class="btn" type="button" data-a="planer">📋 In den FIDELIA Planer</button><button class="btn" type="button" data-a="ics">📅 Als Kalender-Datei</button></div>';
     return h;
   }
   function liste(arr, zeile, leer) { return arr.length ? '<div class="liste">' + arr.map(zeile).join("") + "</div>" : '<div class="empty"><b>' + leer[0] + "</b>" + leer[1] + "</div>"; }
@@ -201,6 +201,15 @@
     KW.toast(ev.length + " Erinnerungen – öffne die Datei, um sie in deinen Kalender zu übernehmen.");
   }
 
+  function planer() {
+    var a = aktiv(), l = [];
+    (a.impf || []).forEach(function (i) { if (i.naechste && i.naechste >= KW.today()) l.push({ quelle: "pet-impf-" + i.id, titel: "💉 " + a.name + ": " + i.name + " auffrischen", datum: i.naechste, notiz: "Aus FIDELIA Pet" + (a.arzt ? " · " + a.arzt : "") }); });
+    (a.termine || []).forEach(function (t) { if (t.datum >= KW.today()) l.push({ quelle: "pet-termin-" + t.id, titel: "🩺 " + a.name + ": " + (t.grund || "Tierarzt"), datum: t.datum, zeit: t.uhr, notiz: "Aus FIDELIA Pet" + (a.arzt ? " · " + a.arzt : "") }); });
+    if (!l.length) { KW.toast("Es gibt noch keine zukünftigen Termine oder Impfungen."); return; }
+    var r = KW.planerTermine(l);
+    KW.toast("📋 " + (r.neu ? r.neu + " neu im Planer" : "") + (r.neu && r.aktualisiert ? ", " : "") + (r.aktualisiert ? r.aktualisiert + " aktualisiert" : ""), "Planer öffnen", function () { location.href = "../planer/"; });
+  }
+
   /* ---------- Klicks ---------- */
   document.addEventListener("click", function (e) {
     if (fenster.contains(e.target)) return;
@@ -217,6 +226,7 @@
     else if (aktion === "termin") eintragFenster("termine");
     else if (aktion === "akte") akte();
     else if (aktion === "ics") ics();
+    else if (aktion === "planer") planer();
   });
 
   KW.footer("pet", function () { return D; }, function (d) { if (d && Array.isArray(d.tiere)) { D = d; speichern(); zeigen(); } });

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="de" data-marke="flaressa">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FLARESSA Ride – Tacho für Rad, Skate und Roller</title>
+<meta name="description" content="Großer Tacho mit Strecke, Zeit und Spitzengeschwindigkeit für Fahrrad, Skateboard, BMX und Roller. Deine Fahrten bleiben auf deinem Gerät.">
+<meta name="theme-color" content="#9a3412">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ride">
+<link rel="stylesheet" href="../shared/fonts/fonts.css">
+<link rel="stylesheet" href="../shared/kw.css">
+<style>:root{--app:#9a3412;--app-soft:rgba(154,52,18,.15)}</style>
+<style>
+.tacho-start{text-align:center;padding:18px 0 4px}
+.kreis{width:190px;height:190px;border-radius:50%;margin:0 auto 16px;display:grid;place-content:center;background:radial-gradient(circle,#1c1917 58%,transparent 59%),conic-gradient(#ff8a3c 0 70%,#44403c 70% 100%);color:#fff}
+.kreis span{font-size:3.6rem;font-weight:700;line-height:1}
+.kreis small{opacity:.7}
+.arten{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px}
+.arten button{border:2px solid var(--line);background:var(--card);border-radius:999px;padding:8px 12px;cursor:pointer;font-size:.92rem}
+.arten button[aria-pressed="true"]{border-color:var(--app);background:var(--app-soft);font-weight:600}
+.los{width:100%;max-width:380px;border:0;border-radius:20px;padding:20px;font-size:1.35rem;font-weight:700;background:linear-gradient(90deg,#ff8a3c,#9a3412);color:#fff;cursor:pointer;box-shadow:0 10px 26px rgba(154,52,18,.35)}
+.warn{font-size:.85rem;color:var(--muted);max-width:380px;margin:12px auto 0}
+.kacheln{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}
+.kachel{padding:10px 12px}.kachel small{color:var(--muted);display:block;font-size:.75rem}.kachel b{font-size:1.05rem}
+.liste{display:flex;flex-direction:column;gap:8px}
+.eintrag{display:flex;gap:12px;align-items:center;padding:11px 13px;text-align:left;width:100%;border:1px solid var(--line);background:var(--card);border-radius:14px;cursor:pointer}
+.eintrag .i{font-size:1.5rem}.eintrag .mitte{flex:1}.eintrag .mitte b{display:block}.eintrag .mitte small,.eintrag .rechts{color:var(--muted);font-size:.85rem}
+/* Fahrt: dunkel, riesige Zahlen */
+.fahrt{position:fixed;inset:0;z-index:30;background:#0c0a09;color:#fff;display:flex;flex-direction:column;padding:calc(10px + env(safe-area-inset-top,0px)) 16px calc(14px + env(safe-area-inset-bottom,0px))}
+.gps{text-align:center;font-size:.85rem;opacity:.75}
+.tacho{text-align:center;margin:8px 0}
+.tacho b{display:block;font-size:min(34vw,9rem);line-height:1;font-weight:700;font-variant-numeric:tabular-nums}
+.tacho small{font-size:1.1rem;opacity:.7}
+.werte{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:6px 0}
+.werte div{background:rgba(255,255,255,.07);border-radius:16px;padding:10px;text-align:center}
+.werte b{display:block;font-size:1.8rem;font-variant-numeric:tabular-nums}
+.werte small{opacity:.7}
+.werte.hell div{background:var(--soft)}
+.spur{flex:1;min-height:120px;width:100%;background:rgba(255,255,255,.04);border-radius:16px;margin:6px 0}
+.spur.gross{height:260px;flex:none;background:var(--soft)}
+.steuer{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gross-knopf{border:0;border-radius:20px;padding:22px 10px;font-size:1.3rem;font-weight:700;cursor:pointer;color:#fff}
+.gross-knopf.pause{background:#44403c}.gross-knopf.pause.an{background:#ff8a3c;color:#1c1917}
+.gross-knopf.stopp{background:#b91c1c}
+.fahrtkarte{padding:16px;margin-top:10px}.fahrtkarte h2{margin:0}
+</style>
+</head>
+<body>
+<script src="../shared/intro.js"></script>
+<header class="kw-bar">
+  <a class="kw-home" href="../" aria-label="Zurück zur Startseite der OMNIVIA Group"><img src="../shared/marken/omnivia-zeichen.webp" alt="" width="40" height="21" style="width:40px;height:auto;display:block"></a>
+  <h1>FLARESSA Ride</h1>
+  <button class="kw-install" id="kwInstall" type="button" hidden>Als App installieren</button>
+</header>
+<main class="kw-main"><div id="ansicht"></div></main>
+<script src="../shared/kw.js"></script>
+<script src="ride.js"></script>
+</body>
+</html>

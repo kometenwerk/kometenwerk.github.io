@@ -390,6 +390,24 @@
         "Mit PIN verschlüsselt",
         "Nur auf deinem Gerät"
       ]
+    },
+    {
+      "id": "ride",
+      "name": "FLARESSA Ride",
+      "marke": "flaressa",
+      "farbe": "#9a3412",
+      "status": "fertig",
+      "pfad": "ride/",
+      "bilder": [
+        "apps/bilder/ride-1.webp",
+        "apps/bilder/ride-2.webp",
+        "apps/bilder/ride-3.webp"
+      ],
+      "punkte": [
+        "Großer Tacho",
+        "Strecke & Rekorde",
+        "Rad, Skate, Roller"
+      ]
     }
   ]
 }

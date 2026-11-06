@@ -1,5 +1,5 @@
 // Offline-Speicher für OMNIVIA Events
-const V = "kw-events-2026-11-06a";
+const V = "kw-events-2026-11-06a-p1";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "../shared/kw.css", "../shared/kw.js", "events.js", "../shared/intro.js", "../shared/marken/fidelia.webp", "../shared/marken/omnivia-zeichen.webp", "../shared/fonts/fonts.css", "../shared/fonts/space-grotesk-latin-400-normal.woff2", "../shared/fonts/space-grotesk-latin-500-normal.woff2", "../shared/fonts/space-grotesk-latin-600-normal.woff2"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

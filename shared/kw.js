@@ -45,6 +45,22 @@
   };
 
   /* Datum-Helfer */
+  // Termine aus anderen OMNIVIA-Apps in den FIDELIA Planer eintragen (gleiches Gerät, gleiche Website).
+  // liste: [{ quelle: "pet-impf-123", titel, datum: "JJJJ-MM-TT", zeit: "HH:MM", notiz }] – gleiche quelle wird nicht doppelt eingetragen.
+  KW.planerTermine = function (liste) {
+    var d = KW.load("kw-planer", null);
+    if (!d || !Array.isArray(d.eintraege)) d = { eintraege: [] };
+    var neu = 0, alt = 0;
+    (liste || []).forEach(function (t) {
+      if (!t || !t.datum || !t.titel) return;
+      var da = d.eintraege.filter(function (e) { return t.quelle && e.quelle === t.quelle; })[0];
+      if (da) { da.titel = t.titel; da.datum = t.datum; da.zeit = t.zeit || ""; da.notiz = t.notiz || ""; alt++; return; }
+      d.eintraege.push({ id: KW.id(), erledigt: false, erstellt: new Date().toISOString(), typ: "termin", fach: "", titel: String(t.titel).slice(0, 120), datum: t.datum, zeit: t.zeit || "", notiz: String(t.notiz || "").slice(0, 300), quelle: t.quelle || "" });
+      neu++;
+    });
+    KW.save("kw-planer", d);
+    return { neu: neu, aktualisiert: alt };
+  };
   KW.today = function () { var d = new Date(); return KW.ymd(d); };
   KW.ymd = function (d) {
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
@@ -143,7 +159,7 @@
 
 
   /* Altersempfehlung in der Kopfleiste */
-  var ALTER = { karten: 8, planer: 8, notizen: 8, quiz: 8, fokus: 8, taschengeld: 8, beats: 6, werkstatt: 10, kueche: 10, ki: 12, chat: 12, arcade: 6, pet: 8, events: 10, form: 10, health: 10 };
+  var ALTER = { karten: 8, planer: 8, notizen: 8, quiz: 8, fokus: 8, taschengeld: 8, beats: 6, werkstatt: 10, kueche: 10, ki: 12, chat: 12, arcade: 6, pet: 8, events: 10, form: 10, health: 10, ride: 8 };
   function setupAlter() {
     var teil = location.pathname.split("/").filter(Boolean), ordner = teil[teil.length - 1] === "index.html" ? teil[teil.length - 2] : teil[teil.length - 1];
     var a = ALTER[ordner], bar = document.querySelector(".kw-bar h1");

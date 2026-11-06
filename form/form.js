@@ -79,7 +79,7 @@ function checkHtml(c) {
   const fmt = iso => iso.split("-").reverse().join(".");
   return `<div class="card check"><h3>🔎 Schnell-Check</h3>
     ${c.absender ? `<p><small>Absender (vermutlich)</small><br>${esc(c.absender)}</p>` : ""}
-    ${c.daten.length ? `<p><small>Daten im Brief</small></p><div class="liste">${c.daten.map(d => { const t = tageBis(d.iso); return `<div class="eintrag statisch${d.frist ? " frist" : ""}"><span class="i">${d.frist ? "⏰" : "📅"}</span><span class="mitte"><b>${fmt(d.iso)}${d.frist ? " – sieht nach einer Frist aus" : ""}</b><small>„…${esc(d.text)}…“</small></span><span class="rechts">${t >= 0 ? `<small>${t === 0 ? "heute" : "in " + t + " Tagen"}</small>` : `<small>vorbei</small>`}${d.frist && t >= 0 ? `<button class="btn small" type="button" data-ics="${d.iso}">📅 Erinnern</button>` : ""}</span></div>`; }).join("")}</div>` : "<p>Keine Daten gefunden.</p>"}
+    ${c.daten.length ? `<p><small>Daten im Brief</small></p><div class="liste">${c.daten.map(d => { const t = tageBis(d.iso); return `<div class="eintrag statisch${d.frist ? " frist" : ""}"><span class="i">${d.frist ? "⏰" : "📅"}</span><span class="mitte"><b>${fmt(d.iso)}${d.frist ? " – sieht nach einer Frist aus" : ""}</b><small>„…${esc(d.text)}…“</small></span><span class="rechts">${t >= 0 ? `<small>${t === 0 ? "heute" : "in " + t + " Tagen"}</small>` : `<small>vorbei</small>`}${d.frist && t >= 0 ? `<button class="btn small" type="button" data-planer="${d.iso}">📋 In den Planer</button><button class="btn small" type="button" data-ics="${d.iso}">📅 .ics</button>` : ""}</span></div>`; }).join("")}</div>` : "<p>Keine Daten gefunden.</p>"}
     ${c.betraege.length ? `<p><small>Beträge</small><br>${c.betraege.map(b => `<span class="chip">💶 ${esc(b)}</span>`).join(" ")}</p>` : ""}
     ${c.zeichen.length ? `<p><small>Nummern zum Angeben (wenn du antwortest oder anrufst)</small><br>${c.zeichen.map(z => `<span class="chip">${esc(z)}</span>`).join(" ")}</p>` : ""}
   </div>`;
@@ -139,6 +139,13 @@ function md(t) {
 
 /* ---------- Kalender-Erinnerung für eine Frist ---------- */
 document.addEventListener("click", e => {
+  const pl = e.target.closest("[data-planer]");
+  if (pl) {
+    const c = schnellCheck(text), absender = (c.absender || "Brief").split(" · ")[0].slice(0, 50);
+    KW.planerTermine([{ quelle: "form-" + pl.dataset.planer + "-" + absender, titel: "⏰ Frist: " + absender, datum: pl.dataset.planer, notiz: "Aus FIDELIA Form – Brief nochmal ansehen!" }]);
+    KW.toast("📋 Frist im Planer eingetragen", "Planer öffnen", () => { location.href = "../planer/"; });
+    return;
+  }
   const b = e.target.closest("[data-ics]");
   if (b) {
     const d = b.dataset.ics, vor = new Date(new Date(d).getTime() - 3 * 864e5).toISOString().slice(0, 10).replace(/-/g, "");

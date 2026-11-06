@@ -1720,6 +1720,24 @@
       "gruppe": "app_health",
       "text": "Und es ist mit deiner PIN verschlüsselt. Das geht niemanden etwas an!",
       "nr": 3
+    },
+    {
+      "id": "app-ride-1",
+      "gruppe": "app_ride",
+      "text": "Wie schnell fährst du eigentlich Fahrrad? FLARESSA Ride verrät es dir!",
+      "nr": 1
+    },
+    {
+      "id": "app-ride-2",
+      "gruppe": "app_ride",
+      "text": "Ein riesiger Tacho, deine Strecke und deine schnellste Fahrt. Für Rad, Skateboard und Roller.",
+      "nr": 2
+    },
+    {
+      "id": "app-ride-3",
+      "gruppe": "app_ride",
+      "text": "Aber denk dran: Helm auf und während der Fahrt nicht aufs Handy schauen!",
+      "nr": 3
     }
   ]
 }

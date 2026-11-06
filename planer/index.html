@@ -171,6 +171,9 @@ details.erledigt summary{cursor:pointer;color:var(--muted);margin:22px 4px 8px;f
   if (!D || !Array.isArray(D.eintraege)) {
     D = { eintraege: [], faecher: START_FAECHER.map(function (f) { return { name: f[0], farbe: f[1] }; }), plan: { stunden: 8, zellen: {} } };
   }
+  // Wenn eine andere App den Planer zuerst angelegt hat, fehlen Fächer und Stundenplan noch
+  if (!Array.isArray(D.faecher)) D.faecher = START_FAECHER.map(function (f) { return { name: f[0], farbe: f[1] }; });
+  if (!D.plan) D.plan = { stunden: 8, zellen: {} };
   function speichern() { KW.save(KEY, D); }
 
   function fach(name) { for (var i = 0; i < D.faecher.length; i++) if (D.faecher[i].name === name) return D.faecher[i]; return null; }
@@ -538,7 +541,7 @@ details.erledigt summary{cursor:pointer;color:var(--muted);margin:22px 4px 8px;f
   zeigen();
   // Um Mitternacht oder wenn man die App wieder öffnet: neu sortieren
   // Andere OMNIVIA-Apps (z. B. Sofie im Kometen-Team) können Termine eintragen → frisch laden
-  function neuLaden() { if (dlg.open) return; var d = KW.load(KEY, null); if (d && Array.isArray(d.eintraege)) D = d; }
+  function neuLaden() { if (dlg.open) return; var d = KW.load(KEY, null); if (d && Array.isArray(d.eintraege)) { if (!Array.isArray(d.faecher)) d.faecher = D.faecher; if (!d.plan) d.plan = D.plan; D = d; } }
   document.addEventListener("visibilitychange", function () { if (!document.hidden) { neuLaden(); zeigen(); } });
   window.addEventListener("storage", function (e) { if (e.key === KEY) { neuLaden(); zeigen(); } });
 })();
