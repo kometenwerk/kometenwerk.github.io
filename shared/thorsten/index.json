@@ -1382,28 +1382,28 @@
   {
    "id": "app-notizen-1",
    "gruppe": "app_notizen",
-   "text": "Schnell was aufschreiben? Fidelia Notizen!",
+   "text": "Schluss mit dem Zettelchaos! Fidelia Notizen ist jetzt dein Schul-Cockpit.",
    "datei": "ton/app-notizen-1.mp3",
-   "dauer": 2.48,
-   "hash": "bd028cbfaee8",
+   "dauer": 3.72,
+   "hash": "34754fb78449",
    "nr": 1
   },
   {
    "id": "app-notizen-2",
    "gruppe": "app_notizen",
-   "text": "Notizen und Listen zum Abhaken, alles sofort wiedergefunden.",
+   "text": "Ein Heft für Stift und Tastatur, und ein Scanner, der Arbeitsblätter von selbst erkennt und gerade zieht.",
    "datei": "ton/app-notizen-2.mp3",
-   "dauer": 3.47,
-   "hash": "308e61879702",
+   "dauer": 5.82,
+   "hash": "7d3ef966bba7",
    "nr": 2
   },
   {
    "id": "app-notizen-3",
    "gruppe": "app_notizen",
-   "text": "Perfekt für Einkaufslisten und Ideen.",
+   "text": "Dazu Hausaufgaben, Karteikarten und Quiz. Und die KI läuft nur auf deinem eigenen Laptop.",
    "datei": "ton/app-notizen-3.mp3",
-   "dauer": 2.17,
-   "hash": "8c60a6b0299b",
+   "dauer": 5.45,
+   "hash": "518be66a40ae",
    "nr": 3
   },
   {
@@ -2658,6 +2658,33 @@
    "datei": "ton/app-ride-3.mp3",
    "dauer": 3.73,
    "hash": "82e4ff0b76cc",
+   "nr": 3
+  },
+  {
+   "id": "app-feed-1",
+   "gruppe": "app_feed",
+   "text": "Nervt dich Clickbait auch so? Dann probier FIDELIA Feed!",
+   "datei": "ton/app-feed-1.mp3",
+   "dauer": 2.99,
+   "hash": "c90b8f97e462",
+   "nr": 1
+  },
+  {
+   "id": "app-feed-2",
+   "gruppe": "app_feed",
+   "text": "Du wählst deine Quellen selbst, und alles ist einfach nach Zeit sortiert.",
+   "datei": "ton/app-feed-2.mp3",
+   "dauer": 3.68,
+   "hash": "d9147f2f295a",
+   "nr": 2
+  },
+  {
+   "id": "app-feed-3",
+   "gruppe": "app_feed",
+   "text": "Kein Algorithmus, keine Werbung. Nur Nachrichten.",
+   "datei": "ton/app-feed-3.mp3",
+   "dauer": 2.68,
+   "hash": "ae110acf9fd3",
    "nr": 3
   }
  ]
