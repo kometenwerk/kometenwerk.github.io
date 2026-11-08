@@ -103,6 +103,37 @@ export function stuecke(text, max = 5000) {
   return out;
 }
 
+// Karteikarten OHNE KI: Zeilen wie „Begriff: Erklärung“ oder „Begriff – Erklärung“
+export function kartenAusMuster(text) {
+  const out = [];
+  for (let zeile of String(text || "").split("\n")) {
+    zeile = zeile.replace(/^\s*(?:[-•*·]|\d+[.)])\s+/, "").trim();
+    const m = zeile.match(/^(.{2,80}?)\s*(?::(?=\s)|\s[–—-]\s|\s=\s|\s→\s|\s->\s)\s*(.{2,400})$/);
+    if (!m) continue;
+    const vorne = m[1].trim(), hinten = m[2].trim();
+    if (vorne.split(/\s+/).length > 7) continue; // ganzer Satz statt Begriff
+    if (/^(hausaufgabe|merke|datum|thema|seite|s\.|nr\.|aufgabe|überschrift|name|klasse)$/i.test(vorne)) continue;
+    if (/\d$/.test(vorne) && /^\d/.test(hinten)) continue; // Uhrzeit wie 10: 30
+    if (!out.some(k => k.vorne.toLowerCase() === vorne.toLowerCase())) out.push({ vorne, hinten });
+  }
+  return out.slice(0, 40);
+}
+
+// Quiz OHNE KI: richtige Erklärung + 3 Erklärungen von anderen Karten (ab 4 Karten)
+export function quizAusKarten(karten, zufall = Math.random) {
+  if (karten.length < 4) return [];
+  const out = [];
+  for (const k of karten.slice(0, 10)) {
+    const andere = karten.filter(x => x !== k && x.hinten.toLowerCase() !== k.hinten.toLowerCase());
+    if (andere.length < 3) continue;
+    const falsch = andere.slice().sort(() => zufall() - 0.5).slice(0, 3).map(x => x.hinten);
+    const richtig = Math.floor(zufall() * 4);
+    const optionen = falsch.slice(); optionen.splice(richtig, 0, k.hinten);
+    out.push({ frage: "Was passt zu „" + k.vorne + "“?", optionen, richtig });
+  }
+  return out;
+}
+
 /* ---------- Anweisungen an die KI ---------- */
 
 export const ANWEISUNG = {
@@ -160,6 +191,21 @@ async function aorisStarten(fortschritt) {
     return aoris;
   })().catch(e => { aorisLaden = null; throw e; });
   return aorisLaden;
+}
+
+// Läuft die Browser-KI schon (ohne etwas laden zu müssen)?
+export const aorisBereit = () => !!aoris;
+
+// „KI jetzt einrichten“: lädt einmal alles, damit es später sofort geht
+export async function einrichten(einst, fortschritt) {
+  if (einst.art === "aus") return { weg: "", text: "Die KI ist ausgeschaltet." };
+  if (einst.art !== "aoris") {
+    const o = await ollamaPruefen();
+    if (o.ok && o.modelle.length) return { weg: "ollama", text: "Ollama läuft schon – hier muss nichts geladen werden." };
+    if (einst.art === "ollama") throw new Error("ollama-fehlt");
+  }
+  const m = await aorisStarten(fortschritt);
+  return { weg: "aoris", text: m.name + " ist bereit." };
 }
 
 // Ist überhaupt eine KI möglich? → "ollama" | "aoris" | ""

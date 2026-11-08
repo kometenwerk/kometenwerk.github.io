@@ -11,6 +11,7 @@ import * as Planer from "./planer.js";
 import * as Lernen from "./lernen.js";
 import * as Audio from "./audio.js";
 import * as Start from "./start.js";
+import * as Sync from "./sync.js";
 
 const KW = window.KW, esc = KW.esc;
 
@@ -35,27 +36,30 @@ A.seiteNeu = async (werte) => {
     raster: A.einst.f.heft.raster, hoehe: 297, text: "", striche: [], bild: null, ocr: "", vorschlag: null, pin: false }, werte);
   A.seiten.unshift(s);
   await S.lege("seiten", s);
+  Sync.melden("seite", s);
   return s;
 };
-A.seiteSpeichern = async (s) => { s.geaendert = new Date().toISOString(); await S.lege("seiten", s); };
+A.seiteSpeichern = async (s) => { s.geaendert = new Date().toISOString(); await S.lege("seiten", s); Sync.melden("seite", s); };
 A.seiteLoeschen = async (id) => {
   const i = A.seiten.findIndex(s => s.id === id);
   if (i < 0) return null;
   const [s] = A.seiten.splice(i, 1);
   await S.weg("seiten", id);
+  Sync.melden("weg", { typ: "seite", id });
   return s;
 };
 A.seiteZurueck = async (s, bildBlob) => { // für „Rückgängig“
-  A.seiten.unshift(s); await S.lege("seiten", s);
-  if (bildBlob && s.bild) await S.lege("bilder", bildBlob, s.bild);
+  if (bildBlob && s.bild) { await S.lege("bilder", bildBlob, s.bild); Sync.melden("bild", { id: s.bild, blob: bildBlob }); }
+  s.geaendert = new Date().toISOString();
+  A.seiten.unshift(s); await S.lege("seiten", s); Sync.melden("seite", s);
 };
 A.seite = (id) => A.seiten.find(s => s.id === id);
-A.bildSpeichern = async (blob) => { const id = "b" + KW.id(); await S.lege("bilder", blob, id); return id; };
+A.bildSpeichern = async (blob) => { const id = "b" + KW.id(); await S.lege("bilder", blob, id); Sync.melden("bild", { id, blob }); return id; };
 A.bildHolen = (id) => S.hole("bilder", id);
 A.bildLoeschen = (id) => S.weg("bilder", id);
 
-A.lernSpeichern = async (set) => { const i = A.lern.findIndex(x => x.id === set.id); if (i < 0) A.lern.unshift(set); await S.lege("lern", set); };
-A.lernLoeschen = async (id) => { A.lern = A.lern.filter(x => x.id !== id); await S.weg("lern", id); };
+A.lernSpeichern = async (set) => { set.geaendert = new Date().toISOString(); const i = A.lern.findIndex(x => x.id === set.id); if (i < 0) A.lern.unshift(set); await S.lege("lern", set); Sync.melden("lern", set); };
+A.lernLoeschen = async (id) => { A.lern = A.lern.filter(x => x.id !== id); await S.weg("lern", id); Sync.melden("weg", { typ: "lern", id }); };
 
 // Text einer Seite für Suche und KI: Getipptes + erkannter Text
 A.seitenText = (s) => [s.titel, s.text, s.ocr].filter(Boolean).join("\n");
@@ -163,6 +167,10 @@ function zeigen() {
   window.scrollTo(0, 0);
 }
 A.zeigen = zeigen;
+// Nach Änderungen vom anderen Gerät: Übersichten neu zeichnen (aber nicht die Seite, an der man gerade schreibt)
+A.nachAbgleich = () => {
+  if (["start", "heft", "planer"].includes(aktuell.modul) || (aktuell.modul === "lernen" && !aktuell.param)) zeigen();
+};
 
 /* ---------- Sicherung ---------- */
 
@@ -228,6 +236,18 @@ async function starten() {
   A.lern.sort((a, b) => String(b.erstellt).localeCompare(String(a.erstellt)));
   if (!A.einst.fertig) await E.assistent(A.einst);
   S.dauerhaft();
+  Sync.start(A);
+  // Mit dem Handy-Kamera-QR-Code geöffnet? → Geräte verbinden
+  const kopplung = Sync.linkLesen(location.hash);
+  if (kopplung) {
+    history.replaceState(null, "", location.pathname + location.search + "#start");
+    if (confirm("Dieses Gerät mit deinem anderen Gerät verbinden? Dann gleichen sich Heft, Scans, Lernkarten und Hausaufgaben ab.")) {
+      KW.toast("Verbinde …");
+      Sync.beitreten("koppeln=" + kopplung.g + "." + kopplung.k)
+        .then(r => KW.toast(r === "schon" ? "Schon verbunden." : "✅ Verbunden! Dein Heft wird abgeglichen."))
+        .catch(e => KW.toast(e.message === "regeln" ? "Der Server lässt noch nicht zu (Regeln fehlen)." : "Verbinden hat nicht geklappt. Versuch es nochmal."));
+    }
+  }
   A.neuAufbauen();
   window.addEventListener("hashchange", zeigen);
   zeigen();

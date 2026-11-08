@@ -5,33 +5,10 @@
 
 import * as KI from "./ki.js";
 import * as Planer from "./planer.js";
+import * as Sprache from "./sprache.js";
 
 const KW = window.KW, esc = KW.esc;
-const TRANSFORMERS = "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.2/dist/transformers.web.min.js";
-const MODELLE = { base: "onnx-community/whisper-base", small: "onnx-community/whisper-small" };
 const MAX_MIN = 60;
-
-let whisper = null, whisperName = "";
-
-async function whisperLaden(name, fortschritt) {
-  if (whisper && whisperName === name) return whisper;
-  const T = await import(TRANSFORMERS);
-  const gpu = "gpu" in navigator && !!(await navigator.gpu.requestAdapter().catch(() => null));
-  const dateien = {};
-  whisper = await T.pipeline("automatic-speech-recognition", MODELLE[name] || MODELLE.base, {
-    device: gpu ? "webgpu" : "wasm",
-    dtype: gpu ? { encoder_model: "fp32", decoder_model_merged: "q4" } : "q8",
-    progress_callback: (p) => {
-      if (p && p.file && typeof p.loaded === "number" && p.total) {
-        dateien[p.file] = [p.loaded, p.total];
-        const l = Object.values(dateien).reduce((a, x) => a + x[0], 0), t = Object.values(dateien).reduce((a, x) => a + x[1], 0);
-        fortschritt(l / t, "Spracherkennung wird geladen (nur beim ersten Mal) … " + Math.round(l / 1048576) + " MB");
-      }
-    }
-  });
-  whisperName = name;
-  return whisper;
-}
 
 // Aufnahme → 16 kHz Mono (das braucht Whisper)
 async function zu16k(blob) {
@@ -172,7 +149,7 @@ export function zeigen(A, el) {
       let ton = await zu16k(blob);
       blob = null; // Aufnahme weg
       titelEl.textContent = "2/3 · Sprache wird zu Text …";
-      const w = await whisperLaden(F.modell, zeig);
+      const w = await Sprache.laden(F.modell, zeig);
       zeig(0.05, "Ich höre zu … (bei einer langen Stunde ein paar Minuten)");
       let tick = 0.05; const t = setInterval(() => { tick = Math.min(0.95, tick + 0.01); bal.style.width = Math.round(tick * 100) + "%"; }, 1500);
       const erg = await w(ton, { language: "german", task: "transcribe", chunk_length_s: 30, stride_length_s: 5 });

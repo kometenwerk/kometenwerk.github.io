@@ -1,6 +1,6 @@
 // Tests für die KI-Helfer: node notizen/tests/ki.test.mjs
 import assert from "node:assert/strict";
-import { jsonAusText, lernstoffPruefen, fachRaten, sortierungPruefen, stuecke, modellWaehlen } from "../ki.js";
+import { jsonAusText, lernstoffPruefen, fachRaten, sortierungPruefen, stuecke, modellWaehlen, kartenAusMuster, quizAusKarten } from "../ki.js";
 let ok = 0;
 function test(n, f) { f(); ok++; console.log("✓ " + n); }
 const F = ["Mathe", "Deutsch", "Geschichte", "Biologie"].map(name => ({ name }));
@@ -51,5 +51,18 @@ test("Modell wählen", () => {
   assert.equal(modellWaehlen(m, ""), "gemma3:4b");
   assert.equal(modellWaehlen(m, "llama3.2:3b"), "llama3.2:3b");
   assert.equal(modellWaehlen([], ""), "");
+});
+test("Karteikarten ohne KI aus Mustern", () => {
+  const k = kartenAusMuster("Die Zelle\nZellkern: Steuerzentrale der Zelle\n- Mitochondrien – Kraftwerke der Zelle\n2. Ribosomen = bauen Eiweiße\nHausaufgabe: S. 12\nUm 10:30 ist Pause\nDas ist ein ganz langer Satz mit sehr vielen Wörtern: und noch mehr\nZellkern: doppelt");
+  assert.deepEqual(k.map(x => x.vorne), ["Zellkern", "Mitochondrien", "Ribosomen"]);
+  assert.equal(k[1].hinten, "Kraftwerke der Zelle");
+  assert.deepEqual(kartenAusMuster(""), []);
+});
+test("Quiz ohne KI aus Karten", () => {
+  const karten = [["A", "eins"], ["B", "zwei"], ["C", "drei"], ["D", "vier"], ["E", "fünf"]].map(([vorne, hinten]) => ({ vorne, hinten }));
+  const q = quizAusKarten(karten);
+  assert.equal(q.length, 5);
+  q.forEach((f, i) => { assert.equal(f.optionen.length, 4); assert.equal(f.optionen[f.richtig], karten[i].hinten); assert.equal(new Set(f.optionen).size, 4); });
+  assert.deepEqual(quizAusKarten(karten.slice(0, 3)), []);
 });
 console.log(ok + " Tests bestanden.");

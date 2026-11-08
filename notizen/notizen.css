@@ -281,3 +281,18 @@ dialog.sheet.breit .sheet-in{max-width:760px}
   .cockpit{grid-template-columns:1fr}
   .scan-buehne{aspect-ratio:3/4;max-height:60vh}
 }
+.ki-einrichten{padding:14px;margin:12px 0;border-left:4px solid var(--app)}
+.ki-einrichten .btn{font-size:1.05rem;padding:12px 18px}
+.zoom-knoepfe{display:none}
+@media (max-width:600px){
+  .blatt{min-width:0}
+  .blatt-rahmen{touch-action:pan-x pan-y}
+  .zoom-knoepfe{display:flex;gap:2px;flex:none}
+}
+.kopplung{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;padding:14px;margin-top:12px}
+.kopplung .qr{width:200px;max-width:100%;background:#fff;border-radius:10px;padding:6px}
+.kopplung .qr svg{display:block;width:100%;height:auto}
+.kopplung>div:last-child{flex:1;min-width:200px}
+.kopplung video{width:240px;max-width:100%;border-radius:10px;background:#000}
+.kopplung ol{padding-left:20px;margin:6px 0}
+@media (max-width:600px){.seite-leiste>a{order:-2}.zoom-knoepfe{order:-1}}

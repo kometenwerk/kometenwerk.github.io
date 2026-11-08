@@ -3,6 +3,8 @@
 // KI-Check und Aussehen. Alles lässt sich später unter ⚙️ Einstellungen ändern.
 
 import * as KI from "./ki.js";
+import * as Sprache from "./sprache.js";
+import * as Sync from "./sync.js";
 
 const KEY = "kw-notizen-einst";
 const esc = (s) => window.KW.esc(s);
@@ -47,7 +49,7 @@ export const FUNKTIONEN = [
     { id: "loeschen", name: "Aufnahme nach dem Umwandeln löschen", art: "fest", wert: true },
     { id: "laenge", name: "Zusammenfassung", art: "wahl", wert: "kurz", werte: [["kurz", "Kurz"], ["ausfuehrlich", "Ausführlich"]] },
     { id: "volltext", name: "Ganzen Text zusätzlich speichern", art: "schalter", wert: false },
-    { id: "modell", name: "Spracherkennung", art: "wahl", wert: "base", werte: [["base", "Schnell (ca. 150 MB)"], ["small", "Genauer (ca. 500 MB)"]] }
+    { id: "modell", name: "Spracherkennung", art: "wahl", wert: "auto", werte: [["auto", "Automatisch (Handy klein, Laptop normal)"], ["tiny", "Sehr klein (ca. 75 MB)"], ["base", "Normal (ca. 150 MB)"], ["small", "Genauer (ca. 500 MB)"]] }
   ] },
   { id: "kisort", icon: "🤖", name: "KI-Sortierung", text: "Scans und Seiten automatisch ins richtige Fach legen.", ki: true, unter: [
     { id: "auto", name: "Automatisch in Fach-Ordner", art: "schalter", wert: true },
@@ -189,9 +191,34 @@ export async function kiCheck(el, e, geaendert) {
   }
   h += '<label class="field"><span>Welche KI soll die App benutzen?</span><select class="inp" id="kiArt">' +
     [["auto", "Automatisch (erst Ollama, sonst Browser-KI)"], ["ollama", "Nur Ollama"], ["aoris", "Nur Browser-KI (AORIS)"], ["aus", "Keine KI"]].map(a => '<option value="' + a[0] + '"' + (a[0] === e.ki.art ? " selected" : "") + '>' + a[1] + '</option>').join("") + '</select></label>' +
-    '<button type="button" class="btn small" id="kiNochmal">↻ Nochmal prüfen</button>' +
-    '<p class="muted klein">🔒 Egal welche: Deine Texte, Fotos und Aufnahmen bleiben auf diesem Gerät.</p>';
+    '<button type="button" class="btn small" id="kiNochmal">↻ Nochmal prüfen</button>';
+  const ollamaDa = o.ok && o.modelle.length;
+  const brauchtLaden = (e.ki.art !== "aus" && !(ollamaDa && e.ki.art !== "aoris")) || e.an.audio;
+  if (brauchtLaden && (browserKi || e.an.audio)) {
+    h += '<div class="ki-einrichten card"><button type="button" class="btn primary" id="kiLos">🤖 KI jetzt einrichten</button>' +
+      '<div class="balken" id="kiBal" hidden><i></i></div><p class="muted klein" id="kiLosText">Lädt einmal alles, was die App braucht' +
+      (e.an.audio ? " (auch die Spracherkennung, " + Sprache.GROESSE[Sprache.modellName(e.f.audio.modell)] + ")" : "") + '. Danach geht alles sofort. Am besten im WLAN.' +
+      (Sprache.istHandy() ? " Auf dem Handy nimmt die App die kleine KI – die macht öfter Fehler." : "") + '</p></div>';
+  }
+  h += '<p class="muted klein">🔒 Egal welche: Deine Texte, Fotos und Aufnahmen bleiben auf diesem Gerät.</p>';
   el.innerHTML = h;
+  const los = el.querySelector("#kiLos");
+  if (los) los.onclick = async () => {
+    const c = navigator.connection;
+    if (c && (c.type === "cellular" || c.saveData) && !confirm("Du bist nicht im WLAN. Das Laden kann viele Daten verbrauchen. Trotzdem?")) return;
+    const bal = el.querySelector("#kiBal"), txt = el.querySelector("#kiLosText");
+    los.disabled = true; bal.hidden = false;
+    const zeig = (p, t) => { bal.firstChild.style.width = Math.max(3, Math.round((p || 0) * 100)) + "%"; if (t) txt.textContent = t; };
+    const fertig = [];
+    try {
+      if (e.ki.art !== "aus") { const r = await KI.einrichten(e.ki, zeig); fertig.push(r.text); }
+    } catch (err) { fertig.push(err.message === "ollama-fehlt" ? "Ollama wurde nicht gefunden." : "Die Text-KI konnte auf diesem Gerät nicht starten."); }
+    try {
+      if (e.an.audio) { zeig(0, "Spracherkennung wird geladen …"); await Sprache.laden(e.f.audio.modell, zeig); fertig.push("Spracherkennung ist bereit."); }
+    } catch (err) { fertig.push("Die Spracherkennung konnte nicht geladen werden."); }
+    zeig(1); txt.textContent = "✅ " + fertig.join(" ");
+    los.textContent = "Fertig"; e.ki.eingerichtet = true; geaendert && geaendert();
+  };
   const setz = (id, f) => { const x = el.querySelector(id); if (x) x.onchange = () => { f(x.value); geaendert && geaendert(); }; };
   setz("#kiModell", v => e.ki.ollamaModell = v);
   setz("#kiBild", v => e.ki.bildModell = v);
@@ -273,6 +300,7 @@ export function seite(A, el) {
       '<section class="card abschnitt"><h3>Fächer</h3>' + faecherHtml(e) + '</section>' +
       '<section class="card abschnitt"><h3>KI</h3><div id="kiBox"></div></section>' +
       '<section class="card abschnitt"><h3>Aussehen</h3>' + aussehenHtml(e) + '</section>' +
+      '<section class="card abschnitt" id="geraete"><h3>📱 Geräte verbinden</h3><div id="syncBox"></div></section>' +
       '<section class="card abschnitt"><h3>Daten</h3><p class="muted">Alles liegt nur auf diesem Gerät. Mach ab und zu eine Sicherung.</p>' +
       '<div class="row"><button type="button" class="btn" id="sichern">💾 Sicherung speichern</button><button type="button" class="btn" id="laden">📂 Sicherung laden</button>' +
       '<button type="button" class="btn" id="assi">🔁 Einrichtung neu starten</button></div><p class="muted klein" id="platz"></p></section>';
@@ -284,6 +312,7 @@ export function seite(A, el) {
     el.querySelector("#laden").onclick = () => A.sicherungLaden();
     el.querySelector("#assi").onclick = () => { e.fertig = false; speichern(e); location.reload(); };
     A.platzText(el.querySelector("#platz"));
+    Sync.bereich(el.querySelector("#syncBox"));
   }
   zeichnen();
 }

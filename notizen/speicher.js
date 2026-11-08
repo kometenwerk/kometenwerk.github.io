@@ -2,7 +2,8 @@
 // Heftseiten, Scans und Lernkarten werden groß – darum nicht im kleinen localStorage, sondern in IndexedDB.
 // Nichts davon verlässt das Gerät.
 
-const NAME = "fidelia-notizen";
+// ?demo=1&geraet=b → eigener Speicher pro „Gerät“ (nur zum Testen des Abgleichs in zwei Tabs)
+const NAME = "fidelia-notizen" + (typeof location !== "undefined" && /[?&]demo=1\b/.test(location.search) ? "-" + (new URLSearchParams(location.search).get("geraet") || "a") : "");
 let dbVersprechen = null;
 
 function db() {

@@ -1,0 +1,32 @@
+{
+  "fnotiz": {
+    "schloss": {
+      "$g": {
+        ".write": "auth != null && !data.exists() && $g.matches(/^[A-Za-z0-9_-]{22}$/) && newData.isString() && newData.val().matches(/^[a-f0-9]{64}$/)"
+      }
+    },
+    "mitglied": {
+      "$g": {
+        ".read": "auth != null && data.child(auth.uid).exists()",
+        "$uid": {
+          ".write": "auth != null && $uid === auth.uid && (!newData.exists() || newData.val() === root.child('fnotiz/schloss/' + $g).val())"
+        }
+      }
+    },
+    "post": {
+      "$g": {
+        ".read": "auth != null && root.child('fnotiz/mitglied/' + $g + '/' + auth.uid).exists()",
+        "$p": {
+          ".write": "auth != null && root.child('fnotiz/mitglied/' + $g + '/' + auth.uid).exists() && (data.exists() ? (!newData.exists() || newData.child('von').val() === data.child('von').val()) : newData.child('von').val() === auth.uid)",
+          ".validate": "$p.matches(/^[a-f0-9]{24}$/) && newData.hasChildren(['von', 'iv', 'd', 'zeit'])",
+          "von": { ".validate": "newData.isString() && newData.val().length <= 128" },
+          "iv": { ".validate": "newData.isString() && newData.val().length === 16" },
+          "d": { ".validate": "newData.isString() && newData.val().length <= 4000000" },
+          "zeit": { ".validate": "newData.isNumber() && newData.val() <= now" },
+          "ack": { "$uid": { ".validate": "$uid === auth.uid && newData.val() === true" } },
+          "$sonst": { ".validate": false }
+        }
+      }
+    }
+  }
+}

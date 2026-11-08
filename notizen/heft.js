@@ -145,6 +145,7 @@ export function seite(A, el, id) {
         '<select id="dicke" aria-label="Strichstärke">' + DICKE.map(d => '<option value="' + d[0] + '">' + d[1] + '</option>').join("") + '</select>' +
         '<button type="button" id="rueck" aria-label="Rückgängig">↶</button><button type="button" id="vor" aria-label="Wiederholen">↷</button>' +
       '</div>' +
+      '<span class="zoom-knoepfe"><button type="button" id="zMinus" aria-label="Kleiner">➖</button><button type="button" id="zPlus" aria-label="Größer">➕</button></span>' +
       '<span class="sp"></span>' +
       '<button type="button" class="btn small" id="menueBtn" aria-haspopup="true" aria-expanded="false">⋯ Mehr</button>' +
     '</div>' +
@@ -250,6 +251,31 @@ export function seite(A, el, id) {
   el.querySelector("#rueck").onclick = () => { if (!rueck.length) return; vor.push(JSON.stringify(s.striche)); s.striche = JSON.parse(rueck.pop()); allesZeichnen(); spaeter(); leiste(); };
   el.querySelector("#vor").onclick = () => { if (!vor.length) return; rueck.push(JSON.stringify(s.striche)); s.striche = JSON.parse(vor.pop()); allesZeichnen(); spaeter(); leiste(); };
 
+  /* --- Zoomen (vor allem auf dem Handy): Knöpfe oder zwei Finger --- */
+  let zoom = 1;
+  function zoomSetzen(z) {
+    zoom = Math.max(1, Math.min(4, Math.round(z * 100) / 100));
+    blatt.style.width = zoom > 1 ? zoom * 100 + "%" : "";
+    blatt.style.maxWidth = zoom > 1 ? "none" : "";
+  }
+  el.querySelector("#zPlus").onclick = () => zoomSetzen(zoom + 0.5);
+  el.querySelector("#zMinus").onclick = () => zoomSetzen(zoom - 0.5);
+  let pinch = null;
+  const abstand = (ts) => Math.hypot(ts[0].clientX - ts[1].clientX, ts[0].clientY - ts[1].clientY);
+  blatt.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 2) {
+      pinch = { d: abstand(e.touches), z: zoom };
+      // ein gerade angefangener Finger-Strich war kein Strich, sondern der Anfang vom Zoomen
+      if (strich && !strich.radierer && strich.finger) { strich = null; rueck.pop(); allesZeichnen(); }
+    }
+  }, { passive: true });
+  blatt.addEventListener("touchmove", (e) => {
+    if (!pinch || e.touches.length !== 2) return;
+    e.preventDefault();
+    zoomSetzen(pinch.z * abstand(e.touches) / pinch.d);
+  }, { passive: false });
+  blatt.addEventListener("touchend", (e) => { if (e.touches.length < 2) pinch = null; });
+
   /* --- Zeichnen mit Stift, Maus oder Finger --- */
   let strich = null, radiertGerade = false;
   function punkt(e) {
@@ -281,17 +307,20 @@ export function seite(A, el, id) {
     if (zustand.modus !== "stift") return;
     if (e.pointerType === "pen" && !stiftGesehen) { stiftGesehen = true; leiste(); }
     if (e.pointerType === "touch" && stiftGesehen) return; // Hand liegt auf dem Bildschirm, Finger scrollt
-    if (e.button > 0) return;
+    const stiftRadierer = e.pointerType === "pen" && (e.button === 5 || (e.buttons & 32)); // Radierer hinten am Stift
+    if (e.button > 0 && !stiftRadierer) return;
+    if (strich && e.pointerType === "touch") return; // zweiter Finger = Zoomen
     e.preventDefault();
     canvas.setPointerCapture(e.pointerId);
     sichern();
     const p = punkt(e);
-    if (zustand.werkzeug === "radierer") { radiertGerade = radieren(p); if (radiertGerade) allesZeichnen(); strich = { radierer: true }; return; }
+    if (zustand.werkzeug === "radierer" || stiftRadierer) { radiertGerade = radieren(p); if (radiertGerade) allesZeichnen(); strich = { radierer: true }; return; }
     strich = zustand.werkzeug === "marker" ? { art: "marker", farbe: zustand.marker, b: 5, p: [p] } : { art: "stift", farbe: zustand.farbe, b: zustand.dicke, p: [p] };
+    if (e.pointerType === "touch") Object.defineProperty(strich, "finger", { value: true, enumerable: false });
     zeichneStrich(ctx, strich, k);
   });
   canvas.addEventListener("pointermove", (e) => {
-    if (!strich) return;
+    if (!strich || pinch) return;
     const ereignisse = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
     for (const ev of ereignisse) {
       const p = punkt(ev);

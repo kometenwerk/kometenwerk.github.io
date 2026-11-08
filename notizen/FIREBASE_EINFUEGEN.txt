@@ -1,0 +1,60 @@
+FIDELIA Notizen – Firebase-Regeln für „Geräte verbinden“
+=========================================================
+
+So fügst du sie ein (einmalig):
+1. Firebase-Konsole öffnen → Projekt „krawallzoo“ → Realtime Database → Regeln.
+2. Den bestehenden Text NICHT löschen.
+3. Suche die Zeile mit   "fchat": {   – direkt DAVOR diesen Block einfügen
+   (mit dem Komma am Ende!):
+
+"fnotiz": {
+  "schloss": {
+    "$g": {
+      ".write": "auth != null && !data.exists() && $g.matches(/^[A-Za-z0-9_-]{22}$/) && newData.isString() && newData.val().matches(/^[a-f0-9]{64}$/)"
+    }
+  },
+  "mitglied": {
+    "$g": {
+      ".read": "auth != null && data.child(auth.uid).exists()",
+      "$uid": {
+        ".write": "auth != null && $uid === auth.uid && (!newData.exists() || newData.val() === root.child('fnotiz/schloss/' + $g).val())"
+      }
+    }
+  },
+  "post": {
+    "$g": {
+      ".read": "auth != null && root.child('fnotiz/mitglied/' + $g + '/' + auth.uid).exists()",
+      "$p": {
+        ".write": "auth != null && root.child('fnotiz/mitglied/' + $g + '/' + auth.uid).exists() && (data.exists() ? (!newData.exists() || newData.child('von').val() === data.child('von').val()) : newData.child('von').val() === auth.uid)",
+        ".validate": "$p.matches(/^[a-f0-9]{24}$/) && newData.hasChildren(['von', 'iv', 'd', 'zeit'])",
+        "von": {
+          ".validate": "newData.isString() && newData.val().length <= 128"
+        },
+        "iv": {
+          ".validate": "newData.isString() && newData.val().length === 16"
+        },
+        "d": {
+          ".validate": "newData.isString() && newData.val().length <= 4000000"
+        },
+        "zeit": {
+          ".validate": "newData.isNumber() && newData.val() <= now"
+        },
+        "ack": {
+          "$uid": {
+            ".validate": "$uid === auth.uid && newData.val() === true"
+          }
+        },
+        "$sonst": {
+          ".validate": false
+        }
+      }
+    }
+  }
+},
+
+4. „Veröffentlichen“ klicken. Fertig.
+
+Was die Regeln bewirken:
+- Nur wer den geheimen Schlüssel aus dem QR-Code kennt, wird Mitglied einer Gruppe.
+- Nur Mitglieder können die Päckchen ihrer Gruppe lesen – und auch die sind verschlüsselt.
+- Ein Päckchen ist höchstens ca. 3 MB groß (ein Scan ist meist 0,3 MB).

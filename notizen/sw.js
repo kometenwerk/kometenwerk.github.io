@@ -1,6 +1,6 @@
 // Offline-Speicher für FIDELIA Notizen
-const V = "kw-notizen-2026-11-08-cockpit";
-const SHELL = ["./", "index.html", "manifest.webmanifest", "notizen.css", "app.js", "speicher.js", "einstellungen.js", "ki.js", "heft.js", "scanner.js", "scan-kern.js", "planer.js", "lernen.js", "audio.js", "start.js", "../ki/motor.js", "icons/icon-192.png", "icons/icon-512.png", "../shared/kw.css", "../shared/kw.js", "../shared/intro.js", "../shared/marken/fidelia.webp", "../shared/marken/omnivia-zeichen.webp", "../shared/fonts/fonts.css", "../shared/fonts/space-grotesk-latin-400-normal.woff2", "../shared/fonts/space-grotesk-latin-500-normal.woff2", "../shared/fonts/space-grotesk-latin-600-normal.woff2"];
+const V = "kw-notizen-2026-11-08-sync";
+const SHELL = ["./", "index.html", "manifest.webmanifest", "notizen.css", "app.js", "speicher.js", "einstellungen.js", "ki.js", "heft.js", "scanner.js", "scan-kern.js", "planer.js", "lernen.js", "audio.js", "start.js", "sprache.js", "sync.js", "../ki/motor.js", "../shared/vendor/qr/qrcode.js", "icons/icon-192.png", "icons/icon-512.png", "../shared/kw.css", "../shared/kw.js", "../shared/intro.js", "../shared/marken/fidelia.webp", "../shared/marken/omnivia-zeichen.webp", "../shared/fonts/fonts.css", "../shared/fonts/space-grotesk-latin-400-normal.woff2", "../shared/fonts/space-grotesk-latin-500-normal.woff2", "../shared/fonts/space-grotesk-latin-600-normal.woff2"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });

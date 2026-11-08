@@ -56,7 +56,7 @@ function liste(A, el) {
 }
 
 function seiteWaehlen(A) {
-  const kandidaten = A.seiten.filter(s => A.seitenText(s).replace(/\s/g, "").length > 40).slice(0, 30);
+  const kandidaten = A.seiten.filter(s => A.seitenText(s).replace(/\s/g, "").length > 40 || KI.kartenAusMuster(A.seitenText(s)).length).slice(0, 30);
   const d = document.createElement("dialog");
   d.className = "sheet";
   d.innerHTML = '<div class="sheet-in"><h2>Welche Seite?</h2>' + (kandidaten.length ? '<div class="wahl-liste">' + kandidaten.map(s => '<button type="button" class="btn" data-s="' + s.id + '"><span class="punkt" style="background:' + esc(A.fachFarbe(s.fach)) + '"></span>' + esc(s.titel || "Ohne Titel") + '</button>').join("") + '</div>'
@@ -69,41 +69,62 @@ function seiteWaehlen(A) {
   d.showModal();
 }
 
-// KI macht Lernstoff aus einer Seite
+// Lernstoff aus einer Seite: erst die Muster („Begriff: Erklärung“, ohne KI), dann – falls da – die KI
 export async function ausSeite(A, s) {
   const text = A.seitenText(s);
-  if (text.replace(/\s/g, "").length < 40) { KW.toast(s.bild && !s.ocr ? "Erst den Text erkennen lassen (⋯ Mehr → 🔍)." : "Auf der Seite steht zu wenig Text."); return; }
-  const d = document.createElement("dialog");
-  d.className = "sheet";
-  d.innerHTML = '<div class="sheet-in"><h2>🧠 Die KI liest deine Seite …</h2><div class="balken"><i id="bal"></i></div><p class="muted" id="status">Das kann je nach Laptop 10–60 Sekunden dauern.</p>' +
-    '<div class="sheet-foot"><button type="button" class="btn" id="ab">Abbrechen</button></div></div>';
-  document.body.appendChild(d);
-  let abgebrochen = false;
-  d.querySelector("#ab").onclick = () => { abgebrochen = true; d.close(); };
-  d.addEventListener("close", () => d.remove());
-  d.addEventListener("cancel", () => { abgebrochen = true; });
-  d.showModal();
-  let stoff;
-  try {
-    stoff = await KI.lernstoff(A.einst.ki, text, (p, t) => { const b = d.querySelector("#bal"); if (b) b.style.width = Math.round((p || 0) * 100) + "%"; const st = d.querySelector("#status"); if (st && t) st.textContent = t; });
-  } catch (e) {
-    if (abgebrochen) return;
-    d.querySelector("h2").textContent = "Keine KI erreichbar";
-    d.querySelector("#status").innerHTML = e.message === "keine-ki" ? "Auf diesem Gerät läuft gerade keine KI. Schau unter ⚙️ Einstellungen → KI, wie du Ollama einrichtest." : "Die KI konnte nicht starten oder hat nicht geantwortet. Schau unter ⚙️ Einstellungen → KI nach – dort steht auch, wie du Ollama einrichtest.";
-    d.querySelector(".balken").remove();
-    d.querySelector("#ab").textContent = "OK";
+  const muster = KI.kartenAusMuster(text);
+  if (!muster.length && text.replace(/\s/g, "").length < 40) {
+    KW.toast(s.bild && !s.ocr ? "Erst den Text erkennen lassen (⋯ Mehr → 🔍)." : "Auf der Seite steht zu wenig Text.");
     return;
   }
-  if (abgebrochen) return;
-  d.close();
+  const weg = A.einst.ki.art === "aus" ? "" : await KI.verfuegbar(A.einst.ki);
+  let stoff = { karten: [], fragen: [] }, kiFehler = "";
+  if (weg) {
+    const d = document.createElement("dialog");
+    d.className = "sheet";
+    d.innerHTML = '<div class="sheet-in"><h2>🧠 Die KI liest deine Seite …</h2><div class="balken"><i id="bal"></i></div><p class="muted" id="status">' +
+      (weg === "aoris" && !KI.aorisBereit() ? "Beim ersten Mal wird die KI geladen – das kann ein paar Minuten dauern." : "Das kann je nach Gerät 10–60 Sekunden dauern.") + '</p>' +
+      '<div class="sheet-foot"><button type="button" class="btn" id="ab">Abbrechen</button></div></div>';
+    document.body.appendChild(d);
+    let abgebrochen = false;
+    d.querySelector("#ab").onclick = () => { abgebrochen = true; d.close(); };
+    d.addEventListener("close", () => d.remove());
+    d.addEventListener("cancel", () => { abgebrochen = true; });
+    d.showModal();
+    try {
+      stoff = await KI.lernstoff(A.einst.ki, text, (p, t) => { const b = d.querySelector("#bal"); if (b) b.style.width = Math.round((p || 0) * 100) + "%"; const st = d.querySelector("#status"); if (st && t) st.textContent = t; });
+    } catch (e) { kiFehler = e.message || "fehler"; }
+    if (abgebrochen) return;
+    if (d.open) d.close();
+  }
   const F = A.einst.f.lernen;
-  if (!F.karten) stoff.karten = [];
-  if (!F.quiz) stoff.fragen = [];
-  if (!stoff.karten.length && !stoff.fragen.length) { KW.toast("Die KI hat nichts Brauchbares gefunden. Probier eine Seite mit mehr Erklärungen."); return; }
+  // Muster-Karten zuerst (die hat der Schüler selbst so geschrieben), dann KI-Karten ohne Doppelte
+  let karten = muster.slice();
+  for (const k of stoff.karten) if (!karten.some(x => x.vorne.toLowerCase() === k.vorne.toLowerCase())) karten.push(k);
+  let fragen = stoff.fragen.length ? stoff.fragen : KI.quizAusKarten(karten);
+  if (!F.karten) karten = [];
+  if (!F.quiz) fragen = [];
+  if (!karten.length && !fragen.length) {
+    const d = document.createElement("dialog");
+    d.className = "sheet";
+    d.innerHTML = '<div class="sheet-in"><h2>' + (weg && kiFehler ? "Die KI hat nicht geklappt" : weg ? "Nichts Brauchbares gefunden" : "Keine KI eingeschaltet") + '</h2>' +
+      '<p>Ohne KI erkennt die App Karteikarten an diesem Muster – schreib einfach so ins Heft:</p>' +
+      '<pre>Zellkern: Steuerzentrale der Zelle\nMitochondrien – Kraftwerke der Zelle</pre>' +
+      '<p class="muted klein">Aus jeder Zeile wird eine Karte. Ab 4 Karten macht die App auch ein Quiz daraus.' + (weg ? "" : " Unter ⚙️ Einstellungen → KI kannst du die KI einrichten.") + '</p>' +
+      '<div class="sheet-foot"><button type="button" class="btn primary" id="ok">OK</button></div></div>';
+    document.body.appendChild(d);
+    d.querySelector("#ok").onclick = () => d.close();
+    d.addEventListener("close", () => d.remove());
+    d.showModal();
+    return;
+  }
+  if (weg && kiFehler) KW.toast("Die KI ging gerade nicht – ich habe nur deine Muster genommen.");
   const set = { id: KW.id(), seiteId: s.id, fach: s.fach, titel: s.titel || "Lernkarten", erstellt: new Date().toISOString(),
-    karten: stoff.karten.map(k => ({ id: KW.id(), vorne: k.vorne, hinten: k.hinten, box: 0, faellig: KW.today() })),
-    fragen: stoff.fragen.map(f => Object.assign({ id: KW.id() }, f)), rekord: 0 };
-  if (F.pruefen) pruefen(A, set, text); else { await A.lernSpeichern(set); A.gehe("lernen/" + set.id); KW.toast("Lernkarten gespeichert."); }
+    karten: karten.map(k => ({ id: KW.id(), vorne: k.vorne, hinten: k.hinten, box: 0, faellig: KW.today() })),
+    fragen: fragen.map(f => Object.assign({ id: KW.id() }, f)), rekord: 0 };
+  // Nur KI-Inhalte müssen geprüft werden – eigene Muster stimmen ja
+  if (F.pruefen && stoff.karten.length + stoff.fragen.length) pruefen(A, set, text);
+  else { await A.lernSpeichern(set); A.gehe("lernen/" + set.id); KW.toast("✓ " + set.karten.length + " Karten" + (set.fragen.length ? " und " + set.fragen.length + " Quizfragen" : "") + " gespeichert."); }
 }
 
 // Vorschläge prüfen: Haken weg = fliegt raus, Texte lassen sich direkt verbessern
