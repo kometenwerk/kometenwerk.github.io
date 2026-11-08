@@ -3,6 +3,12 @@
   "use strict";
   var KW = window.KW = {};
 
+  /* ✕-Knopf „Zurück zur Startseite“ (shared/zurueck.js) – wichtig, wenn die Startseite als App installiert ist */
+  try {
+    var hier = document.currentScript && document.currentScript.src;
+    if (hier) { var zu = document.createElement("script"); zu.src = new URL("zurueck.js", hier).href; document.head.appendChild(zu); }
+  } catch (e) {}
+
   KW.esc = function (s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
