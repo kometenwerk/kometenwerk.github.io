@@ -12,6 +12,7 @@ import * as Lernen from "./lernen.js";
 import * as Audio from "./audio.js";
 import * as Start from "./start.js";
 import * as Sync from "./sync.js";
+import * as Nachbau from "./nachbau.js";
 
 const KW = window.KW, esc = KW.esc;
 
@@ -40,13 +41,22 @@ A.seiteNeu = async (werte) => {
   return s;
 };
 A.seiteSpeichern = async (s) => { s.geaendert = new Date().toISOString(); await S.lege("seiten", s); Sync.melden("seite", s); };
+// Löschen = in den Papierkorb (30 Tage), erst „endgültig“ ist wirklich weg
+A.aktiv = () => A.seiten.filter(s => !s.papierkorb);
 A.seiteLoeschen = async (id) => {
+  const s = A.seite(id); if (!s) return null;
+  s.papierkorb = new Date().toISOString();
+  await A.seiteSpeichern(s);
+  return s;
+};
+A.seiteWiederherstellen = async (id) => { const s = A.seite(id); if (!s) return; delete s.papierkorb; await A.seiteSpeichern(s); };
+A.seiteEndgueltig = async (id) => {
   const i = A.seiten.findIndex(s => s.id === id);
-  if (i < 0) return null;
+  if (i < 0) return;
   const [s] = A.seiten.splice(i, 1);
   await S.weg("seiten", id);
+  for (const b of [s.bild, s.original]) if (b) await S.weg("bilder", b).catch(() => {});
   Sync.melden("weg", { typ: "seite", id });
-  return s;
 };
 A.seiteZurueck = async (s, bildBlob) => { // für „Rückgängig“
   if (bildBlob && s.bild) { await S.lege("bilder", bildBlob, s.bild); Sync.melden("bild", { id: s.bild, blob: bildBlob }); }
@@ -54,7 +64,7 @@ A.seiteZurueck = async (s, bildBlob) => { // für „Rückgängig“
   A.seiten.unshift(s); await S.lege("seiten", s); Sync.melden("seite", s);
 };
 A.seite = (id) => A.seiten.find(s => s.id === id);
-A.bildSpeichern = async (blob) => { const id = "b" + KW.id(); await S.lege("bilder", blob, id); Sync.melden("bild", { id, blob }); return id; };
+A.bildSpeichern = async (blob, { ohneAbgleich = false } = {}) => { const id = "b" + KW.id(); await S.lege("bilder", blob, id); if (!ohneAbgleich) Sync.melden("bild", { id, blob }); return id; };
 A.bildHolen = (id) => S.hole("bilder", id);
 A.bildLoeschen = (id) => S.weg("bilder", id);
 
@@ -62,21 +72,41 @@ A.lernSpeichern = async (set) => { set.geaendert = new Date().toISOString(); con
 A.lernLoeschen = async (id) => { A.lern = A.lern.filter(x => x.id !== id); await S.weg("lern", id); Sync.melden("weg", { typ: "lern", id }); };
 
 // Text einer Seite für Suche und KI: Getipptes + erkannter Text
-A.seitenText = (s) => [s.titel, s.text, s.ocr].filter(Boolean).join("\n");
+A.seitenText = (s) => [s.titel, s.text, s.ocr && s.ocr !== s.text ? s.ocr : ""].filter(Boolean).join("\n");
+A.einstSpeichern = () => E.speichern(A.einst);
+A.richStil = Heft.richStil;
+A.eckenAnpassen = (s) => Scanner.eckenAnpassen(A, s);
+// Scan → Word-Seite (Text mit Position, Größe, Überschriften, Listen, Bildern)
+A.nachbauen = async (s) => {
+  const blob = await A.bildHolen(s.bild);
+  if (!blob) return;
+  try {
+    const r = await Nachbau.ausScan(blob, { quer: !!s.quer });
+    s.html = r.html; s.ocr = r.text; s.ansicht = "text";
+    // Kaum lesbar (z. B. Handschrift)? Dann die KI fragen, falls sie Bilder lesen kann
+    if (r.konfidenz < 55 && A.einst.ki.art !== "aus") {
+      try { const t = (await KI.bildLesen(A.einst.ki, blob)).trim(); if (t) { s.html = Nachbau.textZuSeite(t); s.ocr = t; } } catch (e) {}
+    }
+    const d = document.createElement("div"); d.innerHTML = s.html; s.text = d.textContent;
+  } catch (e) { s.html = s.html || ""; }
+  await A.seiteSpeichern(s);
+};
 
 /* ---------- Hintergrund: Texterkennung und KI-Sortierung ---------- */
 
 let schlange = Promise.resolve();
-A.verarbeiten = (s, { ocr = true, zwingen = false } = {}) => {
-  schlange = schlange.then(() => verarbeitenJetzt(s, ocr, zwingen)).catch(() => {});
+A.verarbeiten = (s, { ocr = true, zwingen = false, nurText = false } = {}) => {
+  schlange = schlange.then(() => verarbeitenJetzt(s, ocr, zwingen, nurText)).catch(() => {});
   return schlange;
 };
-async function verarbeitenJetzt(s, ocr, zwingen) {
-  if (ocr && s.bild && (zwingen || (A.einst.an.scanner && A.einst.f.scanner.ocr)) && !s.ocr) {
+async function verarbeitenJetzt(s, ocr, zwingen, nurText) {
+  const scanAn = zwingen || (A.einst.an.scanner && A.einst.f.scanner.ocr);
+  if (ocr && s.bild && !s.html && !nurText && A.einst.f.scanner.nachbau !== false && scanAn) {
+    await A.nachbauen(s);
+  } else if (ocr && s.bild && scanAn && !s.ocr) {
     const blob = await A.bildHolen(s.bild);
     if (blob) {
       try {
-        // Handschrift: erst die Bild-KI von Ollama probieren, sonst normale Texterkennung
         if (A.einst.ki.bildModell && A.einst.ki.art !== "aus" && A.einst.ki.art !== "aoris") {
           try { s.ocr = (await KI.abschreiben(A.einst.ki, blob)).trim(); } catch (e) { s.ocr = ""; }
         }
@@ -232,6 +262,7 @@ async function starten() {
     }
     A.einst.migriert = true; E.speichern(A.einst);
   }
+  for (const s of A.seiten.slice()) if (s.papierkorb && Date.now() - new Date(s.papierkorb) > 30 * 864e5) await A.seiteEndgueltig(s.id);
   A.seiten.sort((a, b) => (b.pin - a.pin) || String(b.geaendert).localeCompare(String(a.geaendert)));
   A.lern.sort((a, b) => String(b.erstellt).localeCompare(String(a.erstellt)));
   if (!A.einst.fertig) await E.assistent(A.einst);

@@ -5,6 +5,7 @@
 import * as KI from "./ki.js";
 import * as Sprache from "./sprache.js";
 import * as Sync from "./sync.js";
+import * as Papier from "./papier.js";
 
 const KEY = "kw-notizen-einst";
 const esc = (s) => window.KW.esc(s);
@@ -19,15 +20,16 @@ export const START_FAECHER = [
 // Alle Funktionen mit ihren Unterfunktionen. art: "schalter" | "wahl" | "fest" (immer an, nicht abschaltbar)
 export const FUNKTIONEN = [
   { id: "heft", icon: "📓", name: "Heft", text: "Digitales Heft mit Stift und Tastatur.", fest: true, unter: [
-    { id: "raster", name: "Raster", art: "wahl", wert: "karo", werte: [["karo", "Karo"], ["linien", "Linien"], ["leer", "Leer"]] },
-    { id: "format", name: "Seiten", art: "wahl", wert: "a4", werte: [["a4", "DIN A4"], ["endlos", "Endlos (wird länger)"]] },
+    { id: "raster", name: "Papier für neue Seiten", art: "wahl", wert: "karo5-r", werte: [["karo5-r", "Kariert mit Rand"], ["karo5", "Kariert"], ["lin8-r", "Liniert mit Rand"], ["lin8", "Liniert"], ["punkte5", "Punkte"], ["leer", "Leer"]] },
+    { id: "formen", name: "Formen-Erkennung (am Ende kurz halten)", art: "schalter", wert: true },
     { id: "marker", name: "Textmarker", art: "schalter", wert: true },
     { id: "radierer", name: "Radiergummi", art: "wahl", wert: "strich", werte: [["strich", "Ganze Striche"], ["stueck", "Nur wo du radierst"]] }
   ] },
   { id: "scanner", icon: "📷", name: "Scanner", text: "Arbeitsblätter mit der Kamera einscannen.", unter: [
     { id: "auto", name: "Automatisch auslösen, wenn das Blatt ruhig liegt", art: "schalter", wert: true },
     { id: "animation", name: "Scan-Strich und Haken", art: "schalter", wert: true },
-    { id: "filter", name: "Papierweiß-Filter", art: "wahl", wert: "normal", werte: [["normal", "Normal"], ["stark", "Stark (nur Schwarz/Weiß)"], ["aus", "Aus (Farbfoto)"]] },
+    { id: "filter", name: "Papierweiß-Filter", art: "wahl", wert: "farbe", werte: [["farbe", "Farbe (Papier weiß)"], ["normal", "Graustufen"], ["stark", "Schwarz/Weiß"], ["aus", "Originalfoto"]] },
+    { id: "nachbau", name: "Als Word-Seite nachbauen (Text bearbeitbar)", art: "schalter", wert: true },
     { id: "mehrfach", name: "Mehrere Blätter hintereinander", art: "schalter", wert: true },
     { id: "ton", name: "Ton beim Scannen", art: "schalter", wert: true },
     { id: "ocr", name: "Text auf dem Blatt erkennen (für Suche und KI)", art: "schalter", wert: true }
@@ -76,6 +78,8 @@ export function laden() {
   // Feste Unterfunktionen lassen sich nicht abschalten
   for (const fn of FUNKTIONEN) for (const u of fn.unter) if (u.art === "fest") e.f[fn.id][u.id] = true;
   e.an.heft = true;
+  // Update 2: neuer Farb-Filter als Standard
+  if (!e.v2) { if (e.f.scanner.filter === "normal") e.f.scanner.filter = "farbe"; e.v2 = true; }
   return e;
 }
 
@@ -235,8 +239,9 @@ function aussehenHtml(e) {
   const wahl = (name, id, werte, wert) => '<div class="field"><span>' + name + '</span><div class="tabs" role="radiogroup">' +
     werte.map(w => '<button type="button" role="radio" data-' + id + '="' + w[0] + '" aria-selected="' + (w[0] === wert) + '" aria-checked="' + (w[0] === wert) + '">' + w[1] + '</button>').join("") + '</div></div>';
   return wahl("Farben", "thema", [["auto", "Wie das Gerät"], ["hell", "☀️ Hell"], ["dunkel", "🌙 Dunkel"]], e.thema) +
-    wahl("Neue Heftseiten", "raster", [["karo", "Karo"], ["linien", "Linien"], ["leer", "Leer"]], e.f.heft.raster) +
-    '<div class="raster-vorschau raster-' + e.f.heft.raster + '" aria-hidden="true"></div>';
+    wahl("Neue Heftseiten", "raster", [["karo5-r", "Kariert"], ["lin8-r", "Liniert"], ["leer", "Leer"]], Papier.info(e.f.heft.raster).id) +
+    '<div class="raster-vorschau" style="background-image:' + Papier.hintergrund(e.f.heft.raster, false).replace(/"/g, "&quot;") + ';background-size:100% auto" aria-hidden="true"></div>' +
+    '<p class="muted klein">Weitere Papierarten (über 30) wählst du bei „+ Neue Seite“ – auch pro Fach.</p>';
 }
 function aussehenBinden(el, e, neuZeichnen, geaendert) {
   el.querySelectorAll("[data-thema]").forEach(b => b.onclick = () => { e.thema = b.dataset.thema; themaSetzen(e.thema); geaendert && geaendert(); neuZeichnen(); });

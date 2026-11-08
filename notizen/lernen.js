@@ -56,7 +56,7 @@ function liste(A, el) {
 }
 
 function seiteWaehlen(A) {
-  const kandidaten = A.seiten.filter(s => A.seitenText(s).replace(/\s/g, "").length > 40 || KI.kartenAusMuster(A.seitenText(s)).length).slice(0, 30);
+  const kandidaten = A.aktiv().filter(s => A.seitenText(s).replace(/\s/g, "").length > 40 || KI.kartenAusMuster(A.seitenText(s)).length).slice(0, 30);
   const d = document.createElement("dialog");
   d.className = "sheet";
   d.innerHTML = '<div class="sheet-in"><h2>Welche Seite?</h2>' + (kandidaten.length ? '<div class="wahl-liste">' + kandidaten.map(s => '<button type="button" class="btn" data-s="' + s.id + '"><span class="punkt" style="background:' + esc(A.fachFarbe(s.fach)) + '"></span>' + esc(s.titel || "Ohne Titel") + '</button>').join("") + '</div>'

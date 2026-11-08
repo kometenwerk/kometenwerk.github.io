@@ -42,3 +42,14 @@ export async function laden_(wahl, fortschritt) {
   return p;
 }
 export { laden_ as laden };
+
+// Aufnahme → 16 kHz Mono (das braucht Whisper)
+export async function zu16k(blob) {
+  const roh = await blob.arrayBuffer();
+  const ac = new (window.AudioContext || window.webkitAudioContext)();
+  const buf = await ac.decodeAudioData(roh);
+  ac.close();
+  const off = new OfflineAudioContext(1, Math.max(1, Math.ceil(buf.duration * 16000)), 16000);
+  const q = off.createBufferSource(); q.buffer = buf; q.connect(off.destination); q.start();
+  return (await off.startRendering()).getChannelData(0);
+}

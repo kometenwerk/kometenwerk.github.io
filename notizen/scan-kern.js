@@ -196,26 +196,76 @@ function integral(g, w, h) {
   return I;
 }
 
-// Schatten weg, Papier weiß. stufe: "normal" (Graustufen, weiches Ergebnis) | "stark" (nur Schwarz/Weiß)
-// Gibt Graustufen zurück.
-export function papierweiss(g, w, h, stufe = "normal") {
-  const I = integral(g, w, h), r = Math.max(8, Math.round(Math.min(w, h) / 24));
-  const out = new Uint8ClampedArray(w * h);
+// Mittelwert der Umgebung für jeden Pixel (Hintergrund-Helligkeit)
+function umgebung(g, w, h) {
+  const I = integral(g, w, h), r = Math.max(8, Math.round(Math.min(w, h) / 20));
+  const m = new Float32Array(w * h);
   for (let y = 0; y < h; y++) {
     const y1 = Math.max(0, y - r), y2 = Math.min(h, y + r + 1);
     for (let x = 0; x < w; x++) {
       const x1 = Math.max(0, x - r), x2 = Math.min(w, x + r + 1);
-      const summe = I[y2 * (w + 1) + x2] - I[y1 * (w + 1) + x2] - I[y2 * (w + 1) + x1] + I[y1 * (w + 1) + x1];
-      const mittel = summe / ((x2 - x1) * (y2 - y1));
-      const v = g[y * w + x];
-      if (stufe === "stark") { out[y * w + x] = v < mittel * 0.86 ? 0 : 255; continue; }
-      // Helligkeit durch die Umgebung teilen: Schatten verschwinden, Schrift bleibt dunkel
-      let n = (v / Math.max(mittel, 1)) * 255;
-      n = n > 232 ? 255 : n * n / 232 * 0.92; // Papier ganz weiß, Schrift kräftiger
-      out[y * w + x] = n;
+      m[y * w + x] = (I[y2 * (w + 1) + x2] - I[y1 * (w + 1) + x2] - I[y2 * (w + 1) + x1] + I[y1 * (w + 1) + x1]) / ((x2 - x1) * (y2 - y1));
     }
   }
+  return m;
+}
+// Hintergrund schätzen: helle Stellen zählen mehr als Schrift (Schrift soll den Hintergrund nicht verdunkeln)
+function hintergrund(g, w, h) {
+  const m = umgebung(g, w, h), hell = new Uint8ClampedArray(g.length);
+  for (let i = 0; i < g.length; i++) hell[i] = Math.max(g[i], m[i]);
+  return umgebung(hell, w, h);
+}
+// Helligkeit → schön: Papier ganz weiß, Schrift kräftig, aber keine Details verlieren
+function stufe(n) { return n >= 0.92 ? 255 : 255 * Math.pow(n / 0.92, 1.5); }
+
+// Schatten weg, Papier weiß. stufe: "normal" (Graustufen) | "stark" (nur Schwarz/Weiß). Gibt Graustufen zurück.
+export function papierweiss(g, w, h, art = "normal") {
+  const bg = hintergrund(g, w, h), out = new Uint8ClampedArray(w * h);
+  if (art === "stark") {
+    const m = umgebung(g, w, h);
+    for (let i = 0; i < g.length; i++) out[i] = g[i] < m[i] * 0.86 && g[i] < bg[i] * 0.8 ? 0 : 255;
+    return out;
+  }
+  for (let i = 0; i < g.length; i++) out[i] = stufe(g[i] / Math.max(bg[i], 1));
   return out;
+}
+
+// Wie papierweiß, aber in Farbe: Textmarker, rote Korrekturen und Bilder bleiben farbig
+export function farbeWeiss(rgba, w, h) {
+  const g = grau(rgba, w, h), bg = hintergrund(g, w, h), out = new Uint8ClampedArray(rgba.length);
+  for (let i = 0, j = 0; i < g.length; i++, j += 4) {
+    const f = 1 / Math.max(bg[i], 1);
+    for (let k = 0; k < 3; k++) out[j + k] = stufe(rgba[j + k] * f);
+    out[j + 3] = 255;
+  }
+  return out;
+}
+
+// Nachschärfen (Unscharf-Maskierung) – macht Schrift knackiger. Für Graustufen oder RGBA (kanaele = 1 oder 4)
+export function schaerfen(d, w, h, kanaele = 1, staerke = 0.6) {
+  const out = new Uint8ClampedArray(d.length);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    for (let k = 0; k < Math.min(kanaele, 3); k++) {
+      const i = (y * w + x) * kanaele + k;
+      if (x === 0 || y === 0 || x === w - 1 || y === h - 1) { out[i] = d[i]; continue; }
+      const blur = (d[i - kanaele] + d[i + kanaele] + d[i - w * kanaele] + d[i + w * kanaele] + 4 * d[i]) / 8;
+      out[i] = d[i] + (d[i] - blur) * staerke * 2;
+    }
+    if (kanaele === 4) out[(y * w + x) * 4 + 3] = 255;
+  }
+  return out;
+}
+
+// Wie scharf ist das Bild? (Varianz des Laplace-Filters – je höher, desto schärfer)
+export function schaerfe(g, w, h, bereich) {
+  const x0 = Math.max(1, bereich ? Math.floor(bereich.x0) : 1), y0 = Math.max(1, bereich ? Math.floor(bereich.y0) : 1);
+  const x1 = Math.min(w - 1, bereich ? Math.ceil(bereich.x1) : w - 1), y1 = Math.min(h - 1, bereich ? Math.ceil(bereich.y1) : h - 1);
+  let s = 0, s2 = 0, n = 0;
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+    const i = y * w + x, l = g[i - 1] + g[i + 1] + g[i - w] + g[i + w] - 4 * g[i];
+    s += l; s2 += l * l; n++;
+  }
+  return n ? s2 / n - (s / n) ** 2 : 0;
 }
 
 // Graustufen → RGBA (für das Canvas)

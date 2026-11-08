@@ -27,11 +27,12 @@
   }
 
   /* Foto verkleinern, damit es schnell geht (max. 2000 px) */
-  function vorbereiten(datei) {
+  function vorbereiten(datei, max) {
+    max = max || 2000;
     return new Promise(function (ok, nein) {
       var url = URL.createObjectURL(datei), img = new Image();
       img.onload = function () {
-        var f = Math.min(1, 2000 / Math.max(img.width, img.height)), c = document.createElement("canvas");
+        var f = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement("canvas");
         c.width = Math.round(img.width * f); c.height = Math.round(img.height * f);
         var x = c.getContext("2d"); x.drawImage(img, 0, 0, c.width, c.height);
         URL.revokeObjectURL(url); ok(c);
@@ -52,6 +53,17 @@
       return Promise.all([holeWorker(sprache || "deu"), vorbereiten(datei)]).then(function (r) {
         return r[0].recognize(r[1]);
       }).then(function (res) { fortschritt = null; return (res && res.data && res.data.text) || ""; });
+    },
+    /* Mit Position jeder Zeile (für „Scan → Word-Seite“). Gibt { breite, hoehe, bloecke, text, konfidenz } */
+    erkenneBloecke: function (datei, sprache, onFortschritt) {
+      fortschritt = function (status, p) { if (onFortschritt) onFortschritt(/recogniz/i.test(status) ? 0.35 + p * 0.65 : p * 0.35); };
+      return Promise.all([holeWorker(sprache || "deu"), vorbereiten(datei, 2600)]).then(function (r) {
+        return r[0].recognize(r[1], {}, { blocks: true, text: true }).then(function (res) {
+          fortschritt = null;
+          var d = (res && res.data) || {};
+          return { breite: r[1].width, hoehe: r[1].height, bloecke: d.blocks || [], text: d.text || "", konfidenz: d.confidence || 0 };
+        });
+      });
     },
     beenden: function () { if (worker) { worker.terminate(); worker = null; workerSprache = ""; } }
   };

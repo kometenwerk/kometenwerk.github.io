@@ -10,18 +10,6 @@ import * as Sprache from "./sprache.js";
 const KW = window.KW, esc = KW.esc;
 const MAX_MIN = 60;
 
-// Aufnahme → 16 kHz Mono (das braucht Whisper)
-async function zu16k(blob) {
-  const roh = await blob.arrayBuffer();
-  const ac = new (window.AudioContext || window.webkitAudioContext)();
-  const buf = await ac.decodeAudioData(roh);
-  ac.close();
-  const off = new OfflineAudioContext(1, Math.ceil(buf.duration * 16000), 16000);
-  const q = off.createBufferSource(); q.buffer = buf; q.connect(off.destination); q.start();
-  const r = await off.startRendering();
-  return r.getChannelData(0);
-}
-
 // „Hausaufgabe: …“ aus der Zusammenfassung holen
 export function hausaufgabeFinden(text) {
   const m = String(text || "").match(/Hausaufgabe[n]?\s*:\s*(.+)/i);
@@ -146,7 +134,7 @@ export function zeigen(A, el) {
     const zeig = (p, t) => { bal.style.width = Math.round(p * 100) + "%"; if (t) textEl.textContent = t; };
     try {
       titelEl.textContent = "1/3 · Ton vorbereiten …";
-      let ton = await zu16k(blob);
+      let ton = await Sprache.zu16k(blob);
       blob = null; // Aufnahme weg
       titelEl.textContent = "2/3 · Sprache wird zu Text …";
       const w = await Sprache.laden(F.modell, zeig);

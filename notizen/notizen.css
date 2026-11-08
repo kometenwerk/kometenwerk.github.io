@@ -145,14 +145,9 @@ dialog.sheet.breit .sheet-in{max-width:760px}
 .blatt-rahmen{overflow-x:auto;padding:4px 2px 10px}
 .blatt{position:relative;width:100%;max-width:860px;min-width:520px;margin:0 auto;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.12),0 12px 32px rgba(0,0,0,.1);overflow:hidden;--u:3.6px}
 .blatt img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;user-select:none;-webkit-user-drag:none}
-.blatt textarea{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;resize:none;outline:none;color:#101826;
-  font:400 calc(var(--u)*3.6)/calc(var(--u)*5) 'Space Grotesk',Arial,sans-serif;padding:calc(var(--u)*5) calc(var(--u)*12) calc(var(--u)*10) calc(var(--u)*12);overflow:hidden}
-.blatt.raster-linien textarea{font-size:calc(var(--u)*4.8);line-height:calc(var(--u)*8);padding-top:calc(var(--u)*4.4);padding-left:calc(var(--u)*28)}
-.blatt.raster-leer textarea{line-height:calc(var(--u)*6.5);font-size:calc(var(--u)*4.2)}
-.blatt textarea::placeholder{color:#9aa7bd}
 .blatt canvas{position:absolute;left:0;top:0}
 .blatt.tippen canvas{pointer-events:none}
-.blatt.stift-modus textarea{pointer-events:none}
+.blatt.stift-modus .rich{pointer-events:none}
 .blatt.stift-modus canvas{cursor:crosshair}
 .blatt.stift-modus[data-werkzeug="radierer"] canvas{cursor:cell}
 .erkannt{margin:14px auto 0;max-width:860px;padding:10px 14px}
@@ -296,3 +291,110 @@ dialog.sheet.breit .sheet-in{max-width:760px}
 .kopplung video{width:240px;max-width:100%;border-radius:10px;background:#000}
 .kopplung ol{padding-left:20px;margin:6px 0}
 @media (max-width:600px){.seite-leiste>a{order:-2}.zoom-knoepfe{order:-1}}
+
+/* ---------- Update: Word, Stifte, Papier ---------- */
+.blatt{background-repeat:repeat-y;background-color:var(--papier)}
+.blatt>img{z-index:0}
+.rich{position:absolute;left:0;top:0;width:100%;min-height:100%;outline:none;color:#101826;z-index:1;
+  font-family:'Space Grotesk',Arial,sans-serif;font-size:calc(var(--u) * var(--schrift,3.9));line-height:calc(var(--u) * var(--zeile,6.2));overflow-wrap:anywhere}
+.rich p,.rich li,.rich blockquote{margin:0}
+.rich h1,.rich h2{margin:0;line-height:calc(var(--u) * var(--zeile,6.2) * 2);font-weight:700;color:#14213d}
+.rich h1{font-size:1.75em}.rich h2{font-size:1.38em}
+.rich h3{margin:0;font-size:1.12em;font-weight:700;line-height:calc(var(--u) * var(--zeile,6.2))}
+.rich.ohne-linien p,.rich.ohne-linien li{line-height:1.45}
+.rich.ohne-linien h1,.rich.ohne-linien h2,.rich.ohne-linien h3{line-height:1.3;margin:.5em 0 .25em}
+.rich.ohne-linien p{margin:0 0 .35em}
+.rich ul,.rich ol{margin:0;padding-left:1.4em}
+.rich blockquote{border-left:3px solid #c5ccd8;padding-left:.8em;color:#4a5568;font-style:italic}
+.rich:empty::before{content:attr(data-leer);color:#9aa7bd}
+.rich img.bild{max-width:100%;height:auto;border-radius:2px;vertical-align:top}
+.rich img.bild.gewaehlt{outline:3px solid var(--accent)}
+.rich table.tab{border-collapse:collapse;width:100%;margin:calc(var(--u)*2) 0;background:rgba(255,255,255,.7)}
+.rich table.tab td,.rich table.tab th{border:1px solid #9aa7bd;padding:calc(var(--u)*1) calc(var(--u)*1.5);vertical-align:top;line-height:1.35}
+.rich table.tab.mit-kopf tr:first-child td{font-weight:700;background:#eef2f8}
+.rich .formel{display:inline-block;padding:0 2px;border-radius:4px;cursor:pointer;line-height:1.2}
+.rich .formel:hover{background:rgba(255,138,60,.15)}
+.rich .toc{border:1px solid #c5ccd8;border-radius:6px;padding:calc(var(--u)*2) calc(var(--u)*3);margin:calc(var(--u)*2) 0;background:rgba(255,255,255,.75);line-height:1.5}
+.rich .toc ol{list-style:none;padding:0;margin:4px 0 0}
+.rich .toc a{color:#1f4fd1;text-decoration:none}
+.rich .toc .toc-h2{padding-left:1.2em}.rich .toc .toc-h3{padding-left:2.4em;font-size:.92em}
+.blatt.stift-modus .rich .formel,.blatt.stift-modus .rich .toc a{pointer-events:none}
+.unter-leiste{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:6px 8px;margin:-4px 0 10px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);position:sticky;top:112px;z-index:19}
+.unter-leiste button,.unter-leiste select,.wort-leiste button,.wort-leiste select,.tabellen-leiste button{border:1px solid transparent;background:transparent;border-radius:8px;min-width:34px;height:34px;cursor:pointer;font-size:.95rem;color:var(--ink);padding:0 6px}
+.unter-leiste select,.wort-leiste select{border-color:var(--line);font-size:.82rem;max-width:130px}
+.unter-leiste button:hover,.wort-leiste button:hover{background:var(--soft)}
+.unter-leiste button.an,.wort-leiste button.an{background:var(--app-soft);border-color:var(--app)}
+.unter-leiste .trenn,.wort-leiste .trenn{width:1px;height:24px;background:var(--line);margin:0 3px}
+.wort-leiste,.tabellen-leiste{display:flex;align-items:center;gap:3px;flex-wrap:wrap}
+.tabellen-leiste{margin-top:4px;padding-top:4px;border-top:1px dashed var(--line);width:100%}
+.tabellen-leiste button{font-size:.8rem;border-color:var(--line)}
+.wort-leiste button.aufnahme{background:#e11d48;color:#fff;animation:blinken 1.2s infinite}
+.farb-knopf{position:relative;display:inline-grid;place-items:center;width:34px;height:34px;border-radius:8px;cursor:pointer;font-weight:700;color:#c93a3a}
+.farb-knopf:hover{background:var(--soft)}
+.farb-knopf input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.unter-leiste .farbe{min-width:0;width:26px;height:26px;border-radius:50%;border:2px solid var(--line);padding:0}
+.unter-leiste .farbe.an{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--app)}
+.unter-leiste .farbe.eigene{position:relative;display:inline-grid;place-items:center;background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);font-size:.7rem;cursor:pointer}
+.unter-leiste .farbe.eigene input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.favoriten{display:flex;gap:4px}
+.fav{position:relative;width:34px;height:34px;border-radius:50%!important;border:2px solid var(--line)!important;background:var(--card)!important}
+.fav i{position:absolute;inset:7px;border-radius:50%;background:var(--c)}
+.fav i.fav-marker{border-radius:3px;inset:10px 5px;opacity:.75}
+.fav i.fav-fueller{border-radius:50% 0}
+.fav i.fav-bleistift{opacity:.6}
+.seite-fuss{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;max-width:860px;margin:6px auto 0;padding:0 4px}
+/* Papier-Auswahl */
+.papier-optionen{gap:18px;margin:10px 0 0}
+.papier-gitter{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+.papier-wahl{display:flex;flex-direction:column;align-items:center;gap:4px;border:2px solid var(--line);background:var(--card);border-radius:10px;padding:6px;cursor:pointer;color:var(--ink)}
+.papier-wahl[aria-pressed="true"]{border-color:var(--app);box-shadow:0 0 0 3px var(--app-soft)}
+.papier-bild{width:62px;aspect-ratio:210/297;background:#fff no-repeat center/100% 100%;border:1px solid #d5dbe5;border-radius:2px}
+.papier-wahl.quer .papier-bild{width:84px;aspect-ratio:297/210}
+.papier-wahl small{font-size:.72rem;text-align:center;line-height:1.2}
+.vorlagen-gitter{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px}
+.vorlage{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 8px;cursor:pointer;color:var(--ink);font:inherit}
+.vorlage span{font-size:1.8rem}
+.vorlage:hover{border-color:var(--app)}
+.mini{background-color:#fff;background-repeat:repeat-y}
+/* Lineal, Geodreieck, Auswahl */
+.werkzeug-ebene{position:absolute;inset:0;pointer-events:none;z-index:3}
+.werkzeug{position:absolute;transform-origin:0 0;pointer-events:auto;cursor:move;touch-action:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.18))}
+.werkzeug svg{display:block}
+.wz-dreh,.wz-zu{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;border:1px solid #7d8ea8;background:#fff;cursor:grab;font-size:1rem;color:#36435a;touch-action:none}
+.wz-zu{right:-12px;top:-12px;left:auto;margin:0;width:24px;height:24px;font-size:.75rem;cursor:pointer}
+.wz-winkel{position:absolute;left:4px;bottom:4px;font-size:.7rem;background:rgba(255,255,255,.8);border-radius:4px;padding:0 4px;color:#36435a}
+.auswahl{position:absolute;border:1.5px dashed var(--accent);background:rgba(255,138,60,.06);z-index:4;cursor:move;touch-action:none}
+.griff{position:absolute;width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid var(--accent);display:grid;place-items:center;font-size:.8rem;touch-action:none}
+.griff.dreh{left:50%;top:-30px;margin-left:-11px;cursor:grab}
+.griff.gross{right:-11px;bottom:-11px;cursor:nwse-resize}
+.auswahl-menue{position:absolute;left:0;top:-74px;display:flex;gap:2px;padding:3px;white-space:nowrap}
+.auswahl-menue button{border:0;background:transparent;min-width:34px;height:32px;border-radius:7px;cursor:pointer;font-size:.95rem;color:var(--ink)}
+.auswahl-menue button:hover{background:var(--soft)}
+.bild-menue{position:fixed;z-index:60;display:flex;gap:2px;padding:4px}
+.bild-menue button{border:0;background:transparent;padding:6px 8px;border-radius:6px;cursor:pointer;color:var(--ink)}
+.bild-menue button:hover{background:var(--soft)}
+/* Formeln */
+.formel-knoepfe{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 10px}
+.formel-vorschau{min-height:64px;display:grid;place-items:center;padding:10px;margin:0 0 10px;color:#101826;background:#fff;overflow-x:auto}
+/* Papierkorb */
+.korb{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.korb li{display:flex;align-items:center;gap:8px;padding:10px 12px;flex-wrap:wrap}
+.korb li span{flex:1;min-width:150px}.korb small{display:block;color:var(--muted)}
+/* Ecken anpassen */
+.ecken-buehne{display:flex;justify-content:center;background:#111;border-radius:10px;padding:8px}
+.ecken-buehne canvas{max-width:100%;cursor:crosshair}
+/* Drucken / PDF */
+#druck{display:none}
+@media print{
+  body.druckt>*:not(#druck){display:none!important}
+  body.druckt #druck{display:block}
+  body.druckt{background:#fff;padding:0}
+  .druck-seite{position:relative;overflow:hidden;page-break-after:always;break-after:page;background:#fff}
+  .druck-seite.quer{page:quer}
+  .druck-innen{background-repeat:repeat-y}
+  .druck-rich{position:absolute;left:0;top:0;width:100%}
+  @page{size:A4;margin:0}
+  @page quer{size:A4 landscape;margin:0}
+}
+@media (max-width:600px){.unter-leiste{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;top:104px}.unter-leiste::-webkit-scrollbar{display:none}.wort-leiste{flex-wrap:nowrap}}
+.sheet-foot.klebt{position:sticky;bottom:calc(-18px - env(safe-area-inset-bottom,0px));background:var(--card);padding:12px 0 calc(12px + env(safe-area-inset-bottom,0px));margin-bottom:-18px;border-top:1px solid var(--line);z-index:2}

@@ -287,6 +287,25 @@ export async function zusammenfassen(einst, text, laenge, fortschritt) {
   return out.join("\n\n").replace(/\*\*/g, "").replace(/^#+\s*/gm, "").trim();
 }
 
+// Bild (Handschrift, Foto) lesen: Ollama mit Bild-Modell oder Gemini Nano in Chrome (kann Bilder ansehen)
+export async function bildLesen(einst, blob) {
+  if (!einst || einst.art === "aus") throw new Error("keine-ki");
+  if (einst.art !== "aoris") {
+    const o = await ollamaPruefen();
+    if (o.ok && o.modelle.some(m => m.bild)) return abschreiben(einst, blob);
+  }
+  if (typeof LanguageModel !== "undefined") {
+    const opt = { expectedInputs: [{ type: "image" }, { type: "text", languages: ["de"] }], expectedOutputs: [{ type: "text", languages: ["de"] }] };
+    const verfuegbar = await LanguageModel.availability(opt).catch(() => "unavailable");
+    if (verfuegbar !== "unavailable") {
+      const s = await LanguageModel.create(opt);
+      try { return await s.prompt([{ role: "user", content: [{ type: "text", value: ANWEISUNG.abschreiben }, { type: "image", value: blob }] }]); }
+      finally { try { s.destroy(); } catch (e) {} }
+    }
+  }
+  throw new Error("kein-bildmodell");
+}
+
 export async function abschreiben(einst, bild) {
   return fragen(einst, { system: ANWEISUNG.abschreiben, text: "Bitte abschreiben.", bild });
 }

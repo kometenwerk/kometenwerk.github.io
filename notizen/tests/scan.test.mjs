@@ -1,6 +1,6 @@
 // Tests für den Scan-Kern: node notizen/tests/scan.test.mjs
 import assert from "node:assert/strict";
-import { findeBlatt, ruheMesser, perspektive, geradeZiehen, papierweiss, a4Groesse, bewegung } from "../scan-kern.js";
+import { findeBlatt, ruheMesser, perspektive, geradeZiehen, papierweiss, a4Groesse, bewegung, farbeWeiss, schaerfe, schaerfen } from "../scan-kern.js";
 
 function bild(w, h, ecken, hell = 230, dunkel = 60) {
   const g = new Uint8ClampedArray(w * h).fill(dunkel);
@@ -64,4 +64,18 @@ test("Papierweiß entfernt Schatten, Schrift bleibt", () => {
   assert.equal(s[100 * w + 100], 0); assert.equal(s[10 * w + 10], 255);
 });
 test("Bewegung ohne Ecken ist unendlich", () => assert.equal(bewegung(null, [], 1, 1), Infinity));
+test("Farbe bleibt beim Weißmachen erhalten", () => {
+  const w = 120, h = 120, rgba = new Uint8ClampedArray(w * h * 4);
+  for (let i = 0; i < w * h; i++) { const x = i % w; rgba[i * 4] = 150 + x * 0.6; rgba[i * 4 + 1] = 145 + x * 0.6; rgba[i * 4 + 2] = 140 + x * 0.6; rgba[i * 4 + 3] = 255; }
+  for (let y = 50; y < 60; y++) for (let x = 40; x < 80; x++) { const i = (y * w + x) * 4; rgba[i] = 230; rgba[i + 1] = 220; rgba[i + 2] = 60; } // gelber Marker
+  const o = farbeWeiss(rgba, w, h);
+  assert.equal(o[(10 * w + 10) * 4], 255); // Papier weiß
+  const m = (55 * w + 60) * 4; assert.ok(o[m + 2] < o[m] - 60, "Gelb bleibt gelb");
+});
+test("Schärfe: scharfes Bild hat höheren Wert als unscharfes", () => {
+  const w = 60, h = 60, scharf = new Uint8ClampedArray(w * h), weich = new Uint8ClampedArray(w * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { scharf[y * w + x] = (x % 6 < 3) ? 30 : 220; weich[y * w + x] = 125 + 90 * Math.sin(x / 6 * Math.PI * 2 / 2); }
+  assert.ok(schaerfe(scharf, w, h) > schaerfe(weich, w, h) * 5);
+  const s = schaerfen(weich, w, h); assert.equal(s.length, weich.length);
+});
 console.log(ok + " Tests bestanden.");

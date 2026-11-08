@@ -4,6 +4,7 @@
 
 import * as Planer from "./planer.js";
 import * as Lernen from "./lernen.js";
+import * as Heft from "./heft.js";
 
 const KW = window.KW, esc = KW.esc;
 
@@ -42,11 +43,11 @@ export function zeigen(A, el) {
     h += '<section class="card kachel" style="--f:' + esc(A.fachFarbe(r.fach)) + '"><h3>🧠 Lernen für ' + esc(r.fach || "die Arbeit") + '</h3><p>' + (r.karten ? r.karten + " Karten warten auf dich." : "Mach aus deinen Heftseiten Karteikarten.") + '</p>' +
       (r.set ? '<a class="btn small primary" href="#lernen/' + r.set.id + '/karten">Jetzt üben</a>' : '<a class="btn small" href="#heft/' + encodeURIComponent(r.fach) + '">Zum ' + esc(r.fach) + '-Ordner</a>') + '</section>';
   }
-  const vorschlaege = A.seiten.filter(s => !s.fach && s.vorschlag && s.vorschlag.fach).length;
+  const vorschlaege = A.aktiv().filter(s => !s.fach && s.vorschlag && s.vorschlag.fach).length;
   if (vorschlaege) h += '<section class="card kachel"><h3>🤖 Sortieren</h3><p>' + vorschlaege + (vorschlaege === 1 ? " Seite wartet" : " Seiten warten") + ' auf dein OK.</p><a class="btn small" href="#heft/*unsortiert">Ansehen</a></section>';
   h += '</div>';
 
-  const letzte = A.seiten.slice().sort((a, b) => String(b.geaendert).localeCompare(String(a.geaendert))).slice(0, 6);
+  const letzte = A.aktiv().sort((a, b) => String(b.geaendert).localeCompare(String(a.geaendert))).slice(0, 6);
   h += '<h3 class="sec">Zuletzt bearbeitet</h3>' + (letzte.length ? '<div class="zuletzt">' + letzte.map(s =>
     '<a class="card zuletzt-karte" href="#seite/' + s.id + '" style="--f:' + esc(A.fachFarbe(s.fach)) + '"><b>' + esc(s.titel || "Ohne Titel") + '</b><small>' + esc(s.fach || "Unsortiert") + '</small></a>').join("") + '</div>'
     : '<div class="empty"><b>Dein Heft ist noch leer</b>Fang mit „✏️ Neue Seite“ an oder scanne ein Arbeitsblatt.</div>');
@@ -55,7 +56,8 @@ export function zeigen(A, el) {
   el.querySelectorAll("[data-tun]").forEach(b => b.onclick = async () => {
     if (b.dataset.tun === "ha") { Planer.eintragen(A, { fertig: () => A.zeigen() }); return; }
     const naechstes = Planer.stundenFuer(D, heute).find(z => z.stunde >= Math.max(1, stunde - 7));
-    const s = await A.seiteNeu({ titel: "Neue Seite " + new Date().toLocaleDateString("de-DE"), fach: naechstes && A.einst.faecher.some(f => f.name === naechstes.fach) ? naechstes.fach : "" });
+    const s = await Heft.neueSeite(A, naechstes && A.einst.faecher.some(f => f.name === naechstes.fach) ? naechstes.fach : "");
+    if (!s) return;
     A.gehe("seite/" + s.id);
   });
   Planer.abhakenBinden(A, el, () => A.zeigen());
