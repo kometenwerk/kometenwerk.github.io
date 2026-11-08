@@ -1,7 +1,7 @@
 {
   "name": "FIDELIA Notizen",
   "short_name": "Notizen",
-  "description": "Notizen und Listen zum Abhaken – schnell aufgeschrieben, schnell gefunden.",
+  "description": "Dein Schul-Cockpit: Heft mit Stift, Smart-Scanner, Hausaufgaben, Karteikarten und Mitschriften – mit KI nur auf deinem Gerät.",
   "lang": "de",
   "start_url": "./",
   "scope": "./",
