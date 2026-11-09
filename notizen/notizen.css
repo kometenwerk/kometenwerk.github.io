@@ -641,3 +641,67 @@ table.gitter{border-collapse:separate;border-spacing:0;table-layout:fixed;font-s
 .scan-modus{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
 .scan-modus button{border:0;background:transparent;color:var(--ink);font:inherit;padding:8px 12px;cursor:pointer}
 .scan-modus button.an{background:var(--app);color:#fff;font-weight:600}
+/* ---------- Werkzeug-Leiste und Taschenrechner ---------- */
+.wz-knopf{position:fixed;right:16px;bottom:24px;z-index:45;width:52px;height:52px;border-radius:50%;border:0;background:#14213d;color:#fff;font-size:1.5rem;box-shadow:0 4px 16px rgba(0,0,0,.28);cursor:pointer}
+.wz-knopf.an{background:var(--app)}
+.wz-leiste{position:fixed;right:0;top:60px;bottom:0;width:380px;z-index:44;background:var(--card);border-left:1px solid var(--line);box-shadow:-6px 0 24px rgba(16,24,38,.12);display:flex;flex-direction:column}
+.wz-leiste[hidden]{display:none}
+.wz-kopf{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line)}
+.wz-reiter button{border:0;background:transparent;font:inherit;font-weight:600;padding:6px 10px;border-radius:8px;color:var(--ink)}
+.wz-reiter button.an{background:var(--app-soft)}
+.wz-inhalt{flex:1;overflow:auto;padding:10px}
+@media (min-width:1100px){body.wz-offen .cockpit-rahmen{padding-right:380px}body.wz-offen .wz-knopf{right:396px}}
+@media (max-width:760px){
+  .wz-knopf{bottom:84px;right:12px;width:48px;height:48px}
+  .wz-leiste{top:auto;left:0;width:auto;height:80vh;border-left:0;border-top:1px solid var(--line);border-radius:18px 18px 0 0;z-index:46}
+  body.wz-offen .wz-knopf{display:none}
+}
+.re{outline:none;display:flex;flex-direction:column;gap:8px}
+.re:focus-visible .re-display{box-shadow:0 0 0 2px var(--app)}
+.re-display{background:#e6ece7;color:#14213d;border-radius:12px;padding:6px 10px 8px;font-family:"Space Grotesk",sans-serif;box-shadow:inset 0 2px 6px rgba(0,0,0,.12);min-height:170px;display:flex;flex-direction:column}
+.re-status{display:flex;gap:10px;font-size:.68rem;color:#4a5568;letter-spacing:.04em;min-height:1.1em}
+.re-status b.an{background:#a36b00;color:#fff;border-radius:3px;padding:0 4px}
+.re-verlauf{flex:1;max-height:200px;overflow:auto;display:flex;flex-direction:column;gap:2px;margin:4px 0}
+.re-eintrag{border-radius:6px;padding:2px 4px;cursor:pointer}
+.re-eintrag.gewaehlt{background:rgba(163,107,0,.18)}
+.re-ein{font-size:.95rem;color:#2b3445}
+.re-aus{text-align:right;font-size:1.25rem;font-weight:600}
+.re-zeile{font-size:1.3rem;min-height:1.6em;border-top:1px dashed #9aa7bd;padding-top:4px;word-break:break-all;font-variant-numeric:tabular-nums}
+.re-cursor{display:inline-block;width:2px;height:1.1em;background:#14213d;vertical-align:-0.15em;animation:reBlink 1s steps(1) infinite}
+@keyframes reBlink{50%{opacity:0}}
+.re-fehler{color:#c93a3a;font-size:.85rem;min-height:1em}
+.re .bruch{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;font-size:.8em;line-height:1.05;margin:0 2px}
+.re .bruch>span:first-child{border-bottom:1.5px solid currentColor;padding:0 2px}
+.re .wurzel .unter{border-top:1.5px solid currentColor;padding:0 2px 0 1px}
+.re-einfuegen{display:flex;gap:6px;flex-wrap:wrap}
+.re-tasten{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;background:#1c2433;padding:10px;border-radius:16px}
+.re-taste{border:0;border-radius:9px;background:#3a4558;color:#fff;font:500 .9rem "Space Grotesk",sans-serif;min-height:46px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;cursor:pointer;padding:2px;box-shadow:0 2px 0 rgba(0,0,0,.35);touch-action:manipulation}
+.re-taste:active{transform:translateY(1px);box-shadow:none}
+.re-taste small{font-size:.6rem;color:#ffc65a;line-height:1;min-height:.7rem}
+.re-taste.re-zahl{background:#eef1f6;color:#14213d;font-size:1.1rem;font-weight:600}
+.re-taste.re-zahl small{color:#a36b00}
+.re-taste.re-op{background:#4b5870;font-size:1.15rem}
+.re-taste.re-zweit{background:#a36b00}
+.re.zweit .re-taste.re-zweit{box-shadow:0 0 0 2px #ffc65a}
+.re.zweit .re-taste small{color:#ffe08a;font-weight:700}
+.re-taste.re-enter{background:#ff8a3c;font-weight:700}
+.re-taste.re-rot{background:#7a2e35}
+.re-taste.re-pfeil{background:#2c3546}
+.re-menue{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:var(--shadow)}
+.re-menue[hidden]{display:none}
+.re-menue-kopf{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.re-mode{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-bottom:8px}
+.re-mode span{width:100%;font-size:.8rem;color:var(--muted)}
+.re-mode button,.re-liste button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:6px 10px;font:inherit;font-size:.85rem;cursor:pointer;text-align:left}
+.re-mode button.an{background:var(--app);color:#fff;border-color:var(--app)}
+.re-liste{display:flex;flex-direction:column;gap:4px}
+.re-zwei{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.re-tab{border-collapse:collapse;width:100%;margin:6px 0;font-size:.9rem}
+.re-tab td,.re-tab th{border:1px solid var(--line);padding:3px 6px;text-align:right}
+.re-hinweis{margin:0;text-align:center}
+.re{position:relative}
+.re-menue{position:absolute;left:0;right:0;top:0;bottom:0;z-index:3;overflow:auto}
+.re-taste{min-height:42px}
+.re-display{min-height:150px}
+.re-verlauf{max-height:160px}
+@media (max-height:820px){.re-taste{min-height:38px}.re-taste small{font-size:.55rem}.re-verlauf{max-height:110px}.re-display{min-height:120px}}

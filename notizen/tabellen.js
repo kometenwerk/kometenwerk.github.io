@@ -765,13 +765,22 @@ export function seite(A, el, id) {
   };
 
   const ro = new ResizeObserver(() => { if (!bearb && gitter.rows.length && box.clientWidth > (gitter.offsetWidth - 50)) aufbauen(); });
+  // Ergebnis aus dem Taschenrechner in die markierte Zelle (bzw. Wertetabelle ab hier)
+  const vomRechner = (e) => {
+    if (!document.body.contains(box) || (e.detail.ziel !== box && !box.contains(e.detail.ziel))) return;
+    e.preventDefault(); sichern();
+    if (e.detail.tabelle) e.detail.tabelle.forEach((r, i) => r.forEach((c, j) => setzen(sel.a.z + i, sel.a.s + j, c)));
+    else setzen(sel.a.z, sel.a.s, e.detail.text.replace(/⁄/g, "/").replace(/^(-?\d+)\/(\d+)$/, "=$1/$2"));
+    geaendert(); markieren(); box.focus({ preventScroll: true });
+  };
+  window.addEventListener("fidelia-einfuegen", vomRechner);
   if (A.einst.f.tabellen && A.einst.f.tabellen.hand === false) el.querySelector("#hand").remove();
   if (A.einst.f.tabellen && A.einst.f.tabellen.diagramme === false) el.querySelectorAll("[data-diagramm]").forEach(b => b.remove());
   aufbauen();
   ro.observe(box);
   box.focus({ preventScroll: true });
   Extras.versionMerken(A, s);
-  return () => { ro.disconnect(); document.removeEventListener("click", zu); if (bearb) fertig(true); if (speicherTimer) { clearTimeout(speicherTimer); s.text = textVon(s.mappe); A.seiteSpeichern(s); } Extras.versionMerken(A, s); };
+  return () => { ro.disconnect(); window.removeEventListener("fidelia-einfuegen", vomRechner); document.removeEventListener("click", zu); if (bearb) fertig(true); if (speicherTimer) { clearTimeout(speicherTimer); s.text = textVon(s.mappe); A.seiteSpeichern(s); } Extras.versionMerken(A, s); };
 }
 
 /* ---------- Drucken ---------- */
