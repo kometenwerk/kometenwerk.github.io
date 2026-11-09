@@ -35,7 +35,8 @@ function wordBauen(rich, bilder) {
     let out = "";
     knoten.childNodes.forEach(n => {
       if (n.nodeType === 3) {
-        const t = n.textContent.replace(/\s+/g, " ");
+        if (n.parentElement && n.parentElement.classList.contains("tabz")) { out += "<w:r><w:tab/></w:r>"; return; }
+        const t = n.textContent.replace(/\u200b/g, "").replace(/\s+/g, " ");
         if (!t) return;
         out += "<w:r>" + rPr(fmt) + '<w:t xml:space="preserve">' + x(t) + "</w:t></w:r>";
         return;
@@ -92,6 +93,7 @@ function wordBauen(rich, bilder) {
     const tag = n.tagName;
     if (/^H[1-3]$/.test(tag)) return absatz(n, '<w:pStyle w:val="Heading' + tag[1] + '"/>');
     if (tag === "BLOCKQUOTE") return absatz(n, '<w:pStyle w:val="Quote"/>');
+    if (tag === "HR") { body += '<w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="6" w:space="1" w:color="9AA7BD"/></w:pBdr></w:pPr></w:p>'; return; }
     if (tag === "UL" || tag === "OL") {
       n.childNodes.forEach(li => {
         if (li.nodeType !== 1) return;

@@ -260,6 +260,7 @@ export function seite(A, el, id) {
       '<button type="button" class="btn" id="papierBtn" title="Papier ändern">📄 ' + esc(Papier.info(s.raster).name) + (s.quer ? " · quer" : "") + '</button>' +
     '</div>' +
     '<div id="vorschlag"></div>' +
+    (s.bild && s.unsicher && !s.html ? '<div class="kw-card hinweis-unsicher" id="unsicher">⚠️ <b>Text nicht sicher erkannt.</b> Damit kein Text-Salat entsteht, bleibt das Foto. <button type="button" class="btn small" id="unsEcken">📐 Ecken anpassen</button> <button type="button" class="btn small" id="unsNeu">🔄 Nochmal lesen</button></div>' : "") +
     '<div class="menue card" id="menue" hidden>' +
       (A.einst.an.lernen ? '<button type="button" data-a="lernen">🧠 Lernkarten & Quiz daraus machen</button>' : "") +
       (A.einst.an.planer && A.einst.f.planer.hausaufgaben ? '<button type="button" data-a="ha">📅 Hausaufgabe eintragen</button>' : "") +
@@ -308,7 +309,19 @@ export function seite(A, el, id) {
     canvas.width = Math.round(breite * dpr); canvas.height = Math.round(hoehe * dpr);
     canvas.style.width = breite + "px"; canvas.style.height = hoehe + "px";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    allesZeichnen(); werkzeugZeigen(); auswahlZeigen();
+    allesZeichnen(); werkzeugZeigen(); auswahlZeigen(); seitenZahlen();
+  }
+  // Seitenumbrüche sichtbar machen und Seitenzahlen unten rechts (wie in Word)
+  function seitenZahlen() {
+    blatt.querySelectorAll(".seiten-nr").forEach(x => x.remove());
+    const kachel = kachelMm(s), n = Math.max(1, Math.round((s.hoehe || kachel) / kachel));
+    if (n < 2) return;
+    for (let i = 1; i <= n; i++) {
+      const d = document.createElement("div"); d.className = "seiten-nr"; d.setAttribute("aria-hidden", "true");
+      d.textContent = "Seite " + i + " von " + n;
+      d.style.top = "calc(var(--u) * " + (i * kachel - 7) + ")";
+      blatt.appendChild(d);
+    }
   }
   function allesZeichnen() { ctx.clearRect(0, 0, canvas.width, canvas.height); (s.striche || []).forEach(st => zeichneStrich(ctx, st, k)); }
   // Text länger als die Seite? Dann kommt eine Seite dazu (wie in Word)
@@ -334,7 +347,8 @@ export function seite(A, el, id) {
   function zaehlen() { const t = s.text || ""; el.querySelector("#zaehler").textContent = Editor.woerter(t) + " Wörter · " + t.replace(/\s/g, "").length + " Zeichen"; }
   zaehlen();
   rich.addEventListener("input", textGeaendert);
-  const wort = Editor.leisteBinden(el.querySelector("#wortLeiste"), rich, textGeaendert, { bild: Editor.bildWaehlen, sprachModell: A.einst.f.audio.modell });
+  const wort = Editor.leisteBinden(el.querySelector("#wortLeiste"), rich, textGeaendert, { bild: Editor.bildWaehlen, sprachModell: A.einst.f.audio.modell,
+    autokorrektur: () => A.einst.f.heft.autokorrektur !== false, autokorrekturSetzen: (an) => { A.einst.f.heft.autokorrektur = an; A.einstSpeichern(); } });
   el.querySelector("#titel").oninput = (e) => { s.titel = e.target.value; spaeter(); };
   el.querySelector("#fach").onchange = (e) => { s.fach = e.target.value; s.vorschlag = null; vorschlagZeigen(); spaeter(); };
   el.querySelector("#papierBtn").onclick = async () => {
@@ -347,6 +361,10 @@ export function seite(A, el, id) {
   };
   const ocrTa = el.querySelector("#ocr");
   if (ocrTa) ocrTa.oninput = () => { s.ocr = ocrTa.value; spaeter(); };
+  if (el.querySelector("#unsEcken")) {
+    el.querySelector("#unsEcken").onclick = () => A.eckenAnpassen(s);
+    el.querySelector("#unsNeu").onclick = async () => { KW.toast("🔄 Lese nochmal …"); await A.nachbauen(s); if (s.unsicher) KW.toast("Immer noch unsicher – probier „Ecken anpassen“ oder scanne mit mehr Licht."); A.zeigen(); };
+  }
   el.querySelectorAll("[data-ansicht]").forEach(b => b.onclick = () => { ansicht = b.dataset.ansicht; s.ansicht = ansicht; papierZeigen(); wachsen(); spaeter(); });
 
   /* --- KI-Vorschlag (Fach/Titel) --- */
@@ -416,11 +434,11 @@ export function seite(A, el, id) {
   el.querySelectorAll("[data-modus]").forEach(b => b.onclick = () => { Z.modus = b.dataset.modus; merken(); auswahlWeg(); leiste(); if (Z.modus === "tippen") rich.focus(); });
   function sichern() { rueck.push(JSON.stringify(s.striche)); if (rueck.length > 60) rueck.shift(); vor = []; }
   function rueckgaengig() {
-    if (Z.modus === "tippen") { document.execCommand("undo"); return; }
+    if (Z.modus === "tippen") { wort.rueckgaengig(); return; }
     if (!rueck.length) return; vor.push(JSON.stringify(s.striche)); s.striche = JSON.parse(rueck.pop()); auswahlWeg(); allesZeichnen(); spaeter(); leiste();
   }
   function wiederholen() {
-    if (Z.modus === "tippen") { document.execCommand("redo"); return; }
+    if (Z.modus === "tippen") { wort.wiederholen(); return; }
     if (!vor.length) return; rueck.push(JSON.stringify(s.striche)); s.striche = JSON.parse(vor.pop()); allesZeichnen(); spaeter(); leiste();
   }
   el.querySelector("#rueck").onclick = rueckgaengig;
@@ -612,9 +630,29 @@ export function seite(A, el, id) {
       }, 550);
     }
   });
-  function ende() {
+  let letzterTipp = null;
+  // Doppelt mit dem Stift auf Text tippen → Text-Modus, Cursor genau dort (wie in OneNote/GoodNotes)
+  function doppelTipp(e) {
+    const ps = strich.p, xs = ps.map(q => q[0]), ys = ps.map(q => q[1]);
+    const klein = Math.max(...xs) - Math.min(...xs) < 1.5 && Math.max(...ys) - Math.min(...ys) < 1.5;
+    if (!klein || !e || e.pointerType === "touch" || strich.form) { letzterTipp = null; return false; }
+    const jetzt = Date.now(), p0 = ps[0], l = letzterTipp;
+    if (!(l && jetzt - l.t < 450 && Math.hypot(p0[0] - l.p[0], p0[1] - l.p[1]) < 5 && !rich.hidden && rich.textContent.trim())) { letzterTipp = { t: jetzt, p: p0, st: strich }; return false; }
+    // die zwei Pünktchen wieder weg
+    strich = null; rueck.pop();
+    const i = s.striche.indexOf(l.st); if (i >= 0) { s.striche.splice(i, 1); rueck.pop(); }
+    letzterTipp = null;
+    Z.modus = "tippen"; merken(); auswahlWeg(); leiste(); allesZeichnen(); spaeter();
+    rich.focus({ preventScroll: true });
+    const r = document.caretRangeFromPoint ? document.caretRangeFromPoint(e.clientX, e.clientY) : (() => { const c = document.caretPositionFromPoint && document.caretPositionFromPoint(e.clientX, e.clientY); if (!c) return null; const x = document.createRange(); x.setStart(c.offsetNode, c.offset); return x; })();
+    if (r && rich.contains(r.startContainer)) { r.collapse(true); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); }
+    KW.toast("Aa Text-Modus – mit ✏️ oben geht's zurück zum Stift.");
+    return true;
+  }
+  function ende(e) {
     clearTimeout(halteTimer);
     if (!strich) return;
+    if (!strich.lasso && !strich.radierer && doppelTipp(e)) return;
     if (strich.lasso) {
       const poly = lassoPoly; lassoPoly = null; strich = null; allesZeichnen();
       if (poly && poly.length > 4) { const idx = F.imLasso(s.striche, poly); if (idx.length) { auswahl = { idx }; auswahlZeigen(); } else KW.toast("Nichts eingekreist."); }

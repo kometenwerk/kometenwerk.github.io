@@ -82,12 +82,17 @@ A.nachbauen = async (s) => {
   if (!blob) return;
   try {
     const r = await Nachbau.ausScan(blob, { quer: !!s.quer });
-    s.html = r.html; s.ocr = r.text; s.ansicht = "text";
-    // Kaum lesbar (z. B. Handschrift)? Dann die KI fragen, falls sie Bilder lesen kann
-    if (r.konfidenz < 55 && A.einst.ki.art !== "aus") {
-      try { const t = (await KI.bildLesen(A.einst.ki, blob)).trim(); if (t) { s.html = Nachbau.textZuSeite(t); s.ocr = t; } } catch (e) {}
+    s.ocr = r.text; s.unsicher = false;
+    if (r.konfidenz >= 60) { s.html = r.html; s.ansicht = "text"; }
+    else {
+      // Kaum lesbar (z. B. Handschrift, schiefes Foto)? Dann die KI fragen, falls sie Bilder lesen kann.
+      // Ohne sichere Erkennung KEIN Text-Salat: Foto bleibt, Hinweis auf der Seite.
+      let t = "";
+      if (A.einst.ki.art !== "aus") { try { t = (await KI.bildLesen(A.einst.ki, blob)).trim(); } catch (e) {} }
+      if (t) { s.html = Nachbau.textZuSeite(t); s.ocr = t; s.ansicht = "text"; }
+      else { s.unsicher = true; s.ansicht = "foto"; }
     }
-    const d = document.createElement("div"); d.innerHTML = s.html; s.text = d.textContent;
+    if (s.html) { const d = document.createElement("div"); d.innerHTML = s.html; s.text = d.textContent; }
   } catch (e) { s.html = s.html || ""; }
   await A.seiteSpeichern(s);
 };

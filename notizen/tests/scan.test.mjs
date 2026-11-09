@@ -1,6 +1,6 @@
 // Tests für den Scan-Kern: node notizen/tests/scan.test.mjs
 import assert from "node:assert/strict";
-import { findeBlatt, ruheMesser, perspektive, geradeZiehen, papierweiss, a4Groesse, bewegung, farbeWeiss, schaerfe, schaerfen } from "../scan-kern.js";
+import { analysiereBlatt, findeBlatt, ruheMesser, perspektive, geradeZiehen, papierweiss, a4Groesse, bewegung, farbeWeiss, schaerfe, schaerfen } from "../scan-kern.js";
 
 function bild(w, h, ecken, hell = 230, dunkel = 60) {
   const g = new Uint8ClampedArray(w * h).fill(dunkel);
@@ -77,5 +77,33 @@ test("Schärfe: scharfes Bild hat höheren Wert als unscharfes", () => {
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { scharf[y * w + x] = (x % 6 < 3) ? 30 : 220; weich[y * w + x] = 125 + 90 * Math.sin(x / 6 * Math.PI * 2 / 2); }
   assert.ok(schaerfe(scharf, w, h) > schaerfe(weich, w, h) * 5);
   const s = schaerfen(weich, w, h); assert.equal(s.length, weich.length);
+});
+// Szene wie beim Laptop: gelbe Tür links, Person in der Mitte, weißes Blatt mit Schrift rechts
+function szene(w, h, blattEcken) {
+  const d = new Uint8ClampedArray(w * h * 4);
+  const drin = (x, y, e) => { let s = 0; for (let i = 0; i < 4; i++) { const a = e[i], b = e[(i + 1) % 4]; const k = (b.x - a.x) * (y - a.y) - (b.y - a.y) * (x - a.x); if (k !== 0) { if (!s) s = Math.sign(k); else if (Math.sign(k) !== s) return false; } } return true; };
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = (y * w + x) * 4; let f;
+    if (x < w * 0.45) f = [235, 205, 95];                       // gelbe Tür (hell, aber farbig)
+    else if (x < w * 0.62) f = [60, 80, 110];                   // Person
+    else f = [215, 210, 200];                                   // helle Wand
+    if (drin(x, y, blattEcken)) { f = [245, 245, 240]; if (y % 9 < 2 && x % 7 > 1) f = [40, 40, 60]; } // Blatt mit Schrift
+    d[i] = f[0]; d[i + 1] = f[1]; d[i + 2] = f[2]; d[i + 3] = 255;
+  }
+  // dunkler Schatten-Rand um das Blatt (wie in echt)
+  return d;
+}
+test("Laptop-Szene: findet das Blatt, nicht die gelbe Tür", () => {
+  const w = 320, h = 240, e = [{ x: 205, y: 30 }, { x: 300, y: 42 }, { x: 290, y: 210 }, { x: 195, y: 200 }];
+  const d = szene(w, h, e);
+  // leichter Schatten zwischen Wand und Blatt
+  const r = analysiereBlatt(d, w, h);
+  assert.ok(r.ecken, "Blatt gefunden (" + r.hinweis + ")");
+  r.ecken.forEach((p, i) => assert.ok(Math.hypot(p.x - e[i].x, p.y - e[i].y) < 8, "Ecke " + i + ": " + JSON.stringify(p)));
+});
+test("Blatt ragt aus dem Bild → kein Scan, Hinweis „rand“", () => {
+  const w = 320, h = 240, e = [{ x: 205, y: 30 }, { x: 340, y: 42 }, { x: 330, y: 260 }, { x: 195, y: 200 }];
+  const r = analysiereBlatt(szene(w, h, e), w, h);
+  assert.equal(r.ecken, null);
 });
 console.log(ok + " Tests bestanden.");

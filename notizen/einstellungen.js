@@ -22,6 +22,7 @@ export const FUNKTIONEN = [
   { id: "heft", icon: "📓", name: "Heft", text: "Digitales Heft mit Stift und Tastatur.", fest: true, unter: [
     { id: "raster", name: "Papier für neue Seiten", art: "wahl", wert: "karo5-r", werte: [["karo5-r", "Kariert mit Rand"], ["karo5", "Kariert"], ["lin8-r", "Liniert mit Rand"], ["lin8", "Liniert"], ["punkte5", "Punkte"], ["leer", "Leer"]] },
     { id: "formen", name: "Formen-Erkennung (am Ende kurz halten)", art: "schalter", wert: true },
+    { id: "autokorrektur", name: "Autokorrektur beim Tippen (Satzanfang groß, → … – „“)", art: "schalter", wert: true },
     { id: "marker", name: "Textmarker", art: "schalter", wert: true },
     { id: "radierer", name: "Radiergummi", art: "wahl", wert: "strich", werte: [["strich", "Ganze Striche"], ["stueck", "Nur wo du radierst"]] }
   ] },

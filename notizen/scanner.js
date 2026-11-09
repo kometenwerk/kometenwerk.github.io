@@ -11,7 +11,7 @@ const KLEIN = 240; // Breite des Mini-Bilds für die Blatt-Suche
 export function zeigen(A, el) {
   const F = A.einst.f.scanner;
   let strom = null, timer = null, aktiv = true, beschaeftigt = false, gesperrt = null, wegSeit = 0;
-  let ecken = null, kleinW = KLEIN, kleinH = 150, ruhe = null, anzahl = 0, schaerfen = [];
+  let ecken = null, kleinW = KLEIN, kleinH = 150, ruhe = null, anzahl = 0, schaerfen = [], spiegel = false;
   const neue = [];
 
   el.innerHTML =
@@ -59,6 +59,10 @@ export function zeigen(A, el) {
       return;
     }
     if (!aktiv) { stopp(); return; }
+    // Laptop-/Frontkamera: Bild spiegeln, dann kann man das Blatt leichter ausrichten (wie im Spiegel)
+    const einst = strom.getVideoTracks()[0].getSettings ? strom.getVideoTracks()[0].getSettings() : {};
+    spiegel = einst.facingMode ? einst.facingMode === "user" : !/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+    el.querySelector("#buehne").classList.toggle("spiegel", spiegel);
     video.srcObject = strom;
     await video.play().catch(() => {});
     el.querySelector("#startBox").hidden = true;
@@ -110,8 +114,9 @@ export function zeigen(A, el) {
     timer = setTimeout(schleife, 110);
     if (beschaeftigt || video.readyState < 2) return;
     kctx.drawImage(video, 0, 0, kleinW, kleinH);
-    const g = K.grau(kctx.getImageData(0, 0, kleinW, kleinH).data, kleinW, kleinH);
-    ecken = K.findeBlatt(g, kleinW, kleinH);
+    const roh = kctx.getImageData(0, 0, kleinW, kleinH).data, g = K.grau(roh, kleinW, kleinH);
+    const ana = K.analysiereBlatt(roh, kleinW, kleinH);
+    ecken = ana.ecken;
     const zeit = performance.now();
     if (gesperrt) {
       // Erst wenn das alte Blatt weg ist oder ein neues daliegt, wird wieder gescannt
@@ -132,7 +137,8 @@ export function zeigen(A, el) {
       scharf = wert >= max * 0.8 && wert > 25;
     } else schaerfen = [];
     malen(ecken ? fort : 0);
-    if (!ecken) sag("Blatt vor die Kamera halten");
+    if (!ecken) sag(ana.hinweis === "rand" ? "Das Blatt ragt raus – ganzes Blatt mit allen 4 Ecken zeigen" : ana.hinweis === "klein" ? "Näher ran – das Blatt ist zu klein" : spiegel ? "Blatt nicht gefunden – alle 4 Ecken zeigen, Finger weg von den Ecken" : "Blatt vor die Kamera halten (dunkler Untergrund hilft)");
+    else if (ana.hinweis === "klein") sag("Etwas näher ran …", fort);
     else if (!F.auto) sag("Blatt erkannt – tipp auf „Jetzt scannen“");
     else if (fort >= 1 && !scharf) sag("Scharf stellen … (etwas weiter weg oder mehr Licht)", 1);
     else sag(fort < 1 ? "Ruhig halten …" : "Scanne …", fort);
@@ -181,14 +187,20 @@ export function zeigen(A, el) {
       // Ecken auf dem großen Bild genauer suchen; sonst die aus dem Video übernehmen (wenn das Format passt)
       q = eckenFinden(c);
       if (!q && kleineEcken && Math.abs(c.width / c.height - kleinW / kleinH) < 0.02) { const f = c.width / kleinW; q = K.einruecken(kleineEcken.map(p => ({ x: p.x * f, y: p.y * f })), 0.008); }
+      if (!q) {
+        // Foto passt nicht? Dann das Video-Bild nehmen
+        const vw = video.videoWidth, vh = video.videoHeight, v = document.createElement("canvas"); v.width = vw; v.height = vh; v.getContext("2d").drawImage(video, 0, 0);
+        q = eckenFinden(v) || (kleineEcken ? K.einruecken(kleineEcken.map(p => ({ x: p.x * vw / kleinW, y: p.y * vh / kleinH })), 0.008) : null); if (q) c = v;
+      }
+      if (!q) throw new Error("kein-blatt");
       await warte(40);
-      await verarbeiten(c, q || null);
+      await verarbeiten(c, q);
       if (F.animation) await warte(Math.max(0, 900 - 60));
       strich.hidden = true;
       if (F.animation) { const hk = el.querySelector("#haken"); hk.hidden = false; await warte(1500); hk.hidden = true; }
     } catch (e) {
       strich.hidden = true;
-      KW.toast("Das hat nicht geklappt. Versuch es nochmal.");
+      KW.toast(e && e.message === "kein-blatt" ? "Blatt nicht sicher erkannt – nichts gespeichert. Ganzes Blatt zeigen und ruhig halten." : "Das hat nicht geklappt. Versuch es nochmal.");
     }
     gesperrt = kleineEcken || [{ x: 0, y: 0 }, { x: kleinW, y: 0 }, { x: kleinW, y: kleinH }, { x: 0, y: kleinH }];
     wegSeit = 0;
@@ -198,16 +210,18 @@ export function zeigen(A, el) {
 
   // Ecken auf einem mittelgroßen Bild suchen (genauer als im Mini-Video-Bild)
   function eckenFinden(quelle) {
-    const w = quelle.width, h = quelle.height, kw = 640, kh = Math.round(kw * h / w), kc = document.createElement("canvas");
+    const w = quelle.width, h = quelle.height, kw = 480, kh = Math.round(kw * h / w), kc = document.createElement("canvas");
     kc.width = kw; kc.height = kh; kc.getContext("2d").drawImage(quelle, 0, 0, kw, kh);
-    const e = K.findeBlatt(K.grau(kc.getContext("2d").getImageData(0, 0, kw, kh).data, kw, kh), kw, kh);
+    const e = K.analysiereBlatt(kc.getContext("2d").getImageData(0, 0, kw, kh).data, kw, kh).ecken;
     return e ? K.einruecken(e.map(p => ({ x: p.x * w / kw, y: p.y * h / kh })), 0.006) : null;
   }
 
   // Zieht das Bild gerade, filtert es und legt eine neue Seite an
   async function verarbeiten(quelle, q) {
     const w = quelle.width, h = quelle.height;
-    if (!q) q = eckenFinden(quelle) || [{ x: 0, y: 0 }, { x: w - 1, y: 0 }, { x: w - 1, y: h - 1 }, { x: 0, y: h - 1 }];
+    let ohneEcken = false;
+    if (!q) q = eckenFinden(quelle);
+    if (!q) { ohneEcken = true; q = [{ x: 0, y: 0 }, { x: w - 1, y: 0 }, { x: w - 1, y: h - 1 }, { x: 0, y: h - 1 }]; }
     const ziel = await geradeUndFiltern(quelle, q, F.filter);
     const bildId = await A.bildSpeichern(ziel.blob);
     // Original (verkleinert) aufheben, damit man die Ecken später noch anpassen kann
@@ -220,7 +234,8 @@ export function zeigen(A, el) {
       titel: "Scan " + jetztD.toLocaleDateString("de-DE") + " " + jetztD.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) });
     anzahl++; neue.push(seite);
     ergebnisse(ziel.blob, seite);
-    A.verarbeiten(seite); // Text erkennen, Word-Seite nachbauen, sortieren – im Hintergrund
+    seite.ohneEcken = ohneEcken;
+    if (!ohneEcken) A.verarbeiten(seite); // Text erkennen, Word-Seite nachbauen, sortieren – im Hintergrund
     return seite;
   }
 
@@ -231,7 +246,8 @@ export function zeigen(A, el) {
     z.hidden = false; z.textContent = anzahl + (anzahl === 1 ? " Blatt" : " Blätter");
     if (!box.firstChild) box.innerHTML = '<div class="kopfzeile"><h3>Gerade gescannt</h3><span class="sp"></span><a class="btn small" href="#heft">Zum Heft →</a></div><div class="scan-reihe" id="reihe"></div>';
     const u = URL.createObjectURL(blob); urls.push(u);
-    box.querySelector("#reihe").insertAdjacentHTML("afterbegin", '<a href="#seite/' + seite.id + '" class="scan-mini"><img src="' + u + '" alt="' + esc(seite.titel) + '"></a>');
+    box.querySelector("#reihe").insertAdjacentHTML("afterbegin", '<span class="scan-mini"><a href="#seite/' + seite.id + '"><img src="' + u + '" alt="' + esc(seite.titel) + '"></a><button type="button" class="btn small" data-ecken="' + seite.id + '" title="Ecken anpassen">📐</button></span>');
+    box.querySelector('[data-ecken="' + seite.id + '"]').onclick = () => A.eckenAnpassen(A.seite(seite.id));
   }
 
   jetzt.onclick = () => scannenVonKamera();
@@ -243,7 +259,13 @@ export function zeigen(A, el) {
         const f = Math.min(1, 3000 / Math.max(bmp.width, bmp.height)), c = document.createElement("canvas");
         c.width = Math.round(bmp.width * f); c.height = Math.round(bmp.height * f);
         c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
-        await verarbeiten(c, null);
+        const s = await verarbeiten(c, null);
+        if (s.ohneEcken) {
+          delete s.ohneEcken;
+          // Blatt nicht sicher gefunden: lieber selbst die Ecken setzen lassen statt Salat zu bauen
+          if (dateien.length === 1) { KW.toast("Blatt nicht sicher gefunden – zieh die 4 Ecken auf die Blatt-Ecken."); await A.eckenAnpassen(s); A.verarbeiten(s, { ocr: true }); }
+          else { s.unsicher = true; await A.seiteSpeichern(s); }
+        }
       } catch (err) { KW.toast("Dieses Bild konnte ich nicht öffnen."); }
     }
     if (dateien.length) KW.toast("✓ " + dateien.length + (dateien.length === 1 ? " Blatt" : " Blätter") + " eingescannt.");
@@ -312,7 +334,7 @@ export async function eckenAnpassen(A, s) {
   d.querySelector("#eAuto").onclick = () => {
     const kc = document.createElement("canvas"), kw = 640, kh = Math.round(kw * bmp.height / bmp.width); kc.width = kw; kc.height = kh;
     kc.getContext("2d").drawImage(bmp, 0, 0, kw, kh);
-    const e = K.findeBlatt(K.grau(kc.getContext("2d").getImageData(0, 0, kw, kh).data, kw, kh), kw, kh);
+    const e = K.analysiereBlatt(kc.getContext("2d").getImageData(0, 0, kw, kh).data, kw, kh).ecken;
     if (e) { ecken = e.map(p => [p.x / kw, p.y / kh]); malen(); } else KW.toast("Kein Blatt gefunden – zieh die Punkte selbst.");
   };
   d.querySelector("#eOk").onclick = async () => {
@@ -321,7 +343,7 @@ export async function eckenAnpassen(A, s) {
     const ziel = await geradeUndFiltern(q, ecken.map(p => ({ x: p[0] * bmp.width, y: p[1] * bmp.height })), A.einst.f.scanner.filter);
     const alt = s.bild;
     s.bild = await A.bildSpeichern(ziel.blob); s.ecken = ecken; s.quer = ziel.quer; s.hoehe = ziel.quer ? 210 : 297;
-    const neuBauen = !!s.html; s.html = neuBauen ? "" : s.html; s.ocr = "";
+    const neuBauen = !!s.html || !!s.unsicher; s.html = neuBauen ? "" : s.html; s.ocr = "";
     await A.seiteSpeichern(s);
     if (alt) A.bildLoeschen(alt);
     d.close();
@@ -331,4 +353,5 @@ export async function eckenAnpassen(A, s) {
   };
   d.addEventListener("close", () => d.remove());
   d.showModal();
+  return new Promise(r => d.addEventListener("close", r));
 }

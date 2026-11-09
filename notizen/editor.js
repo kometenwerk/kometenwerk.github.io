@@ -25,7 +25,7 @@ export function htmlZuText(html) {
   d.querySelectorAll(".formel").forEach(f => f.replaceWith(" " + (f.dataset.tex || "") + " "));
   d.querySelectorAll("p,div,h1,h2,h3,li,tr,br,blockquote").forEach(e => e.insertAdjacentText("afterend", "\n"));
   d.querySelectorAll("td,th").forEach(e => e.insertAdjacentText("afterend", "\t"));
-  return d.textContent.replace(/\n{3,}/g, "\n\n").trim();
+  return d.textContent.replace(/\u200b/g, "").replace(/\n{3,}/g, "\n\n").trim();
 }
 export function woerter(text) { const w = String(text || "").trim().match(/[\p{L}\p{N}]+(?:[-'’][\p{L}\p{N}]+)*/gu); return w ? w.length : 0; }
 
@@ -177,44 +177,115 @@ export async function diktieren(knopf, modellWahl, fertig) {
 
 /* ---------- Die Word-Leiste ---------- */
 
-// rich: das bearbeitbare Feld; geaendert(): speichern; extras: { formel(), bild(), toc(), diktat(), vorlesen() }
+// Menüband wie in Word: Start · Einfügen · Werkzeuge (spart Platz, vor allem auf dem Handy)
+const BAENDER = [["start", "Start"], ["einfuegen", "Einfügen"], ["werkzeuge", "Werkzeuge"]];
+const g = (band, html) => '<span class="gruppe" data-gruppe="' + band + '">' + html + '</span>';
+
 export function leisteHtml() {
-  return '<div class="wort-leiste" role="toolbar" aria-label="Text formatieren">' +
-    '<select data-w="block" aria-label="Formatvorlage" title="Formatvorlage"><option value="p">Normal</option><option value="h1">Überschrift 1</option><option value="h2">Überschrift 2</option><option value="h3">Überschrift 3</option><option value="blockquote">Zitat</option></select>' +
-    '<select data-w="schrift" aria-label="Schriftart" title="Schriftart">' + SCHRIFTEN.map(s => '<option value="' + esc(s[0]) + '">' + s[1] + '</option>').join("") + '</select>' +
-    '<select data-w="groesse" aria-label="Schriftgröße" title="Schriftgröße"><option value="">Größe</option>' + GROESSEN.map(g => '<option>' + g + '</option>').join("") + '</select>' +
-    '<span class="trenn"></span>' +
-    '<button type="button" data-c="bold" title="Fett (Strg+B)" aria-label="Fett"><b>F</b></button>' +
-    '<button type="button" data-c="italic" title="Kursiv (Strg+I)" aria-label="Kursiv"><i>K</i></button>' +
-    '<button type="button" data-c="underline" title="Unterstrichen (Strg+U)" aria-label="Unterstrichen"><u>U</u></button>' +
-    '<button type="button" data-c="strikeThrough" title="Durchgestrichen" aria-label="Durchgestrichen"><s>S</s></button>' +
-    '<button type="button" data-c="superscript" title="Hochgestellt" aria-label="Hochgestellt">x²</button>' +
-    '<button type="button" data-c="subscript" title="Tiefgestellt" aria-label="Tiefgestellt">x₂</button>' +
-    '<label class="farb-knopf" title="Schriftfarbe"><span aria-hidden="true">A</span><input type="color" data-w="farbe" value="#c93a3a" aria-label="Schriftfarbe"></label>' +
-    '<select data-w="marker" aria-label="Textmarker" title="Textmarker">' + MARKER.map(m => '<option value="' + m[0] + '">🖍 ' + m[1] + '</option>').join("") + '</select>' +
-    '<span class="trenn"></span>' +
-    '<button type="button" data-c="justifyLeft" title="Links" aria-label="Linksbündig">⯇</button>' +
-    '<button type="button" data-c="justifyCenter" title="Mitte" aria-label="Zentriert">≡</button>' +
-    '<button type="button" data-c="justifyRight" title="Rechts" aria-label="Rechtsbündig">⯈</button>' +
-    '<button type="button" data-c="justifyFull" title="Blocksatz" aria-label="Blocksatz">☰</button>' +
-    '<button type="button" data-c="insertUnorderedList" title="Aufzählung" aria-label="Aufzählung">•≡</button>' +
-    '<button type="button" data-c="insertOrderedList" title="Nummerierung" aria-label="Nummerierung">1.</button>' +
-    '<button type="button" data-c="outdent" title="Einzug kleiner" aria-label="Einzug verkleinern">⇤</button>' +
-    '<button type="button" data-c="indent" title="Einzug größer" aria-label="Einzug vergrößern">⇥</button>' +
-    '<span class="trenn"></span>' +
-    '<button type="button" data-x="tabelle" title="Tabelle einfügen" aria-label="Tabelle einfügen">⊞</button>' +
-    '<button type="button" data-x="bild" title="Bild einfügen" aria-label="Bild einfügen">🖼️</button>' +
-    '<button type="button" data-x="formel" title="Formel einfügen" aria-label="Formel einfügen">∑</button>' +
-    '<button type="button" data-x="toc" title="Inhaltsverzeichnis" aria-label="Inhaltsverzeichnis">📑</button>' +
-    '<button type="button" data-x="diktat" title="Diktieren" aria-label="Diktieren">🎤</button>' +
-    '<button type="button" data-x="vorlesen" title="Vorlesen" aria-label="Vorlesen">🔊</button>' +
-    '<button type="button" data-c="removeFormat" title="Formatierung löschen" aria-label="Formatierung löschen">⌫A</button>' +
+  return '<div class="band-reiter" role="tablist" aria-label="Menüband">' + BAENDER.map(b => '<button type="button" role="tab" data-band="' + b[0] + '">' + b[1] + '</button>').join("") + '</div>' +
+  '<div class="wort-leiste" role="toolbar" aria-label="Text formatieren" data-band="start">' +
+    g("start",
+      '<select data-w="block" aria-label="Formatvorlage" title="Formatvorlage"><option value="p">Normal</option><option value="h1">Überschrift 1</option><option value="h2">Überschrift 2</option><option value="h3">Überschrift 3</option><option value="blockquote">Zitat</option></select>' +
+      '<select data-w="schrift" aria-label="Schriftart" title="Schriftart">' + SCHRIFTEN.map(s => '<option value="' + esc(s[0]) + '">' + s[1] + '</option>').join("") + '</select>' +
+      '<select data-w="groesse" aria-label="Schriftgröße" title="Schriftgröße">' + GROESSEN.map(x => '<option>' + x + '</option>').join("") + '</select>' +
+      '<span class="trenn"></span>' +
+      '<button type="button" data-c="bold" title="Fett (Strg+B)" aria-label="Fett"><b>F</b></button>' +
+      '<button type="button" data-c="italic" title="Kursiv (Strg+I)" aria-label="Kursiv"><i>K</i></button>' +
+      '<button type="button" data-c="underline" title="Unterstrichen (Strg+U)" aria-label="Unterstrichen"><u>U</u></button>' +
+      '<button type="button" data-c="strikeThrough" title="Durchgestrichen" aria-label="Durchgestrichen"><s>S</s></button>' +
+      '<button type="button" data-c="superscript" title="Hochgestellt" aria-label="Hochgestellt">x²</button>' +
+      '<button type="button" data-c="subscript" title="Tiefgestellt" aria-label="Tiefgestellt">x₂</button>' +
+      '<label class="farb-knopf" title="Schriftfarbe"><span aria-hidden="true">A</span><input type="color" data-w="farbe" value="#101826" aria-label="Schriftfarbe"></label>' +
+      '<select data-w="marker" aria-label="Textmarker" title="Textmarker">' + MARKER.map(m => '<option value="' + m[0] + '">🖍 ' + m[1] + '</option>').join("") + '</select>' +
+      '<button type="button" data-x="pinsel" title="Format übertragen: erst Text mit dem Format antippen, dann Knopf, dann neuen Text markieren (Doppelklick = mehrmals)" aria-label="Format übertragen" aria-pressed="false">🖌️</button>' +
+      '<button type="button" data-c="removeFormat" title="Formatierung löschen" aria-label="Formatierung löschen">⌫A</button>' +
+      '<span class="trenn"></span>' +
+      '<button type="button" data-c="justifyLeft" title="Links" aria-label="Linksbündig">⯇</button>' +
+      '<button type="button" data-c="justifyCenter" title="Mitte" aria-label="Zentriert">≡</button>' +
+      '<button type="button" data-c="justifyRight" title="Rechts" aria-label="Rechtsbündig">⯈</button>' +
+      '<button type="button" data-c="justifyFull" title="Blocksatz" aria-label="Blocksatz">☰</button>' +
+      '<button type="button" data-c="insertUnorderedList" title="Aufzählung" aria-label="Aufzählung">•≡</button>' +
+      '<button type="button" data-c="insertOrderedList" title="Nummerierung" aria-label="Nummerierung">1.</button>' +
+      '<button type="button" data-c="outdent" title="Einzug kleiner (Umschalt+Tab)" aria-label="Einzug verkleinern">⇤</button>' +
+      '<button type="button" data-c="indent" title="Einzug größer (Tab)" aria-label="Einzug vergrößern">⇥</button>') +
+    g("einfuegen",
+      '<button type="button" data-x="tabelle" title="Tabelle einfügen" aria-label="Tabelle einfügen">⊞ Tabelle</button>' +
+      '<button type="button" data-x="bild" title="Bild einfügen" aria-label="Bild einfügen">🖼️ Bild</button>' +
+      '<button type="button" data-x="formel" title="Formel einfügen" aria-label="Formel einfügen">∑ Formel</button>' +
+      '<button type="button" data-x="toc" title="Inhaltsverzeichnis" aria-label="Inhaltsverzeichnis">📑 Inhalt</button>' +
+      '<button type="button" data-x="linie" title="Trennlinie" aria-label="Trennlinie einfügen">― Linie</button>' +
+      '<button type="button" data-x="zeichen" title="Sonderzeichen" aria-label="Sonderzeichen">Ω Zeichen</button>') +
+    g("werkzeuge",
+      '<button type="button" data-x="diktat" title="Diktieren" aria-label="Diktieren">🎤 Diktieren</button>' +
+      '<button type="button" data-x="vorlesen" title="Vorlesen" aria-label="Vorlesen">🔊 Vorlesen</button>' +
+      '<button type="button" data-x="auto" title="Autokorrektur an/aus" aria-label="Autokorrektur" aria-pressed="true">✨ Autokorrektur</button>') +
   '</div>' +
+  '<div class="zeichen-leiste" hidden>' + "→ ← ⇒ ⇔ ≈ ≠ ≤ ≥ ± · × ÷ ° ² ³ ½ ¼ √ ∞ π α β γ Δ Ω µ € § © ✓ ✗ • …".split(" ").map(z => '<button type="button" data-z="' + z + '">' + z + '</button>').join("") + '</div>' +
   '<div class="tabellen-leiste" hidden><span class="muted klein">Tabelle:</span><button type="button" data-t="zeile+">+ Zeile</button><button type="button" data-t="spalte+">+ Spalte</button><button type="button" data-t="zeile-">− Zeile</button><button type="button" data-t="spalte-">− Spalte</button><button type="button" data-t="kopf">Kopfzeile</button><button type="button" data-t="weg">Tabelle löschen</button></div>';
 }
 
-export function leisteBinden(wurzel, rich, geaendert, extras) {
-  const leiste = wurzel.querySelector(".wort-leiste"), tabLeiste = wurzel.querySelector(".tabellen-leiste");
+// Farbe aus "rgb(…)" in "#rrggbb"
+const hex = (c) => { const m = String(c).match(/\d+(\.\d+)?/g); return m && m.length >= 3 ? "#" + m.slice(0, 3).map(v => Math.round(+v).toString(16).padStart(2, "0")).join("") : "#101826"; };
+
+/* Rückgängig/Wiederholen für den Text: eigene Schnappschüsse (klappt auch nach Tabelle, Bild, Formel …) */
+function textPos(rich) {
+  const s = getSelection(); if (!s.rangeCount || !rich.contains(s.anchorNode)) return null;
+  const r = s.getRangeAt(0), a = document.createRange(); a.selectNodeContents(rich);
+  try { a.setEnd(r.startContainer, r.startOffset); const start = a.toString().length; a.setEnd(r.endContainer, r.endOffset); return [start, a.toString().length]; } catch (e) { return null; }
+}
+function posSetzen(rich, pos) {
+  if (!pos) return;
+  const w = document.createTreeWalker(rich, NodeFilter.SHOW_TEXT); let n, z = 0; const r = document.createRange(); let start = false;
+  while ((n = w.nextNode())) {
+    const l = n.textContent.length;
+    if (!start && z + l >= pos[0]) { r.setStart(n, pos[0] - z); start = true; }
+    if (start && z + l >= pos[1]) { r.setEnd(n, pos[1] - z); const s = getSelection(); s.removeAllRanges(); s.addRange(r); return; }
+    z += l;
+  }
+  r.selectNodeContents(rich); r.collapse(false); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+}
+
+// Autokorrektur: was direkt vor dem Cursor steht, ggf. ersetzen
+const ERSETZEN = [[/->$/, "→"], [/<-$/, "←"], [/=>$/, "⇒"], [/\.\.\.$/, "…"], [/ - $/, " – "], [/\(c\)$/i, "©"], [/\+-$/, "±"], [/!=$/, "≠"], [/<=$/, "≤"], [/>=$/, "≥"]];
+
+export function leisteBinden(wurzel, rich, geaendert, extras = {}) {
+  const leiste = wurzel.querySelector(".wort-leiste"), tabLeiste = wurzel.querySelector(".tabellen-leiste"), zeichenLeiste = wurzel.querySelector(".zeichen-leiste");
+  // Enter macht einen richtigen Absatz (wie Word), nicht ein <div>
+  try { document.execCommand("defaultParagraphSeparator", false, "p"); } catch (e) {}
+  // Leeres Blatt: gleich mit einem Absatz anfangen (sonst landet der erste Text lose im Feld)
+  rich.addEventListener("focus", () => {
+    if (rich.isContentEditable && !rich.firstChild) { rich.innerHTML = "<p><br></p>"; const r = document.createRange(); r.setStart(rich.firstChild, 0); r.collapse(true); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+  });
+
+  /* Menüband */
+  const bandSetzen = (b) => {
+    leiste.dataset.band = b; KW.save("kw-notizen-band", b);
+    wurzel.querySelectorAll("[data-band]").forEach(x => { if (x.tagName === "BUTTON") { x.classList.toggle("an", x.dataset.band === b); x.setAttribute("aria-selected", x.dataset.band === b); } });
+    if (b !== "einfuegen") zeichenLeiste.hidden = true;
+  };
+  wurzel.querySelectorAll(".band-reiter [data-band]").forEach(b => { b.addEventListener("mousedown", e => e.preventDefault()); b.onclick = () => bandSetzen(b.dataset.band); });
+  bandSetzen(KW.load("kw-notizen-band", "start") || "start");
+
+  /* Verlauf */
+  let verlauf = [], wieder = [], letzteZeit = 0, letzteArt = "";
+  const stand = () => ({ html: rich.innerHTML, pos: textPos(rich) });
+  const schnappschuss = (zwingen) => {
+    const jetzt = Date.now(), h = rich.innerHTML;
+    if (verlauf.length && verlauf[verlauf.length - 1].html === h) return;
+    if (!zwingen && jetzt - letzteZeit < 900 && verlauf.length) { letzteZeit = jetzt; return; }
+    verlauf.push(stand()); if (verlauf.length > 100) verlauf.shift(); wieder = []; letzteZeit = jetzt;
+  };
+  const herstellen = (z) => { rich.innerHTML = z.html; rich.focus({ preventScroll: true }); posSetzen(rich, z.pos); formelnVorbereiten(rich); geaendert(); zustandZeigen(); };
+  const rueckgaengig = () => { if (!verlauf.length) return false; const jetzt = stand(); let z = verlauf.pop(); if (z.html === jetzt.html && verlauf.length) z = verlauf.pop(); else if (z.html === jetzt.html) return false; wieder.push(jetzt); letzteZeit = 0; herstellen(z); return true; };
+  const wiederholen = () => { if (!wieder.length) return false; verlauf.push(stand()); herstellen(wieder.pop()); letzteZeit = 0; return true; };
+  rich.addEventListener("beforeinput", (e) => {
+    if (e.inputType === "historyUndo") { e.preventDefault(); rueckgaengig(); return; }
+    if (e.inputType === "historyRedo") { e.preventDefault(); wiederholen(); return; }
+    // neues Wort / neuer Absatz / Löschen beginnt einen neuen Schritt
+    const neueArt = e.inputType.startsWith("delete") ? "weg" : e.inputType === "insertParagraph" ? "abs" : "tipp";
+    schnappschuss(neueArt !== letzteArt || e.data === " " || neueArt === "abs"); letzteArt = neueArt;
+  });
+
   let bereich = null;
   const merken = () => { const s = getSelection(); if (s.rangeCount && rich.contains(s.anchorNode)) bereich = s.getRangeAt(0).cloneRange(); };
   // Auswahl nur zurückholen, wenn sie gerade nicht mehr im Text ist (z. B. nach Klick in eine Auswahlliste)
@@ -228,7 +299,14 @@ export function leisteBinden(wurzel, rich, geaendert, extras) {
     if (!document.body.contains(rich)) { document.removeEventListener("selectionchange", aufpassen); return; }
     merken(); zustandZeigen();
   });
-  const cmd = (c, w) => { zurueck(); document.execCommand("styleWithCSS", false, true); document.execCommand(c, false, w); merken(); geaendert(); zustandZeigen(); };
+  const cmd = (c, w) => { zurueck(); schnappschuss(true); document.execCommand("styleWithCSS", false, true); document.execCommand(c, false, w); merken(); geaendert(); zustandZeigen(); };
+  // Schriftgröße in pt setzen (relativ zur Grundschrift = 11 pt, damit es mit dem Papier mitwächst)
+  const groesseSetzen = (pt) => {
+    zurueck(); schnappschuss(true);
+    document.execCommand("styleWithCSS", false, false); document.execCommand("fontSize", false, "7");
+    rich.querySelectorAll('font[size="7"]').forEach(f => { const s = document.createElement("span"); s.style.fontSize = (pt / 11).toFixed(3) + "em"; s.innerHTML = f.innerHTML; f.replaceWith(s); });
+    merken(); geaendert(); zustandZeigen();
+  };
 
   leiste.querySelectorAll("button").forEach(b => b.addEventListener("mousedown", e => e.preventDefault()));
   leiste.querySelectorAll("[data-c]").forEach(b => b.onclick = () => cmd(b.dataset.c));
@@ -236,18 +314,50 @@ export function leisteBinden(wurzel, rich, geaendert, extras) {
   leiste.querySelector('[data-w="schrift"]').onchange = (e) => { cmd("fontName", e.target.value || "Space Grotesk"); };
   leiste.querySelector('[data-w="farbe"]').oninput = (e) => cmd("foreColor", e.target.value);
   leiste.querySelector('[data-w="marker"]').onchange = (e) => { cmd("hiliteColor", e.target.value || "transparent"); e.target.value = ""; };
-  leiste.querySelector('[data-w="groesse"]').onchange = (e) => {
-    const pt = Number(e.target.value); if (!pt) return;
-    zurueck(); document.execCommand("styleWithCSS", false, false); document.execCommand("fontSize", false, "7");
-    rich.querySelectorAll('font[size="7"]').forEach(f => { const s = document.createElement("span"); s.style.fontSize = (pt / 11).toFixed(3) + "em"; s.innerHTML = f.innerHTML; f.replaceWith(s); });
-    e.target.value = ""; geaendert();
+  leiste.querySelector('[data-w="groesse"]').onchange = (e) => { const pt = Number(e.target.value); if (pt) groesseSetzen(pt); };
+
+  /* Format übertragen (Pinsel) */
+  const pinselBtn = leiste.querySelector('[data-x="pinsel"]');
+  let pinsel = null;
+  const formatVon = (n) => {
+    const cs = getComputedStyle(n), basis = parseFloat(getComputedStyle(rich).fontSize) || 16;
+    const an = (c) => { try { return document.queryCommandState(c); } catch (e) { return false; } };
+    let hl = "", m = n; while (m && m !== rich) { const b = getComputedStyle(m).backgroundColor; if (b && !/rgba\(0, 0, 0, 0\)|transparent/.test(b)) { hl = hex(b); break; } m = m.parentElement; }
+    return { fett: an("bold"), kursiv: an("italic"), unter: an("underline"), durch: an("strikeThrough"), farbe: hex(cs.color), schrift: cs.fontFamily, pt: Math.round(parseFloat(cs.fontSize) / basis * 22) / 2, hl };
   };
+  const pinselAus = () => { pinsel = null; pinselBtn.classList.remove("an"); pinselBtn.setAttribute("aria-pressed", "false"); rich.classList.remove("pinsel"); };
+  const pinselAnwenden = () => {
+    const f = pinsel; if (!f) return;
+    const an = (c) => { try { return document.queryCommandState(c); } catch (e) { return false; } };
+    schnappschuss(true);
+    document.execCommand("styleWithCSS", false, true);
+    [["bold", f.fett], ["italic", f.kursiv], ["underline", f.unter], ["strikeThrough", f.durch]].forEach(([c, soll]) => { if (an(c) !== soll) document.execCommand(c); });
+    document.execCommand("foreColor", false, f.farbe);
+    document.execCommand("fontName", false, f.schrift);
+    document.execCommand("hiliteColor", false, f.hl || "transparent");
+    document.execCommand("styleWithCSS", false, false); document.execCommand("fontSize", false, "7");
+    rich.querySelectorAll('font[size="7"]').forEach(x => { const s = document.createElement("span"); s.style.fontSize = (f.pt / 11).toFixed(3) + "em"; s.innerHTML = x.innerHTML; x.replaceWith(s); });
+    geaendert(); zustandZeigen();
+    if (!f.mehrmals) pinselAus();
+  };
+  const pinselStart = (mehrmals) => {
+    if (pinsel) { pinselAus(); return; }
+    const s = getSelection(), n = s.anchorNode && (s.anchorNode.nodeType === 1 ? s.anchorNode : s.anchorNode.parentElement);
+    if (!n || !rich.contains(n)) { KW.toast("Erst in den Text tippen, dessen Format du übertragen willst."); return; }
+    pinsel = Object.assign(formatVon(n), { mehrmals });
+    pinselBtn.classList.add("an"); pinselBtn.setAttribute("aria-pressed", "true"); rich.classList.add("pinsel");
+    KW.toast(mehrmals ? "🖌️ Format übertragen – mehrmals. Nochmal tippen zum Beenden." : "🖌️ Jetzt den Text markieren, der so aussehen soll.");
+  };
+  let pinselKlick = 0;
+  pinselBtn.onclick = () => { const jetzt = Date.now(); if (jetzt - pinselKlick < 350) { pinselAus(); pinselStart(true); } else pinselStart(false); pinselKlick = jetzt; };
+  rich.addEventListener("pointerup", () => setTimeout(() => { if (!pinsel) return; const s = getSelection(); if (s.rangeCount && !s.isCollapsed && rich.contains(s.anchorNode)) pinselAnwenden(); }, 0));
+
   const x = (n) => leiste.querySelector('[data-x="' + n + '"]');
   x("tabelle").onclick = () => {
     const z = Math.max(1, Math.min(30, parseInt(prompt("Wie viele Zeilen?", "3"), 10) || 0)), sp = Math.max(1, Math.min(10, parseInt(prompt("Wie viele Spalten?", "3"), 10) || 0));
     if (!z || !sp) return;
     // Tabelle hinter den aktuellen Absatz setzen (nicht mitten hinein) und in die erste Zelle springen
-    zurueck();
+    zurueck(); schnappschuss(true);
     const tab = document.createElement("table"); tab.className = "tab";
     tab.innerHTML = "<tbody>" + ("<tr>" + "<td><br></td>".repeat(sp) + "</tr>").repeat(z) + "</tbody>";
     const s = getSelection(), n = s.rangeCount && rich.contains(s.anchorNode) ? (s.anchorNode.nodeType === 1 ? s.anchorNode : s.anchorNode.parentElement) : null;
@@ -262,6 +372,7 @@ export function leisteBinden(wurzel, rich, geaendert, extras) {
   // (direkt mit Range, weil der Browser Formeln sonst aus dem Absatz herausschiebt)
   const einfuegenBei = (r, html) => {
     rich.focus({ preventScroll: true });
+    schnappschuss(true);
     const s = getSelection();
     if (!r || !rich.contains(r.startContainer)) { r = document.createRange(); r.selectNodeContents(rich.lastElementChild || rich); r.collapse(false); }
     r.deleteContents();
@@ -272,16 +383,23 @@ export function leisteBinden(wurzel, rich, geaendert, extras) {
     s.removeAllRanges(); s.addRange(neu);
     merken(); geaendert();
   };
-  x("bild").onclick = async () => { merken(); const r = bereich && bereich.cloneRange(); const url = await extras.bild(); if (url) einfuegenBei(r, '<img class="bild" src="' + url + '" alt="">'); };
+  x("bild").onclick = async () => { merken(); const r = bereich && bereich.cloneRange(); const url = await (extras.bild || bildWaehlen)(); if (url) einfuegenBei(r, '<img class="bild" src="' + url + '" alt="">'); };
   x("formel").onclick = async () => { merken(); const r = bereich && bereich.cloneRange(); const tex = await formelDialog(""); if (tex) einfuegenBei(r, formelHtml(tex) + "&nbsp;"); };
-  x("toc").onclick = () => { inhaltsverzeichnis(rich); geaendert(); };
+  x("toc").onclick = () => { schnappschuss(true); inhaltsverzeichnis(rich); geaendert(); };
+  x("linie").onclick = () => cmd("insertHorizontalRule");
+  x("zeichen").onclick = () => { zeichenLeiste.hidden = !zeichenLeiste.hidden; x("zeichen").classList.toggle("an", !zeichenLeiste.hidden); };
+  zeichenLeiste.querySelectorAll("[data-z]").forEach(b => { b.addEventListener("mousedown", e => e.preventDefault()); b.onclick = () => cmd("insertText", b.dataset.z); });
   x("diktat").onclick = () => { merken(); diktieren(x("diktat"), extras.sprachModell, (text) => cmd("insertText", (bereich && !bereich.collapsed ? "" : " ") + text)); };
   x("vorlesen").onclick = () => { const s = getSelection(); vorlesen(s.toString() && rich.contains(s.anchorNode) ? s.toString() : htmlZuText(rich.innerHTML), x("vorlesen")); };
+  const autoAn = () => extras.autokorrektur ? extras.autokorrektur() : KW.load("kw-notizen-auto", true) !== false;
+  const autoZeigen = () => { const a = autoAn(); x("auto").classList.toggle("an", a); x("auto").setAttribute("aria-pressed", a); };
+  x("auto").onclick = () => { if (extras.autokorrekturSetzen) extras.autokorrekturSetzen(!autoAn()); else KW.save("kw-notizen-auto", !autoAn()); autoZeigen(); KW.toast("Autokorrektur " + (autoAn() ? "an" : "aus")); };
+  autoZeigen();
 
   // Formel antippen → bearbeiten
   rich.addEventListener("click", async (e) => {
     const f = e.target.closest(".formel");
-    if (f && rich.contains(f)) { const tex = await formelDialog(f.dataset.tex); if (tex) { const t = document.createElement("span"); t.innerHTML = formelHtml(tex); f.replaceWith(t.firstChild); geaendert(); } return; }
+    if (f && rich.contains(f)) { const tex = await formelDialog(f.dataset.tex); if (tex) { schnappschuss(true); const t = document.createElement("span"); t.innerHTML = formelHtml(tex); f.replaceWith(t.firstChild); geaendert(); } return; }
     const a = e.target.closest(".toc a");
     if (a) { e.preventDefault(); const z = rich.querySelector("#" + CSS.escape(a.dataset.ziel)); if (z) z.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
     const img = e.target.closest("img.bild");
@@ -298,6 +416,7 @@ export function leisteBinden(wurzel, rich, geaendert, extras) {
     document.body.appendChild(m);
     m.onclick = (e) => {
       const b = e.target.closest("button"); if (!b) return;
+      schnappschuss(true);
       if (b.dataset.b) img.style.width = b.dataset.b + "%";
       if (b.dataset.a === "weg") img.remove();
       else if (b.dataset.a) { img.style.display = "block"; img.style.marginLeft = b.dataset.a === "left" ? "0" : "auto"; img.style.marginRight = b.dataset.a === "right" ? "0" : "auto"; }
@@ -310,6 +429,7 @@ export function leisteBinden(wurzel, rich, geaendert, extras) {
   function zelle() { const s = getSelection(); const n = s.anchorNode && (s.anchorNode.nodeType === 1 ? s.anchorNode : s.anchorNode.parentElement); return n && rich.contains(n) ? n.closest("td,th") : null; }
   tabLeiste.querySelectorAll("button").forEach(b => { b.addEventListener("mousedown", e => e.preventDefault()); b.onclick = () => {
     const z = zelle(); if (!z) return;
+    schnappschuss(true);
     const tr = z.parentElement, tab = z.closest("table"), i = Array.from(tr.children).indexOf(z);
     const a = b.dataset.t;
     if (a === "zeile+") { const n = tr.cloneNode(true); n.querySelectorAll("td,th").forEach(c => c.innerHTML = "<br>"); tr.after(n); }
@@ -321,6 +441,8 @@ export function leisteBinden(wurzel, rich, geaendert, extras) {
     geaendert(); zustandZeigen();
   }; });
 
+  // Leiste zeigt, was gerade am Cursor gilt (Schrift, Größe, Farbe, Fett …) – wie in Word
+  const sel = (w) => leiste.querySelector('[data-w="' + w + '"]');
   function zustandZeigen() {
     if (!document.body.contains(leiste)) return;
     const an = (c) => { try { return document.queryCommandState(c); } catch (e) { return false; } };
@@ -329,43 +451,151 @@ export function leisteBinden(wurzel, rich, geaendert, extras) {
     if (n && rich.contains(n)) {
       const blk = n.closest("h1,h2,h3,blockquote,p,li,div");
       const t = blk ? blk.tagName.toLowerCase() : "p";
-      leiste.querySelector('[data-w="block"]').value = ["h1", "h2", "h3", "blockquote"].includes(t) ? t : "p";
+      sel("block").value = ["h1", "h2", "h3", "blockquote"].includes(t) ? t : "p";
+      const cs = getComputedStyle(n), basis = parseFloat(getComputedStyle(rich).fontSize) || 16;
+      // Schrift
+      const fam = cs.fontFamily.split(",")[0].replace(/["']/g, "").trim().toLowerCase();
+      const opt = Array.from(sel("schrift").options).find(o => o.value && o.value.split(",")[0].replace(/["']/g, "").trim().toLowerCase() === fam);
+      sel("schrift").value = opt ? opt.value : "";
+      // Größe in pt (Grundschrift = 11 pt)
+      const pt = Math.round(parseFloat(cs.fontSize) / basis * 22) / 2;
+      const gs = sel("groesse");
+      let o = Array.from(gs.options).find(q => Number(q.value) === pt);
+      if (!o) { gs.querySelectorAll("option.extra").forEach(q => q.remove()); o = document.createElement("option"); o.className = "extra"; o.textContent = String(pt); o.value = String(pt); gs.appendChild(o); }
+      gs.value = o.value;
+      // Farbe
+      if (document.activeElement !== sel("farbe")) sel("farbe").value = hex(cs.color);
     }
     tabLeiste.hidden = !zelle();
   }
 
-  // Tastenkürzel wie in Word
+  /* Tasten wie in Word */
   rich.addEventListener("keydown", (e) => {
+    // Tab: in Tabellen zur nächsten Zelle, in Listen einrücken, sonst Tabulator
+    if (e.key === "Tab" && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      const z = zelle(), s = getSelection(), n = s.anchorNode && (s.anchorNode.nodeType === 1 ? s.anchorNode : s.anchorNode.parentElement);
+      e.preventDefault();
+      if (z) {
+        const alle = Array.from(z.closest("table").querySelectorAll("td,th")), i = alle.indexOf(z);
+        let ziel = alle[i + (e.shiftKey ? -1 : 1)];
+        if (!ziel && !e.shiftKey) { schnappschuss(true); const tr = z.parentElement.cloneNode(true); tr.querySelectorAll("td,th").forEach(c => c.innerHTML = "<br>"); z.closest("tr").parentElement.appendChild(tr); ziel = tr.cells[0]; geaendert(); }
+        if (ziel) { const r = document.createRange(); r.selectNodeContents(ziel); s.removeAllRanges(); s.addRange(r); }
+        return;
+      }
+      if (n && n.closest("li")) { cmd(e.shiftKey ? "outdent" : "indent"); return; }
+      if (!e.shiftKey) cmd("insertHTML", '<span class="tabz">\t</span>\u200b');
+      return;
+    }
+    if (e.key === "Escape" && pinsel) { pinselAus(); return; }
     if (!(e.ctrlKey || e.metaKey)) return;
     const k = e.key.toLowerCase();
-    if (k === "b") { e.preventDefault(); cmd("bold"); } else if (k === "i") { e.preventDefault(); cmd("italic"); } else if (k === "u") { e.preventDefault(); cmd("underline"); }
+    if (k === "z" && !e.shiftKey) { e.preventDefault(); rueckgaengig(); }
+    else if (k === "y" || (k === "z" && e.shiftKey)) { e.preventDefault(); wiederholen(); }
+    else if (k === "b") { e.preventDefault(); cmd("bold"); } else if (k === "i") { e.preventDefault(); cmd("italic"); } else if (k === "u") { e.preventDefault(); cmd("underline"); }
+    else if (k === "e") { e.preventDefault(); cmd("justifyCenter"); } else if (k === "l") { e.preventDefault(); cmd("justifyLeft"); } else if (k === "r") { e.preventDefault(); cmd("justifyRight"); } else if (k === "j") { e.preventDefault(); cmd("justifyFull"); }
     else if (e.altKey && ["1", "2", "3"].includes(k)) { e.preventDefault(); cmd("formatBlock", "h" + k); }
+    else if (e.altKey && k === "0") { e.preventDefault(); cmd("formatBlock", "p"); }
+    else if (e.shiftKey && (k === ">" || k === "<")) { e.preventDefault(); const pt = Number(sel("groesse").value) || 11, i = GROESSEN.findIndex(q => q >= pt); groesseSetzen(GROESSEN[Math.max(0, Math.min(GROESSEN.length - 1, i + (k === ">" ? 1 : -1)))]); }
   });
-  // Eingefügtes aus dem Internet: nur einfache Formatierung behalten
+
+  /* Autokorrektur nach Leerzeichen / Satzzeichen / Anführungszeichen */
+  rich.addEventListener("input", (e) => {
+    if (!autoAn() || e.inputType !== "insertText" || !e.data) return;
+    const s = getSelection(); if (!s.isCollapsed) return;
+    const t = s.anchorNode; if (!t || t.nodeType !== 3 || !rich.contains(t)) return;
+    const o = s.anchorOffset, vor = t.textContent.slice(0, o);
+    const ersetze = (laenge, neu) => {
+      const r = document.createRange(); r.setStart(t, o - laenge); r.setEnd(t, o);
+      s.removeAllRanges(); s.addRange(r);
+      document.execCommand("insertText", false, neu);
+    };
+    // „Deutsche Anführungszeichen“
+    if (e.data === '"') { const davor = vor.slice(-2, -1); ersetze(1, !davor || /[\s(\[{\-–—/]/.test(davor) ? "„" : "“"); return; }
+    if (e.data === "'") { const davor = vor.slice(-2, -1); if (!davor || /\s/.test(davor)) { ersetze(1, "‚"); } else if (/[\p{L}]/u.test(davor) && /‚[^‘]*$/.test(vor.slice(0, -1))) ersetze(1, "‘"); return; }
+    for (const [re, neu] of ERSETZEN) { const m = vor.match(re); if (m) { ersetze(m[0].length, neu); return; } }
+    // Satzanfang groß (nach . ! ? oder am Absatzanfang), wenn ein Wort fertig ist
+    if (/[\s.,!?;:]/.test(e.data)) {
+      const m = vor.slice(0, -1).match(/(^|[.!?]\s+)(\p{Ll}[\p{L}]*)$/u);
+      if (!m) return;
+      const wort = m[2];
+      // Am Absatzanfang nur, wenn wirklich nichts davor steht
+      if (!m[1]) {
+        const blk = t.parentElement.closest("p,li,h1,h2,h3,blockquote,div,td,th"); if (!blk || blk === rich) return;
+        const r = document.createRange(); r.selectNodeContents(blk); r.setEnd(t, o - 1 - wort.length);
+        if (r.toString().trim()) return;
+      }
+      if (/^(z|d|u|bzw|ca|usw|etc|vgl|evtl|ggf|s)$/.test(wort)) return; // Abkürzungen
+      const pos = textPos(rich), start = o - 1 - wort.length, r = document.createRange(); r.setStart(t, start); r.setEnd(t, start + 1);
+      s.removeAllRanges(); s.addRange(r);
+      document.execCommand("insertText", false, wort[0].toLocaleUpperCase("de-DE"));
+      posSetzen(rich, pos);
+    }
+  });
+
+  // Eingefügtes aus Word oder dem Internet: Formatierung (Farbe, Größe, Ausrichtung, Listen) behalten, alles Gefährliche weg
   rich.addEventListener("paste", (e) => {
     const html = e.clipboardData && e.clipboardData.getData("text/html");
     if (!html) return;
     e.preventDefault();
     cmd("insertHTML", saeubern(html));
   });
-  return { zustandZeigen };
+
+  return { zustandZeigen, rueckgaengig, wiederholen, schnappschuss: () => schnappschuss(true) };
+}
+
+// Größe aus Word/Website in em relativ zu 11 pt umrechnen
+function groesseEm(v) {
+  const m = String(v).match(/^([\d.]+)(pt|px|em|rem|%)$/); if (!m) return "";
+  const z = +m[1], pt = m[2] === "pt" ? z : m[2] === "px" ? z * 0.75 : m[2] === "%" ? z / 100 * 11 : z * 11;
+  if (!(pt > 4 && pt < 100) || Math.abs(pt - 11) < 0.6) return "";
+  return (pt / 11).toFixed(3) + "em";
 }
 
 // Fremdes HTML (z. B. aus Word oder einer Website) auf erlaubte Teile kürzen – sicher, ohne Skripte
 export function saeubern(html) {
   const doc = new DOMParser().parseFromString(html, "text/html");
-  const ERLAUBT = new Set(["P", "BR", "B", "STRONG", "I", "EM", "U", "S", "SUB", "SUP", "H1", "H2", "H3", "UL", "OL", "LI", "TABLE", "TBODY", "THEAD", "TR", "TD", "TH", "BLOCKQUOTE", "SPAN", "IMG", "A"]);
+  // Word-Listen (Absätze mit mso-list) in echte Listen umbauen
+  doc.querySelectorAll("p").forEach(p => {
+    const st = p.getAttribute("style") || "";
+    if (!/mso-list/i.test(st) && !/MsoListParagraph/i.test(p.className)) return;
+    const marke = p.querySelector('[style*="mso-list:Ignore"], [style*="mso-list: Ignore"]');
+    const zeichen = (marke ? marke.textContent : p.textContent).trim();
+    if (marke) marke.remove();
+    // Kommentare mit [if !supportLists] entfernen
+    const geordnet = /^[0-9a-zA-Z]{1,3}[.)]/.test(zeichen);
+    const li = doc.createElement("li"); li.innerHTML = p.innerHTML.replace(/^\s*(&nbsp;|\s)+/, "");
+    const vorher = p.previousElementSibling;
+    if (vorher && vorher.tagName === (geordnet ? "OL" : "UL") && vorher.dataset.word) vorher.appendChild(li);
+    else { const l = doc.createElement(geordnet ? "ol" : "ul"); l.dataset.word = "1"; l.appendChild(li); p.before(l); }
+    p.remove();
+  });
+  const ERLAUBT = new Set(["P", "BR", "B", "STRONG", "I", "EM", "U", "S", "STRIKE", "SUB", "SUP", "H1", "H2", "H3", "H4", "UL", "OL", "LI", "TABLE", "TBODY", "THEAD", "TR", "TD", "TH", "BLOCKQUOTE", "SPAN", "FONT", "IMG", "A", "DIV", "HR"]);
   function sauber(n) {
-    if (n.nodeType === 3) return document.createTextNode(n.textContent);
+    if (n.nodeType === 3) return document.createTextNode(n.textContent.replace(/ /g, " "));
     if (n.nodeType !== 1) return null;
-    if (!ERLAUBT.has(n.tagName)) { const f = document.createDocumentFragment(); n.childNodes.forEach(c => { const x = sauber(c); if (x) f.appendChild(x); }); return f; }
-    const e = document.createElement(n.tagName === "A" ? "span" : n.tagName);
+    if (!ERLAUBT.has(n.tagName)) { if (/^(STYLE|SCRIPT|META|LINK|TITLE|XML|O:P)$/i.test(n.tagName)) return null; const f = document.createDocumentFragment(); n.childNodes.forEach(c => { const x = sauber(c); if (x) f.appendChild(x); }); return f; }
+    const tag = n.tagName === "A" || n.tagName === "FONT" ? "SPAN" : n.tagName === "H4" ? "H3" : n.tagName === "DIV" ? "P" : n.tagName === "STRIKE" ? "S" : n.tagName;
+    const e = document.createElement(tag);
     if (n.tagName === "IMG") { const src = n.getAttribute("src") || ""; if (!/^data:image\//.test(src)) return null; e.src = src; e.className = "bild"; return e; }
+    if (n.tagName === "TABLE") e.className = "tab";
     const st = n.style;
-    if (st && st.fontWeight && /bold|[6-9]00/.test(st.fontWeight)) e.style.fontWeight = "bold";
-    if (st && st.fontStyle === "italic") e.style.fontStyle = "italic";
-    if (st && st.textAlign) e.style.textAlign = st.textAlign;
+    if (st) {
+      if (st.fontWeight && /bold|[6-9]00/.test(st.fontWeight)) e.style.fontWeight = "bold";
+      if (st.fontStyle === "italic") e.style.fontStyle = "italic";
+      if (/underline/.test(st.textDecoration || st.textDecorationLine || "")) e.style.textDecoration = "underline";
+      if (/^(center|right|justify)$/.test(st.textAlign)) e.style.textAlign = st.textAlign;
+      // Farbe nur, wenn sie nicht (fast) schwarz ist – sonst wäre der Text im Dunkelmodus falsch
+      if (st.color && !/^(black|windowtext|#000(000)?|rgb\(0, 0, 0\)|inherit|initial)$/i.test(st.color.trim())) e.style.color = st.color;
+      const bg = st.backgroundColor || st.background;
+      if (bg && /^(#|rgb|yellow|lime|aqua|fuchsia|cyan|magenta)/i.test(bg.trim()) && !/^(#fff(fff)?|white|rgb\(255, 255, 255\))$/i.test(bg.trim()) && tag !== "TD" && tag !== "TABLE") e.style.backgroundColor = bg;
+      const gr = st.fontSize ? groesseEm(st.fontSize) : ""; if (gr && !/^H/.test(tag)) e.style.fontSize = gr;
+      const ml = parseFloat(st.marginLeft); if (/^(P)$/.test(tag) && ml > 20 && /pt|px|cm/.test(st.marginLeft)) e.style.marginLeft = "1.4em";
+    }
+    if (n.tagName === "FONT" && n.getAttribute("color")) e.style.color = n.getAttribute("color");
+    if (n.getAttribute("align") && /^(center|right|justify)$/i.test(n.getAttribute("align"))) e.style.textAlign = n.getAttribute("align").toLowerCase();
     n.childNodes.forEach(c => { const x = sauber(c); if (x) e.appendChild(x); });
+    // leere Spans weg
+    if (tag === "SPAN" && !e.getAttribute("style")) { const f = document.createDocumentFragment(); while (e.firstChild) f.appendChild(e.firstChild); return f; }
     return e;
   }
   const f = document.createElement("div");

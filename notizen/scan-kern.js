@@ -36,55 +36,160 @@ export function flaeche(e) {
   return Math.abs(a) / 2;
 }
 
-// Sucht das Blatt: größte helle Fläche, die nicht den Bildrand berührt (zu viel).
-// Gibt 4 Ecken zurück [oben links, oben rechts, unten rechts, unten links] oder null.
-export function findeBlatt(g, w, h) {
+/* ---------- Blatt finden (Version 2) ----------
+   1. Maske: hell UND farblos (Papier ist weiß/grau – eine gelbe Tür oder Haut nicht) UND keine starke Kante
+      (so wird das Blatt von einer hellen Wand dahinter abgetrennt).
+   2. Löcher durch Schrift schließen, Flächen finden.
+   3. Für jede große Fläche: Umriss (konvexe Hülle) → bestes Viereck darin.
+   4. Prüfen, ob das Viereck wirklich wie ein Blatt aussieht (Winkel, Seitenverhältnis, gefüllt, Ecken im Bild). */
+
+function sobel(g, w, h) {
+  const m = new Uint16Array(w * h);
+  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+    const i = y * w + x;
+    const gx = -g[i - w - 1] - 2 * g[i - 1] - g[i + w - 1] + g[i - w + 1] + 2 * g[i + 1] + g[i + w + 1];
+    const gy = -g[i - w - 1] - 2 * g[i - w] - g[i - w + 1] + g[i + w - 1] + 2 * g[i + w] + g[i + w + 1];
+    m[i] = Math.min(65535, Math.abs(gx) + Math.abs(gy));
+  }
+  return m;
+}
+// Morphologie auf 0/1-Maske (r = Radius, quadratisch, getrennt in x und y)
+function morph(m, w, h, r, dehnen) {
+  const tmp = new Uint8Array(w * h), out = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    let v = dehnen ? 0 : 1;
+    for (let d = -r; d <= r; d++) { const xx = Math.min(w - 1, Math.max(0, x + d)); if (dehnen ? m[y * w + xx] : !m[y * w + xx]) { v = dehnen ? 1 : 0; break; } }
+    tmp[y * w + x] = v;
+  }
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    let v = dehnen ? 0 : 1;
+    for (let d = -r; d <= r; d++) { const yy = Math.min(h - 1, Math.max(0, y + d)); if (dehnen ? tmp[yy * w + x] : !tmp[yy * w + x]) { v = dehnen ? 1 : 0; break; } }
+    out[y * w + x] = v;
+  }
+  return out;
+}
+const kreuz = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+function huelle(pts) {
+  pts = pts.slice().sort((a, b) => a.x - b.x || a.y - b.y);
+  if (pts.length < 3) return pts;
+  const unten = [], oben = [];
+  for (const p of pts) { while (unten.length >= 2 && kreuz(unten[unten.length - 2], unten[unten.length - 1], p) <= 0) unten.pop(); unten.push(p); }
+  for (let i = pts.length - 1; i >= 0; i--) { const p = pts[i]; while (oben.length >= 2 && kreuz(oben[oben.length - 2], oben[oben.length - 1], p) <= 0) oben.pop(); oben.push(p); }
+  return unten.slice(0, -1).concat(oben.slice(0, -1));
+}
+const dreieck = (a, b, c) => Math.abs(kreuz(a, b, c)) / 2;
+// Größtes Viereck aus Punkten der Hülle (O(n³), n ≤ 60)
+export function bestesViereck(h) {
+  if (h.length < 4) return null;
+  if (h.length > 60) { const s = h.length / 60; h = Array.from({ length: 60 }, (_, i) => h[Math.floor(i * s)]); }
+  const n = h.length;
+  let best = 0, quad = null;
+  for (let i = 0; i < n; i++) for (let j = i + 2; j < n; j++) {
+    let a1 = 0, k1 = -1; for (let k = i + 1; k < j; k++) { const a = dreieck(h[i], h[k], h[j]); if (a > a1) { a1 = a; k1 = k; } }
+    let a2 = 0, l1 = -1; for (let l = j + 1; l < n + i; l++) { const a = dreieck(h[i], h[j], h[l % n]); if (a > a2) { a2 = a; l1 = l % n; } }
+    if (k1 >= 0 && l1 >= 0 && a1 + a2 > best) { best = a1 + a2; quad = [h[i], h[k1], h[j], h[l1]]; }
+  }
+  return quad;
+}
+// Ecken sortieren: oben links, oben rechts, unten rechts, unten links
+export function sortiereEcken(q) {
+  const cx = q.reduce((s, p) => s + p.x, 0) / 4, cy = q.reduce((s, p) => s + p.y, 0) / 4;
+  const r = q.slice().sort((a, b) => Math.atan2(a.y - cy, a.x - cx) - Math.atan2(b.y - cy, b.x - cx));
+  let start = 0; r.forEach((p, i) => { if (p.x + p.y < r[start].x + r[start].y) start = i; });
+  return r.slice(start).concat(r.slice(0, start)).map(p => ({ x: p.x, y: p.y }));
+}
+// Sieht das Viereck wie ein (evtl. schräg gehaltenes) Blatt aus?
+export function blattFoermig(e) {
+  for (let i = 0; i < 4; i++) {
+    const a = e[(i + 3) % 4], b = e[i], c = e[(i + 1) % 4];
+    const v1x = a.x - b.x, v1y = a.y - b.y, v2x = c.x - b.x, v2y = c.y - b.y;
+    const w = Math.acos(Math.max(-1, Math.min(1, (v1x * v2x + v1y * v2y) / (Math.hypot(v1x, v1y) * Math.hypot(v2x, v2y) || 1)))) * 180 / Math.PI;
+    if (w < 45 || w > 135) return false;
+  }
+  const s = [0, 1, 2, 3].map(i => Math.hypot(e[(i + 1) % 4].x - e[i].x, e[(i + 1) % 4].y - e[i].y));
+  const a = (s[0] + s[2]) / 2, b = (s[1] + s[3]) / 2, v = Math.max(a, b) / Math.max(1, Math.min(a, b));
+  return v >= 1.0 && v <= 2.3;
+}
+
+// Hauptfunktion. rgba ODER grau (dann kanaele = 1). Gibt { ecken, hinweis } – hinweis: "" | "kein" | "klein" | "rand"
+export function analysiereBlatt(daten, w, h, kanaele = 4) {
+  const g = kanaele === 4 ? grau(daten, w, h) : daten;
+  const sat = new Uint8Array(w * h);
+  if (kanaele === 4) for (let i = 0, j = 0; j < sat.length; i += 4, j++) { const r = daten[i], gg = daten[i + 1], b = daten[i + 2]; sat[j] = Math.max(r, gg, b) - Math.min(r, gg, b); }
+  const kanten = sobel(g, w, h);
   const s = otsu(g);
-  // Mindest-Kontrast: Papier muss sich vom Hintergrund abheben
   let hell = 0, dunkel = 0, nh = 0, nd = 0;
   for (let i = 0; i < g.length; i++) { if (g[i] > s) { hell += g[i]; nh++; } else { dunkel += g[i]; nd++; } }
-  if (!nh || !nd || hell / nh - dunkel / nd < 40) return null;
-
-  const marke = new Int32Array(w * h).fill(-1);
-  const stapel = new Int32Array(w * h);
-  let bestePix = null, besteAnzahl = 0;
-  for (let start = 0; start < g.length; start++) {
-    if (marke[start] !== -1 || g[start] <= s) continue;
-    let n = 0, top = 0, randPixel = 0;
-    stapel[top++] = start; marke[start] = start;
-    const pix = [];
-    while (top) {
-      const p = stapel[--top]; pix.push(p); n++;
-      const x = p % w, y = (p / w) | 0;
-      if (x === 0 || y === 0 || x === w - 1 || y === h - 1) randPixel++;
-      if (x > 0 && marke[p - 1] === -1 && g[p - 1] > s) { marke[p - 1] = start; stapel[top++] = p - 1; }
-      if (x < w - 1 && marke[p + 1] === -1 && g[p + 1] > s) { marke[p + 1] = start; stapel[top++] = p + 1; }
-      if (y > 0 && marke[p - w] === -1 && g[p - w] > s) { marke[p - w] = start; stapel[top++] = p - w; }
-      if (y < h - 1 && marke[p + w] === -1 && g[p + w] > s) { marke[p + w] = start; stapel[top++] = p + w; }
-    }
-    // Fläche, die fast überall am Rand klebt, ist eher heller Hintergrund als ein Blatt
-    if (randPixel > (w + h) * 0.9) continue;
-    if (n > besteAnzahl) { besteAnzahl = n; bestePix = pix; }
+  if (!nh || !nd || hell / nh - dunkel / nd < 35) return { ecken: null, hinweis: "kein" };
+  // Mehrere Helligkeits-Schwellen probieren: Ist eine helle Wand hinter dem Blatt, trennt erst eine höhere Schwelle die beiden
+  const schwellen = [s];
+  for (let i = 0; i < 2; i++) { const o = otsuUeber(g, schwellen[schwellen.length - 1]); if (o > schwellen[schwellen.length - 1] + 6) schwellen.push(o); }
+  let bestes = null, hinweis = "kein";
+  for (const sw of schwellen) {
+    const r = versuch(g, sat, kanten, w, h, sw);
+    if (r.hinweis !== "kein" && (hinweis === "kein" || r.hinweis === "rand")) hinweis = r.hinweis;
+    if (r.bestes && (!bestes || r.bestes.punkte > bestes.punkte)) bestes = r.bestes;
   }
-  if (!bestePix || besteAnzahl < w * h * 0.12) return null;
-
-  // Ecken: Extrempunkte entlang der Diagonalen
-  let ol = null, or = null, ur = null, ul = null;
-  let mOl = Infinity, mOr = -Infinity, mUr = -Infinity, mUl = Infinity;
-  for (const p of bestePix) {
-    const x = p % w, y = (p / w) | 0;
-    if (x + y < mOl) { mOl = x + y; ol = { x, y }; }
-    if (x + y > mUr) { mUr = x + y; ur = { x, y }; }
-    if (x - y > mOr) { mOr = x - y; or = { x, y }; }
-    if (x - y < mUl) { mUl = x - y; ul = { x, y }; }
-  }
-  const ecken = [ol, or, ur, ul];
-  const a = flaeche(ecken);
-  if (a < w * h * 0.12) return null;
-  // Das Viereck muss gut gefüllt sein, sonst ist es keine Blatt-Form
-  if (besteAnzahl / a < 0.82 || besteAnzahl / a > 1.15) return null;
-  return ecken;
+  if (!bestes) return { ecken: null, hinweis };
+  return { ecken: bestes.e, hinweis: bestes.a < w * h * 0.2 ? "klein" : "" };
 }
+
+// Otsu nur über den Pixeln heller als „ab“
+function otsuUeber(g, ab) {
+  const hist = new Array(256).fill(0); let n = 0;
+  for (let i = 0; i < g.length; i++) if (g[i] > ab) { hist[g[i]]++; n++; }
+  if (n < 100) return ab;
+  let summe = 0; for (let i = 0; i < 256; i++) summe += i * hist[i];
+  let sB = 0, wB = 0, best = 0, schwelle = ab;
+  for (let t = ab + 1; t < 256; t++) {
+    wB += hist[t]; if (!wB) continue; const wF = n - wB; if (!wF) break;
+    sB += t * hist[t]; const mB = sB / wB, mF = (summe - sB) / wF, v = wB * wF * (mB - mF) ** 2;
+    if (v > best) { best = v; schwelle = t; }
+  }
+  return schwelle;
+}
+
+function versuch(g, sat, kanten, w, h, s) {
+  let m = new Uint8Array(w * h);
+  for (let i = 0; i < g.length; i++) m[i] = g[i] > s && sat[i] < Math.max(40, g[i] * 0.22) && kanten[i] < 160 ? 1 : 0;
+  // Schrift-Löcher schließen (dehnen, dann schrumpfen)
+  const r = Math.max(1, Math.round(w / 160));
+  m = morph(morph(m, w, h, r, true), w, h, r + 1, false);
+  const marke = new Int32Array(w * h).fill(-1), stapel = new Int32Array(w * h), flaechen = [];
+  for (let start = 0; start < m.length; start++) {
+    if (!m[start] || marke[start] !== -1) continue;
+    let top = 0, n = 0; stapel[top++] = start; marke[start] = start;
+    const links = new Int32Array(h).fill(w), rechts = new Int32Array(h).fill(-1);
+    while (top) {
+      const p = stapel[--top], x = p % w, y = (p / w) | 0; n++;
+      if (x < links[y]) links[y] = x; if (x > rechts[y]) rechts[y] = x;
+      if (x > 0 && m[p - 1] && marke[p - 1] === -1) { marke[p - 1] = start; stapel[top++] = p - 1; }
+      if (x < w - 1 && m[p + 1] && marke[p + 1] === -1) { marke[p + 1] = start; stapel[top++] = p + 1; }
+      if (y > 0 && m[p - w] && marke[p - w] === -1) { marke[p - w] = start; stapel[top++] = p - w; }
+      if (y < h - 1 && m[p + w] && marke[p + w] === -1) { marke[p + w] = start; stapel[top++] = p + w; }
+    }
+    if (n >= w * h * 0.06) flaechen.push({ n, links, rechts });
+  }
+  if (!flaechen.length) return { bestes: null, hinweis: "kein" };
+  flaechen.sort((a, b) => b.n - a.n);
+  let bestes = null, hinweis = "kein";
+  for (const f of flaechen.slice(0, 4)) {
+    const pts = []; let gefuellt = 0;
+    for (let y = 0; y < h; y++) if (f.rechts[y] >= 0) { pts.push({ x: f.links[y], y }, { x: f.rechts[y] + 1, y: y + 1 }); gefuellt += f.rechts[y] - f.links[y] + 1; }
+    const q = bestesViereck(huelle(pts));
+    if (!q) continue;
+    const e = sortiereEcken(q), a = flaeche(e);
+    if (a < w * h * 0.08) { if (hinweis === "kein") hinweis = "klein"; continue; }
+    if (gefuellt / a < 0.84 || gefuellt / a > 1.12 || !blattFoermig(e)) continue;
+    if (e.some(p => p.x <= 1 || p.y <= 1 || p.x >= w - 2 || p.y >= h - 2)) { hinweis = "rand"; continue; }
+    const punkte = a * (gefuellt / a > 1 ? 2 - gefuellt / a : gefuellt / a);
+    if (!bestes || punkte > bestes.punkte) bestes = { e, a, punkte };
+  }
+  return { bestes, hinweis };
+}
+
+// Alte Schnittstelle (Graustufen) – für Tests und als Notlösung
+export function findeBlatt(g, w, h) { return analysiereBlatt(g, w, h, 1).ecken; }
 
 // Wie weit haben sich die Ecken bewegt? (Anteil der Bild-Diagonale, 0 = gar nicht)
 export function bewegung(a, b, w, h) {

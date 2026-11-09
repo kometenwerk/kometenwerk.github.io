@@ -398,3 +398,29 @@ dialog.sheet.breit .sheet-in{max-width:760px}
 }
 @media (max-width:600px){.unter-leiste{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;top:104px}.unter-leiste::-webkit-scrollbar{display:none}.wort-leiste{flex-wrap:nowrap}}
 .sheet-foot.klebt{position:sticky;bottom:calc(-18px - env(safe-area-inset-bottom,0px));background:var(--card);padding:12px 0 calc(12px + env(safe-area-inset-bottom,0px));margin-bottom:-18px;border-top:1px solid var(--line);z-index:2}
+.scan-buehne.spiegel video,.scan-buehne.spiegel #overlay{transform:scaleX(-1)}
+.scan-mini{position:relative;display:inline-block}
+.scan-mini .btn{position:absolute;right:4px;bottom:4px;padding:2px 6px}
+.hinweis-unsicher{max-width:860px;margin:0 auto 10px;padding:10px 14px;border-left:4px solid #e0a800}
+/* Word-Menüband */
+#wortLeiste{flex-direction:column;align-items:stretch;gap:2px}
+.band-reiter{display:flex;gap:2px;border-bottom:1px solid var(--line);padding-bottom:3px}
+.band-reiter button{border:0;background:transparent;border-radius:8px 8px 0 0;padding:4px 12px;font:inherit;font-size:.85rem;color:var(--muted);cursor:pointer;min-height:30px}
+.band-reiter button.an{color:var(--ink);font-weight:600;box-shadow:inset 0 -3px 0 var(--app)}
+.wort-leiste .gruppe{display:contents}
+.wort-leiste[data-band="start"] .gruppe:not([data-gruppe="start"]),
+.wort-leiste[data-band="einfuegen"] .gruppe:not([data-gruppe="einfuegen"]),
+.wort-leiste[data-band="werkzeuge"] .gruppe:not([data-gruppe="werkzeuge"]){display:none}
+.wort-leiste .gruppe[data-gruppe="einfuegen"] button,.wort-leiste .gruppe[data-gruppe="werkzeuge"] button{padding:0 10px}
+.zeichen-leiste{display:flex;flex-wrap:wrap;gap:2px;padding-top:4px;border-top:1px dashed var(--line)}
+.zeichen-leiste button{border:1px solid var(--line);background:var(--card);border-radius:6px;min-width:32px;height:32px;cursor:pointer;color:var(--ink);font-size:1rem}
+@media (max-width:600px){.zeichen-leiste{flex-wrap:nowrap;overflow-x:auto}.band-reiter button{padding:4px 10px}}
+/* Absätze aus Enter wie <p> behandeln, Tabulator, Pinsel, Trennlinie */
+.rich > div{margin:0}
+.rich.ohne-linien > div{margin:0 0 .35em;line-height:1.45}
+.rich{tab-size:calc(var(--u) * 12.5)}
+.rich .tabz{white-space:pre}
+.rich.pinsel,.rich.pinsel *{cursor:copy}
+.rich hr{border:0;border-top:1.5px solid #9aa7bd;margin:calc(var(--u)*2.5) 0}
+/* Seitenzahlen an den Seitenumbrüchen */
+.seiten-nr{position:absolute;right:calc(var(--u) * 15);font-size:calc(var(--u) * 3);color:#8a94a6;pointer-events:none;z-index:2;font-family:"Space Grotesk",sans-serif}
