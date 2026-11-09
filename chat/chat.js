@@ -75,6 +75,7 @@
     Object.keys(nachrichten).forEach(function (c) { nachrichten[c].sort(function (a, b) { return a.zeit - b.zeit; }); });
     seite("seiteListe"); $("knopfEinst").hidden = false; liste(); stummAnzeigen();
     verbinden();
+    teilenPruefen();
   }
   function lesHash() {
     var m = location.hash.match(/k=([A-Za-z0-9_-]{16,32})\.([a-f0-9]{32})/);
@@ -785,14 +786,44 @@
     oeffne('<h2>Was willst du schicken?</h2><div class="menue"><button class="btn" type="button" data-w="foto">📷 Foto</button><button class="btn" type="button" data-w="datei">📄 Datei (PDF, Dokument, …)</button></div><p class="muted klein">Alles wird verschlüsselt verschickt und nach dem Abholen vom Server gelöscht. Dateien bis 2 MB.</p><div class="sheet-foot"><button class="btn" type="button" data-w="zu">Abbrechen</button></div>',
       function (w) { w.onclick = function (e) { var b = e.target.closest("[data-w]"); if (!b) return; zu(); if (b.dataset.w === "foto") $("fotoWahl").click(); else if (b.dataset.w === "datei") $("dateiWahl").click(); }; });
   };
-  $("dateiWahl").onchange = async function () {
-    var f = this.files && this.files[0]; this.value = ""; if (!f || !aktiv || !B) return;
+  $("dateiWahl").onchange = function () { var f = this.files && this.files[0]; this.value = ""; dateiSenden(f); };
+  async function dateiSenden(f) {
+    if (!f || !aktiv || !B) return;
     if (f.size > 2 * 1048576) { KW.toast("Die Datei ist zu groß (höchstens 2 MB)."); return; }
     var n = neueNachricht({ art: "datei", datei: K.id(12), name: String(f.name || "Datei").replace(/[\\/:*?"<>|]/g, "_").slice(0, 80), groesse: f.size, text: feld.value.trim().slice(0, 1000) });
     feld.value = ""; knopfAnpassen();
     await L.leg("dateien", { id: n.datei, blob: f });
     speichereNachricht(n); verlauf(true); zustellen(n);
-  };
+  }
+
+  /* Aus FIDELIA Notizen „An Mitschüler schicken“: Datei liegt in der gemeinsamen Ablage */
+  function teilenAblage() {
+    return new Promise(function (ok, nein) {
+      var r = indexedDB.open("kw-teilen", 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore("post"); };
+      r.onsuccess = function () { ok(r.result); }; r.onerror = function () { nein(r.error); };
+    });
+  }
+  async function teilenPruefen() {
+    if (!/teilen/.test(location.hash)) return;
+    history.replaceState(null, "", location.pathname + location.search);
+    var db = await teilenAblage().catch(function () { return null; }); if (!db) return;
+    var post = await new Promise(function (ok) { var q = db.transaction("post").objectStore("post").get("datei"); q.onsuccess = function () { ok(q.result); }; q.onerror = function () { ok(null); }; });
+    if (!post || Date.now() - post.zeit > 30 * 60000) return;
+    var weg = function () { var t = db.transaction("post", "readwrite"); t.objectStore("post").delete("datei"); };
+    var ids = Object.keys(kontakte).filter(function (c) { return kontakte[c].status === "ok" && !kontakte[c].ki; });
+    if (!ids.length) { KW.toast("Du hast noch keine Kontakte im Chat. Lade erst jemanden ein."); weg(); return; }
+    oeffne('<h2>📤 Wem schicken?</h2><p class="muted">„' + esc(post.name) + '“</p><div class="menue">' + ids.map(function (c) { return '<button class="btn" type="button" data-c="' + esc(c) + '">' + (kontakte[c].gruppe ? "👥 " : "👤 ") + esc(kontakte[c].name) + "</button>"; }).join("") +
+      '</div><div class="sheet-foot"><button class="btn" type="button" data-c="">Abbrechen</button></div>', function (w) {
+      w.onclick = function (e) {
+        var b = e.target.closest("[data-c]"); if (!b) return; zu(); weg();
+        if (!b.dataset.c) return;
+        chatOeffnen(b.dataset.c);
+        dateiSenden(new File([post.blob], post.name, { type: post.blob.type || "application/octet-stream" }));
+        KW.toast("✓ Wird verschickt …");
+      };
+    });
+  }
   $("fotoWahl").onchange = async function () {
     var f = this.files && this.files[0]; this.value = ""; if (!f || !aktiv || !B) return;
     try {

@@ -26,6 +26,14 @@ export const FUNKTIONEN = [
     { id: "marker", name: "Textmarker", art: "schalter", wert: true },
     { id: "radierer", name: "Radiergummi", art: "wahl", wert: "strich", werte: [["strich", "Ganze Striche"], ["stueck", "Nur wo du radierst"]] }
   ] },
+  { id: "tabellen", icon: "📊", name: "Tabellen", text: "Rechnen wie in Excel: Formeln, Diagramme, Notenrechner.", unter: [
+    { id: "diagramme", name: "Diagramme", art: "schalter", wert: true },
+    { id: "hand", name: "Mit dem Stift in Zellen schreiben (KI)", art: "schalter", wert: true }
+  ] },
+  { id: "folien", icon: "🖥️", name: "Präsentationen", text: "Folien wie in PowerPoint – mit Vorführen, Stift und Laserpointer.", unter: [
+    { id: "ki", name: "Folien aus einer Heftseite machen (KI)", art: "schalter", wert: true },
+    { id: "laser", name: "Stift und Laserpointer beim Vorführen", art: "schalter", wert: true }
+  ] },
   { id: "scanner", icon: "📷", name: "Scanner", text: "Arbeitsblätter mit der Kamera einscannen.", unter: [
     { id: "auto", name: "Automatisch auslösen, wenn das Blatt ruhig liegt", art: "schalter", wert: true },
     { id: "animation", name: "Scan-Strich und Haken", art: "schalter", wert: true },

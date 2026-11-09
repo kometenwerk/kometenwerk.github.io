@@ -10,6 +10,7 @@ import * as Editor from "./editor.js";
 import * as F from "./formen.js";
 import * as Export from "./export.js";
 import * as KI from "./ki.js";
+import * as Extras from "./extras.js";
 
 const KW = window.KW, esc = KW.esc;
 const QUELLE = { heft: "✏️", scan: "📷", audio: "🎙️", zettel: "🗒️" };
@@ -163,7 +164,7 @@ export function liste(A, el, fach) {
       '<p class="muted">Gelöschte Seiten bleiben 30 Tage hier, dann sind sie weg.</p>' +
       (korb.length ? '<ul class="korb">' + korb.map(s => {
         const rest = Math.max(0, 30 - Math.floor((Date.now() - new Date(s.papierkorb)) / 864e5));
-        return '<li class="card"><span><b>' + esc(s.titel || "Ohne Titel") + '</b><small>' + esc(s.fach || "Unsortiert") + ' · noch ' + rest + ' Tage</small></span>' +
+        return '<li class="card"><span><b>' + (s.art === "tabelle" ? "📊 " : s.art === "folien" ? "🖥️ " : "📄 ") + esc(s.titel || "Ohne Titel") + '</b><small>' + esc(s.fach || "Unsortiert") + ' · noch ' + rest + ' Tage</small></span>' +
           '<button type="button" class="btn small primary" data-zurueck="' + s.id + '">Wiederherstellen</button><button type="button" class="btn small danger" data-weg="' + s.id + '">Löschen</button></li>';
       }).join("") + '</ul>' : '<div class="empty"><b>Der Papierkorb ist leer</b></div>');
     el.querySelectorAll("[data-zurueck]").forEach(b => b.onclick = async () => { await A.seiteWiederherstellen(b.dataset.zurueck); KW.toast("Wiederhergestellt."); papierkorb(); });
@@ -178,11 +179,12 @@ export function liste(A, el, fach) {
     let liste = aktiv.filter(s => !fachWahl ? true : fachWahl === "*unsortiert" ? !s.fach : s.fach === fachWahl);
     if (q) liste = liste.filter(s => A.seitenText(s).toLowerCase().includes(q));
     const anzahl = (n) => aktiv.filter(s => s.fach === n).length;
-    const unsortiert = aktiv.filter(s => !s.fach).length, imKorb = A.seiten.length - aktiv.length;
+    const unsortiert = aktiv.filter(s => !s.fach).length, imKorb = A.seiten.filter(s => s.papierkorb).length;
     const mitVorschlag = aktiv.filter(s => s.vorschlag && s.vorschlag.fach && !s.fach);
     let h = '<div class="kopfzeile"><h2 class="titel">📓 Heft</h2><span class="sp"></span>' +
       (imKorb ? '<a class="btn small" href="#heft/*papierkorb">🗑️ ' + imKorb + '</a>' : "") +
       (fachWahl && fachWahl[0] !== "*" ? '<button type="button" class="btn small" id="fachDruck" title="Ganzes Fach drucken oder als PDF">🖨️ Fach</button>' : "") +
+      '<label class="btn small" title="FIDELIA-Datei von Mitschülern öffnen">📥 Öffnen<input type="file" id="oeffnen" accept=".fidelia,.json" hidden></label>' +
       '<button type="button" class="btn primary" id="neu">+ Neue Seite</button></div>' +
       '<div class="suche"><input class="inp" type="search" id="q" placeholder="In allen Seiten suchen" aria-label="In allen Seiten suchen" value="' + esc(suche) + '"></div>' +
       '<div class="ordner" role="tablist" aria-label="Fach-Ordner">' +
@@ -200,6 +202,7 @@ export function liste(A, el, fach) {
     el.innerHTML = h;
     el.querySelectorAll("[data-striche]").forEach(c => vorschauStriche(c, A.seite(c.dataset.striche)));
     el.querySelectorAll("img[data-bild]").forEach(async img => { const b = await A.bildHolen(img.dataset.bild); if (b) { const u = URL.createObjectURL(b); urls.push(u); img.src = u; } });
+    el.querySelector("#oeffnen").onchange = (e) => { const d = e.target.files[0]; if (d) Extras.importieren(A, d); };
     el.querySelector("#neu").onclick = async () => {
       const s = await neueSeite(A, fachWahl && fachWahl[0] !== "*" ? fachWahl : "");
       if (s) A.gehe("seite/" + s.id);
@@ -269,6 +272,9 @@ export function seite(A, el, id) {
       '<button type="button" data-a="word">💾 Als Word-Datei (.docx)</button>' +
       '<button type="button" data-a="druck">🖨️ Drucken / PDF</button>' +
       '<button type="button" data-a="bild">🖼️ Als Bild speichern</button>' +
+      (A.einst.an.folien !== false && !s.bild ? '<button type="button" data-a="folien">🖥️ Als Präsentation (Folien)</button>' : "") +
+      '<button type="button" data-a="teilen">📤 An Mitschüler schicken</button>' +
+      '<button type="button" data-a="versionen">🕘 Ältere Versionen</button>' +
       '<button type="button" data-a="pin">' + (s.pin ? "📌 Nicht mehr anpinnen" : "📌 Anpinnen") + '</button>' +
       '<button type="button" data-a="weg" class="rot">🗑️ In den Papierkorb</button>' +
     '</div>' +
@@ -775,6 +781,9 @@ export function seite(A, el, id) {
     if (a === "ecken") { await jetztSpeichern(); A.eckenAnpassen(s); }
     if (a === "word") { await jetztSpeichern(); Export.alsWord(A, s); }
     if (a === "druck") { await jetztSpeichern(); Export.drucken(A, [s]); }
+    if (a === "teilen") { await jetztSpeichern(); Extras.teilen(A, s); }
+    if (a === "versionen") { await jetztSpeichern(); Extras.versionen(A, s, () => A.zeigen()); }
+    if (a === "folien") { await jetztSpeichern(); (await import("./folien.js")).ausHeft(A, s.id); }
     if (a === "pin") { s.pin = !s.pin; await A.seiteSpeichern(s); b.textContent = s.pin ? "📌 Nicht mehr anpinnen" : "📌 Anpinnen"; KW.toast(s.pin ? "Angepinnt – steht jetzt oben." : "Nicht mehr angepinnt."); }
     if (a === "bild") alsBild();
     if (a === "weg") {
@@ -822,6 +831,7 @@ export function seite(A, el, id) {
   groesse();
   setTimeout(wachsen, 50);
   if (Z.modus === "tippen" && !s.text && !s.bild) rich.focus();
+  Extras.versionMerken(A, s);
 
   return () => {
     ro.disconnect();
@@ -830,5 +840,6 @@ export function seite(A, el, id) {
     const bm = document.querySelector(".bild-menue"); if (bm) bm.remove();
     if (speicherTimer) { clearTimeout(speicherTimer); A.seiteSpeichern(s); }
     if (bildUrl) URL.revokeObjectURL(bildUrl);
+    Extras.versionMerken(A, s);
   };
 }

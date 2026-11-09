@@ -8,12 +8,16 @@ let dbVersprechen = null;
 
 function db() {
   if (!dbVersprechen) dbVersprechen = new Promise((ok, nein) => {
-    const r = indexedDB.open(NAME, 1);
-    r.onupgradeneeded = () => {
+    const r = indexedDB.open(NAME, 2);
+    r.onupgradeneeded = (e) => {
       const d = r.result;
-      d.createObjectStore("seiten", { keyPath: "id" });
-      d.createObjectStore("bilder");
-      d.createObjectStore("lern", { keyPath: "id" });
+      if (e.oldVersion < 1) {
+        d.createObjectStore("seiten", { keyPath: "id" });
+        d.createObjectStore("bilder");
+        d.createObjectStore("lern", { keyPath: "id" });
+      }
+      // Ältere Versionen von Seiten, Tabellen, Präsentationen (bleiben nur auf diesem Gerät)
+      if (e.oldVersion < 2) d.createObjectStore("versionen", { keyPath: "id" });
     };
     r.onsuccess = () => ok(r.result);
     r.onerror = () => { dbVersprechen = null; nein(r.error); };

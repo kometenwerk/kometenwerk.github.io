@@ -152,8 +152,8 @@ const NUMBERING = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:num
 
 function b64ZuBytes(b64) { const s = atob(b64), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; }
 
-export async function alsWord(A, s) {
-  KW.toast("Word-Datei wird gebaut …");
+export async function alsWord(A, s, { nurBlob = false } = {}) {
+  if (!nurBlob) KW.toast("Word-Datei wird gebaut …");
   let fflate;
   try { fflate = await import(FFLATE); } catch (e) { KW.toast("Beim ersten Mal braucht der Word-Export Internet."); return; }
   const rich = document.createElement("div");
@@ -198,11 +198,13 @@ export async function alsWord(A, s) {
   };
   bilder.forEach(b => { dateien["word/media/" + b.name] = b64ZuBytes(b.daten); });
   const zip = fflate.zipSync(dateien, { level: 6 });
-  herunterladen(new Blob([zip], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }), (s.titel || "Seite").replace(/[\\/:*?"<>|]/g, "").slice(0, 60) + ".docx");
+  const blob = new Blob([zip], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+  if (nurBlob) return blob;
+  herunterladen(blob, (s.titel || "Seite").replace(/[\\/:*?"<>|]/g, "").slice(0, 60) + ".docx");
   KW.toast("✓ Word-Datei gespeichert.");
 }
 
-function herunterladen(blob, name) {
+export function herunterladen(blob, name) {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = name;
   document.body.appendChild(a); a.click(); a.remove();

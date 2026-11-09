@@ -47,9 +47,9 @@ export function zeigen(A, el) {
   if (vorschlaege) h += '<section class="card kachel"><h3>🤖 Sortieren</h3><p>' + vorschlaege + (vorschlaege === 1 ? " Seite wartet" : " Seiten warten") + ' auf dein OK.</p><a class="btn small" href="#heft/*unsortiert">Ansehen</a></section>';
   h += '</div>';
 
-  const letzte = A.aktiv().sort((a, b) => String(b.geaendert).localeCompare(String(a.geaendert))).slice(0, 6);
+  const letzte = A.aktiv("*").sort((a, b) => String(b.geaendert).localeCompare(String(a.geaendert))).slice(0, 6);
   h += '<h3 class="sec">Zuletzt bearbeitet</h3>' + (letzte.length ? '<div class="zuletzt">' + letzte.map(s =>
-    '<a class="card zuletzt-karte" href="#seite/' + s.id + '" style="--f:' + esc(A.fachFarbe(s.fach)) + '"><b>' + esc(s.titel || "Ohne Titel") + '</b><small>' + esc(s.fach || "Unsortiert") + '</small></a>').join("") + '</div>'
+    '<a class="card zuletzt-karte" href="#' + A.link(s) + '" style="--f:' + esc(A.fachFarbe(s.fach)) + '"><b>' + (s.art === "tabelle" ? "📊 " : s.art === "folien" ? "🖥️ " : "") + esc(s.titel || "Ohne Titel") + '</b><small>' + esc(s.fach || "Unsortiert") + '</small></a>').join("") + '</div>'
     : '<div class="empty"><b>Dein Heft ist noch leer</b>Fang mit „✏️ Neue Seite“ an oder scanne ein Arbeitsblatt.</div>');
 
   el.innerHTML = h;

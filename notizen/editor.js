@@ -214,7 +214,11 @@ export function leisteHtml() {
       '<button type="button" data-x="formel" title="Formel einfügen" aria-label="Formel einfügen">∑ Formel</button>' +
       '<button type="button" data-x="toc" title="Inhaltsverzeichnis" aria-label="Inhaltsverzeichnis">📑 Inhalt</button>' +
       '<button type="button" data-x="linie" title="Trennlinie" aria-label="Trennlinie einfügen">― Linie</button>' +
-      '<button type="button" data-x="zeichen" title="Sonderzeichen" aria-label="Sonderzeichen">Ω Zeichen</button>') +
+      '<button type="button" data-x="zeichen" title="Sonderzeichen" aria-label="Sonderzeichen">Ω Zeichen</button>' +
+      '<span class="trenn"></span><button type="button" data-x="plot" title="Funktionsgraph zeichnen" aria-label="Funktion zeichnen">📈 Funktion</button>' +
+      '<button type="button" data-x="mindmap" title="Mindmap" aria-label="Mindmap einfügen">🧠 Mindmap</button>' +
+      '<span class="trenn"></span><button type="button" data-x="fussnote" title="Fußnote an dieser Stelle" aria-label="Fußnote einfügen">¹ Fußnote</button>' +
+      '<button type="button" data-x="quelle" title="Quelle angeben (kommt automatisch ins Quellenverzeichnis)" aria-label="Quelle angeben">📚 Quelle</button>') +
     g("werkzeuge",
       '<button type="button" data-x="diktat" title="Diktieren" aria-label="Diktieren">🎤 Diktieren</button>' +
       '<button type="button" data-x="vorlesen" title="Vorlesen" aria-label="Vorlesen">🔊 Vorlesen</button>' +
@@ -389,6 +393,81 @@ export function leisteBinden(wurzel, rich, geaendert, extras = {}) {
   x("linie").onclick = () => cmd("insertHorizontalRule");
   x("zeichen").onclick = () => { zeichenLeiste.hidden = !zeichenLeiste.hidden; x("zeichen").classList.toggle("an", !zeichenLeiste.hidden); };
   zeichenLeiste.querySelectorAll("[data-z]").forEach(b => { b.addEventListener("mousedown", e => e.preventDefault()); b.onclick = () => cmd("insertText", b.dataset.z); });
+  /* Funktion und Mindmap: als Bild, das sich wieder bearbeiten lässt */
+  const graphEinfuegen = async (modul, alt, img) => {
+    merken(); const r = bereich && bereich.cloneRange();
+    const M = await import(modul === "plot" ? "./plotter.js" : "./mindmap.js");
+    const e = await M.dialog(alt);
+    if (!e) return;
+    const attr = modul === "plot" ? "data-plot" : "data-mindmap";
+    if (img) { schnappschuss(true); img.src = e.png; img.setAttribute(attr, JSON.stringify(e.daten)); geaendert(); return; }
+    einfuegenBei(r, '<img class="bild" src="' + e.png + '" ' + attr + '="' + esc(JSON.stringify(e.daten)) + '" alt="' + (modul === "plot" ? "Funktionsgraph" : "Mindmap") + '" style="width:' + (modul === "plot" ? 75 : Math.max(40, Math.min(100, Math.round(e.w / 9)))) + '%;display:block;margin-left:auto;margin-right:auto">');
+  };
+  x("plot").onclick = () => graphEinfuegen("plot");
+  x("mindmap").onclick = () => graphEinfuegen("mindmap");
+
+  /* Fußnoten und Quellen: Nummern und Listen am Ende pflegen sich selbst */
+  const fnStempel = () => rich.querySelectorAll("sup.fn").length + "|" + rich.querySelectorAll("span.zitat").length;
+  let fnStand = fnStempel();
+  function verzeichnisse() {
+    const fns = Array.from(rich.querySelectorAll("sup.fn")), quellen = Array.from(rich.querySelectorAll("span.zitat"));
+    fns.forEach((f, i) => { f.textContent = String(i + 1); f.contentEditable = "false"; });
+    let fd = rich.querySelector(".fussnoten"), qd = rich.querySelector(".quellen");
+    if (!fns.length) { if (fd) fd.remove(); fd = null; }
+    else {
+      if (!fd) { fd = document.createElement("div"); fd.className = "fussnoten"; fd.contentEditable = "false"; }
+      fd.innerHTML = "<hr><ol>" + fns.map(f => "<li>" + esc(f.dataset.fn || "") + "</li>").join("") + "</ol>";
+    }
+    const liste = []; const gesehen = new Set();
+    quellen.forEach(q => { let d = {}; try { d = JSON.parse(q.dataset.q || "{}"); } catch (e) {} const k = JSON.stringify(d); if (!gesehen.has(k)) { gesehen.add(k); liste.push(d); } q.contentEditable = "false"; });
+    if (!liste.length) { if (qd) qd.remove(); }
+    else {
+      if (!qd) { qd = document.createElement("div"); qd.className = "quellen"; qd.contentEditable = "false"; }
+      liste.sort((a, b) => String(a.autor || a.titel).localeCompare(String(b.autor || b.titel), "de"));
+      qd.innerHTML = "<h3>Quellen</h3><ul>" + liste.map(q => "<li>" + esc(quelleText(q)) + "</li>").join("") + "</ul>";
+      rich.appendChild(qd);
+    }
+    if (fd) rich.appendChild(fd);
+    // nach dem Verzeichnis noch ein Absatz zum Weiterschreiben
+    fnStand = fnStempel();
+  }
+  const quelleText = (q) => [q.autor ? q.autor + (q.jahr ? " (" + q.jahr + ")" : "") + ":" : q.jahr ? "(" + q.jahr + ")" : "", q.titel ? q.titel + "." : "", q.verlag ? q.verlag + "." : "", q.link ? q.link + (q.abgerufen ? " (abgerufen am " + q.abgerufen + ")" : "") : ""].filter(Boolean).join(" ");
+  rich.addEventListener("input", () => { if (fnStempel() !== fnStand) { verzeichnisse(); geaendert(); } });
+  x("fussnote").onclick = () => {
+    merken(); const r = bereich && bereich.cloneRange();
+    const text = prompt("Text der Fußnote:", ""); if (!text || !text.trim()) return;
+    einfuegenBei(r, '<sup class="fn" contenteditable="false" data-fn="' + esc(text.trim()) + '">0</sup>');
+    verzeichnisse(); geaendert();
+  };
+  function quelleDialog(alt) {
+    return new Promise(fertig => {
+      const d = document.createElement("dialog"); d.className = "sheet";
+      const f = (id, lab, ph, typ = "text") => '<label class="feld"><span>' + lab + '</span><input class="inp" id="q_' + id + '" type="' + typ + '" value="' + esc((alt || {})[id] || "") + '" placeholder="' + ph + '"></label>';
+      d.innerHTML = '<form class="sheet-in" method="dialog"><h2>📚 Quelle angeben</h2>' + f("autor", "Wer hat es geschrieben?", "z. B. Müller, Anna – oder Wikipedia") + f("titel", "Titel", "Titel des Buchs / der Seite") + f("jahr", "Jahr", "z. B. 2024") + f("verlag", "Verlag / Website", "z. B. Klett oder planet-schule.de") + f("link", "Link (falls Internet)", "https://…") +
+        '<p class="muted klein">Im Text erscheint „(Autor Jahr)“, unten entsteht automatisch das Quellenverzeichnis.</p><div class="sheet-foot"><button type="button" class="btn" id="qAb">Abbrechen</button>' + (alt ? '<button type="button" class="btn danger" id="qWeg">Entfernen</button>' : "") + '<button class="btn primary" id="qOk">Fertig</button></div></form>';
+      document.body.appendChild(d);
+      let ergebnis = null;
+      d.querySelector("#qAb").onclick = () => d.close();
+      if (alt) d.querySelector("#qWeg").onclick = () => { ergebnis = "weg"; d.close(); };
+      d.querySelector("#qOk").onclick = (e) => { e.preventDefault(); const q = {}; ["autor", "titel", "jahr", "verlag", "link"].forEach(k => { const v = d.querySelector("#q_" + k).value.trim(); if (v) q[k] = v; }); if (q.link && !alt) q.abgerufen = new Date().toLocaleDateString("de-DE"); else if (alt && alt.abgerufen) q.abgerufen = alt.abgerufen; if (!q.autor && !q.titel && !q.link) return; ergebnis = q; d.close(); };
+      d.addEventListener("close", () => { d.remove(); fertig(ergebnis); });
+      d.showModal();
+    });
+  }
+  const zitatText = (q) => "(" + [(q.autor || q.titel || q.verlag || "Quelle").split(",")[0].trim(), q.jahr].filter(Boolean).join(" ") + ")";
+  x("quelle").onclick = async () => {
+    merken(); const r = bereich && bereich.cloneRange();
+    const q = await quelleDialog(null); if (!q || q === "weg") return;
+    einfuegenBei(r, '&nbsp;<span class="zitat" contenteditable="false" data-q="' + esc(JSON.stringify(q)) + '">' + esc(zitatText(q)) + "</span>&nbsp;");
+    verzeichnisse(); geaendert();
+  };
+  rich.addEventListener("click", async (e) => {
+    const fn = e.target.closest("sup.fn");
+    if (fn && rich.contains(fn)) { const t = prompt("Fußnote ändern (leer = löschen):", fn.dataset.fn || ""); if (t === null) return; schnappschuss(true); if (!t.trim()) fn.remove(); else fn.dataset.fn = t.trim(); verzeichnisse(); geaendert(); return; }
+    const z = e.target.closest("span.zitat");
+    if (z && rich.contains(z)) { let alt = {}; try { alt = JSON.parse(z.dataset.q); } catch (x2) {} const q = await quelleDialog(alt); if (!q) return; schnappschuss(true); if (q === "weg") z.remove(); else { z.dataset.q = JSON.stringify(q); z.textContent = zitatText(q); } verzeichnisse(); geaendert(); }
+  });
+
   x("diktat").onclick = () => { merken(); diktieren(x("diktat"), extras.sprachModell, (text) => cmd("insertText", (bereich && !bereich.collapsed ? "" : " ") + text)); };
   x("vorlesen").onclick = () => { const s = getSelection(); vorlesen(s.toString() && rich.contains(s.anchorNode) ? s.toString() : htmlZuText(rich.innerHTML), x("vorlesen")); };
   const autoAn = () => extras.autokorrektur ? extras.autokorrektur() : KW.load("kw-notizen-auto", true) !== false;
@@ -410,12 +489,13 @@ export function leisteBinden(wurzel, rich, geaendert, extras = {}) {
     img.classList.add("gewaehlt");
     const alt = document.querySelector(".bild-menue"); if (alt) alt.remove();
     const m = document.createElement("div"); m.className = "bild-menue card";
-    m.innerHTML = '<button data-b="25">Klein</button><button data-b="50">Mittel</button><button data-b="100">Groß</button><button data-a="left">⯇</button><button data-a="center">≡</button><button data-a="right">⯈</button><button data-a="weg">🗑</button>';
+    m.innerHTML = (img.dataset.plot ? '<button data-a="graph">✎ Graph ändern</button>' : img.dataset.mindmap ? '<button data-a="mm">✎ Mindmap ändern</button>' : "") + '<button data-b="25">Klein</button><button data-b="50">Mittel</button><button data-b="100">Groß</button><button data-a="left">⯇</button><button data-a="center">≡</button><button data-a="right">⯈</button><button data-a="weg">🗑</button>';
     const r = img.getBoundingClientRect();
     m.style.left = Math.max(8, r.left) + "px"; m.style.top = Math.max(70, r.top - 46) + "px";
     document.body.appendChild(m);
     m.onclick = (e) => {
       const b = e.target.closest("button"); if (!b) return;
+      if (b.dataset.a === "graph" || b.dataset.a === "mm") { m.remove(); let d = null; try { d = JSON.parse(b.dataset.a === "graph" ? img.dataset.plot : img.dataset.mindmap); } catch (x2) {} graphEinfuegen(b.dataset.a === "graph" ? "plot" : "mindmap", d, img); return; }
       schnappschuss(true);
       if (b.dataset.b) img.style.width = b.dataset.b + "%";
       if (b.dataset.a === "weg") img.remove();

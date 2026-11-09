@@ -13,6 +13,8 @@ import * as Audio from "./audio.js";
 import * as Start from "./start.js";
 import * as Sync from "./sync.js";
 import * as Nachbau from "./nachbau.js";
+import * as Tabellen from "./tabellen.js";
+import * as Folien from "./folien.js";
 
 const KW = window.KW, esc = KW.esc;
 
@@ -42,7 +44,9 @@ A.seiteNeu = async (werte) => {
 };
 A.seiteSpeichern = async (s) => { s.geaendert = new Date().toISOString(); await S.lege("seiten", s); Sync.melden("seite", s); };
 // Löschen = in den Papierkorb (30 Tage), erst „endgültig“ ist wirklich weg
-A.aktiv = () => A.seiten.filter(s => !s.papierkorb);
+// Nur Heftseiten (art fehlt), oder eine andere Art: "tabelle", "folien"; "*" = alles
+A.aktiv = (art = "heft") => A.seiten.filter(s => !s.papierkorb && (art === "*" || (s.art || "heft") === art));
+A.link = (s) => (s.art === "tabelle" ? "tabelle/" : s.art === "folien" ? "folien/" : "seite/") + s.id;
 A.seiteLoeschen = async (id) => {
   const s = A.seite(id); if (!s) return null;
   s.papierkorb = new Date().toISOString();
@@ -151,6 +155,8 @@ A.ocrLaden = ocrLaden;
 const MODULE = [
   { id: "start", icon: "🏠", name: "Start" },
   { id: "heft", icon: "📓", name: "Heft" },
+  { id: "tabellen", icon: "📊", name: "Tabellen", an: "tabellen" },
+  { id: "folien", icon: "🖥️", name: "Präsentationen", an: "folien" },
   { id: "scanner", icon: "📷", name: "Scanner", an: "scanner" },
   { id: "planer", icon: "📅", name: "Planer", an: "planer" },
   { id: "lernen", icon: "🧠", name: "Lern-Center", an: "lernen" },
@@ -167,7 +173,7 @@ A.neuAufbauen = () => {
   markieren();
 };
 function markieren() {
-  const m = aktuell.modul === "seite" ? "heft" : aktuell.modul;
+  const m = aktuell.modul === "seite" ? "heft" : aktuell.modul === "tabelle" ? "tabellen" : aktuell.modul;
   document.querySelectorAll("#leiste a[data-m]").forEach(a => {
     if (a.dataset.m === m) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
   });
@@ -190,7 +196,15 @@ function zeigen() {
   el.innerHTML = "";
   let r = null;
   if (modul === "heft") r = Heft.liste(A, el, aktuell.param);
-  else if (modul === "seite") r = Heft.seite(A, el, aktuell.param);
+  else if (modul === "seite") {
+    const s = A.seite(aktuell.param);
+    if (s && s.art && s.art !== "heft") { location.replace("#" + A.link(s)); return; }
+    r = Heft.seite(A, el, aktuell.param);
+  }
+  else if (modul === "tabellen") r = Tabellen.liste(A, el);
+  else if (modul === "tabelle") r = Tabellen.seite(A, el, aktuell.param);
+  else if (modul === "folien" && !aktuell.param) r = Folien.liste(A, el);
+  else if (modul === "folien") r = Folien.seite(A, el, aktuell.param);
   else if (modul === "scanner") r = Scanner.zeigen(A, el);
   else if (modul === "planer") r = Planer.zeigen(A, el);
   else if (modul === "lernen") r = Lernen.zeigen(A, el, aktuell.param);
