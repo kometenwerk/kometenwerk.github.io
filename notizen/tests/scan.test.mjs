@@ -1,6 +1,6 @@
 // Tests für den Scan-Kern: node notizen/tests/scan.test.mjs
 import assert from "node:assert/strict";
-import { analysiereBlatt, findeBlatt, ruheMesser, perspektive, geradeZiehen, papierweiss, a4Groesse, bewegung, farbeWeiss, schaerfe, schaerfen } from "../scan-kern.js";
+import { analysiereBlatt, findeBlatt, ruheMesser, perspektive, geradeZiehen, papierweiss, a4Groesse, bewegung, farbeWeiss, schaerfe, schaerfen, textRichtung, drehen, bilderMitteln, tafelWeiss } from "../scan-kern.js";
 
 function bild(w, h, ecken, hell = 230, dunkel = 60) {
   const g = new Uint8ClampedArray(w * h).fill(dunkel);
@@ -105,5 +105,47 @@ test("Blatt ragt aus dem Bild → kein Scan, Hinweis „rand“", () => {
   const w = 320, h = 240, e = [{ x: 205, y: 30 }, { x: 340, y: 42 }, { x: 330, y: 260 }, { x: 195, y: 200 }];
   const r = analysiereBlatt(szene(w, h, e), w, h);
   assert.equal(r.ecken, null);
+});
+// Ein Blatt mit Textzeilen (Wörter = dunkle Kästchen), waagerecht
+function textBlatt(w, h) {
+  const g = new Uint8ClampedArray(w * h).fill(235);
+  for (let z = 0; z < 14; z++) { const y0 = 30 + z * 24; let x = 30; while (x < w - 60) { const lw = 12 + ((x * 7 + z * 13) % 40); for (let y = y0; y < y0 + 11; y++) for (let xx = x; xx < Math.min(w - 30, x + lw); xx++) if ((xx + y) % 3) g[y * w + xx] = 40; x += lw + 9; } }
+  return g;
+}
+test("Textrichtung: waagerechte Zeilen und um 90° gedrehtes Blatt", () => {
+  const w = 300, h = 400, g = textBlatt(w, h);
+  assert.equal(textRichtung(g, w, h), "waag");
+  const rgba = new Uint8ClampedArray(w * h * 4); for (let i = 0; i < w * h; i++) { rgba[i * 4] = rgba[i * 4 + 1] = rgba[i * 4 + 2] = g[i]; rgba[i * 4 + 3] = 255; }
+  const d = drehen(rgba, w, h, 90), g2 = new Uint8ClampedArray(d.w * d.h); for (let i = 0; i < g2.length; i++) g2[i] = d.daten[i * 4];
+  assert.equal(d.w, h); assert.equal(textRichtung(g2, d.w, d.h), "senk");
+  assert.equal(textRichtung(new Uint8ClampedArray(w * h).fill(240), w, h), null);
+});
+test("Drehen: 4× 90° ergibt wieder das Original", () => {
+  const w = 5, h = 3, a = new Uint8ClampedArray(w * h * 4); for (let i = 0; i < a.length; i++) a[i] = i % 251;
+  let d = { daten: a, w, h }; for (let k = 0; k < 4; k++) d = drehen(d.daten, d.w, d.h, 90);
+  assert.deepEqual(Array.from(d.daten), Array.from(a));
+  const r = drehen(a, w, h, 180); assert.equal(r.daten[0], a[(w * h - 1) * 4]);
+});
+test("Gelbes Lampenlicht wird weiß, Schrift wird kräftig", () => {
+  const w = 160, h = 160, rgba = new Uint8ClampedArray(w * h * 4);
+  for (let i = 0; i < w * h; i++) { rgba[i * 4] = 225; rgba[i * 4 + 1] = 200; rgba[i * 4 + 2] = 120; rgba[i * 4 + 3] = 255; } // gelbstichiges Papier
+  for (let y = 70; y < 76; y++) for (let x = 30; x < 130; x++) { const i = (y * w + x) * 4; rgba[i] = 150; rgba[i + 1] = 132; rgba[i + 2] = 80; } // blasse Schrift
+  const o = farbeWeiss(rgba, w, h), p = (10 * w + 10) * 4, s = (72 * w + 80) * 4;
+  assert.ok(o[p] === 255 && o[p + 1] === 255 && o[p + 2] === 255, "Papier ist neutral weiß");
+  assert.ok(o[s] < 70 && o[s + 2] < 70, "blasse Schrift wird dunkel");
+  assert.ok(Math.abs(o[s] - o[s + 2]) < 25, "Schrift ohne Gelbstich");
+});
+test("Tafelbild: dunkle Tafel wird weiß, Kreide dunkel", () => {
+  const w = 160, h = 120, rgba = new Uint8ClampedArray(w * h * 4);
+  for (let i = 0; i < w * h; i++) { rgba[i * 4] = 40; rgba[i * 4 + 1] = 60; rgba[i * 4 + 2] = 50; rgba[i * 4 + 3] = 255; }
+  for (let y = 50; y < 56; y++) for (let x = 20; x < 140; x++) { const i = (y * w + x) * 4; rgba[i] = rgba[i + 1] = rgba[i + 2] = 210; }
+  const o = tafelWeiss(rgba, w, h);
+  assert.ok(o[(5 * w + 5) * 4] > 245, "Tafel → weiß"); assert.ok(o[(53 * w + 80) * 4] < 70, "Kreide → dunkel");
+});
+test("Mehrere Bilder mitteln, verwackelte Bilder weglassen", () => {
+  const w = 40, h = 30, mk = (v) => { const a = new Uint8ClampedArray(w * h * 4); for (let i = 0; i < a.length; i++) a[i] = v + ((i * 37) % 7) - 3; return a; };
+  const anders = new Uint8ClampedArray(w * h * 4).fill(0);
+  const r = bilderMitteln([mk(120), mk(122), mk(118), anders], w, h);
+  assert.equal(r.anzahl, 3); assert.ok(Math.abs(r.daten[0] - 120) < 4);
 });
 console.log(ok + " Tests bestanden.");

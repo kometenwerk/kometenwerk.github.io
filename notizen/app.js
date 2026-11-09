@@ -80,6 +80,7 @@ A.seitenText = (s) => [s.titel, s.text, s.ocr && s.ocr !== s.text ? s.ocr : ""].
 A.einstSpeichern = () => E.speichern(A.einst);
 A.richStil = Heft.richStil;
 A.eckenAnpassen = (s) => Scanner.eckenAnpassen(A, s);
+A.scanDrehen = (s, grad) => Scanner.scanDrehen(A, s, grad);
 // Scan → Word-Seite (Text mit Position, Größe, Überschriften, Listen, Bildern)
 A.nachbauen = async (s) => {
   const blob = await A.bildHolen(s.bild);

@@ -115,7 +115,17 @@ export function blattFoermig(e) {
 export function analysiereBlatt(daten, w, h, kanaele = 4) {
   const g = kanaele === 4 ? grau(daten, w, h) : daten;
   const sat = new Uint8Array(w * h);
-  if (kanaele === 4) for (let i = 0, j = 0; j < sat.length; i += 4, j++) { const r = daten[i], gg = daten[i + 1], b = daten[i + 2]; sat[j] = Math.max(r, gg, b) - Math.min(r, gg, b); }
+  if (kanaele === 4) {
+    // Weißabgleich: die hellsten Stellen (meist das Papier) sollen neutral sein – sonst wirkt Papier unter Lampenlicht „gelb“
+    const hist = new Uint32Array(256); for (let j = 0; j < g.length; j++) hist[g[j]]++;
+    let grenze = 255, z = 0; while (grenze > 0 && z < g.length * 0.08) z += hist[grenze--];
+    let sr = 0, sg = 0, sb = 0, n = 0;
+    for (let i = 0, j = 0; j < g.length; i += 4, j++) if (g[j] > grenze) { sr += daten[i]; sg += daten[i + 1]; sb += daten[i + 2]; n++; }
+    const m = n ? (sr + sg + sb) / (3 * n) : 1, kr = n && sr ? m * n / sr : 1, kg = n && sg ? m * n / sg : 1, kb = n && sb ? m * n / sb : 1;
+    const f = (k) => Math.max(0.6, Math.min(1.7, k));
+    const ar = f(kr), ag = f(kg), ab = f(kb);
+    for (let i = 0, j = 0; j < sat.length; i += 4, j++) { const r = daten[i] * ar, gg = daten[i + 1] * ag, b = daten[i + 2] * ab; sat[j] = Math.min(255, Math.max(r, gg, b) - Math.min(r, gg, b)); }
+  }
   const kanten = sobel(g, w, h);
   const s = otsu(g);
   let hell = 0, dunkel = 0, nh = 0, nd = 0;
@@ -302,8 +312,8 @@ function integral(g, w, h) {
 }
 
 // Mittelwert der Umgebung für jeden Pixel (Hintergrund-Helligkeit)
-function umgebung(g, w, h) {
-  const I = integral(g, w, h), r = Math.max(8, Math.round(Math.min(w, h) / 20));
+function umgebung(g, w, h, r = Math.max(8, Math.round(Math.min(w, h) / 20))) {
+  const I = integral(g, w, h);
   const m = new Float32Array(w * h);
   for (let y = 0; y < h; y++) {
     const y1 = Math.max(0, y - r), y2 = Math.min(h, y + r + 1);
@@ -314,16 +324,48 @@ function umgebung(g, w, h) {
   }
   return m;
 }
-// Hintergrund schätzen: helle Stellen zählen mehr als Schrift (Schrift soll den Hintergrund nicht verdunkeln)
-function hintergrund(g, w, h) {
-  const m = umgebung(g, w, h), hell = new Uint8ClampedArray(g.length);
+// Hintergrund schätzen: helle Stellen zählen mehr als Schrift (Schrift soll den Hintergrund nicht verdunkeln).
+// Wird auf einem verkleinerten Bild gerechnet und dann wieder vergrößert – das ist bei 300 dpi viel schneller.
+function hintergrundKlein(g, w, h) {
+  const m = umgebung(g, w, h), hell = new Float32Array(g.length);
   for (let i = 0; i < g.length; i++) hell[i] = Math.max(g[i], m[i]);
   return umgebung(hell, w, h);
 }
-// Helligkeit → schön: Papier ganz weiß, Schrift kräftig, aber keine Details verlieren
-function stufe(n) { return n >= 0.92 ? 255 : 255 * Math.pow(n / 0.92, 1.5); }
+function hintergrund(g, w, h) {
+  const f = Math.max(1, Math.round(Math.min(w, h) / 360));
+  if (f === 1) return hintergrundKlein(g, w, h);
+  const kw = Math.ceil(w / f), kh = Math.ceil(h / f), k = new Float32Array(kw * kh);
+  for (let y = 0; y < kh; y++) for (let x = 0; x < kw; x++) {
+    let s = 0, n = 0;
+    for (let yy = y * f; yy < Math.min(h, y * f + f); yy++) for (let xx = x * f; xx < Math.min(w, x * f + f); xx++) { s += g[yy * w + xx]; n++; }
+    k[y * kw + x] = s / n;
+  }
+  const kb = hintergrundKlein(k, kw, kh), out = new Float32Array(w * h);
+  for (let y = 0; y < h; y++) {
+    const fy = Math.min(kh - 1, Math.max(0, (y + 0.5) / f - 0.5)), y0 = Math.floor(fy), y1 = Math.min(kh - 1, y0 + 1), ay = fy - y0;
+    for (let x = 0; x < w; x++) {
+      const fx = Math.min(kw - 1, Math.max(0, (x + 0.5) / f - 0.5)), x0 = Math.floor(fx), x1 = Math.min(kw - 1, x0 + 1), ax = fx - x0;
+      out[y * w + x] = (kb[y0 * kw + x0] * (1 - ax) + kb[y0 * kw + x1] * ax) * (1 - ay) + (kb[y1 * kw + x0] * (1 - ax) + kb[y1 * kw + x1] * ax) * ay;
+    }
+  }
+  return out;
+}
 
-// Schatten weg, Papier weiß. stufe: "normal" (Graustufen) | "stark" (nur Schwarz/Weiß). Gibt Graustufen zurück.
+// Wie dunkel ist die Schrift? (sehr dunkler Anteil der Pixel, nach dem Weißmachen; 1 = Papier)
+function tinte(n) {
+  const hist = new Uint32Array(256); let alle = 0;
+  for (let i = 0; i < n.length; i += 3) { hist[Math.max(0, Math.min(255, Math.round(n[i] * 255)))]++; alle++; }
+  let s = 0, p = 0;
+  for (; p < 256; p++) { s += hist[p]; if (s >= alle * 0.004) break; }
+  return Math.min(0.72, Math.max(0.05, p / 255));
+}
+// Helligkeit → schön: Papier ganz weiß, Schrift dunkel und kräftig – auch wenn sie im Foto blass war
+function stufer(n) {
+  const ink = tinte(n), papier = 0.9;
+  return (v) => { if (v >= papier) return 255; const t = Math.max(0, (v - ink) / (papier - ink)); return 255 * Math.pow(t, 1.35); };
+}
+
+// Schatten weg, Papier weiß. art: "normal" (Graustufen) | "stark" (nur Schwarz/Weiß). Gibt Graustufen zurück.
 export function papierweiss(g, w, h, art = "normal") {
   const bg = hintergrund(g, w, h), out = new Uint8ClampedArray(w * h);
   if (art === "stark") {
@@ -331,19 +373,96 @@ export function papierweiss(g, w, h, art = "normal") {
     for (let i = 0; i < g.length; i++) out[i] = g[i] < m[i] * 0.86 && g[i] < bg[i] * 0.8 ? 0 : 255;
     return out;
   }
-  for (let i = 0; i < g.length; i++) out[i] = stufe(g[i] / Math.max(bg[i], 1));
+  const n = new Float32Array(w * h);
+  for (let i = 0; i < g.length; i++) n[i] = Math.min(1.2, g[i] / Math.max(bg[i], 1));
+  const st = stufer(n);
+  for (let i = 0; i < g.length; i++) out[i] = st(n[i]);
   return out;
 }
 
-// Wie papierweiß, aber in Farbe: Textmarker, rote Korrekturen und Bilder bleiben farbig
+// Wie papierweiß, aber in Farbe: Textmarker, rote Korrekturen und Bilder bleiben farbig.
+// Jeder Farbkanal bekommt seinen eigenen Hintergrund → gelbes Lampenlicht oder blaues Tageslicht wird weiß (Weißabgleich).
 export function farbeWeiss(rgba, w, h) {
-  const g = grau(rgba, w, h), bg = hintergrund(g, w, h), out = new Uint8ClampedArray(rgba.length);
+  const n = w * h, kanal = [0, 1, 2].map(k => { const c = new Float32Array(n); for (let i = 0; i < n; i++) c[i] = rgba[i * 4 + k]; return c; });
+  const bgs = kanal.map(c => hintergrund(c, w, h));
+  const norm = kanal.map((c, k) => { const o = new Float32Array(n); for (let i = 0; i < n; i++) o[i] = Math.min(1.2, c[i] / Math.max(bgs[k][i], 1)); return o; });
+  const hell = new Float32Array(n);
+  for (let i = 0; i < n; i++) hell[i] = 0.299 * norm[0][i] + 0.587 * norm[1][i] + 0.114 * norm[2][i];
+  // Jeder Kanal einzeln: Papier → weiß, Schrift → kräftig, Farben (Marker, Rotstift) bleiben
+  const st = stufer(hell), out = new Uint8ClampedArray(rgba.length);
+  for (let i = 0, j = 0; i < n; i++, j += 4) { out[j] = st(norm[0][i]); out[j + 1] = st(norm[1][i]); out[j + 2] = st(norm[2][i]); out[j + 3] = 255; }
+  return out;
+}
+
+// Tafelbild: dunkle Tafel → weißer Hintergrund, Kreide → dunkle Schrift (farbige Kreide bleibt farbig).
+// Helle Whiteboards werden wie Papier behandelt.
+export function tafelWeiss(rgba, w, h) {
+  const g = grau(rgba, w, h), hist = new Uint32Array(256);
+  for (let i = 0; i < g.length; i++) hist[g[i]]++;
+  let s = 0, median = 0; for (; median < 256; median++) { s += hist[median]; if (s >= g.length / 2) break; }
+  if (median > 120) return farbeWeiss(rgba, w, h); // Whiteboard
+  // Kreide-Stärke: wie viel heller als die Tafel drumherum
+  const inv = new Float32Array(g.length); for (let i = 0; i < g.length; i++) inv[i] = 255 - g[i];
+  const bg = hintergrund(inv, w, h), n = new Float32Array(g.length);
+  for (let i = 0; i < g.length; i++) n[i] = Math.min(1.2, inv[i] / Math.max(bg[i], 1));
+  const st = stufer(n), out = new Uint8ClampedArray(rgba.length);
   for (let i = 0, j = 0; i < g.length; i++, j += 4) {
-    const f = 1 / Math.max(bg[i], 1);
-    for (let k = 0; k < 3; k++) out[j + k] = stufe(rgba[j + k] * f);
-    out[j + 3] = 255;
+    const k = 1 - st(n[i]) / 255; // 0 = Tafel, 1 = Kreide
+    const r = rgba[j], gg = rgba[j + 1], b = rgba[j + 2], mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), sat = mx ? (mx - mn) / mx : 0;
+    let tr = 20, tg = 30, tb = 45; // weiße Kreide → fast schwarz
+    if (sat > 0.28 && mx > 60) { const f = 150 / mx; tr = r * f; tg = gg * f; tb = b * f; } // farbige Kreide → kräftige Farbe
+    out[j] = 255 + (tr - 255) * k; out[j + 1] = 255 + (tg - 255) * k; out[j + 2] = 255 + (tb - 255) * k; out[j + 3] = 255;
   }
   return out;
+}
+
+// Mehrere Video-Bilder zu einem rechnen (weniger Rauschen bei Laptop-Kameras). Bilder mit Bewegung werden ausgelassen.
+export function bilderMitteln(bilder, w, h) {
+  if (!bilder.length) return null;
+  const n = w * h, ref = bilder[0], schritt = Math.max(1, Math.floor(Math.sqrt(n / 20000)));
+  const gute = [ref];
+  for (let k = 1; k < bilder.length; k++) {
+    const b = bilder[k]; let d = 0, z = 0;
+    for (let y = 0; y < h; y += schritt) for (let x = 0; x < w; x += schritt) { const i = (y * w + x) * 4; d += Math.abs(b[i] - ref[i]) + Math.abs(b[i + 1] - ref[i + 1]); z += 2; }
+    if (d / z < 9) gute.push(b);
+  }
+  if (gute.length === 1) return { daten: ref, anzahl: 1 };
+  const summe = new Float32Array(n * 4);
+  for (const b of gute) for (let i = 0; i < summe.length; i++) summe[i] += b[i];
+  const out = new Uint8ClampedArray(n * 4);
+  for (let i = 0; i < out.length; i++) out[i] = summe[i] / gute.length;
+  return { daten: out, anzahl: gute.length };
+}
+
+// Läuft die Schrift waagerecht oder senkrecht? (Zeilen haben Lücken dazwischen → das Profil quer zu den Zeilen schwankt stark)
+// g: Graustufen (am besten schon papierweiß), Rückgabe: "waag" | "senk" | null (zu wenig Text)
+export function textRichtung(g, w, h) {
+  const zeilen = new Float32Array(h), spalten = new Float32Array(w); let tinteSumme = 0;
+  const rx = Math.round(w * 0.04), ry = Math.round(h * 0.04);
+  for (let y = ry; y < h - ry; y++) for (let x = rx; x < w - rx; x++) if (g[y * w + x] < 140) { zeilen[y]++; spalten[x]++; tinteSumme++; }
+  if (tinteSumme < w * h * 0.002) return null;
+  // Wie stark schwankt das Profil von Pixel zu Pixel (bezogen auf die Tinte)? Zeilenlücken → große Sprünge
+  const schwank = (p, a, b) => { let s = 0; for (let i = a + 1; i < b; i++) s += Math.abs(p[i] - p[i - 1]); let t = 0; for (let i = a; i < b; i++) t += p[i]; return t ? s / t : 0; };
+  // Leere Bänder zählen: zwischen Textzeilen gibt es ganz leere Pixelreihen
+  const leer = (p, a, b) => { let max = 0; for (let i = a; i < b; i++) max = Math.max(max, p[i]); let wechsel = 0, warLeer = true; for (let i = a; i < b; i++) { const l = p[i] < max * 0.04; if (l !== warLeer) wechsel++; warLeer = l; } return wechsel; };
+  const sz = schwank(zeilen, ry, h - ry) * (1 + leer(zeilen, ry, h - ry) / 20), ss = schwank(spalten, rx, w - rx) * (1 + leer(spalten, rx, w - rx) / 20);
+  if (sz > ss * 1.3) return "waag";
+  if (ss > sz * 1.3) return "senk";
+  return null;
+}
+
+// RGBA-Bild um 90/180/270° im Uhrzeigersinn drehen
+export function drehen(rgba, w, h, grad) {
+  grad = ((grad % 360) + 360) % 360;
+  if (!grad) return { daten: rgba, w, h };
+  const nw = grad === 180 ? w : h, nh = grad === 180 ? h : w, out = new Uint8ClampedArray(rgba.length);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    let nx, ny;
+    if (grad === 90) { nx = h - 1 - y; ny = x; } else if (grad === 180) { nx = w - 1 - x; ny = h - 1 - y; } else { nx = y; ny = w - 1 - x; }
+    const a = (y * w + x) * 4, b = (ny * nw + nx) * 4;
+    out[b] = rgba[a]; out[b + 1] = rgba[a + 1]; out[b + 2] = rgba[a + 2]; out[b + 3] = rgba[a + 3];
+  }
+  return { daten: out, w: nw, h: nh };
 }
 
 // Nachschärfen (Unscharf-Maskierung) – macht Schrift knackiger. Für Graustufen oder RGBA (kanaele = 1 oder 4)

@@ -65,6 +65,14 @@
         });
       });
     },
+    /* Wie sicher ist die Erkennung? (0–100) – zum Herausfinden, wie herum ein Blatt liegt */
+    vertrauen: function (bild, sprache) {
+      fortschritt = null;
+      return holeWorker(sprache || "deu").then(function (w) { return w.recognize(bild); }).then(function (res) {
+        var d = (res && res.data) || {}, woerter = (d.text || "").match(/[A-Za-zÄÖÜäöüß]{3,}/g) || [];
+        return (d.confidence || 0) * Math.min(1, woerter.length / 8);
+      });
+    },
     beenden: function () { if (worker) { worker.terminate(); worker = null; workerSprache = ""; } }
   };
 })();

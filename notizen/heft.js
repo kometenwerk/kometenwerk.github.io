@@ -269,6 +269,7 @@ export function seite(A, el, id) {
       (A.einst.an.planer && A.einst.f.planer.hausaufgaben ? '<button type="button" data-a="ha">📅 Hausaufgabe eintragen</button>' : "") +
       (s.bild ? '<button type="button" data-a="nachbau">📄 Als Word-Seite nachbauen</button><button type="button" data-a="ocr">🔍 Text erkennen</button>' : "") +
       (s.bild && s.original ? '<button type="button" data-a="ecken">📐 Ecken anpassen</button>' : "") +
+      (s.bild ? '<button type="button" data-a="drehen">⟳ Scan drehen</button>' : "") +
       '<button type="button" data-a="word">💾 Als Word-Datei (.docx)</button>' +
       '<button type="button" data-a="druck">🖨️ Drucken / PDF</button>' +
       '<button type="button" data-a="bild">🖼️ Als Bild speichern</button>' +
@@ -778,6 +779,7 @@ export function seite(A, el, id) {
     if (a === "ha") Planer.eintragen(A, { fach: s.fach });
     if (a === "ocr") { KW.toast("Text wird erkannt …"); s.ocr = ""; await A.verarbeiten(s, { zwingen: true, nurText: true }); KW.toast(s.ocr ? "Text erkannt." : "Kein Text gefunden."); A.zeigen(); }
     if (a === "nachbau") { if (s.html && !confirm("Die Word-Seite wird neu aus dem Foto gebaut. Deine Änderungen am Text gehen dabei verloren. Weiter?")) return; KW.toast("📄 Seite wird nachgebaut … (kann etwas dauern)"); await A.nachbauen(s); A.zeigen(); }
+    if (a === "drehen") { await jetztSpeichern(); KW.toast("⟳ Wird gedreht …"); await A.scanDrehen(s, 90); A.zeigen(); return; }
     if (a === "ecken") { await jetztSpeichern(); A.eckenAnpassen(s); }
     if (a === "word") { await jetztSpeichern(); Export.alsWord(A, s); }
     if (a === "druck") { await jetztSpeichern(); Export.drucken(A, [s]); }

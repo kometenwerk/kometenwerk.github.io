@@ -11,7 +11,7 @@ const KLEIN = 240; // Breite des Mini-Bilds für die Blatt-Suche
 export function zeigen(A, el) {
   const F = A.einst.f.scanner;
   let strom = null, timer = null, aktiv = true, beschaeftigt = false, gesperrt = null, wegSeit = 0;
-  let ecken = null, kleinW = KLEIN, kleinH = 150, ruhe = null, anzahl = 0, schaerfen = [], spiegel = false;
+  let ecken = null, kleinW = KLEIN, kleinH = 150, ruhe = null, anzahl = 0, schaerfen = [], spiegel = false, modus = "blatt";
   const neue = [];
 
   el.innerHTML =
@@ -30,6 +30,7 @@ export function zeigen(A, el) {
     '</div>' +
     '<div class="scan-knoepfe">' +
       '<button type="button" class="btn primary" id="jetzt" disabled>📸 Jetzt scannen</button>' +
+      '<div class="modus scan-modus" role="radiogroup" aria-label="Was scannen?"><button type="button" role="radio" data-sm="blatt" aria-checked="true" class="an">📄 Blatt</button><button type="button" role="radio" data-sm="tafel" aria-checked="false">🧑‍🏫 Tafel</button></div>' +
       '<select class="inp" id="kamera" aria-label="Kamera wählen" hidden></select>' +
       '<label class="btn"><input type="file" accept="image/*" id="datei" multiple hidden>🖼️ Foto wählen</label>' +
       '<span class="sp"></span><span class="muted klein">' + (F.auto ? "Löst automatisch aus, wenn das Blatt 1 Sekunde ruhig liegt." : "Automatisch auslösen ist aus (⚙️ Einstellungen).") + '</span>' +
@@ -86,6 +87,13 @@ export function zeigen(A, el) {
     strom = null;
   }
   kameraSel.onchange = () => kameraAn(kameraSel.value);
+  el.querySelectorAll("[data-sm]").forEach(b => b.onclick = () => {
+    modus = b.dataset.sm;
+    el.querySelectorAll("[data-sm]").forEach(x => { x.classList.toggle("an", x === b); x.setAttribute("aria-checked", x === b); });
+    el.querySelector("#buehne").classList.toggle("tafel", modus === "tafel");
+    ecken = null; gesperrt = null; if (ruhe) ruhe.zuruecksetzen();
+    KW.toast(modus === "tafel" ? "Tafel-Modus: ganze Tafel ins Bild nehmen, dann „Jetzt scannen“." : "Blatt-Modus.");
+  });
   el.querySelector("#start").onclick = () => kameraAn();
 
   /* --- Blatt suchen, Ruhe messen --- */
@@ -113,6 +121,7 @@ export function zeigen(A, el) {
     if (!aktiv || !strom) return;
     timer = setTimeout(schleife, 110);
     if (beschaeftigt || video.readyState < 2) return;
+    if (modus === "tafel") { ecken = null; malen(0); sag("Tafel ganz ins Bild nehmen – dann „📸 Jetzt scannen“"); return; }
     kctx.drawImage(video, 0, 0, kleinW, kleinH);
     const roh = kctx.getImageData(0, 0, kleinW, kleinH).data, g = K.grau(roh, kleinW, kleinH);
     const ana = K.analysiereBlatt(roh, kleinW, kleinH);
@@ -168,7 +177,8 @@ export function zeigen(A, el) {
     piep();
     hinweis.hidden = true;
     try {
-      // Wenn möglich ein echtes Foto in voller Kamera-Auflösung (viel schärfer als ein Video-Bild)
+      // Wenn möglich ein echtes Foto in voller Kamera-Auflösung (viel schärfer als ein Video-Bild).
+      // Laptop-Kameras liefern nur kleine Bilder → dann mehrere Video-Bilder zusammenrechnen (weniger Rauschen).
       let c = null;
       try {
         const spur = strom.getVideoTracks()[0];
@@ -179,10 +189,14 @@ export function zeigen(A, el) {
         }
       } catch (e) { c = null; }
       let q = null;
-      if (!c) {
-        const vw = video.videoWidth, vh = video.videoHeight;
-        c = document.createElement("canvas"); c.width = vw; c.height = vh;
-        c.getContext("2d").drawImage(video, 0, 0);
+      if (!c || (c.width * c.height <= video.videoWidth * video.videoHeight * 1.2 && F.mehrbild !== false)) {
+        if (F.mehrbild !== false) sag("Ruhig halten … ich nehme ein paar Bilder auf");
+        c = await videoGemittelt(F.mehrbild === false ? 1 : 7) || c;
+      }
+      if (modus === "tafel") {
+        const w = c.width, h = c.height, r = 0.01;
+        await verarbeiten(c, [{ x: w * r, y: h * r }, { x: w * (1 - r), y: h * r }, { x: w * (1 - r), y: h * (1 - r) }, { x: w * r, y: h * (1 - r) }], { tafel: true });
+        throw new Error("fertig");
       }
       // Ecken auf dem großen Bild genauer suchen; sonst die aus dem Video übernehmen (wenn das Format passt)
       q = eckenFinden(c);
@@ -194,18 +208,34 @@ export function zeigen(A, el) {
       }
       if (!q) throw new Error("kein-blatt");
       await warte(40);
-      await verarbeiten(c, q);
+      const s = await verarbeiten(c, q);
+      if (!s) throw new Error("verworfen");
       if (F.animation) await warte(Math.max(0, 900 - 60));
       strich.hidden = true;
       if (F.animation) { const hk = el.querySelector("#haken"); hk.hidden = false; await warte(1500); hk.hidden = true; }
     } catch (e) {
       strich.hidden = true;
-      KW.toast(e && e.message === "kein-blatt" ? "Blatt nicht sicher erkannt – nichts gespeichert. Ganzes Blatt zeigen und ruhig halten." : "Das hat nicht geklappt. Versuch es nochmal.");
+      if (e && (e.message === "fertig" || e.message === "verworfen")) { /* alles gut */ }
+      else KW.toast(e && e.message === "kein-blatt" ? "Blatt nicht sicher erkannt – nichts gespeichert. Ganzes Blatt zeigen und ruhig halten." : "Das hat nicht geklappt. Versuch es nochmal.");
     }
     gesperrt = kleineEcken || [{ x: 0, y: 0 }, { x: kleinW, y: 0 }, { x: kleinW, y: kleinH }, { x: 0, y: kleinH }];
     wegSeit = 0;
     beschaeftigt = false;
     if (!F.mehrfach && neue.length) A.gehe("seite/" + neue[neue.length - 1].id);
+  }
+
+  // n Video-Bilder hintereinander aufnehmen und mitteln
+  async function videoGemittelt(n) {
+    const vw = video.videoWidth, vh = video.videoHeight; if (!vw) return null;
+    const c = document.createElement("canvas"); c.width = vw; c.height = vh;
+    const g = c.getContext("2d", { willReadFrequently: true }), bilder = [];
+    for (let i = 0; i < n; i++) {
+      if (i) await new Promise(r => video.requestVideoFrameCallback ? video.requestVideoFrameCallback(() => r()) : setTimeout(r, 70));
+      g.drawImage(video, 0, 0); bilder.push(g.getImageData(0, 0, vw, vh).data);
+    }
+    const m = n > 1 ? K.bilderMitteln(bilder, vw, vh) : { daten: bilder[0], anzahl: 1 };
+    g.putImageData(new ImageData(m.daten, vw, vh), 0, 0);
+    return c;
   }
 
   // Ecken auf einem mittelgroßen Bild suchen (genauer als im Mini-Video-Bild)
@@ -216,27 +246,61 @@ export function zeigen(A, el) {
     return e ? K.einruecken(e.map(p => ({ x: p.x * w / kw, y: p.y * h / kh })), 0.006) : null;
   }
 
-  // Zieht das Bild gerade, filtert es und legt eine neue Seite an
-  async function verarbeiten(quelle, q) {
+  // Zieht das Bild gerade, filtert es, dreht richtig herum, zeigt die Vorschau und legt eine neue Seite an
+  async function verarbeiten(quelle, q, { tafel = false, ohneVorschau = false } = {}) {
     const w = quelle.width, h = quelle.height;
     let ohneEcken = false;
     if (!q) q = eckenFinden(quelle);
     if (!q) { ohneEcken = true; q = [{ x: 0, y: 0 }, { x: w - 1, y: 0 }, { x: w - 1, y: h - 1 }, { x: 0, y: h - 1 }]; }
-    const ziel = await geradeUndFiltern(quelle, q, F.filter);
+    let ziel = await geradeUndFiltern(quelle, q, tafel ? "tafel" : F.filter, { tafel });
+    let drehung = 0;
+    if (F.drehen !== false && !tafel) { sag("Richte das Blatt aus …"); drehung = await ausrichtung(A, ziel.canvas); }
+    if (F.vorschau !== false && !ohneVorschau) {
+      const wahl = await vorschau(ziel.canvas, drehung);
+      if (!wahl) { KW.toast("Verworfen – nichts gespeichert."); return null; }
+      drehung = wahl.drehung;
+    }
+    if (drehung) ziel = await gedreht(ziel.canvas, drehung);
     const bildId = await A.bildSpeichern(ziel.blob);
     // Original (verkleinert) aufheben, damit man die Ecken später noch anpassen kann
     const m = Math.min(1, 2400 / Math.max(w, h)), oc = document.createElement("canvas");
     oc.width = Math.round(w * m); oc.height = Math.round(h * m); oc.getContext("2d").drawImage(quelle, 0, 0, oc.width, oc.height);
     const originalId = await A.bildSpeichern(await new Promise(r => oc.toBlob(r, "image/jpeg", 0.85)), { ohneAbgleich: true });
     const jetztD = new Date();
-    const seite = await A.seiteNeu({ quelle: "scan", bild: bildId, original: originalId, ecken: q.map(p => [p.x / w, p.y / h]), raster: "leer",
+    const seite = await A.seiteNeu({ quelle: "scan", bild: bildId, original: originalId, ecken: q.map(p => [p.x / w, p.y / h]), raster: "leer", drehung, tafel: tafel || undefined,
       fach: el.querySelector("#zielFach").value, quer: ziel.quer, hoehe: ziel.quer ? 210 : 297,
-      titel: "Scan " + jetztD.toLocaleDateString("de-DE") + " " + jetztD.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) });
+      titel: (tafel ? "Tafelbild " : "Scan ") + jetztD.toLocaleDateString("de-DE") + " " + jetztD.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) });
     anzahl++; neue.push(seite);
     ergebnisse(ziel.blob, seite);
     seite.ohneEcken = ohneEcken;
     if (!ohneEcken) A.verarbeiten(seite); // Text erkennen, Word-Seite nachbauen, sortieren – im Hintergrund
     return seite;
+  }
+
+  // Vorschau: Passt / Drehen / Nochmal
+  function vorschau(canvas, drehung) {
+    return new Promise(fertig => {
+      const d = document.createElement("dialog"); d.className = "sheet scan-vorschau";
+      d.innerHTML = '<div class="sheet-in"><h2>So sieht dein Scan aus</h2><div class="vs-bild"><canvas id="vsImg" role="img" aria-label="Vorschau des Scans"></canvas></div>' +
+        '<p class="muted klein" id="vsInfo">' + (drehung ? "↻ Ich habe das Blatt automatisch gedreht." : "") + '</p>' +
+        '<div class="sheet-foot"><button type="button" class="btn" id="vsNoch">🔄 Nochmal</button><button type="button" class="btn" id="vsL" aria-label="Nach links drehen">⟲</button><button type="button" class="btn" id="vsR" aria-label="Nach rechts drehen">⟳</button><span class="sp"></span><button type="button" class="btn primary" id="vsOk">✓ Passt</button></div></div>';
+      document.body.appendChild(d);
+      const img = d.querySelector("#vsImg"), f = Math.min(1, 1000 / Math.max(canvas.width, canvas.height));
+      const klein = document.createElement("canvas"); klein.width = Math.round(canvas.width * f); klein.height = Math.round(canvas.height * f); klein.getContext("2d").drawImage(canvas, 0, 0, klein.width, klein.height);
+      const zeigen = () => {
+        const seitlich = drehung % 180 !== 0; img.width = seitlich ? klein.height : klein.width; img.height = seitlich ? klein.width : klein.height;
+        const g = img.getContext("2d"); g.setTransform(1, 0, 0, 1, 0, 0); g.translate(img.width / 2, img.height / 2); g.rotate(drehung * Math.PI / 180); g.drawImage(klein, -klein.width / 2, -klein.height / 2);
+      };
+      zeigen();
+      let ergebnis = null;
+      d.querySelector("#vsL").onclick = () => { drehung = (drehung + 270) % 360; zeigen(); };
+      d.querySelector("#vsR").onclick = () => { drehung = (drehung + 90) % 360; zeigen(); };
+      d.querySelector("#vsNoch").onclick = () => d.close();
+      d.querySelector("#vsOk").onclick = () => { ergebnis = { drehung }; d.close(); };
+      d.addEventListener("close", () => { d.remove(); fertig(ergebnis); });
+      d.showModal();
+      d.querySelector("#vsOk").focus();
+    });
   }
 
   const urls = [];
@@ -246,8 +310,9 @@ export function zeigen(A, el) {
     z.hidden = false; z.textContent = anzahl + (anzahl === 1 ? " Blatt" : " Blätter");
     if (!box.firstChild) box.innerHTML = '<div class="kopfzeile"><h3>Gerade gescannt</h3><span class="sp"></span><a class="btn small" href="#heft">Zum Heft →</a></div><div class="scan-reihe" id="reihe"></div>';
     const u = URL.createObjectURL(blob); urls.push(u);
-    box.querySelector("#reihe").insertAdjacentHTML("afterbegin", '<span class="scan-mini"><a href="#seite/' + seite.id + '"><img src="' + u + '" alt="' + esc(seite.titel) + '"></a><button type="button" class="btn small" data-ecken="' + seite.id + '" title="Ecken anpassen">📐</button></span>');
+    box.querySelector("#reihe").insertAdjacentHTML("afterbegin", '<span class="scan-mini"><a href="#seite/' + seite.id + '"><img src="' + u + '" alt="' + esc(seite.titel) + '"></a><span class="mini-knoepfe"><button type="button" class="btn small" data-dreh="' + seite.id + '" title="Drehen" aria-label="Drehen">⟳</button><button type="button" class="btn small" data-ecken="' + seite.id + '" title="Ecken anpassen" aria-label="Ecken anpassen">📐</button></span></span>');
     box.querySelector('[data-ecken="' + seite.id + '"]').onclick = () => A.eckenAnpassen(A.seite(seite.id));
+    box.querySelector('[data-dreh="' + seite.id + '"]').onclick = async (e) => { const s = A.seite(seite.id); await scanDrehen(A, s, 90); const b = await A.bildHolen(s.bild); if (b) e.target.closest(".scan-mini").querySelector("img").src = URL.createObjectURL(b); };
   }
 
   jetzt.onclick = () => scannenVonKamera();
@@ -259,7 +324,8 @@ export function zeigen(A, el) {
         const f = Math.min(1, 3000 / Math.max(bmp.width, bmp.height)), c = document.createElement("canvas");
         c.width = Math.round(bmp.width * f); c.height = Math.round(bmp.height * f);
         c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
-        const s = await verarbeiten(c, null);
+        const s = await verarbeiten(c, null, { ohneVorschau: dateien.length > 1 });
+        if (!s) continue;
         if (s.ohneEcken) {
           delete s.ohneEcken;
           // Blatt nicht sicher gefunden: lieber selbst die Ecken setzen lassen statt Salat zu bauen
@@ -285,21 +351,79 @@ export function zeigen(A, el) {
 
 /* ---------- Gerade ziehen und filtern (auch für „Ecken anpassen“) ---------- */
 
-export async function geradeUndFiltern(quelle, q, filter) {
+export async function geradeUndFiltern(quelle, q, filter, { tafel = false } = {}) {
   const w = quelle.width, h = quelle.height;
   // So scharf wie möglich: so viele Pixel wie das Blatt im Foto hat (max. 300 dpi = 3508 px)
   const seiteLang = Math.max(Math.hypot(q[3].x - q[0].x, q[3].y - q[0].y), Math.hypot(q[1].x - q[0].x, q[1].y - q[0].y));
-  const lang = Math.max(1754, Math.min(3508, Math.round(seiteLang * 1.2)));
-  const groesse = K.a4Groesse(q, lang);
+  let groesse;
+  if (tafel) {
+    // Tafel: Seitenverhältnis vom Foto behalten (nicht A4)
+    const bw = Math.hypot(q[1].x - q[0].x, q[1].y - q[0].y), bh = Math.hypot(q[3].x - q[0].x, q[3].y - q[0].y), f = Math.min(2.5, 2800 / Math.max(bw, bh));
+    groesse = { w: Math.round(bw * f), h: Math.round(bh * f), quer: bw > bh };
+  } else groesse = K.a4Groesse(q, Math.max(1754, Math.min(3508, Math.round(seiteLang * 1.2))));
   const daten = quelle.getContext("2d").getImageData(0, 0, w, h).data;
   let rgba = K.geradeZiehen(daten, w, h, q, groesse.w, groesse.h);
-  if (filter === "farbe" || filter === undefined) rgba = K.schaerfen(K.farbeWeiss(rgba, groesse.w, groesse.h), groesse.w, groesse.h, 4, 0.5);
+  if (filter === "tafel") rgba = K.schaerfen(K.tafelWeiss(rgba, groesse.w, groesse.h), groesse.w, groesse.h, 4, 0.4);
+  else if (filter === "farbe" || filter === undefined) rgba = K.schaerfen(K.farbeWeiss(rgba, groesse.w, groesse.h), groesse.w, groesse.h, 4, 0.5);
   else if (filter === "normal") rgba = K.graustufenZuRgba(K.schaerfen(K.papierweiss(K.grau(rgba, groesse.w, groesse.h), groesse.w, groesse.h, "normal"), groesse.w, groesse.h, 1, 0.5));
   else if (filter === "stark") rgba = K.graustufenZuRgba(K.papierweiss(K.grau(rgba, groesse.w, groesse.h), groesse.w, groesse.h, "stark"));
-  const ziel = document.createElement("canvas"); ziel.width = groesse.w; ziel.height = groesse.h;
+  let ziel = document.createElement("canvas"); ziel.width = groesse.w; ziel.height = groesse.h;
   ziel.getContext("2d").putImageData(new ImageData(rgba, groesse.w, groesse.h), 0, 0);
+  if (tafel) {
+    // auf A4-Format (quer oder hoch) mit weißem Rand bringen, damit es als Heftseite passt
+    const quer = groesse.w >= groesse.h, A4 = Math.SQRT2, zw = quer ? Math.max(groesse.w, Math.round(groesse.h * A4)) : Math.max(groesse.w, Math.round(groesse.h / A4)), zh = quer ? Math.round(zw / A4) : Math.round(zw * A4);
+    const p = document.createElement("canvas"); p.width = zw; p.height = Math.max(zh, groesse.h);
+    const g = p.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, p.width, p.height); g.drawImage(ziel, (p.width - groesse.w) / 2, (p.height - groesse.h) / 2);
+    ziel = p; groesse.quer = quer;
+  }
   const blob = await new Promise(r => ziel.toBlob(r, "image/jpeg", 0.9));
-  return { blob, quer: groesse.quer };
+  return { blob, quer: groesse.quer, canvas: ziel };
+}
+
+// Canvas drehen (90/180/270 im Uhrzeigersinn) → { blob, quer, canvas }
+export async function gedreht(c, grad) {
+  grad = ((grad % 360) + 360) % 360;
+  const d = document.createElement("canvas"), seitlich = grad % 180 !== 0;
+  d.width = seitlich ? c.height : c.width; d.height = seitlich ? c.width : c.height;
+  const g = d.getContext("2d"); g.translate(d.width / 2, d.height / 2); g.rotate(grad * Math.PI / 180); g.drawImage(c, -c.width / 2, -c.height / 2);
+  const blob = await new Promise(r => d.toBlob(r, "image/jpeg", 0.9));
+  return { blob, quer: d.width > d.height, canvas: d };
+}
+
+// Wie herum liegt das Blatt? Erst die Zeilenrichtung messen, dann (wenn die Texterkennung da ist) die zwei möglichen Drehungen vergleichen
+export async function ausrichtung(A, canvas) {
+  try {
+    const kw = 700, kh = Math.round(kw * canvas.height / canvas.width), k = document.createElement("canvas"); k.width = kw; k.height = kh;
+    k.getContext("2d").drawImage(canvas, 0, 0, kw, kh);
+    const richtung = K.textRichtung(K.grau(k.getContext("2d").getImageData(0, 0, kw, kh).data, kw, kh), kw, kh);
+    if (!richtung) return 0;
+    const kandidaten = richtung === "waag" ? [0, 180] : [90, 270];
+    if (!(A.einst.f.scanner.ocr !== false)) return kandidaten[0];
+    await A.ocrLaden();
+    if (!window.KWOCR || !window.KWOCR.vertrauen) return kandidaten[0];
+    // Mittleres Stück nehmen (geht schneller als das ganze Blatt)
+    const quelle = document.createElement("canvas"), m = 1100, f = Math.min(1, m / Math.max(canvas.width, canvas.height));
+    quelle.width = Math.round(canvas.width * f); quelle.height = Math.round(canvas.height * f); quelle.getContext("2d").drawImage(canvas, 0, 0, quelle.width, quelle.height);
+    let best = kandidaten[0], bestWert = -1;
+    for (const g of kandidaten) {
+      const r = (await gedreht(quelle, g)).canvas;
+      const wert = await Promise.race([window.KWOCR.vertrauen(r, "deu+eng"), new Promise(ok => setTimeout(() => ok(-1), 12000))]);
+      if (wert > bestWert) { bestWert = wert; best = g; }
+    }
+    return best;
+  } catch (e) { return 0; }
+}
+
+// Fertigen Scan drehen (auch aus dem Heft-Menü)
+export async function scanDrehen(A, s, grad) {
+  const blob = await A.bildHolen(s.bild); if (!blob) return;
+  const bmp = await createImageBitmap(blob), c = document.createElement("canvas"); c.width = bmp.width; c.height = bmp.height; c.getContext("2d").drawImage(bmp, 0, 0);
+  const z = await gedreht(c, grad), alt = s.bild;
+  s.bild = await A.bildSpeichern(z.blob); A.bildLoeschen(alt);
+  s.drehung = ((s.drehung || 0) + grad) % 360; s.quer = z.quer; s.hoehe = z.quer ? 210 : 297;
+  const neuBauen = !!s.html || s.unsicher; if (neuBauen) { s.html = ""; s.ocr = ""; }
+  await A.seiteSpeichern(s);
+  if (neuBauen) A.verarbeiten(s, { zwingen: true });
 }
 
 // Ecken nachträglich mit dem Finger/der Maus verschieben und neu gerade ziehen
@@ -340,7 +464,8 @@ export async function eckenAnpassen(A, s) {
   d.querySelector("#eOk").onclick = async () => {
     d.querySelector("#eOk").disabled = true; d.querySelector("#eOk").textContent = "Einen Moment …";
     const q = document.createElement("canvas"); q.width = bmp.width; q.height = bmp.height; q.getContext("2d").drawImage(bmp, 0, 0);
-    const ziel = await geradeUndFiltern(q, ecken.map(p => ({ x: p[0] * bmp.width, y: p[1] * bmp.height })), A.einst.f.scanner.filter);
+    let ziel = await geradeUndFiltern(q, ecken.map(p => ({ x: p[0] * bmp.width, y: p[1] * bmp.height })), s.tafel ? "tafel" : A.einst.f.scanner.filter, { tafel: !!s.tafel });
+    if (s.drehung) ziel = await gedreht(ziel.canvas, s.drehung);
     const alt = s.bild;
     s.bild = await A.bildSpeichern(ziel.blob); s.ecken = ecken; s.quer = ziel.quer; s.hoehe = ziel.quer ? 210 : 297;
     const neuBauen = !!s.html || !!s.unsicher; s.html = neuBauen ? "" : s.html; s.ocr = "";

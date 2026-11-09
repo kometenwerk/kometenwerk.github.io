@@ -39,6 +39,9 @@ export const FUNKTIONEN = [
     { id: "animation", name: "Scan-Strich und Haken", art: "schalter", wert: true },
     { id: "filter", name: "Papierweiß-Filter", art: "wahl", wert: "farbe", werte: [["farbe", "Farbe (Papier weiß)"], ["normal", "Graustufen"], ["stark", "Schwarz/Weiß"], ["aus", "Originalfoto"]] },
     { id: "nachbau", name: "Als Word-Seite nachbauen (Text bearbeitbar)", art: "schalter", wert: true },
+    { id: "vorschau", name: "Vorschau vor dem Speichern (Passt / Drehen / Nochmal)", art: "schalter", wert: true },
+    { id: "drehen", name: "Automatisch richtig herum drehen", art: "schalter", wert: true },
+    { id: "mehrbild", name: "Laptop-Kamera: mehrere Bilder zusammenrechnen (schärfer)", art: "schalter", wert: true },
     { id: "mehrfach", name: "Mehrere Blätter hintereinander", art: "schalter", wert: true },
     { id: "ton", name: "Ton beim Scannen", art: "schalter", wert: true },
     { id: "ocr", name: "Text auf dem Blatt erkennen (für Suche und KI)", art: "schalter", wert: true }

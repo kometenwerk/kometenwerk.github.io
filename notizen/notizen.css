@@ -630,3 +630,14 @@ table.gitter{border-collapse:separate;border-spacing:0;table-layout:fixed;font-s
   .fol-leiste #menueBtn,.tab-leiste #menueBtn{white-space:nowrap}
   .formel-leiste #nameBox{width:64px}
 }
+/* Scanner: Modus, Vorschau, Tafel */
+.scan-modus{display:inline-flex}
+.scan-mini .mini-knoepfe{position:absolute;right:4px;bottom:4px;display:flex;gap:4px}
+.scan-mini .mini-knoepfe .btn{position:static;padding:2px 6px}
+.scan-buehne.tafel::after{content:"";position:absolute;inset:6%;border:3px dashed rgba(255,255,255,.7);border-radius:10px;pointer-events:none}
+.scan-vorschau .sheet-in{max-width:720px}
+.vs-bild{display:flex;align-items:center;justify-content:center;background:var(--soft);border-radius:12px;height:min(62vh,620px);overflow:hidden;margin-bottom:6px}
+.vs-bild canvas{max-width:100%;max-height:100%;box-shadow:0 2px 12px rgba(0,0,0,.25);background:#fff}
+.scan-modus{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
+.scan-modus button{border:0;background:transparent;color:var(--ink);font:inherit;padding:8px 12px;cursor:pointer}
+.scan-modus button.an{background:var(--app);color:#fff;font-weight:600}
