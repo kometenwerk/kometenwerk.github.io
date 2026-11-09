@@ -705,3 +705,35 @@ table.gitter{border-collapse:separate;border-spacing:0;table-layout:fixed;font-s
 .re-display{min-height:150px}
 .re-verlauf{max-height:160px}
 @media (max-height:820px){.re-taste{min-height:38px}.re-taste small{font-size:.55rem}.re-verlauf{max-height:110px}.re-display{min-height:120px}}
+/* ---------- Hilfslinien & Anordnen (Präsentationen) ---------- */
+.lineal-box{position:relative}
+.lineal-box .lineal-o,.lineal-box .lineal-l{display:none;position:absolute;cursor:copy}
+.lineal-box.mit-lineal{padding:18px 0 0 18px}
+.lineal-box.mit-lineal .lineal-o{display:block;left:18px;top:0;cursor:s-resize}
+.lineal-box.mit-lineal .lineal-l{display:block;left:0;top:18px;cursor:e-resize}
+.folie .hilfslinie{position:absolute;z-index:60;pointer-events:none;border:0 solid #ff2d87}
+.folie .abstand{position:absolute;z-index:60;pointer-events:none}
+.folie .abstand.waag{height:0;border-top:calc(1px * var(--k,1)) solid #ff2d87}
+.folie .abstand.senk{width:0;border-left:calc(1px * var(--k,1)) solid #ff2d87}
+.folie .abstand span{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(var(--k,1));background:#ff2d87;color:#fff;font:600 11px "Space Grotesk",sans-serif;border-radius:4px;padding:1px 5px;white-space:nowrap}
+.folie .mehrfach-rahmen{position:absolute;z-index:50;border:calc(1.5px * var(--k,1)) dashed #2f6fdb;pointer-events:none}
+.folie .mehrfach-zahl{position:absolute;left:0;top:0;transform:translateY(-100%) scale(var(--k,1));transform-origin:0 100%;background:#2f6fdb;color:#fff;font:600 11px "Space Grotesk",sans-serif;padding:1px 6px;border-radius:4px;white-space:nowrap}
+.buehne .el.gewaehlt{outline:calc(1px * var(--kk,1)) solid rgba(47,111,219,.6)}
+.griffe{transform-origin:center}
+.griffe .gr-dreh{position:absolute;left:50%;top:calc(-28px * var(--k));width:calc(14px * var(--k));height:calc(14px * var(--k));transform:translate(-50%,-50%);border-radius:50%;background:#fff;border:calc(2px * var(--k)) solid #2f6fdb;pointer-events:auto;cursor:grab;touch-action:none}
+.griffe .gr-dreh::after{content:"";position:absolute;left:50%;top:100%;height:calc(14px * var(--k));border-left:calc(1.5px * var(--k)) solid #2f6fdb}
+.folie .lasso-rahmen{position:absolute;z-index:70;border:calc(1px * var(--k,1)) solid #2f6fdb;background:rgba(47,111,219,.1);pointer-events:none}
+.folie .mass-info{position:absolute;z-index:80;transform:scale(var(--k,1));transform-origin:0 0;background:#14213d;color:#fff;font:600 12px "Space Grotesk",sans-serif;padding:2px 7px;border-radius:5px;pointer-events:none;white-space:nowrap}
+.folie .gitternetz{position:absolute;inset:0;z-index:45;pointer-events:none;background-image:linear-gradient(rgba(47,111,219,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(47,111,219,.18) 1px,transparent 1px);background-size:var(--r) var(--r)}
+.folie .fuehrung{position:absolute;z-index:55;touch-action:none}
+.folie .fuehrung.senk{top:0;bottom:0;width:calc(9px * var(--k));margin-left:calc(-4px * var(--k));cursor:ew-resize;background:linear-gradient(90deg,transparent calc(50% - .5px),#00a3d9 calc(50% - .5px),#00a3d9 calc(50% + .5px),transparent calc(50% + .5px))}
+.folie .fuehrung.waag{left:0;right:0;height:calc(9px * var(--k));margin-top:calc(-4px * var(--k));cursor:ns-resize;background:linear-gradient(transparent calc(50% - .5px),#00a3d9 calc(50% - .5px),#00a3d9 calc(50% + .5px),transparent calc(50% + .5px))}
+.buehne .el.fest{pointer-events:none}
+.ebenen-liste{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:4px;max-height:55vh;overflow:auto}
+.ebenen-liste li{display:flex;gap:4px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:4px}
+.ebenen-liste li.an{border-color:var(--app);background:var(--app-soft)}
+.ebenen-liste button{border:0;background:transparent;color:var(--ink);font:inherit;padding:6px 8px;border-radius:6px;cursor:pointer}
+.ebenen-liste .eb-name{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Heft: Hilfslinien zum Einschalten (werden nicht gedruckt) */
+.blatt.mit-gitter::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;background-image:linear-gradient(rgba(0,163,217,.28) 1px,transparent 1px),linear-gradient(90deg,rgba(0,163,217,.28) 1px,transparent 1px);background-size:calc(var(--u) * 10) calc(var(--u) * 10)}
+.blatt.mit-raendern::before{content:"";position:absolute;left:calc(var(--u) * 15);right:calc(var(--u) * 15);top:calc(var(--u) * 15);bottom:calc(var(--u) * 12);z-index:3;pointer-events:none;border:1px dashed rgba(255,45,135,.55)}

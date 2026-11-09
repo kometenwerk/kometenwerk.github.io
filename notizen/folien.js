@@ -6,6 +6,7 @@ import * as K from "./folien-kern.js";
 import * as KI from "./ki.js";
 import * as Editor from "./editor.js";
 import * as Extras from "./extras.js";
+import * as H from "./ausrichten.js";
 import { herunterladen } from "./export.js";
 
 const KW = window.KW, esc = KW.esc;
@@ -130,7 +131,7 @@ export function seite(A, el, id) {
       '<button type="button" data-a="teilen">📤 An Mitschüler schicken</button><button type="button" data-a="versionen">🕘 Ältere Versionen</button><button type="button" data-a="weg" class="rot">🗑️ In den Papierkorb</button>' +
     "</div>" +
     '<div class="unter-leiste fol-band" id="band">' +
-      '<div class="band-reiter" role="tablist">' + [["start", "Start"], ["einfuegen", "Einfügen"], ["design", "Design"], ["uebergang", "Übergänge"], ["animation", "Animation"]].map(b => '<button type="button" role="tab" data-band="' + b[0] + '">' + b[1] + "</button>").join("") + "</div>" +
+      '<div class="band-reiter" role="tablist">' + [["start", "Start"], ["einfuegen", "Einfügen"], ["anordnen", "Anordnen"], ["design", "Design"], ["uebergang", "Übergänge"], ["animation", "Animation"], ["ansicht", "Ansicht"]].map(b => '<button type="button" role="tab" data-band="' + b[0] + '">' + b[1] + "</button>").join("") + "</div>" +
       '<div class="wort-leiste" data-band="' + esc(band) + '">' +
         '<span class="gruppe" data-gruppe="start">' +
           '<select id="neueFolie" aria-label="Neue Folie" title="Neue Folie"><option value="">＋ Neue Folie …</option>' + Object.entries(K.LAYOUTS).map(([k, l]) => '<option value="' + k + '">' + esc(l.name) + "</option>").join("") + "</select>" +
@@ -154,11 +155,23 @@ export function seite(A, el, id) {
           '<span class="trenn"></span><label class="farb-knopf" title="Eigener Hintergrund für diese Folie"><span aria-hidden="true">🎨</span><input type="color" id="hg" value="#ffffff" aria-label="Hintergrund dieser Folie"></label><button type="button" id="hgWeg" title="Hintergrund vom Design">↺ Design-Hintergrund</button>' +
         "</span>" +
         '<span class="gruppe" data-gruppe="uebergang">' + UEBERGAENGE.map(u => '<button type="button" data-ueber="' + u[0] + '">' + u[1] + "</button>").join("") + '<span class="trenn"></span><button type="button" id="ueberAlle">Für alle Folien</button></span>' +
+        '<span class="gruppe" data-gruppe="anordnen"><span class="muted klein">Ausrichten:</span>' +
+          [["links", "⇤", "Links"], ["mitte", "↔", "Mitte"], ["rechts", "⇥", "Rechts"], ["oben", "⤒", "Oben"], ["mittig", "↕", "Mittig"], ["unten", "⤓", "Unten"]].map(a => '<button type="button" data-ausrichten="' + a[0] + '" title="' + a[2] + ' ausrichten (1 Element: an der Folie, mehrere: aneinander)">' + a[1] + " " + a[2] + "</button>").join("") +
+          '<span class="trenn"></span><button type="button" data-verteilen="x" title="Waagerecht gleichmäßig verteilen (ab 3)">⇹ Verteilen</button><button type="button" data-verteilen="y" title="Senkrecht gleichmäßig verteilen (ab 3)">⇳ Verteilen</button>' +
+          '<span class="trenn"></span><button type="button" id="gruppieren" title="Gruppieren (Strg+G)">⧉ Gruppieren</button><button type="button" id="aufheben" title="Gruppierung aufheben (Strg+Umschalt+G)">⧈ Aufheben</button>' +
+          '<span class="trenn"></span><button type="button" data-drehen="-90" title="90° nach links">⟲ 90°</button><button type="button" data-drehen="90" title="90° nach rechts">⟳ 90°</button><button type="button" data-drehen="0" title="Drehung zurücksetzen">↺ 0°</button>' +
+          '<span class="trenn"></span><button type="button" id="ebenen" title="Alle Elemente der Folie: auswählen, ausblenden, sperren">☰ Ebenen</button>' +
+        "</span>" +
+        '<span class="gruppe" data-gruppe="ansicht">' +
+          '<button type="button" data-ansicht="smart" title="Rosa Linien zeigen, wenn etwas bündig ist">✨ Smarte Hilfslinien</button><button type="button" data-ansicht="lineal" title="Lineal oben und links – daraus Führungslinien ziehen">📏 Lineal</button>' +
+          '<button type="button" data-ansicht="gitter" title="Gitternetz einblenden">▦ Gitternetz</button><button type="button" data-ansicht="raster" title="Am Raster einrasten">🧲 Am Raster</button>' +
+          '<span class="trenn"></span><button type="button" id="fuehrungX" title="Senkrechte Führungslinie in die Mitte">│ Führungslinie</button><button type="button" id="fuehrungY" title="Waagerechte Führungslinie in die Mitte">─ Führungslinie</button><button type="button" id="fuehrungWeg" title="Alle Führungslinien löschen">✕ Führungslinien</button>' +
+        "</span>" +
         '<span class="gruppe" data-gruppe="animation"><span class="muted klein">Element:</span><button type="button" data-anim="">Keine</button>' + ANIMATIONEN.map(a => '<button type="button" data-anim="' + a[0] + '">' + a[1] + "</button>").join("") + '<span class="muted klein" id="animInfo"></span></span>' +
       "</div>" +
     "</div>" +
     '<div class="fol-arbeit"><div class="fol-liste" id="liste" aria-label="Folien"></div>' +
-      '<div class="fol-mitte"><div class="buehne-rahmen" id="rahmen"><div class="buehne" id="buehne"></div></div>' +
+      '<div class="fol-mitte"><div class="lineal-box"><canvas class="lineal-o" id="linealO" aria-hidden="true"></canvas><canvas class="lineal-l" id="linealL" aria-hidden="true"></canvas><div class="buehne-rahmen" id="rahmen"><div class="buehne" id="buehne"></div></div></div>' +
       '<label class="fol-notiz"><span>📝 Notizen für dich (sieht nur du beim Vorführen)</span><textarea class="inp" id="notiz" rows="2" placeholder="Was du zu dieser Folie sagen willst …"></textarea></label></div></div>' +
     '<input type="file" id="bildWahl" accept="image/*" hidden>';
 
@@ -181,13 +194,14 @@ export function seite(A, el, id) {
 
   /* --- Größe der Bühne --- */
   let k = 1;
-  function skalieren() { const b = rahmen.clientWidth; k = b / K.W; buehne.style.transform = "scale(" + k + ")"; rahmen.style.height = Math.round(K.H * k) + "px"; }
+  function skalieren() { const b = rahmen.clientWidth; k = b / K.W; buehne.style.transform = "scale(" + k + ")"; rahmen.style.height = Math.round(K.H * k) + "px"; if (typeof linealZeichnen === "function") try { linealZeichnen(); } catch (e) {} }
 
   /* --- Zeichnen --- */
   function zeichneBuehne() {
     buehne.innerHTML = K.folieHtml(folie(), s.design, { bearbeiten: true, katex: katexHtml });
     el.querySelector("#notiz").value = folie().notiz || "";
     buehne.querySelectorAll("[data-bild-platz]").forEach(b => b.onclick = (e) => { e.stopPropagation(); gewaehlt = b.dataset.bildPlatz; bildWaehlen(); });
+    ansichtZeigen();
     auswahlZeigen();
   }
   function zeichneListe() {
@@ -214,20 +228,184 @@ export function seite(A, el, id) {
   el.querySelector("#folieWeg").onclick = () => folieLoeschen(fi);
   el.querySelector("#notiz").oninput = (e) => { folie().notiz = e.target.value; spaeter(); };
 
-  /* --- Elemente auswählen, verschieben, Größe ändern --- */
+  /* --- Elemente auswählen (auch mehrere), verschieben, Größe, Drehen, Hilfslinien --- */
   const element = (eid) => folie().el.find(x => x.id === eid);
+  let auswahl = []; // alle markierten ids; gewaehlt = das zuletzt angetippte
+  const ansicht = Object.assign({ lineal: false, gitter: false, raster: false, smart: true }, KW.load("kw-folien-ansicht", {}));
+  if (!s.fuehrung) s.fuehrung = { x: [], y: [] };
+  const RASTER = 20;
+  const markierte = () => auswahl.map(element).filter(Boolean);
+  // Gruppen: wer eins antippt, bekommt die ganze Gruppe
+  const mitGruppe = (ids) => { const g = new Set(ids.map(i => (element(i) || {}).gruppe).filter(Boolean)); return Array.from(new Set([...ids, ...folie().el.filter(e => e.gruppe && g.has(e.gruppe)).map(e => e.id)])); };
+  function waehle(id, dazu = false) {
+    if (!id) { gewaehlt = null; auswahl = []; return; }
+    if (dazu) { auswahl = auswahl.includes(id) ? auswahl.filter(x => x !== id && (element(x) || {}).gruppe !== (element(id) || {}).gruppe || !element(id).gruppe && x !== id) : mitGruppe([...auswahl, id]); gewaehlt = auswahl.includes(id) ? id : auswahl[auswahl.length - 1] || null; }
+    else { auswahl = mitGruppe([id]); gewaehlt = id; }
+  }
   function auswahlZeigen() {
-    buehne.querySelectorAll(".griffe").forEach(g => g.remove());
+    buehne.querySelectorAll(".griffe, .mehrfach-rahmen").forEach(g => g.remove());
     buehne.querySelectorAll(".el.gewaehlt").forEach(x => x.classList.remove("gewaehlt"));
-    const e = gewaehlt && element(gewaehlt);
-    if (!e) { gewaehlt = null; bandZustand(); return; }
-    const d = buehne.querySelector('.el[data-id="' + e.id + '"]'); if (!d) return;
-    d.classList.add("gewaehlt");
-    const g = document.createElement("div"); g.className = "griffe"; g.style.cssText = "left:" + e.x + "px;top:" + e.y + "px;width:" + e.w + "px;height:" + e.h + "px;--k:" + (1 / k);
-    g.innerHTML = ["nw", "n", "ne", "e", "se", "s", "sw", "w"].map(r => '<span class="gr gr-' + r + '" data-gr="' + r + '"></span>').join("");
-    buehne.querySelector(".folie").appendChild(g);
+    auswahl = auswahl.filter(i => element(i));
+    if (gewaehlt && !element(gewaehlt)) gewaehlt = auswahl[auswahl.length - 1] || null;
+    if (!auswahl.length) { gewaehlt = null; bandZustand(); return; }
+    const f = buehne.querySelector(".folie"); if (!f) return;
+    auswahl.forEach(i => { const d = buehne.querySelector('.el[data-id="' + i + '"]'); if (d) d.classList.add("gewaehlt"); });
+    const els = markierte();
+    if (els.length === 1) {
+      const e = els[0], g = document.createElement("div"); g.className = "griffe";
+      g.style.cssText = "left:" + e.x + "px;top:" + e.y + "px;width:" + e.w + "px;height:" + e.h + "px;--k:" + (1 / k) + (e.dreh ? ";transform:rotate(" + e.dreh + "deg)" : "");
+      g.innerHTML = ["nw", "n", "ne", "e", "se", "s", "sw", "w"].map(r => '<span class="gr gr-' + r + '" data-gr="' + r + '"></span>').join("") + (e.typ === "form" && e.art === "linie" ? "" : '<span class="gr-dreh" data-dreh="1" title="Drehen (Umschalt = frei)"></span>');
+      f.appendChild(g);
+    } else {
+      const r = H.rahmen(els), g = document.createElement("div"); g.className = "mehrfach-rahmen";
+      g.style.cssText = "left:" + r.x + "px;top:" + r.y + "px;width:" + r.w + "px;height:" + r.h + "px;--k:" + (1 / k);
+      g.innerHTML = '<span class="mehrfach-zahl">' + els.length + " markiert</span>";
+      f.appendChild(g);
+    }
     bandZustand();
   }
+  function domSetzen(e) {
+    const dom = buehne.querySelector('.el[data-id="' + e.id + '"]'); if (!dom) return;
+    dom.style.left = e.x + "px"; dom.style.top = e.y + "px"; dom.style.width = e.w + "px"; dom.style.height = e.h + "px"; dom.style.transform = e.dreh ? "rotate(" + e.dreh + "deg)" : "";
+    if (e.typ === "form") { const sv = dom.querySelector(".form-svg"); if (sv) sv.outerHTML = K.formSvg(e); }
+  }
+  // Hilfslinien zeichnen (rosa wie in PowerPoint) und Abstands-Pfeile
+  function hilfen(r) {
+    buehne.querySelectorAll(".hilfslinie, .abstand").forEach(x => x.remove());
+    const f = buehne.querySelector(".folie"); if (!f || !r) return;
+    let h = "";
+    for (const l of r.linien) h += l.achse === "x" ? '<div class="hilfslinie" style="left:' + l.pos + "px;top:" + l.von + "px;height:" + (l.bis - l.von) + 'px;width:0;border-left-width:calc(1px * var(--k))"></div>' : '<div class="hilfslinie" style="top:' + l.pos + "px;left:" + l.von + "px;width:" + (l.bis - l.von) + 'px;height:0;border-top-width:calc(1px * var(--k))"></div>';
+    for (const a of r.abstaende) h += a.achse === "x" ? '<div class="abstand waag" style="left:' + a.von + "px;top:" + a.quer + "px;width:" + (a.bis - a.von) + 'px"><span>' + a.wert + "</span></div>" : '<div class="abstand senk" style="top:' + a.von + "px;left:" + a.quer + "px;height:" + (a.bis - a.von) + 'px"><span>' + a.wert + "</span></div>";
+    f.insertAdjacentHTML("beforeend", h);
+    f.style.setProperty("--k", 1 / k);
+  }
+  const punkt = (ev) => { const r = buehne.getBoundingClientRect(); return { x: (ev.clientX - r.left) / k, y: (ev.clientY - r.top) / k }; };
+  const rastOpt = () => ({ fuehrungX: s.fuehrung.x, fuehrungY: s.fuehrung.y, raster: ansicht.raster ? RASTER : 0, smart: ansicht.smart, schwelle: 6 / Math.max(0.5, k) });
+  buehne.addEventListener("pointerdown", (ev) => {
+    if (ev.target.closest(".bild-platz")) return;
+    if (ev.target.closest(".fuehrung")) return;
+    const gr = ev.target.closest("[data-gr]"), dreh = ev.target.closest("[data-dreh]"), d = ev.target.closest(".el");
+    if (bearbText && d && d.dataset.id === bearbText) return; // im Text klicken
+    textFertig();
+    const dazu = ev.shiftKey || ev.ctrlKey || ev.metaKey;
+    if (!gr && !dreh && !d) { if (!dazu) waehle(null); auswahlZeigen(); lassoStart(ev); return; }
+    if (!gr && !dreh) {
+      const id = d.dataset.id;
+      if (dazu) { waehle(id, true); auswahlZeigen(); return; }
+      if (!auswahl.includes(id)) { waehle(id); auswahlZeigen(); } else gewaehlt = id;
+    }
+    ev.preventDefault();
+    const start = punkt(ev), els = gr || dreh ? [element(gewaehlt)].filter(Boolean) : markierte();
+    if (!els.length) return;
+    const alt = els.map(e => ({ e, x: e.x, y: e.y, w: e.w, h: e.h, dreh: e.dreh || 0 }));
+    const r0 = H.rahmen(els), andere = folie().el.filter(e => !auswahl.includes(e.id) && !e.aus);
+    let bewegt = false;
+    const richt = gr ? gr.dataset.gr : null;
+    const mv = (m) => {
+      const p = punkt(m), dx = p.x - start.x, dy = p.y - start.y;
+      if (!bewegt && Math.hypot(dx, dy) < 3 / Math.max(0.5, k) * 0.5 + 2) return;
+      if (!bewegt) { sichern(); bewegt = true; }
+      if (dreh) {
+        const e = els[0], cx = alt[0].x + alt[0].w / 2, cy = alt[0].y + alt[0].h / 2;
+        e.dreh = H.winkelEinrasten(Math.atan2(p.y - cy, p.x - cx) * 180 / Math.PI + 90, m.shiftKey);
+        if (!e.dreh) delete e.dreh;
+        domSetzen(e); auswahlZeigen(); infoZeigen((e.dreh || 0) + "°", p); return;
+      }
+      if (!richt) {
+        const wunsch = { x: r0.x + dx, y: r0.y + dy, w: r0.w, h: r0.h };
+        const r = H.einrasten(wunsch, andere, rastOpt());
+        const ox = Math.round(dx + r.dx), oy = Math.round(dy + r.dy);
+        alt.forEach(a => { a.e.x = a.x + ox; a.e.y = a.y + oy; domSetzen(a.e); });
+        hilfen(r);
+      } else {
+        const e = els[0], a = alt[0];
+        let { x, y, w, h } = a;
+        if (richt.includes("e")) w = Math.max(20, a.w + dx);
+        if (richt.includes("s")) h = Math.max(16, a.h + dy);
+        if (richt.includes("w")) { w = Math.max(20, a.w - dx); x = a.x + a.w - w; }
+        if (richt.includes("n")) { h = Math.max(16, a.h - dy); y = a.y + a.h - h; }
+        // Kanten an anderen Elementen/Führungslinien einrasten
+        if (!e.dreh) {
+          const kante = (wert, achse) => { const r = H.einrasten(achse === "x" ? { x: wert, y: y, w: 0, h } : { x, y: wert, w, h: 0 }, andere, rastOpt()); return achse === "x" ? wert + r.dx : wert + r.dy; };
+          if (richt.includes("e")) w = kante(x + w, "x") - x;
+          if (richt.includes("w")) { const nx = kante(x, "x"); w += x - nx; x = nx; }
+          if (richt.includes("s")) h = kante(y + h, "y") - y;
+          if (richt.includes("n")) { const ny = kante(y, "y"); h += y - ny; y = ny; }
+        }
+        if ((e.typ === "bild" || m.shiftKey) && richt.length === 2 && a.h) { const v = a.w / a.h; if (w / h > v) w = h * v; else h = w / v; if (richt.includes("w")) x = a.x + a.w - w; if (richt.includes("n")) y = a.y + a.h - h; }
+        Object.assign(e, { x: Math.round(x), y: Math.round(y), w: Math.round(Math.max(10, w)), h: Math.round(Math.max(8, h)) });
+        domSetzen(e); infoZeigen(e.w + " × " + e.h, p);
+      }
+      auswahlZeigen();
+    };
+    const up = () => { window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); hilfen(null); infoZeigen(null); if (bewegt) { auswahlZeigen(); spaeter(); liesteAktualisieren(); } };
+    window.addEventListener("pointermove", mv); window.addEventListener("pointerup", up);
+  });
+  function infoZeigen(text, p) {
+    let i = buehne.querySelector(".mass-info");
+    if (!text) { if (i) i.remove(); return; }
+    if (!i) { i = document.createElement("div"); i.className = "mass-info"; buehne.querySelector(".folie").appendChild(i); }
+    i.textContent = text; i.style.left = (p.x + 14) + "px"; i.style.top = (p.y + 14) + "px"; i.style.setProperty("--k", 1 / k);
+  }
+  // Rechteck aufziehen = mehrere markieren
+  function lassoStart(ev) {
+    ev.preventDefault();
+    const start = punkt(ev), f = buehne.querySelector(".folie"); let box = null, bewegt = false;
+    const mv = (m) => {
+      const p = punkt(m); if (!bewegt && Math.hypot(p.x - start.x, p.y - start.y) < 4) return; bewegt = true;
+      if (!box) { box = document.createElement("div"); box.className = "lasso-rahmen"; f.appendChild(box); box.style.setProperty("--k", 1 / k); }
+      const r = { x: Math.min(p.x, start.x), y: Math.min(p.y, start.y), w: Math.abs(p.x - start.x), h: Math.abs(p.y - start.y) };
+      Object.assign(box.style, { left: r.x + "px", top: r.y + "px", width: r.w + "px", height: r.h + "px" });
+      const drin = folie().el.filter(e => !e.aus && !e.fest && e.x >= r.x && e.y >= r.y && e.x + e.w <= r.x + r.w && e.y + e.h <= r.y + r.h).map(e => e.id);
+      auswahl = mitGruppe(drin); gewaehlt = auswahl[auswahl.length - 1] || null; auswahlZeigen();
+    };
+    const up = () => { window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); if (box) box.remove(); };
+    window.addEventListener("pointermove", mv); window.addEventListener("pointerup", up);
+  }
+
+  /* --- Ansicht: Lineal, Gitternetz, Führungslinien --- */
+  function ansichtZeigen() {
+    KW.save("kw-folien-ansicht", ansicht);
+    el.querySelectorAll("[data-ansicht]").forEach(b => { b.classList.toggle("an", !!ansicht[b.dataset.ansicht]); b.setAttribute("aria-pressed", !!ansicht[b.dataset.ansicht]); });
+    rahmen.parentElement.classList.toggle("mit-lineal", ansicht.lineal);
+    const f = buehne.querySelector(".folie"); if (!f) return;
+    f.querySelectorAll(".gitternetz, .fuehrung").forEach(x => x.remove());
+    if (ansicht.gitter) f.insertAdjacentHTML("beforeend", '<div class="gitternetz" style="--r:' + RASTER + 'px"></div>');
+    s.fuehrung.x.forEach((x, i) => f.insertAdjacentHTML("beforeend", '<div class="fuehrung senk" data-fx="' + i + '" style="left:' + x + "px;--k:" + (1 / k) + '" title="Ziehen = verschieben, aus der Folie ziehen = löschen"></div>'));
+    s.fuehrung.y.forEach((y, i) => f.insertAdjacentHTML("beforeend", '<div class="fuehrung waag" data-fy="' + i + '" style="top:' + y + "px;--k:" + (1 / k) + '" title="Ziehen = verschieben, aus der Folie ziehen = löschen"></div>'));
+    f.querySelectorAll(".fuehrung").forEach(fl => fl.onpointerdown = (ev) => { ev.stopPropagation(); ev.preventDefault(); fuehrungZiehen(fl.dataset.fx != null ? "x" : "y", Number(fl.dataset.fx ?? fl.dataset.fy)); });
+    linealZeichnen();
+  }
+  function fuehrungZiehen(achse, i) {
+    sichern();
+    const mv = (m) => { const p = punkt(m); let v = Math.round(achse === "x" ? p.x : p.y); if (ansicht.raster) v = Math.round(v / RASTER) * RASTER; s.fuehrung[achse][i] = v; const fl = buehne.querySelector(achse === "x" ? '[data-fx="' + i + '"]' : '[data-fy="' + i + '"]'); if (fl) fl.style[achse === "x" ? "left" : "top"] = v + "px"; infoZeigen(v, p); };
+    const up = () => {
+      window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); infoZeigen(null);
+      const v = s.fuehrung[achse][i]; if (v < 0 || v > (achse === "x" ? K.W : K.H)) s.fuehrung[achse].splice(i, 1);
+      ansichtZeigen(); spaeter();
+    };
+    window.addEventListener("pointermove", mv); window.addEventListener("pointerup", up);
+  }
+  // Lineal oben und links (in Folien-Punkten), aus dem Lineal ziehen = neue Führungslinie
+  function linealZeichnen() {
+    const lo = el.querySelector("#linealO"), ll = el.querySelector("#linealL");
+    if (!ansicht.lineal) return;
+    const malen = (c, laenge, quer) => {
+      const dpr = window.devicePixelRatio || 1, px = laenge * k; c.width = (quer ? 18 : px) * dpr; c.height = (quer ? px : 18) * dpr; c.style.width = (quer ? 18 : px) + "px"; c.style.height = (quer ? px : 18) + "px";
+      const g = c.getContext("2d"); g.scale(dpr, dpr); g.fillStyle = getComputedStyle(document.body).getPropertyValue("--soft") || "#eef1f6"; g.fillRect(0, 0, quer ? 18 : px, quer ? px : 18);
+      g.strokeStyle = "#8a94a6"; g.fillStyle = "#5b6578"; g.font = "9px sans-serif"; g.lineWidth = 1;
+      for (let v = 0; v <= laenge; v += 10) {
+        const p = Math.round(v * k) + 0.5, lang = v % 100 === 0 ? 10 : v % 50 === 0 ? 6 : 3;
+        g.beginPath(); if (quer) { g.moveTo(18 - lang, p); g.lineTo(18, p); } else { g.moveTo(p, 18 - lang); g.lineTo(p, 18); } g.stroke();
+        if (v % 100 === 0 && v) { if (quer) { g.save(); g.translate(8, p + 2); g.rotate(-Math.PI / 2); g.fillText(v, 0, 0); g.restore(); } else g.fillText(v, p + 2, 9); }
+      }
+    };
+    malen(lo, K.W, false); malen(ll, K.H, true);
+  }
+  ["linealO", "linealL"].forEach(id => el.querySelector("#" + id).addEventListener("pointerdown", (ev) => {
+    ev.preventDefault(); const achse = id === "linealO" ? "y" : "x";
+    s.fuehrung[achse].push(-100); ansichtZeigen(); fuehrungZiehen(achse, s.fuehrung[achse].length - 1);
+  }));
   function bandZustand() {
     const e = gewaehlt && element(gewaehlt);
     el.querySelectorAll("[data-ueber]").forEach(b => b.classList.toggle("an", (folie().ueber || "") === b.dataset.ueber));
@@ -235,52 +413,6 @@ export function seite(A, el, id) {
     el.querySelectorAll("[data-anim]").forEach(b => { b.disabled = !e; b.classList.toggle("an", !!e && (e.anim ? (e.animArt || "einblenden") === b.dataset.anim : b.dataset.anim === "")); });
     const info = el.querySelector("#animInfo"); info.textContent = e ? (e.anim ? "Erscheint als " + (folie().el.filter(x => x.anim).sort((a, b) => a.anim - b.anim).indexOf(e) + 1) + ". beim Klicken" : "") : "Erst ein Element antippen";
     el.querySelectorAll("[data-ausr]").forEach(b => b.classList.toggle("an", !!e && (e.ausr || "l") === b.dataset.ausr));
-  }
-  const punkt = (ev) => { const r = buehne.getBoundingClientRect(); return { x: (ev.clientX - r.left) / k, y: (ev.clientY - r.top) / k }; };
-  buehne.addEventListener("pointerdown", (ev) => {
-    if (ev.target.closest(".bild-platz")) return;
-    const gr = ev.target.closest("[data-gr]"), d = ev.target.closest(".el");
-    if (bearbText && d && d.dataset.id === bearbText) return; // im Text klicken
-    textFertig();
-    if (!gr && !d) { gewaehlt = null; auswahlZeigen(); return; }
-    const e = gr ? element(gewaehlt) : element(d.dataset.id); if (!e) return;
-    if (!gr && gewaehlt !== e.id) { gewaehlt = e.id; auswahlZeigen(); }
-    ev.preventDefault();
-    const start = punkt(ev), alt = { x: e.x, y: e.y, w: e.w, h: e.h }; let bewegt = false;
-    const richt = gr ? gr.dataset.gr : null;
-    const mv = (m) => {
-      const p = punkt(m), dx = p.x - start.x, dy = p.y - start.y;
-      if (!bewegt && Math.hypot(dx, dy) < 3) return;
-      if (!bewegt) { sichern(); bewegt = true; }
-      if (!richt) {
-        let nx = Math.round(alt.x + dx), ny = Math.round(alt.y + dy);
-        // An der Mitte und an den Rändern einrasten
-        const mx = nx + e.w / 2, my = ny + e.h / 2;
-        if (Math.abs(mx - K.W / 2) < 8) nx = Math.round(K.W / 2 - e.w / 2); if (Math.abs(my - K.H / 2) < 8) ny = Math.round(K.H / 2 - e.h / 2);
-        if (Math.abs(nx - 60) < 6) nx = 60; if (Math.abs(ny - 36) < 6) ny = 36;
-        e.x = nx; e.y = ny;
-        hilfslinien(Math.abs(e.x + e.w / 2 - K.W / 2) < 1, Math.abs(e.y + e.h / 2 - K.H / 2) < 1);
-      } else {
-        let { x, y, w, h } = alt;
-        if (richt.includes("e")) w = Math.max(20, alt.w + dx);
-        if (richt.includes("s")) h = Math.max(16, alt.h + dy);
-        if (richt.includes("w")) { w = Math.max(20, alt.w - dx); x = alt.x + alt.w - w; }
-        if (richt.includes("n")) { h = Math.max(16, alt.h - dy); y = alt.y + alt.h - h; }
-        if ((e.typ === "bild" || m.shiftKey) && richt.length === 2 && alt.h) { const v = alt.w / alt.h; if (w / h > v) w = h * v; else h = w / v; if (richt.includes("w")) x = alt.x + alt.w - w; if (richt.includes("n")) y = alt.y + alt.h - h; }
-        Object.assign(e, { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) });
-      }
-      const dom = buehne.querySelector('.el[data-id="' + e.id + '"]');
-      if (dom) { dom.style.left = e.x + "px"; dom.style.top = e.y + "px"; dom.style.width = e.w + "px"; dom.style.height = e.h + "px"; if (e.typ === "form") dom.querySelector(".form-svg").outerHTML = K.formSvg(e); }
-      const g = buehne.querySelector(".griffe"); if (g) { g.style.left = e.x + "px"; g.style.top = e.y + "px"; g.style.width = e.w + "px"; g.style.height = e.h + "px"; }
-    };
-    const up = () => { window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); hilfslinien(false, false); if (bewegt) { spaeter(); liesteAktualisieren(); } };
-    window.addEventListener("pointermove", mv); window.addEventListener("pointerup", up);
-  });
-  function hilfslinien(v, h) {
-    buehne.querySelectorAll(".hilfslinie").forEach(x => x.remove());
-    const f = buehne.querySelector(".folie"); if (!f) return;
-    if (v) f.insertAdjacentHTML("beforeend", '<div class="hilfslinie senk"></div>');
-    if (h) f.insertAdjacentHTML("beforeend", '<div class="hilfslinie waag"></div>');
   }
   // Doppelklick: Text bearbeiten (Textfelder, Formen) – Tabelle/Formel öffnen ihren Dialog
   buehne.addEventListener("dblclick", (ev) => {
@@ -292,7 +424,7 @@ export function seite(A, el, id) {
     else if (e.typ === "bild") { gewaehlt = e.id; bildWaehlen(); }
   });
   function textStart(e, d, ev) {
-    gewaehlt = e.id; auswahlZeigen(); sichern();
+    waehle(e.id); auswahlZeigen(); sichern();
     const inh = d.querySelector(".el-inhalt"); if (!inh) return;
     bearbText = e.id; d.classList.add("tippt");
     inh.contentEditable = "true"; inh.focus();
@@ -335,13 +467,44 @@ export function seite(A, el, id) {
   };
   el.querySelector("#fuell").onchange = (ev) => { const e = gewaehlt && element(gewaehlt); if (!e || !["form", "text"].includes(e.typ)) { KW.toast("Erst eine Form oder ein Textfeld antippen."); return; } sichern(); if (e.typ === "form" && e.art === "linie") e.rand = ev.target.value; else e.fuell = ev.target.value; textFertig(); zeichneBuehne(); liesteAktualisieren(); spaeter(); };
   el.querySelectorAll("[data-ausr]").forEach(b => b.onclick = () => { const e = gewaehlt && element(gewaehlt); if (!e) return; sichern(); e.ausr = b.dataset.ausr; textFertig(); zeichneBuehne(); liesteAktualisieren(); spaeter(); });
-  const ebene = (d) => { const e = gewaehlt && element(gewaehlt); if (!e) return; sichern(); const l = folie().el, i = l.indexOf(e); l.splice(i, 1); if (d > 0) l.push(e); else l.unshift(e); zeichneBuehne(); liesteAktualisieren(); spaeter(); };
+  const ebene = (d) => { const els = markierte(); if (!els.length) return; sichern(); const l = folie().el; els.forEach(e => l.splice(l.indexOf(e), 1)); if (d > 0) l.push(...els); else l.unshift(...els); zeichneBuehne(); liesteAktualisieren(); spaeter(); };
   el.querySelector("#vorne").onclick = () => ebene(1); el.querySelector("#hinten").onclick = () => ebene(-1);
-  const elementWeg = () => { const e = gewaehlt && element(gewaehlt); if (!e) return; sichern(); folie().el = folie().el.filter(x => x !== e); gewaehlt = null; zeichneBuehne(); liesteAktualisieren(); spaeter(); };
+  const elementWeg = () => { const els = markierte(); if (!els.length) return; sichern(); folie().el = folie().el.filter(x => !els.includes(x)); waehle(null); zeichneBuehne(); liesteAktualisieren(); spaeter(); };
   el.querySelector("#elWeg").onclick = elementWeg;
 
   /* --- Einfügen --- */
-  function dazu(e) { textFertig(); sichern(); folie().el.push(e); gewaehlt = e.id; zeichneBuehne(); liesteAktualisieren(); spaeter(); return e; }
+  function dazu(e) { textFertig(); sichern(); folie().el.push(e); waehle(e.id); zeichneBuehne(); liesteAktualisieren(); spaeter(); return e; }
+
+  /* --- Anordnen --- */
+  const nachAenderung = () => { zeichneBuehne(); liesteAktualisieren(); spaeter(); };
+  el.querySelectorAll("[data-ausrichten]").forEach(b => b.onclick = () => { const els = markierte().filter(e => !e.fest); if (!els.length) { KW.toast("Erst ein oder mehrere Elemente antippen."); return; } sichern(); H.ausrichten(els, b.dataset.ausrichten, K.W, K.H); nachAenderung(); });
+  el.querySelectorAll("[data-verteilen]").forEach(b => b.onclick = () => { const els = markierte().filter(e => !e.fest); sichern(); if (!H.verteilen(els, b.dataset.verteilen)) { verlauf.pop(); KW.toast("Zum Verteilen mindestens 3 Elemente markieren (Umschalt + Antippen oder Rahmen aufziehen)."); return; } nachAenderung(); });
+  el.querySelectorAll("[data-drehen]").forEach(b => b.onclick = () => { const els = markierte(); if (!els.length) return; sichern(); const d = Number(b.dataset.drehen); els.forEach(e => { e.dreh = d ? (((e.dreh || 0) + d) % 360 + 360) % 360 : 0; if (!e.dreh) delete e.dreh; }); nachAenderung(); });
+  const gruppieren = () => { const els = markierte(); if (els.length < 2) { KW.toast("Zum Gruppieren mindestens 2 Elemente markieren."); return; } sichern(); const g = K.neueId(); els.forEach(e => e.gruppe = g); KW.toast("⧉ Gruppiert – bewegt sich jetzt zusammen."); nachAenderung(); };
+  const aufheben = () => { const els = markierte().filter(e => e.gruppe); if (!els.length) return; sichern(); els.forEach(e => delete e.gruppe); auswahl = [gewaehlt].filter(Boolean); KW.toast("Gruppierung aufgehoben."); nachAenderung(); };
+  el.querySelector("#gruppieren").onclick = gruppieren; el.querySelector("#aufheben").onclick = aufheben;
+  el.querySelectorAll("[data-ansicht]").forEach(b => b.onclick = () => { ansicht[b.dataset.ansicht] = !ansicht[b.dataset.ansicht]; ansichtZeigen(); skalieren(); auswahlZeigen(); });
+  el.querySelector("#fuehrungX").onclick = () => { sichern(); s.fuehrung.x.push(K.W / 2); ansichtZeigen(); spaeter(); };
+  el.querySelector("#fuehrungY").onclick = () => { sichern(); s.fuehrung.y.push(K.H / 2); ansichtZeigen(); spaeter(); };
+  el.querySelector("#fuehrungWeg").onclick = () => { sichern(); s.fuehrung = { x: [], y: [] }; ansichtZeigen(); spaeter(); };
+  // Ebenen: alle Elemente der Folie, oben = vorne
+  el.querySelector("#ebenen").onclick = () => {
+    const name = (e) => ({ text: "🔤 ", bild: "🖼️ ", form: "⬟ ", tabelle: "⊞ ", formel: "∑ " }[e.typ] || "") + (e.typ === "text" || e.typ === "form" ? (Editor.htmlZuText(e.html || "").slice(0, 28) || (e.typ === "form" ? e.art : "Text")) : e.typ === "formel" ? e.tex.slice(0, 20) : e.typ === "bild" ? (e.plot ? "Funktionsgraph" : e.mindmap ? "Mindmap" : "Bild") : "Tabelle");
+    const d = document.createElement("dialog"); d.className = "sheet";
+    const zeichne = () => {
+      d.innerHTML = '<div class="sheet-in"><h2>☰ Ebenen</h2><p class="muted klein">Oben = ganz vorne. 👁 = ausblenden, 🔒 = sperren (lässt sich nicht mehr aus Versehen verschieben).</p><ul class="ebenen-liste">' +
+        folie().el.slice().reverse().map(e => '<li class="' + (auswahl.includes(e.id) ? "an" : "") + '" data-id="' + e.id + '"><button type="button" class="eb-name" data-w="waehlen">' + KW.esc(name(e)) + (e.gruppe ? " ⧉" : "") + '</button><button type="button" data-w="aus" aria-pressed="' + !!e.aus + '" title="Ausblenden">' + (e.aus ? "🚫" : "👁") + '</button><button type="button" data-w="fest" aria-pressed="' + !!e.fest + '" title="Sperren">' + (e.fest ? "🔒" : "🔓") + '</button><button type="button" data-w="hoch" title="Nach vorne">▲</button><button type="button" data-w="runter" title="Nach hinten">▼</button></li>').join("") +
+        '</ul><div class="sheet-foot"><button type="button" class="btn primary" id="ebZu">Fertig</button></div></div>';
+      d.querySelector("#ebZu").onclick = () => d.close();
+      d.querySelectorAll("[data-w]").forEach(b => b.onclick = () => {
+        const e = element(b.closest("li").dataset.id), l = folie().el, i = l.indexOf(e), w = b.dataset.w;
+        if (w === "waehlen") { waehle(e.id); }
+        else { sichern(); if (w === "aus") e.aus = !e.aus || undefined; if (w === "fest") e.fest = !e.fest || undefined; if (w === "hoch" && i < l.length - 1) { l.splice(i, 1); l.splice(i + 1, 0, e); } if (w === "runter" && i > 0) { l.splice(i, 1); l.splice(i - 1, 0, e); } if (!e.aus) delete e.aus; if (!e.fest) delete e.fest; }
+        nachAenderung(); zeichne();
+      });
+    };
+    zeichne(); document.body.appendChild(d); d.addEventListener("close", () => d.remove()); d.showModal();
+  };
   el.querySelector("#tText").onclick = () => { const e = dazu({ id: K.neueId(), typ: "text", rolle: "frei", x: 280, y: 220, w: 400, h: 90, html: "<p>Text</p>" }); const d = buehne.querySelector('.el[data-id="' + e.id + '"]'); textStart(e, d); };
   el.querySelector("#tForm").onchange = (ev) => { const art = ev.target.value; ev.target.value = ""; if (!art) return; const d = K.design(s.design); dazu({ id: K.neueId(), typ: "form", art, x: 380, y: 190, w: art === "linie" ? 240 : 200, h: art === "linie" ? 20 : art === "pfeil" ? 100 : 160, fuell: art === "linie" ? "none" : d.akzent, rand: art === "linie" ? d.text : "none", randBreite: art === "linie" ? 4 : 0, html: "" }); };
   const bildDatei = el.querySelector("#bildWahl");
@@ -408,14 +571,20 @@ export function seite(A, el, id) {
     if (ev.key === "F5") { ev.preventDefault(); vorfuehren(A, s, ev.shiftKey ? fi : 0); return; }
     if (st && ev.key.toLowerCase() === "z") { ev.preventDefault(); ev.shiftKey ? vor() : rueck(); return; }
     if (st && ev.key.toLowerCase() === "y") { ev.preventDefault(); vor(); return; }
+    if (st && ev.key.toLowerCase() === "a") { ev.preventDefault(); auswahl = folie().el.filter(x => !x.aus && !x.fest).map(x => x.id); gewaehlt = auswahl[auswahl.length - 1] || null; auswahlZeigen(); return; }
+    if (st && ev.key.toLowerCase() === "g") { ev.preventDefault(); ev.shiftKey ? aufheben() : gruppieren(); return; }
     const e = gewaehlt && element(gewaehlt);
-    if (st && ev.key.toLowerCase() === "d" && e) { ev.preventDefault(); const kopie = JSON.parse(JSON.stringify(e)); kopie.id = K.neueId(); kopie.x += 20; kopie.y += 20; delete kopie.anim; dazu(kopie); return; }
+    if (st && ev.key.toLowerCase() === "d" && e) {
+      ev.preventDefault(); textFertig(); sichern();
+      const neueGruppe = {}; const kopien = markierte().map(x => { const c = JSON.parse(JSON.stringify(x)); c.id = K.neueId(); c.x += 20; c.y += 20; delete c.anim; if (c.gruppe) c.gruppe = neueGruppe[c.gruppe] || (neueGruppe[c.gruppe] = K.neueId()); return c; });
+      folie().el.push(...kopien); auswahl = kopien.map(c => c.id); gewaehlt = auswahl[auswahl.length - 1]; nachAenderung(); return;
+    }
     if (!e) { if (ev.key === "PageDown" || ev.key === "ArrowDown") { fi = Math.min(s.folien.length - 1, fi + 1); alles(); } if (ev.key === "PageUp" || ev.key === "ArrowUp") { fi = Math.max(0, fi - 1); alles(); } return; }
     if (ev.key === "Delete" || ev.key === "Backspace") { ev.preventDefault(); elementWeg(); return; }
     if (ev.key === "Enter" && (e.typ === "text" || e.typ === "form")) { ev.preventDefault(); textStart(e, buehne.querySelector('.el[data-id="' + e.id + '"]')); return; }
-    if (ev.key === "Escape") { gewaehlt = null; auswahlZeigen(); return; }
+    if (ev.key === "Escape") { waehle(null); auswahlZeigen(); return; }
     const pf = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[ev.key];
-    if (pf) { ev.preventDefault(); sichern(); const n = ev.shiftKey ? 10 : 2; e.x += pf[0] * n; e.y += pf[1] * n; zeichneBuehne(); spaeter(); }
+    if (pf) { ev.preventDefault(); sichern(); const n = ev.shiftKey ? 10 : ansicht.raster ? RASTER : 2; markierte().filter(x => !x.fest).forEach(x => { x.x += pf[0] * n; x.y += pf[1] * n; }); zeichneBuehne(); spaeter(); }
   };
   document.addEventListener("keydown", tasten);
 

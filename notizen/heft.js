@@ -271,6 +271,8 @@ export function seite(A, el, id) {
       (s.bild && s.original ? '<button type="button" data-a="ecken">📐 Ecken anpassen</button>' : "") +
       (s.bild ? '<button type="button" data-a="drehen">⟳ Scan drehen</button>' : "") +
       '<button type="button" data-a="word">💾 Als Word-Datei (.docx)</button>' +
+      '<button type="button" data-a="gitter">▦ Gitternetz ein/aus (Hilfslinien)</button>' +
+      '<button type="button" data-a="raender">⬚ Seitenränder zeigen ein/aus</button>' +
       '<button type="button" data-a="druck">🖨️ Drucken / PDF</button>' +
       '<button type="button" data-a="bild">🖼️ Als Bild speichern</button>' +
       (A.einst.an.folien !== false && !s.bild ? '<button type="button" data-a="folien">🖥️ Als Präsentation (Folien)</button>' : "") +
@@ -783,6 +785,7 @@ export function seite(A, el, id) {
     if (a === "ecken") { await jetztSpeichern(); A.eckenAnpassen(s); }
     if (a === "word") { await jetztSpeichern(); Export.alsWord(A, s); }
     if (a === "druck") { await jetztSpeichern(); Export.drucken(A, [s]); }
+    if (a === "gitter" || a === "raender") { const hv = KW.load("kw-heft-ansicht", {}); hv[a] = !hv[a]; KW.save("kw-heft-ansicht", hv); heftAnsicht(); KW.toast(hv[a] ? (a === "gitter" ? "▦ Gitternetz an (wird nicht gedruckt)" : "⬚ Seitenränder sichtbar") : "Aus."); return; }
     if (a === "teilen") { await jetztSpeichern(); Extras.teilen(A, s); }
     if (a === "versionen") { await jetztSpeichern(); Extras.versionen(A, s, () => A.zeigen()); }
     if (a === "folien") { await jetztSpeichern(); (await import("./folien.js")).ausHeft(A, s.id); }
@@ -833,6 +836,8 @@ export function seite(A, el, id) {
   groesse();
   setTimeout(wachsen, 50);
   if (Z.modus === "tippen" && !s.text && !s.bild) rich.focus();
+  function heftAnsicht() { const hv = KW.load("kw-heft-ansicht", {}); blatt.classList.toggle("mit-gitter", !!hv.gitter); blatt.classList.toggle("mit-raendern", !!hv.raender); }
+  heftAnsicht();
   Extras.versionMerken(A, s);
 
   return () => {

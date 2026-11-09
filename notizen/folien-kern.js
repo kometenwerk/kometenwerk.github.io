@@ -80,10 +80,11 @@ export function folieHtml(folie, designId, opt = {}) {
   let h = '<div class="folie" style="width:' + W + "px;height:" + H + "px;background:" + (folie.hg ? hg : "linear-gradient(160deg," + d.hg + " 55%," + d.hg2 + ")") + ";color:" + d.text + ";font-family:" + fam(d.schrift) + '">' + (folie.hg ? "" : dekoHtml(d));
   const reihenfolge = (folie.el || []).filter(e => e.anim).sort((a, b) => a.anim - b.anim);
   for (const e of folie.el || []) {
+    if (e.aus) continue; // ausgeblendet (Ebenen)
     const schritt = e.anim ? reihenfolge.indexOf(e) + 1 : 0;
     const versteckt = opt.schritt != null && schritt > opt.schritt;
     let st = "left:" + e.x + "px;top:" + e.y + "px;width:" + e.w + "px;height:" + e.h + "px;" + (e.dreh ? "transform:rotate(" + e.dreh + "deg);" : "");
-    const kl = "el el-" + e.typ + (e.rolle ? " rolle-" + e.rolle : "") + (versteckt ? " versteckt" : "") + (opt.schritt != null && schritt === opt.schritt && opt.neu ? " anim-" + (e.animArt || "einblenden") : "");
+    const kl = "el el-" + e.typ + (e.rolle ? " rolle-" + e.rolle : "") + (opt.bearbeiten && e.fest ? " fest" : "") + (versteckt ? " versteckt" : "") + (opt.schritt != null && schritt === opt.schritt && opt.neu ? " anim-" + (e.animArt || "einblenden") : "");
     const attr = ' data-id="' + e.id + '"' + (opt.bearbeiten && e.anim ? ' data-anim="' + schritt + '"' : "");
     if (e.typ === "text") {
       const g = e.groesse || GROESSE[e.rolle] || GROESSE.frei;

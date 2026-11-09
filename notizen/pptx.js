@@ -17,7 +17,7 @@ function hex(f) {
   return null;
 }
 const fill = (f) => { const h = hex(f); return h ? '<a:solidFill><a:srgbClr val="' + h + '"/></a:solidFill>' : "<a:noFill/>"; };
-const xfrm = (e, tag = "a:xfrm") => "<" + tag + '><a:off x="' + Math.round(e.x * E) + '" y="' + Math.round(e.y * E) + '"/><a:ext cx="' + Math.max(1, Math.round(e.w * E)) + '" cy="' + Math.max(0, Math.round(e.h * E)) + '"/></' + tag + ">";
+const xfrm = (e, tag = "a:xfrm") => "<" + tag + (e.dreh ? ' rot="' + Math.round(e.dreh * 60000) + '"' : "") + '><a:off x="' + Math.round(e.x * E) + '" y="' + Math.round(e.y * E) + '"/><a:ext cx="' + Math.max(1, Math.round(e.w * E)) + '" cy="' + Math.max(0, Math.round(e.h * E)) + '"/></' + tag + ">";
 
 /* ---------- Text (HTML → Absätze) ---------- */
 
@@ -90,6 +90,7 @@ async function folieXml(folie, d, bilder, nr) {
   if (!folie.hg && d.deko === "rahmen") sp += '<p:sp><p:nvSpPr>' + name("Deko") + '<p:cNvSpPr/><p:nvPr userDrawn="1"/></p:nvSpPr><p:spPr>' + xfrm({ x: 16, y: 16, w: 928, h: 508 }) + '<a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val 2000"/></a:avLst></a:prstGeom><a:noFill/><a:ln w="38100">' + fill(d.akzent) + "</a:ln></p:spPr></p:sp>";
 
   for (const e of folie.el || []) {
+    if (e.aus) continue;
     if (e.typ === "text") {
       const basis = e.groesse || K.GROESSE[e.rolle] || K.GROESSE.frei, titel = e.rolle === "titel" || e.rolle === "untertitel";
       const farbe = hex(e.farbe) || hex(e.rolle === "titel" ? d.titel : d.text);
@@ -99,7 +100,7 @@ async function folieXml(folie, d, bilder, nr) {
     } else if (e.typ === "form") {
       const prst = PRST[e.art] || "rect";
       if (e.art === "linie") {
-        sp += "<p:cxnSp><p:nvCxnSpPr>" + name("Linie") + "<p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr><p:spPr>" + xfrm({ x: e.x, y: e.y + e.h / 2, w: e.w, h: 0 }) + '<a:prstGeom prst="line"><a:avLst/></a:prstGeom><a:ln w="' + Math.round(Math.max(2, e.randBreite || 3) * E) + '" cap="rnd">' + fill(e.rand || d.text) + "</a:ln></p:spPr></p:cxnSp>";
+        sp += "<p:cxnSp><p:nvCxnSpPr>" + name("Linie") + "<p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr><p:spPr>" + xfrm({ x: e.x, y: e.y + e.h / 2, w: e.w, h: 0, dreh: e.dreh }) + '<a:prstGeom prst="line"><a:avLst/></a:prstGeom><a:ln w="' + Math.round(Math.max(2, e.randBreite || 3) * E) + '" cap="rnd">' + fill(e.rand || d.text) + "</a:ln></p:spPr></p:cxnSp>";
         continue;
       }
       sp += "<p:sp><p:nvSpPr>" + name("Form") + "<p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr>" + xfrm(e) + '<a:prstGeom prst="' + prst + '"><a:avLst/></a:prstGeom>' + fill(e.fuell) +
@@ -114,6 +115,7 @@ async function folieXml(folie, d, bilder, nr) {
       const img = await new Promise(r => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = e.src; });
       let b = { x: e.x, y: e.y, w: e.w, h: e.h };
       if (img && img.width && !e.zuschnitt) { const v = img.width / img.height; if (e.w / e.h > v) { const w = e.h * v; b = { x: e.x + (e.w - w) / 2, y: e.y, w, h: e.h }; } else { const h = e.w / v; b = { x: e.x, y: e.y + (e.h - h) / 2, w: e.w, h }; } }
+      b.dreh = e.dreh;
       sp += "<p:pic><p:nvPicPr>" + name("Bild") + '<p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="rIdB' + nrB + '"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr>' + xfrm(b) + '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>';
     } else if (e.typ === "tabelle" && (e.zeilen || []).length) {
       const sp0 = e.zeilen[0].length, cw = Math.round(e.w * E / sp0), rh = Math.round(e.h * E / e.zeilen.length), g = e.groesse || 18;
