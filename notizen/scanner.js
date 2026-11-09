@@ -12,6 +12,8 @@ export function zeigen(A, el) {
   const F = A.einst.f.scanner;
   let strom = null, timer = null, aktiv = true, beschaeftigt = false, gesperrt = null, wegSeit = 0;
   let ecken = null, kleinW = KLEIN, kleinH = 150, ruhe = null, anzahl = 0, schaerfen = [], spiegel = false, modus = "blatt";
+  let ampelStand = null, ampelZaehler = 0, rotSeit = 0, puzzle = null;
+  const mess = document.createElement("canvas"), mctx = mess.getContext("2d", { willReadFrequently: true });
   const neue = [];
 
   el.innerHTML =
@@ -27,6 +29,8 @@ export function zeigen(A, el) {
       '<div class="scan-start" id="startBox"><p>📷</p><p>Halte ein Blatt vor die Kamera – am besten auf einem dunklen Tisch.</p><button type="button" class="btn primary" id="start">Kamera starten</button></div>' +
       '<div class="scan-hinweis" id="hinweis" hidden><span class="ring" id="ring"></span><span id="hinweisText"></span></div>' +
       '<div class="scan-zaehler" id="zaehler" hidden></div>' +
+      '<div class="scan-ampel" id="ampel" hidden aria-live="polite"></div>' +
+      '<button type="button" class="btn small scan-puzzle-ab" id="puzzleAb" hidden>✕ Puzzle abbrechen</button>' +
     '</div>' +
     '<div class="scan-knoepfe">' +
       '<button type="button" class="btn primary" id="jetzt" disabled>📸 Jetzt scannen</button>' +
@@ -121,7 +125,8 @@ export function zeigen(A, el) {
     if (!aktiv || !strom) return;
     timer = setTimeout(schleife, 110);
     if (beschaeftigt || video.readyState < 2) return;
-    if (modus === "tafel") { ecken = null; malen(0); sag("Tafel ganz ins Bild nehmen – dann „📸 Jetzt scannen“"); return; }
+    if (modus === "tafel") { ecken = null; malen(0); ampelZeigen(null); sag("Tafel ganz ins Bild nehmen – dann „📸 Jetzt scannen“"); return; }
+    if (puzzle) { puzzleSchritt(); return; }
     kctx.drawImage(video, 0, 0, kleinW, kleinH);
     const roh = kctx.getImageData(0, 0, kleinW, kleinH).data, g = K.grau(roh, kleinW, kleinH);
     const ana = K.analysiereBlatt(roh, kleinW, kleinH);
@@ -145,13 +150,123 @@ export function zeigen(A, el) {
       const max = Math.max(...schaerfen.map(x => x.wert));
       scharf = wert >= max * 0.8 && wert > 25;
     } else schaerfen = [];
+    // Ampel: kann man die Schrift lesen? (alle 3 Durchläufe, im echten Video-Bild gemessen)
+    if (ecken && (++ampelZaehler % 3 === 0 || !ampelStand)) ampelStand = ampelMessen(ecken);
+    if (!ecken) { ampelStand = null; rotSeit = 0; }
+    ampelZeigen(ampelStand);
+    if (ecken && ampelStand && ampelStand.farbe === "rot") {
+      if (!rotSeit) rotSeit = zeit;
+      // Blatt ist im Ganzen zu klein für die Kamera → selbst auf Puzzle-Scan umschalten
+      if (ampelStand.grund === "klein" && F.puzzle !== false) {
+        malen(fort);
+        if (fort >= 1 && zeit - rotSeit > 800) { puzzleStart(); return; }
+        sag("🔴 Die Schrift ist für deine Kamera zu klein – ruhig halten, ich scanne gleich in zwei Teilen", fort); return;
+      }
+    } else rotSeit = 0;
     malen(ecken ? fort : 0);
+    if (ecken && ampelStand && ampelStand.farbe === "rot" && ampelStand.grund !== "klein") { sag(ampelStand.grund === "kontrast" ? "🔴 Zu dunkel – mehr Licht, Blatt auf dunklen Tisch" : "🔴 Zu unscharf – Blatt etwas weiter weg halten oder mehr Licht", fort); if (zeit - rotSeit < 6000) return; }
     if (!ecken) sag(ana.hinweis === "rand" ? "Das Blatt ragt raus – ganzes Blatt mit allen 4 Ecken zeigen" : ana.hinweis === "klein" ? "Näher ran – das Blatt ist zu klein" : spiegel ? "Blatt nicht gefunden – alle 4 Ecken zeigen, Finger weg von den Ecken" : "Blatt vor die Kamera halten (dunkler Untergrund hilft)");
     else if (ana.hinweis === "klein") sag("Etwas näher ran …", fort);
     else if (!F.auto) sag("Blatt erkannt – tipp auf „Jetzt scannen“");
     else if (fort >= 1 && !scharf) sag("Scharf stellen … (etwas weiter weg oder mehr Licht)", 1);
     else sag(fort < 1 ? "Ruhig halten …" : "Scanne …", fort);
     if (ruhig && scharf && F.auto) scannenVonKamera();
+  }
+
+  /* --- Schärfe-Ampel --- */
+  function ampelMessen(e) {
+    const vw = video.videoWidth, vh = video.videoHeight, f = vw / kleinW;
+    const xs = e.map(p => p.x * f), ys = e.map(p => p.y * f);
+    const x0 = Math.max(0, Math.min(...xs)), y0 = Math.max(0, Math.min(...ys)), bw = Math.min(vw, Math.max(...xs)) - x0, bh = Math.min(vh, Math.max(...ys)) - y0;
+    if (bw < 20 || bh < 20) return null;
+    // Pixel pro mm: lange Blattseite / 297 mm
+    const lang = Math.max(Math.hypot(xs[1] - xs[0], ys[1] - ys[0]), Math.hypot(xs[3] - xs[0], ys[3] - ys[0])), dichte = lang / 297;
+    // Mitte des Blatts in Originalgröße messen (höchstens 700 px breit, sonst zu langsam)
+    const mw = Math.min(700, Math.round(bw * 0.6)), mh = Math.min(500, Math.round(bh * 0.6));
+    mess.width = mw; mess.height = mh;
+    mctx.drawImage(video, x0 + bw * 0.2, y0 + bh * 0.2, mw, mh, 0, 0, mw, mh);
+    const k = K.lesbarkeit(K.grau(mctx.getImageData(0, 0, mw, mh).data, mw, mh), mw, mh);
+    return Object.assign(K.ampel(dichte, k), { dichte, kante: k.kante });
+  }
+  function ampelZeigen(a) {
+    const el2 = el.querySelector("#ampel");
+    if (!a) { el2.hidden = true; return; }
+    el2.hidden = false; el2.className = "scan-ampel " + a.farbe;
+    el2.textContent = a.farbe === "gruen" ? "🟢 Scharf" : a.farbe === "gelb" ? "🟡 Geht so" : a.grund === "klein" ? "🔴 Schrift zu klein" : a.grund === "kontrast" ? "🔴 Zu dunkel" : "🔴 Unscharf";
+  }
+
+  /* --- Puzzle-Scan: obere und untere Hälfte nah aufnehmen und zusammensetzen --- */
+  let vorher = null;
+  function puzzleStart() {
+    puzzle = { schritt: 1, teile: [], ruhigSeit: 0, start: performance.now(), wegBewegt: false };
+    el.querySelector("#puzzleAb").hidden = false; el.querySelector("#buehne").classList.add("puzzle");
+    ecken = null; malen(0); vorher = null;
+    KW.toast("🧩 Das Blatt ist für deine Kamera zu klein zum Lesen – ich scanne es in zwei Teilen.");
+  }
+  function puzzleEnde(text) {
+    puzzle = null; el.querySelector("#puzzleAb").hidden = true; el.querySelector("#buehne").classList.remove("puzzle");
+    if (text) KW.toast(text);
+    gesperrt = [{ x: 0, y: 0 }, { x: kleinW, y: 0 }, { x: kleinW, y: kleinH }, { x: 0, y: kleinH }]; wegSeit = 0; rotSeit = 0;
+  }
+  el.querySelector("#puzzleAb").onclick = () => puzzleEnde("Puzzle-Scan abgebrochen.");
+  async function puzzleSchritt() {
+    const zeit = performance.now(), p = puzzle;
+    kctx.drawImage(video, 0, 0, kleinW, kleinH);
+    const g = K.grau(kctx.getImageData(0, 0, kleinW, kleinH).data, kleinW, kleinH);
+    // Bewegung zum letzten Bild
+    let diff = 99; if (vorher) { let s = 0; for (let i = 0; i < g.length; i += 3) s += Math.abs(g[i] - vorher[i]); diff = s / (g.length / 3); }
+    vorher = g;
+    // Ist vor allem Papier im Bild?
+    const schw = K.otsu(g); let hell = 0; for (let i = 0; i < g.length; i++) if (g[i] > schw) hell++;
+    const papier = hell / g.length;
+    const vw = video.videoWidth, vh = video.videoHeight, mw = Math.min(700, Math.round(vw * 0.6)), mh = Math.min(500, Math.round(vh * 0.6));
+    mess.width = mw; mess.height = mh; mctx.drawImage(video, vw * 0.2, vh * 0.2, mw, mh, 0, 0, mw, mh);
+    const k = K.lesbarkeit(K.grau(mctx.getImageData(0, 0, mw, mh).data, mw, mh), mw, mh);
+    ampelZeigen(k.kante >= 0.3 ? { farbe: "gruen" } : k.kante >= 0.2 ? { farbe: "gelb" } : { farbe: "rot", grund: "unscharf" });
+    if (p.schritt === 2 && !p.wegBewegt) { if (p.ref) { let s2 = 0; for (let i = 0; i < g.length; i += 3) s2 += Math.abs(g[i] - p.ref[i]); if (s2 / (g.length / 3) > 14) p.wegBewegt = true; } sag("🧩 Teil 2 von 2: Jetzt die UNTERE Hälfte nah zeigen (etwas Überlappung mit oben)"); return; }
+    const ruhig = diff < 4 && papier > 0.45;
+    if (!ruhig) p.ruhigSeit = 0; else if (!p.ruhigSeit) p.ruhigSeit = zeit;
+    const fort = p.ruhigSeit ? Math.min(1, (zeit - p.ruhigSeit) / 900) : 0;
+    sag((p.schritt === 1 ? "🧩 Teil 1 von 2: Halte die OBERE Hälfte des Blatts nah vor die Kamera" : "🧩 Teil 2 von 2: UNTERE Hälfte") + (k.kante < 0.2 ? " – noch unscharf" : " – ruhig halten …"), fort);
+    // Kamera wird nah nicht scharf (fester Fokus)? Ehrlich sagen
+    if (zeit - p.start > 12000 && k.kante < 0.2) { puzzleEnde("Deine Kamera wird nah nicht schärfer (fester Fokus). Nimm mehr Licht – oder scanne mit dem Handy."); return; }
+    if (fort < 1 || k.kante < 0.2 || beschaeftigt) return;
+    beschaeftigt = true; piep();
+    const bild = await videoGemittelt(F.mehrbild === false ? 1 : 5);
+    p.teile.push(bild); p.schritt++; p.ruhigSeit = 0; p.start = performance.now(); p.ref = g; p.wegBewegt = false;
+    beschaeftigt = false;
+    if (p.teile.length < 2) return;
+    // Zusammensetzen
+    beschaeftigt = true; sag("🧩 Setze die Teile zusammen …");
+    try {
+      const zusammen = await puzzleZusammen(p.teile[0], p.teile[1]);
+      if (!zusammen) { beschaeftigt = false; puzzle.teile = []; puzzle.schritt = 1; KW.toast("Die Teile passen nicht zusammen – nochmal: zuerst oben, dann unten, mit etwas Überlappung."); return; }
+      puzzleEnde();
+      const q = eckenFinden(zusammen);
+      await verarbeiten(zusammen, q);
+    } catch (e) { puzzleEnde("Das Zusammensetzen hat nicht geklappt."); }
+    beschaeftigt = false;
+  }
+  async function puzzleZusammen(a, b) {
+    const w = 640, h = Math.round(w * a.height / a.width), c = document.createElement("canvas"); c.width = w; c.height = h;
+    const g = c.getContext("2d", { willReadFrequently: true });
+    g.drawImage(a, 0, 0, w, h); const ga = K.grau(g.getImageData(0, 0, w, h).data, w, h);
+    g.drawImage(b, 0, 0, w, h); const gb = K.grau(g.getImageData(0, 0, w, h).data, w, h);
+    const r = K.versatzFinden(ga, gb, w, h);
+    // Passt nicht – oder zweimal dasselbe Stück fotografiert?
+    if (!r || r.guete < 0.35 || r.dy < h * 0.12) return null;
+    const f = a.width / w, s = r.s, dx = r.dx * f, dy = r.dy * f;
+    const links = Math.min(0, dx), rechts = Math.max(a.width, dx + b.width * s);
+    // Mit dunklem Rand drumherum, damit die Blatt-Suche die Ecken findet, auch wenn das Blatt bis an den Bildrand ging
+    const rand = Math.round(a.width * 0.05);
+    const z = document.createElement("canvas"); z.width = Math.round(rechts - links) + 2 * rand; z.height = Math.round(Math.max(a.height, dy + b.height * s)) + 2 * rand;
+    const zg = z.getContext("2d"); zg.fillStyle = "#1a1a1a"; zg.fillRect(0, 0, z.width, z.height);
+    zg.drawImage(a, rand - links, rand);
+    // Untere Hälfte erst ab der Mitte der Überlappung (dort ist die Naht am wenigsten zu sehen)
+    const naht = rand + (dy + a.height) / 2;
+    zg.save(); zg.beginPath(); zg.rect(0, naht, z.width, z.height - naht); zg.clip();
+    zg.drawImage(b, rand + dx - links, rand + dy, b.width * s, b.height * s); zg.restore();
+    return z;
   }
 
   /* --- Scannen --- */
@@ -405,12 +520,17 @@ export async function ausrichtung(A, canvas) {
     const quelle = document.createElement("canvas"), m = 1100, f = Math.min(1, m / Math.max(canvas.width, canvas.height));
     quelle.width = Math.round(canvas.width * f); quelle.height = Math.round(canvas.height * f); quelle.getContext("2d").drawImage(canvas, 0, 0, quelle.width, quelle.height);
     let best = kandidaten[0], bestWert = -1;
-    for (const g of kandidaten) {
-      const r = (await gedreht(quelle, g)).canvas;
-      const wert = await Promise.race([window.KWOCR.vertrauen(r, "deu+eng"), new Promise(ok => setTimeout(() => ok(-1), 12000))]);
-      if (wert > bestWert) { bestWert = wert; best = g; }
-    }
-    return best;
+    const pruefen = async (liste) => {
+      for (const g of liste) {
+        const r = (await gedreht(quelle, g)).canvas;
+        const wert = await Promise.race([window.KWOCR.vertrauen(r, "deu+eng"), new Promise(ok => setTimeout(() => ok(-1), 12000))]);
+        if (wert > bestWert) { bestWert = wert; best = g; }
+      }
+    };
+    await pruefen(kandidaten);
+    // Unsicher? Dann auch die anderen beiden Richtungen probieren
+    if (bestWert < 35) await pruefen([0, 90, 180, 270].filter(g => !kandidaten.includes(g)));
+    return bestWert < 8 ? 0 : best;
   } catch (e) { return 0; }
 }
 

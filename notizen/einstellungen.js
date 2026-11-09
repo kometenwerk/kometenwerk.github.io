@@ -42,6 +42,7 @@ export const FUNKTIONEN = [
     { id: "vorschau", name: "Vorschau vor dem Speichern (Passt / Drehen / Nochmal)", art: "schalter", wert: true },
     { id: "drehen", name: "Automatisch richtig herum drehen", art: "schalter", wert: true },
     { id: "mehrbild", name: "Laptop-Kamera: mehrere Bilder zusammenrechnen (schärfer)", art: "schalter", wert: true },
+    { id: "puzzle", name: "Puzzle-Scan, wenn die Kamera das ganze Blatt nicht scharf genug sieht", art: "schalter", wert: true },
     { id: "mehrfach", name: "Mehrere Blätter hintereinander", art: "schalter", wert: true },
     { id: "ton", name: "Ton beim Scannen", art: "schalter", wert: true },
     { id: "ocr", name: "Text auf dem Blatt erkennen (für Suche und KI)", art: "schalter", wert: true }

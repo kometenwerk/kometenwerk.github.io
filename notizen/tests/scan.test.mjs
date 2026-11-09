@@ -1,3 +1,4 @@
+import { lesbarkeit, ampel, versatzFinden } from "../scan-kern.js";
 // Tests für den Scan-Kern: node notizen/tests/scan.test.mjs
 import assert from "node:assert/strict";
 import { analysiereBlatt, findeBlatt, ruheMesser, perspektive, geradeZiehen, papierweiss, a4Groesse, bewegung, farbeWeiss, schaerfe, schaerfen, textRichtung, drehen, bilderMitteln, tafelWeiss } from "../scan-kern.js";
@@ -148,4 +149,22 @@ test("Mehrere Bilder mitteln, verwackelte Bilder weglassen", () => {
   const r = bilderMitteln([mk(120), mk(122), mk(118), anders], w, h);
   assert.equal(r.anzahl, 3); assert.ok(Math.abs(r.daten[0] - 120) < 4);
 });
+function blur(g, w, h, r) { const o = new Uint8ClampedArray(g.length); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let s = 0, n = 0; for (let yy = -r; yy <= r; yy++) for (let xx = -r; xx <= r; xx++) { const X = x + xx, Y = y + yy; if (X >= 0 && Y >= 0 && X < w && Y < h) { s += g[Y * w + X]; n++; } } o[y * w + x] = s / n; } return o; }
+test("Schärfe-Ampel: scharfe Schrift grün, verschwommene rot", () => {
+  const w = 300, h = 400, g = textBlatt(w, h);
+  const scharf = lesbarkeit(g, w, h), weich = lesbarkeit(blur(g, w, h, 3), w, h);
+  assert.ok(scharf.kante > 0.35, "scharf " + scharf.kante); assert.ok(weich.kante < 0.2, "weich " + weich.kante);
+  assert.equal(ampel(5, scharf).farbe, "gruen"); assert.equal(ampel(5, weich).farbe, "rot"); assert.equal(ampel(2, scharf).grund, "klein");
+});
+test("Puzzle: zwei überlappende Teilbilder werden richtig zusammengesetzt", () => {
+  // echter wirkendes Blatt: Wortlängen und Zeilenabstände zufällig (wie normaler Text)
+  const W = 300, H = 400, g = new Uint8ClampedArray(W * H).fill(235); let z = 12345; const r0 = () => (z = (z * 1103515245 + 12345) % 2147483648) / 2147483648;
+  for (let y0 = 20; y0 < H - 20; y0 += 18 + Math.floor(r0() * 14)) { let x = 20 + Math.floor(r0() * 30); while (x < W - 40) { const lw = 8 + Math.floor(r0() * 45); for (let y = y0; y < y0 + 9; y++) for (let xx = x; xx < Math.min(W - 20, x + lw); xx++) if (r0() > 0.25) g[y * W + xx] = 40; x += lw + 6 + Math.floor(r0() * 6); } }
+  // obere Hälfte: Zeilen 0–239, untere: 160–399 (80 px Überlappung), beide 300×240
+  const h = 240, a = g.slice(0, W * h), b = g.slice(W * 160, W * 400);
+  const r = versatzFinden(a, b, W, h);
+  assert.ok(Math.abs(r.dy - 160) <= 4 && Math.abs(r.dx) <= 4 && Math.abs(r.s - 1) < 0.03, JSON.stringify(r));
+  assert.ok(r.guete > 0.6);
+});
+
 console.log(ok + " Tests bestanden.");

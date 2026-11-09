@@ -351,18 +351,20 @@ function hintergrund(g, w, h) {
   return out;
 }
 
-// Wie dunkel ist die Schrift? (sehr dunkler Anteil der Pixel, nach dem Weißmachen; 1 = Papier)
-function tinte(n) {
+// Wo liegen Papier und Schrift? (nach dem Weißmachen; 1 ≈ Papier) – aus dem Histogramm
+function pegel(n) {
   const hist = new Uint32Array(256); let alle = 0;
-  for (let i = 0; i < n.length; i += 3) { hist[Math.max(0, Math.min(255, Math.round(n[i] * 255)))]++; alle++; }
-  let s = 0, p = 0;
-  for (; p < 256; p++) { s += hist[p]; if (s >= alle * 0.004) break; }
-  return Math.min(0.72, Math.max(0.05, p / 255));
+  for (let i = 0; i < n.length; i += 3) { hist[Math.max(0, Math.min(255, Math.round(n[i] / 1.2 * 255)))]++; alle++; }
+  const quantil = (q) => { let s = 0; for (let p = 0; p < 256; p++) { s += hist[p]; if (s >= alle * q) return p / 255 * 1.2; } return 1.2; };
+  return { papier: quantil(0.5), tinte: quantil(0.005) };
 }
-// Helligkeit → schön: Papier ganz weiß, Schrift dunkel und kräftig – auch wenn sie im Foto blass war
+// Helligkeit → schön: Papier ganz weiß, Schrift dunkel und kräftig – auch wenn sie im Foto blass war.
+// Wichtig: der Weiß-Punkt richtet sich nach dem Bild selbst, damit blasse Schrift nicht verschwindet.
 function stufer(n) {
-  const ink = tinte(n), papier = 0.9;
-  return (v) => { if (v >= papier) return 255; const t = Math.max(0, (v - ink) / (papier - ink)); return 255 * Math.pow(t, 1.35); };
+  const { papier, tinte } = pegel(n), kontrast = papier - tinte;
+  if (kontrast < 0.035) return (v) => 255 * Math.min(1, v / Math.max(0.5, papier * 0.96)); // fast leeres Blatt: nur sanft aufhellen
+  const weiss = papier - kontrast * 0.22, schwarz = Math.max(0, tinte - kontrast * 0.05);
+  return (v) => { if (v >= weiss) return 255; const x = Math.max(0, (v - schwarz) / (weiss - schwarz)); return 255 * Math.pow(x, 1.25); };
 }
 
 // Schatten weg, Papier weiß. art: "normal" (Graustufen) | "stark" (nur Schwarz/Weiß). Gibt Graustufen zurück.
@@ -434,20 +436,43 @@ export function bilderMitteln(bilder, w, h) {
   return { daten: out, anzahl: gute.length };
 }
 
-// Läuft die Schrift waagerecht oder senkrecht? (Zeilen haben Lücken dazwischen → das Profil quer zu den Zeilen schwankt stark)
-// g: Graustufen (am besten schon papierweiß), Rückgabe: "waag" | "senk" | null (zu wenig Text)
+// Läuft die Schrift waagerecht oder senkrecht?
+// Idee: Wörter einer Zeile verschmelzen beim waagerechten Verwischen zu Balken, dazwischen bleiben leere Streifen.
+// Einzelne Rausch-Pünktchen werden vorher entfernt. Rückgabe: "waag" | "senk" | null (zu wenig Text)
 export function textRichtung(g, w, h) {
-  const zeilen = new Float32Array(h), spalten = new Float32Array(w); let tinteSumme = 0;
   const rx = Math.round(w * 0.04), ry = Math.round(h * 0.04);
-  for (let y = ry; y < h - ry; y++) for (let x = rx; x < w - rx; x++) if (g[y * w + x] < 140) { zeilen[y]++; spalten[x]++; tinteSumme++; }
-  if (tinteSumme < w * h * 0.002) return null;
-  // Wie stark schwankt das Profil von Pixel zu Pixel (bezogen auf die Tinte)? Zeilenlücken → große Sprünge
-  const schwank = (p, a, b) => { let s = 0; for (let i = a + 1; i < b; i++) s += Math.abs(p[i] - p[i - 1]); let t = 0; for (let i = a; i < b; i++) t += p[i]; return t ? s / t : 0; };
-  // Leere Bänder zählen: zwischen Textzeilen gibt es ganz leere Pixelreihen
-  const leer = (p, a, b) => { let max = 0; for (let i = a; i < b; i++) max = Math.max(max, p[i]); let wechsel = 0, warLeer = true; for (let i = a; i < b; i++) { const l = p[i] < max * 0.04; if (l !== warLeer) wechsel++; warLeer = l; } return wechsel; };
-  const sz = schwank(zeilen, ry, h - ry) * (1 + leer(zeilen, ry, h - ry) / 20), ss = schwank(spalten, rx, w - rx) * (1 + leer(spalten, rx, w - rx) / 20);
-  if (sz > ss * 1.3) return "waag";
-  if (ss > sz * 1.3) return "senk";
+  const roh = new Uint8Array(w * h);
+  for (let y = ry; y < h - ry; y++) for (let x = rx; x < w - rx; x++) if (g[y * w + x] < 150) roh[y * w + x] = 1;
+  // Pünktchen weg: Tinte braucht mindestens 2 Tinten-Nachbarn
+  const m = new Uint8Array(w * h); let tinte = 0;
+  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+    const i = y * w + x; if (!roh[i]) continue;
+    const n = roh[i - 1] + roh[i + 1] + roh[i - w] + roh[i + w] + roh[i - w - 1] + roh[i - w + 1] + roh[i + w - 1] + roh[i + w + 1];
+    if (n >= 2) { m[i] = 1; tinte++; }
+  }
+  if (tinte < w * h * 0.002) return null;
+  // Verwischen entlang einer Richtung und Profil quer dazu messen
+  const wert = (waagerecht) => {
+    const L = waagerecht ? w : h, Q = waagerecht ? h : w, r = Math.max(2, Math.round(L * 0.02));
+    const profil = new Float32Array(Q);
+    for (let q = 0; q < Q; q++) {
+      let lauf = 0, fenster = 0;
+      const an = (l) => waagerecht ? m[q * w + l] : m[l * w + q];
+      for (let l = 0; l < Math.min(L, r); l++) fenster += an(l);
+      for (let l = 0; l < L; l++) { if (l + r < L) fenster += an(l + r); if (l - r - 1 >= 0) fenster -= an(l - r - 1); if (fenster > 0) lauf++; }
+      profil[q] = lauf;
+    }
+    // Wie viel „leer – voll – leer“ gibt es? Summe der Sprünge, bezogen auf die Höhe der Balken
+    let max = 0; for (const v of profil) max = Math.max(max, v);
+    if (!max) return 0;
+    let spruenge = 0, leer = 0;
+    for (let q = 1; q < Q; q++) spruenge += Math.abs(profil[q] - profil[q - 1]);
+    for (let q = 0; q < Q; q++) if (profil[q] < max * 0.08) leer++;
+    return spruenge / max * (0.3 + leer / Q);
+  };
+  const wa = wert(true), se = wert(false);
+  if (wa > se * 1.25) return "waag";
+  if (se > wa * 1.25) return "senk";
   return null;
 }
 
@@ -497,4 +522,70 @@ export function graustufenZuRgba(g) {
   const out = new Uint8ClampedArray(g.length * 4);
   for (let i = 0, j = 0; i < g.length; i++, j += 4) { out[j] = out[j + 1] = out[j + 2] = g[i]; out[j + 3] = 255; }
   return out;
+}
+
+/* ---------- Schärfe-Ampel ---------- */
+
+// Kann man die Schrift lesen? Misst, wie steil die Kanten der Schrift sind (bezogen auf den Kontrast).
+// Scharfe Schrift: Hell→Dunkel in 1–2 Pixeln (Wert hoch). Verschwommen: über viele Pixel (Wert niedrig).
+// g: Graustufen, bereich: { x0, y0, x1, y1 } (optional). Rückgabe: { kante, kontrast }
+export function lesbarkeit(g, w, h, bereich) {
+  const x0 = Math.max(1, Math.floor(bereich ? bereich.x0 : 1)), y0 = Math.max(1, Math.floor(bereich ? bereich.y0 : 1));
+  const x1 = Math.min(w - 1, Math.ceil(bereich ? bereich.x1 : w - 1)), y1 = Math.min(h - 1, Math.ceil(bereich ? bereich.y1 : h - 1));
+  const hist = new Uint32Array(256), grad = new Uint32Array(256); let n = 0;
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+    const i = y * w + x; hist[g[i]]++; n++;
+    const gx = Math.abs(g[i + 1] - g[i - 1]) / 2, gy = Math.abs(g[i + w] - g[i - w]) / 2;
+    grad[Math.min(255, Math.round(Math.max(gx, gy)))]++;
+  }
+  if (!n) return { kante: 0, kontrast: 0 };
+  const quantil = (hh, q) => { let s = 0; for (let p = 0; p < 256; p++) { s += hh[p]; if (s >= n * q) return p; } return 255; };
+  const papier = quantil(hist, 0.6), tinte = quantil(hist, 0.01), kontrast = Math.max(1, papier - tinte);
+  return { kante: quantil(grad, 0.997) / kontrast, kontrast };
+}
+// Ampel: dichte = Pixel pro mm auf dem Blatt, k = lesbarkeit(...)
+export function ampel(dichte, k) {
+  if (k.kontrast < 25) return { farbe: "rot", grund: "kontrast" };
+  if (k.kante < 0.2) return { farbe: "rot", grund: "unscharf" };
+  if (dichte < 2.6) return { farbe: "rot", grund: "klein" };
+  if (k.kante < 0.3 || dichte < 3.8) return { farbe: "gelb", grund: k.kante < 0.3 ? "unscharf" : "klein" };
+  return { farbe: "gruen", grund: "" };
+}
+
+/* ---------- Puzzle-Scan: zwei Teilbilder zusammensetzen ---------- */
+
+function verkleinern(g, w, h, f) {
+  const kw = Math.max(1, Math.floor(w / f)), kh = Math.max(1, Math.floor(h / f)), out = new Float32Array(kw * kh);
+  for (let y = 0; y < kh; y++) for (let x = 0; x < kw; x++) { let s = 0; for (let yy = 0; yy < f; yy++) for (let xx = 0; xx < f; xx++) s += g[(y * f + yy) * w + x * f + xx]; out[y * kw + x] = s / (f * f); }
+  return { d: out, w: kw, h: kh };
+}
+// Wie gut passt b (verschoben um dx,dy, vergrößert um s) auf a? Normierte Korrelation im Überlappungsbereich
+function passung(a, b, s, dx, dy, schritt = 1) {
+  let sa = 0, sb = 0, saa = 0, sbb = 0, sab = 0, n = 0;
+  for (let y = 0; y < b.h; y += schritt) {
+    const ay = Math.round(dy + y * s); if (ay < 0 || ay >= a.h) continue;
+    for (let x = 0; x < b.w; x += schritt) {
+      const ax = Math.round(dx + x * s); if (ax < 0 || ax >= a.w) continue;
+      const va = a.d[ay * a.w + ax], vb = b.d[y * b.w + x];
+      sa += va; sb += vb; saa += va * va; sbb += vb * vb; sab += va * vb; n++;
+    }
+  }
+  if (n * schritt * schritt < a.w * a.h * 0.12) return -1;
+  const kov = sab / n - (sa / n) * (sb / n), va = saa / n - (sa / n) ** 2, vb = sbb / n - (sb / n) ** 2;
+  return va > 1 && vb > 1 ? kov / Math.sqrt(va * vb) : -1;
+}
+// Findet, wo Bild b (untere Hälfte) in Bild a (obere Hälfte) weitergeht: { s, dx, dy, guete } in Pixeln von a
+export function versatzFinden(ga, gb, w, h) {
+  const f1 = Math.max(1, Math.round(w / 96)), A1 = verkleinern(ga, w, h, f1), B1 = verkleinern(gb, w, h, f1);
+  let best = { g: -2 };
+  for (let s = 0.85; s <= 1.151; s += 0.025)
+    for (let dy = Math.round(A1.h * 0.15); dy <= A1.h * 0.92; dy++)
+      for (let dx = -Math.round(A1.w * 0.2); dx <= A1.w * 0.2; dx++) { const q = passung(A1, B1, s, dx, dy, 2); if (q > best.g) best = { g: q, s, dx, dy }; }
+  // Feiner nachsuchen
+  const f2 = Math.max(1, Math.round(w / 320)), A2 = verkleinern(ga, w, h, f2), B2 = verkleinern(gb, w, h, f2), r = f1 / f2;
+  let fein = { g: -2 };
+  for (let s = best.s - 0.02; s <= best.s + 0.0201; s += 0.005)
+    for (let dy = Math.round(best.dy * r - r * 1.5); dy <= best.dy * r + r * 1.5; dy++)
+      for (let dx = Math.round(best.dx * r - r * 1.5); dx <= best.dx * r + r * 1.5; dx++) { const q = passung(A2, B2, s, dx, dy, 2); if (q > fein.g) fein = { g: q, s, dx, dy }; }
+  return { s: fein.s, dx: fein.dx * f2, dy: fein.dy * f2, guete: fein.g };
 }

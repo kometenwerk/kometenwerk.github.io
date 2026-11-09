@@ -737,3 +737,7 @@ table.gitter{border-collapse:separate;border-spacing:0;table-layout:fixed;font-s
 /* Heft: Hilfslinien zum Einschalten (werden nicht gedruckt) */
 .blatt.mit-gitter::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;background-image:linear-gradient(rgba(0,163,217,.28) 1px,transparent 1px),linear-gradient(90deg,rgba(0,163,217,.28) 1px,transparent 1px);background-size:calc(var(--u) * 10) calc(var(--u) * 10)}
 .blatt.mit-raendern::before{content:"";position:absolute;left:calc(var(--u) * 15);right:calc(var(--u) * 15);top:calc(var(--u) * 15);bottom:calc(var(--u) * 12);z-index:3;pointer-events:none;border:1px dashed rgba(255,45,135,.55)}
+.scan-ampel{position:absolute;left:12px;top:12px;z-index:5;background:rgba(15,20,30,.78);color:#fff;font-weight:600;font-size:.85rem;border-radius:999px;padding:5px 12px}
+.scan-ampel.gruen{box-shadow:0 0 0 2px #22c55e}.scan-ampel.gelb{box-shadow:0 0 0 2px #eab308}.scan-ampel.rot{box-shadow:0 0 0 2px #ef4444}
+.scan-puzzle-ab{position:absolute;right:12px;top:12px;z-index:5}
+.scan-buehne.puzzle::after{content:"";position:absolute;inset:4%;border:3px dashed rgba(255,198,90,.85);border-radius:12px;pointer-events:none}
