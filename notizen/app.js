@@ -19,6 +19,7 @@ import * as Werkzeuge from "./werkzeuge.js";
 import * as Schule from "./schule.js";
 import * as KIH from "./ki-helfer.js";
 import * as Verkn from "./verknuepfen.js";
+import * as Tafel from "./tafel.js";
 
 const KW = window.KW, esc = KW.esc;
 
@@ -41,17 +42,17 @@ A.seiteNeu = async (werte) => {
   const jetzt = new Date().toISOString();
   const s = Object.assign({ id: KW.id(), fach: "", titel: "", erstellt: jetzt, geaendert: jetzt, quelle: "heft",
     raster: A.einst.f.heft.raster, hoehe: 297, text: "", striche: [], bild: null, ocr: "", vorschlag: null, pin: false }, werte);
-  if (!s.art || s.art === "heft") s.tags = Verkn.tagsAusText(A.seitenText(s) + " " + (s.html ? s.html.replace(/<[^>]+>/g, " ") : ""));
+  if (!s.art || s.art === "heft" || s.art === "tafel") s.tags = Verkn.tagsAusText(A.seitenText(s) + " " + (s.html ? s.html.replace(/<[^>]+>/g, " ") : ""));
   A.seiten.unshift(s);
   await S.lege("seiten", s);
   Sync.melden("seite", s);
   return s;
 };
-A.seiteSpeichern = async (s) => { if (!s.art || s.art === "heft") s.tags = Verkn.tagsAusText(A.seitenText(s)); s.geaendert = new Date().toISOString(); await S.lege("seiten", s); Sync.melden("seite", s); };
+A.seiteSpeichern = async (s) => { if (!s.art || s.art === "heft" || s.art === "tafel") s.tags = Verkn.tagsAusText(A.seitenText(s)); s.geaendert = new Date().toISOString(); await S.lege("seiten", s); Sync.melden("seite", s); };
 // Löschen = in den Papierkorb (30 Tage), erst „endgültig“ ist wirklich weg
 // Nur Heftseiten (art fehlt), oder eine andere Art: "tabelle", "folien"; "*" = alles
 A.aktiv = (art = "heft") => A.seiten.filter(s => !s.papierkorb && (art === "*" || (s.art || "heft") === art));
-A.link = (s) => (s.art === "tabelle" ? "tabelle/" : s.art === "folien" ? "folien/" : "seite/") + s.id;
+A.link = (s) => (s.art === "tabelle" ? "tabelle/" : s.art === "folien" ? "folien/" : s.art === "tafel" ? "tafel/" : "seite/") + s.id;
 A.seiteLoeschen = async (id) => {
   const s = A.seite(id); if (!s) return null;
   s.papierkorb = new Date().toISOString();
@@ -170,7 +171,7 @@ let zuletztAktiv = 0;
 ["keydown", "pointerdown", "input", "wheel"].forEach(t => document.addEventListener(t, () => { zuletztAktiv = Date.now(); }, { passive: true, capture: true }));
 function lernFach() {
   const { modul, param } = aktuell;
-  if (["seite", "tabelle", "folien"].includes(modul) && param) { const s = A.seite(param.split("/")[0]); return s ? s.fach || "" : null; }
+  if (["seite", "tabelle", "folien", "tafel"].includes(modul) && param) { const s = A.seite(param.split("/")[0]); return s ? s.fach || "" : null; }
   if (modul === "lernen" && param) { const l = A.lern.find(x => x.id === param.split("/")[0]); return l ? l.fach || "" : ""; }
   if (modul === "arbeit") { const t = Planer.daten().eintraege.find(e => e.id === param); return t ? t.fach || "" : ""; }
   return null;
@@ -215,7 +216,7 @@ A.neuAufbauen = () => {
   markieren();
 };
 function markieren() {
-  const m = aktuell.modul === "arbeit" ? "planer" : aktuell.modul === "seite" ? "heft" : aktuell.modul === "tabelle" ? "tabellen" : aktuell.modul;
+  const m = aktuell.modul === "arbeit" ? "planer" : aktuell.modul === "seite" || aktuell.modul === "tafel" ? "heft" : aktuell.modul === "tabelle" ? "tabellen" : aktuell.modul;
   document.querySelectorAll("#leiste a[data-m]").forEach(a => {
     if (a.dataset.m === m) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
   });
@@ -251,6 +252,7 @@ function zeigen() {
   else if (modul === "planer") r = Planer.zeigen(A, el);
   else if (modul === "lernen") r = Lernen.zeigen(A, el, aktuell.param);
   else if (modul === "audio") r = Audio.zeigen(A, el);
+  else if (modul === "tafel") r = Tafel.seite(A, el, aktuell.param);
   else if (modul === "arbeit") Schule.arbeitSeite(A, el, aktuell.param, Planer);
   else if (modul === "einst") E.seite(A, el);
   else { aktuell.modul = "start"; r = Start.zeigen(A, el); }

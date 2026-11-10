@@ -55,3 +55,12 @@ test("Alle Papierarten lassen sich zeichnen", () => {
   assert.ok(PAPIER.length >= 30);
 });
 console.log(ok + " Tests bestanden.");
+{
+  const Z = await import("../formen.js");
+  assert.equal(Z.winkelDelta(350, 10), 20); assert.equal(Z.winkelDelta(10, 350), -20); assert.equal(Z.winkelDelta(0, 180), 180);
+  const k = Z.zirkelBogen(50, 50, 20, 0, 360, 3);
+  assert.ok(k.every(p => Math.abs(Math.hypot(p[0] - 50, p[1] - 50) - 20) < 0.1), "alle Punkte auf dem Kreis");
+  assert.deepEqual(k[0].slice(0, 2), [70, 50]); assert.deepEqual(k[k.length - 1].slice(0, 2), [70, 50]);
+  const s = Z.zirkelScharnier(50, 50, 30, 0); assert.deepEqual(s.mine, [80, 50]); assert.ok(s.oben[1] < 50);
+  console.log("✓ Zirkel");
+}

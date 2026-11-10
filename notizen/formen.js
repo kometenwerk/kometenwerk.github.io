@@ -174,3 +174,21 @@ export function aufKante(q, k) {
   const t = ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / l2;
   return [r1(a[0] + t * dx), r1(a[1] + t * dy), q[2]];
 }
+
+/* ---------- Zirkel ---------- */
+// Kürzeste Drehung von a nach b in Grad (-180 … 180)
+export const winkelDelta = (a, b) => { let d = (b - a) % 360; if (d > 180) d -= 360; if (d < -180) d += 360; return d; };
+// Punkte eines Kreisbogens um (cx, cy) mit Radius r von Winkel „von“ bis „bis“ (Grad, mathematisch: 0 = rechts, im Uhrzeigersinn auf dem Bildschirm)
+export function zirkelBogen(cx, cy, r, von, bis, schritt = 2) {
+  const n = Math.max(1, Math.ceil(Math.abs(bis - von) / schritt)), out = [];
+  for (let i = 0; i <= n; i++) { const w = (von + (bis - von) * i / n) * Math.PI / 180; out.push([Math.round((cx + r * Math.cos(w)) * 10) / 10, Math.round((cy + r * Math.sin(w)) * 10) / 10, 0.5]); }
+  return out;
+}
+// Scharnier des Zirkels (nur fürs Bild): über der Mitte zwischen Nadel und Mine
+export function zirkelScharnier(cx, cy, r, w, bein = 70) {
+  const b = w * Math.PI / 180, px = cx + r * Math.cos(b), py = cy + r * Math.sin(b), mx = (cx + px) / 2, my = (cy + py) / 2;
+  const h = Math.sqrt(Math.max(36, bein * bein - (r / 2) * (r / 2)));
+  let ox = h * Math.sin(b), oy = -h * Math.cos(b);
+  if (oy > 0 || (oy === 0 && ox > 0)) { ox = -ox; oy = -oy; } // Scharnier immer nach oben
+  return { mine: [px, py], oben: [mx + ox, my + oy] };
+}

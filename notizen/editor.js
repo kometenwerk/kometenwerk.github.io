@@ -214,7 +214,7 @@ export async function diktieren(knopf, modellWahl, fertig) {
 const BAENDER = [["start", "Start"], ["einfuegen", "Einfügen"], ["werkzeuge", "Werkzeuge"]];
 const g = (band, html) => '<span class="gruppe" data-gruppe="' + band + '">' + html + '</span>';
 
-export function leisteHtml() {
+export function leisteHtml(extras = {}) {
   return '<div class="band-reiter" role="tablist" aria-label="Menüband">' + BAENDER.map(b => '<button type="button" role="tab" data-band="' + b[0] + '">' + b[1] + '</button>').join("") + '</div>' +
   '<div class="wort-leiste" role="toolbar" aria-label="Text formatieren" data-band="start">' +
     g("start",
@@ -250,6 +250,7 @@ export function leisteHtml() {
       '<button type="button" data-x="zeichen" title="Sonderzeichen" aria-label="Sonderzeichen">Ω Zeichen</button>' +
       '<span class="trenn"></span><button type="button" data-x="plot" title="Funktionsgraph zeichnen" aria-label="Funktion zeichnen">📈 Funktion</button>' +
       '<button type="button" data-x="mindmap" title="Mindmap" aria-label="Mindmap einfügen">🧠 Mindmap</button>' +
+      (extras.sprachnotiz ? '<button type="button" data-x="sprachnotiz" title="Sprachnotiz an dieser Stelle aufnehmen" aria-label="Sprachnotiz aufnehmen">🎙️ Sprachnotiz</button>' : "") +
       '<span class="trenn"></span><button type="button" data-x="fussnote" title="Fußnote an dieser Stelle" aria-label="Fußnote einfügen">¹ Fußnote</button>' +
       '<button type="button" data-x="quelle" title="Quelle angeben (kommt automatisch ins Quellenverzeichnis)" aria-label="Quelle angeben">📚 Quelle</button>') +
     g("werkzeuge",
@@ -438,6 +439,14 @@ export function leisteBinden(wurzel, rich, geaendert, extras = {}) {
   };
   x("plot").onclick = () => graphEinfuegen("plot");
   x("mindmap").onclick = () => graphEinfuegen("mindmap");
+  if (extras.sprachnotiz) x("sprachnotiz").onclick = async () => {
+    merken(); const r = bereich && bereich.cloneRange();
+    const SN = await import("./sprachnotiz.js"), e = await SN.aufnehmen();
+    if (!e) return;
+    const id = await extras.sprachnotiz.speichern(e.blob);
+    einfuegenBei(r, SN.notizHtml(id, e.sekunden) + "&nbsp;");
+    KW.toast("🎙️ Sprachnotiz eingefügt – antippen zum Abspielen.");
+  };
 
   /* Fußnoten und Quellen: Nummern und Listen am Ende pflegen sich selbst */
   const fnStempel = () => rich.querySelectorAll("sup.fn").length + "|" + rich.querySelectorAll("span.zitat").length;

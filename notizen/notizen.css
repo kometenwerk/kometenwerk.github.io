@@ -891,3 +891,63 @@ table.gitter{border-collapse:separate;border-spacing:0;table-layout:fixed;font-s
 .lesehilfe .rich{letter-spacing:.05em;word-spacing:.18em}
 .leselineal{position:absolute;left:0;right:0;height:36px;pointer-events:none;z-index:5;background:rgba(255,225,77,.22);border-top:2px solid rgba(255,138,60,.7);border-bottom:2px solid rgba(255,138,60,.7);box-shadow:0 0 0 9999px rgba(16,24,38,.12)}
 @media print{.leselineal,.verweise,.vl-player{display:none!important}}
+/* Zirkel */
+.zirkel{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.zirkel .zk-bein{stroke:#5b6578;stroke-width:1.6;stroke-linecap:round}
+.zirkel .zk-kreis{fill:none;stroke:rgba(255,138,60,.55);stroke-width:.35;stroke-dasharray:1.5 1.5}
+.zirkel .zk-radius{stroke:rgba(255,138,60,.8);stroke-width:.3;stroke-dasharray:1 1}
+.zirkel .zk-kopf{fill:#36435a}
+.zirkel .zk-nadel{fill:#c93a3a;stroke:#fff;stroke-width:.6;pointer-events:all;cursor:move;touch-action:none}
+.zirkel .zk-mine{fill:#1f4fd1;stroke:#fff;stroke-width:.6;pointer-events:all;cursor:grab;touch-action:none}
+.zirkel .zk-mine.zeichnen{fill:var(--accent)}
+.zirkel .zk-text{font-size:3.6px;fill:#36435a;font-family:inherit;font-weight:600}
+.zk-leiste{position:absolute;pointer-events:auto;display:flex;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:2px;box-shadow:0 2px 8px rgba(16,24,38,.15);white-space:nowrap}
+.zk-leiste button{border:0;background:transparent;color:var(--ink);font:inherit;font-size:.78rem;padding:5px 7px;border-radius:7px;cursor:pointer}
+.zk-leiste button.an{background:var(--app);color:#fff}
+
+/* ---------- Unendliche Tafel ---------- */
+.modul-tafel{padding-bottom:0}
+.tafel-kopf{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.tafel-titel{flex:1;min-width:0;font-weight:600}
+.tafel-kopf select{max-width:150px}
+.tafel-rahmen{--tafel-papier:#ffffff;position:relative;height:calc(100vh - 170px);min-height:380px;border-radius:14px;overflow:hidden;border:1px solid var(--line);touch-action:none;user-select:none;-webkit-user-select:none}
+:root[data-thema="dunkel"] .tafel-rahmen{--tafel-papier:#f7f8fb}
+.tafel-rahmen canvas{position:absolute;inset:0;display:block;cursor:crosshair}
+.tafel-rahmen[data-werkzeug="hand"] canvas,.tafel-rahmen.hand canvas{cursor:grab}
+.tafel-rahmen.zieht canvas{cursor:grabbing}
+.tafel-rahmen[data-werkzeug="zettel"] canvas{cursor:copy}
+.tafel-rahmen[data-werkzeug="radierer"] canvas{cursor:cell}
+.tafel-zettel{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.t-zettel{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:auto;border-radius:6px;box-shadow:0 3px 10px rgba(16,24,38,.18);color:#101826;display:flex;flex-direction:column}
+.t-z-kopf{display:flex;align-items:center;gap:3px;padding:4px 6px;cursor:move;touch-action:none;opacity:.55}
+.t-zettel:hover .t-z-kopf,.t-zettel:focus-within .t-z-kopf{opacity:1}
+.t-z-griff{flex:1;font-size:.8rem;color:#5b6578}
+.t-z-farbe{width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.2);padding:0;cursor:pointer}
+.t-z-weg{border:0;background:transparent;cursor:pointer;color:#5b6578;font-size:.85rem}
+.t-z-text{flex:1;padding:4px 10px 10px;outline:none;font-size:15px;line-height:1.4;user-select:text;-webkit-user-select:text;white-space:pre-wrap}
+.tafel-leiste{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;display:flex;align-items:center;gap:3px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:4px 6px;box-shadow:0 6px 20px rgba(16,24,38,.18);max-width:calc(100% - 16px);overflow-x:auto;scrollbar-width:none}
+.tafel-leiste::-webkit-scrollbar{display:none}
+.tafel-leiste>button{border:0;background:transparent;color:inherit;font:inherit;font-size:1.05rem;min-width:36px;height:36px;border-radius:9px;cursor:pointer;flex:none}
+.tafel-leiste>button.an{background:var(--app-soft);outline:2px solid var(--app)}
+.tafel-leiste .farbe{min-width:24px;width:24px;height:24px;border-radius:50%;border:2px solid var(--line)}
+.tafel-leiste .farbe.an{outline:2px solid var(--ink);outline-offset:1px}
+.tafel-leiste select{font:inherit;font-size:.8rem;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);padding:4px;flex:none}
+.tafel-leiste .trenn{width:1px;height:24px;background:var(--line);margin:0 3px;flex:none}
+.tafel-zoom{position:absolute;right:10px;top:10px;display:flex;gap:4px}
+.tafel-zoom .btn{background:var(--card)}
+.tafel-mini{background:#fff!important}
+.tafel-mini canvas{width:100%;height:100%;object-fit:cover}
+.tafel-zeichen{position:absolute;right:6px;bottom:4px;font-size:1rem}
+.tafel-vorlage small{color:var(--muted);font-size:.72rem}
+@media (max-width:760px){.tafel-rahmen{height:calc(100vh - 210px)}.tafel-leiste{bottom:8px}}
+@media (max-width:760px){body.auf-tafel .wz-knopf{bottom:auto;top:132px;right:12px;width:44px;height:44px;font-size:1.25rem}}
+@media (max-width:760px){.tafel-zoom{right:auto;left:10px}}
+/* Sprachnotiz */
+.sprachnotiz{--p:0%;display:inline-flex;align-items:center;gap:2px;padding:1px 9px;margin:0 2px;border-radius:999px;font-size:.85em;font-weight:600;color:#fff;background:linear-gradient(90deg,#b8235a var(--p),#d0577f var(--p));cursor:pointer;user-select:none;vertical-align:baseline;white-space:nowrap}
+.sprachnotiz.spielt{box-shadow:0 0 0 2px var(--accent)}
+.sprachnotiz:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sn-auf{text-align:center}
+.sn-punkt{width:22px;height:22px;border-radius:50%;background:#c93a3a;margin:8px auto;animation:sn-puls 1.2s infinite}
+@keyframes sn-puls{50%{opacity:.35;transform:scale(.8)}}
+@media (prefers-reduced-motion:reduce){.sn-punkt{animation:none}}
+.sn-zeit{font-size:2.4rem;font-weight:700;font-variant-numeric:tabular-nums}

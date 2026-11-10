@@ -8,6 +8,8 @@ import * as Planer from "./planer.js";
 import * as Papier from "./papier.js";
 import * as Editor from "./editor.js";
 import * as Verkn from "./verknuepfen.js";
+import * as Tafel from "./tafel.js";
+import * as SN from "./sprachnotiz.js";
 import * as F from "./formen.js";
 import * as Export from "./export.js";
 import * as KI from "./ki.js";
@@ -109,7 +111,7 @@ export function neueSeite(A, fach, { aendern = null } = {}) {
         }
         h += '<div class="sheet-foot klebt"><button type="button" class="btn" id="ab">Abbrechen</button><span class="sp"></span><button type="button" class="btn primary" id="ok">' + (aendern ? "Übernehmen" : "Seite anlegen") + '</button></div>';
       } else {
-        h += '<div class="vorlagen-gitter">' + Editor.VORLAGEN.map(v => '<button type="button" class="vorlage card" data-v="' + v.id + '"><span>' + v.icon + '</span><b>' + esc(v.name) + '</b></button>').join("") + '</div>' +
+        h += '<div class="vorlagen-gitter"><button type="button" class="vorlage card tafel-vorlage" data-tafel="1"><span>♾️</span><b>Unendliche Tafel</b><small>ohne Rand · malen · Zettel</small></button>' + Editor.VORLAGEN.map(v => '<button type="button" class="vorlage card" data-v="' + v.id + '"><span>' + v.icon + '</span><b>' + esc(v.name) + '</b></button>').join("") + '</div>' +
           '<div class="sheet-foot"><button type="button" class="btn" id="ab">Abbrechen</button></div>';
       }
       d.innerHTML = h + '</div>';
@@ -125,6 +127,8 @@ export function neueSeite(A, fach, { aendern = null } = {}) {
         const s = await A.seiteNeu({ fach, raster: wahl.raster, quer: wahl.quer, hoehe: wahl.quer ? 210 : 297, titel: "Neue Seite " + new Date().toLocaleDateString("de-DE") });
         ergebnis = s; d.close();
       };
+      const tv = d.querySelector("[data-tafel]");
+      if (tv) tv.onclick = async () => { ergebnis = await A.seiteNeu({ art: "tafel", fach, titel: "Tafel " + new Date().toLocaleDateString("de-DE"), striche: [], zettel: [], grund: "punkte", raster: "leer" }); d.close(); };
       d.querySelectorAll("[data-v]").forEach(b => b.onclick = async () => {
         const v = Editor.VORLAGEN.find(x => x.id === b.dataset.v);
         const s = await A.seiteNeu({ fach, raster: v.raster, html: v.html, text: Editor.htmlZuText(v.html), titel: v.name, vorlage: v.id });
@@ -148,6 +152,8 @@ export function liste(A, el, fach) {
   const fachWahl = fach || "";
   function karte(s) {
     const f = A.fachInfo(s.fach);
+    if (s.art === "tafel") return '<a class="seiten-karte" href="#tafel/' + s.id + '" style="--f:' + esc(f.farbe) + '"><span class="mini tafel-mini"><canvas width="420" height="300" data-tafel="' + s.id + '"></canvas><span class="tafel-zeichen">♾️</span></span>' +
+      '<span class="sk-info"><b>' + (s.pin ? "📌 " : "") + esc(s.titel || "Tafel") + '</b><small><span class="punkt" style="background:' + esc(f.farbe) + '"></span>' + esc(f.name) + ' · ♾️ Tafel ' + datum(s.geaendert) + '</small></span></a>';
     const vorschauText = (s.text || s.ocr || "").slice(0, 160);
     const B = breiteMm(s);
     return '<a class="seiten-karte" href="#seite/' + s.id + '" style="--f:' + esc(f.farbe) + '">' +
@@ -177,7 +183,7 @@ export function liste(A, el, fach) {
   if (fachWahl === "*papierkorb") { papierkorb(); return; }
   function zeichnen() {
     urls.forEach(u => URL.revokeObjectURL(u)); urls = [];
-    const q = suche.toLowerCase(), aktiv = A.aktiv();
+    const q = suche.toLowerCase(), aktiv = A.aktiv("*").filter(x => !x.art || x.art === "heft" || x.art === "tafel");
     let liste = aktiv.filter(s => !fachWahl ? true : fachWahl === "*unsortiert" ? !s.fach : s.fach === fachWahl);
     if (q) liste = q[0] === "#" && q.length > 1 ? liste.filter(s => (s.tags || []).some(t => t.startsWith(q.slice(1)))) : liste.filter(s => A.seitenText(s).toLowerCase().includes(q));
     const alleTags = {}; aktiv.forEach(s => (s.tags || []).forEach(t => { alleTags[t] = (alleTags[t] || 0) + 1; }));
@@ -206,6 +212,7 @@ export function liste(A, el, fach) {
       '<div class="empty"><b>' + (q ? "Nichts gefunden" : "Noch keine Seiten") + '</b>' + (q ? "Probier ein anderes Wort." : "Tipp auf „+ Neue Seite“ oder scanne ein Arbeitsblatt.") + '</div>';
     el.innerHTML = h;
     el.querySelectorAll("[data-striche]").forEach(c => vorschauStriche(c, A.seite(c.dataset.striche)));
+    el.querySelectorAll("canvas[data-tafel]").forEach(c => Tafel.vorschau(c, A.seite(c.dataset.tafel)));
     el.querySelectorAll("img[data-bild]").forEach(async img => { const b = await A.bildHolen(img.dataset.bild); if (b) { const u = URL.createObjectURL(b); urls.push(u); img.src = u; } });
     el.querySelector("#oeffnen").onchange = (e) => { const d = e.target.files[0]; if (d) Extras.importieren(A, d); };
     el.querySelector("#neu").onclick = async () => {
@@ -268,7 +275,7 @@ export function seite(A, el, id) {
       '<button type="button" class="btn small" id="menueBtn" aria-haspopup="true" aria-expanded="false">⋯ Mehr</button>' +
     '</div>' +
     '<div class="unter-leiste" id="stiftLeiste" role="toolbar" aria-label="Stifte"></div>' +
-    '<div class="unter-leiste" id="wortLeiste">' + Editor.leisteHtml() + '</div>' +
+    '<div class="unter-leiste" id="wortLeiste">' + Editor.leisteHtml({ sprachnotiz: true }) + '</div>' +
     '<div class="seite-kopf">' +
       '<input class="inp titel-inp" id="titel" maxlength="100" aria-label="Titel der Seite" value="' + esc(s.titel) + '" placeholder="Titel">' +
       '<select class="inp" id="fach" aria-label="Fach"><option value="">📥 Unsortiert</option>' + A.einst.faecher.map(f => '<option' + (f.name === s.fach ? " selected" : "") + '>' + esc(f.name) + '</option>').join("") +
@@ -378,7 +385,8 @@ export function seite(A, el, id) {
   tagsBinden();
   let tagsAlt = (s.tags || []).join();
   rich.addEventListener("input", () => { const t = Verkn.tagsAusText(s.text).join(); if (t !== tagsAlt) { tagsAlt = t; s.tags = t ? t.split(",") : []; el.querySelector("#verweise").innerHTML = Verkn.fussHtml(A, s); tagsBinden(); } });
-  const wort = Editor.leisteBinden(el.querySelector("#wortLeiste"), rich, textGeaendert, { bild: Editor.bildWaehlen, sprachModell: A.einst.f.audio.modell,
+  const snLos = SN.anbinden(rich, A.bildHolen);
+  const wort = Editor.leisteBinden(el.querySelector("#wortLeiste"), rich, textGeaendert, { bild: Editor.bildWaehlen, sprachModell: A.einst.f.audio.modell, sprachnotiz: { speichern: (b) => A.bildSpeichern(b) },
     autokorrektur: () => A.einst.f.heft.autokorrektur !== false, autokorrekturSetzen: (an) => { A.einst.f.heft.autokorrektur = an; A.einstSpeichern(); } });
   el.querySelector("#titel").oninput = (e) => { s.titel = e.target.value; spaeter(); };
   el.querySelector("#fach").onchange = (e) => { s.fach = e.target.value; s.vorschlag = null; vorschlagZeigen(); spaeter(); };
@@ -432,6 +440,7 @@ export function seite(A, el, id) {
       '<button type="button" id="formen" class="' + (Z.formen ? "an" : "") + '" title="Formen erkennen: am Ende kurz halten" aria-label="Formen erkennen">🔺</button>' +
       '<button type="button" id="lineal" class="' + (wz && wz.art === "lineal" ? "an" : "") + '" title="Lineal" aria-label="Lineal">📏</button>' +
       '<button type="button" id="geo" class="' + (wz && wz.art === "geo" ? "an" : "") + '" title="Geodreieck" aria-label="Geodreieck">📐</button>' +
+      '<button type="button" id="zirkel" class="' + (wz && wz.art === "zirkel" ? "an" : "") + '" title="Zirkel" aria-label="Zirkel">🧭</button>' +
       '<button type="button" id="finger" class="' + (Z.finger ? "an" : "") + '" title="Mit dem Finger malen" aria-label="Mit dem Finger malen">☝️</button>';
     sl.querySelectorAll("[data-typ]").forEach(b => b.onclick = () => { Z.typ = b.dataset.typ; auswahlWeg(); merken(); stiftLeiste(); leiste(); });
     sl.querySelectorAll("[data-farbe]").forEach(b => b.onclick = () => { if (Z.typ === "marker") Z.marker = b.dataset.farbe; else Z.farbe = b.dataset.farbe; merken(); stiftLeiste(); });
@@ -442,6 +451,7 @@ export function seite(A, el, id) {
     sl.querySelector("#finger").onclick = () => { Z.finger = !Z.finger; merken(); stiftLeiste(); leiste(); KW.toast(Z.finger ? "Finger malt mit." : "Finger malt nicht – nur der Stift. Mit dem Finger scrollst du."); };
     sl.querySelector("#lineal").onclick = () => werkzeugUmschalten("lineal");
     sl.querySelector("#geo").onclick = () => werkzeugUmschalten("geo");
+    sl.querySelector("#zirkel").onclick = () => werkzeugUmschalten("zirkel");
     sl.querySelectorAll("[data-fav]").forEach(b => {
       let lang = null;
       b.onpointerdown = () => { lang = setTimeout(() => { lang = "fertig"; Z.favoriten[b.dataset.fav] = { typ: Z.typ === "radierer" || Z.typ === "lasso" ? "kuli" : Z.typ, farbe: Z.typ === "marker" ? Z.marker : Z.farbe, dicke: Z.typ === "marker" ? 5 : Z.dicke }; merken(); stiftLeiste(); KW.toast("Lieblingsstift gespeichert ★"); }, 600); };
@@ -521,6 +531,7 @@ export function seite(A, el, id) {
   /* --- Lineal und Geodreieck --- */
   function werkzeugUmschalten(art) {
     if (wz && wz.art === art) wz = null;
+    else if (art === "zirkel") { const z = KW.load("kw-zirkel", { r: 30 }); wz = { art, cx: 90, cy: Math.min(110, (s.hoehe || 297) / 2), r: z.r, w: -20, modus: "radius" }; KW.toast("🧭 Nadel ziehen = verschieben · Mine ziehen = Radius. Dann „✏️ Zeichnen“ und die Mine drehen."); }
     else wz = { art, x: 25, y: Math.min(120, (s.hoehe || 297) / 2 - 20), w: 0 };
     werkzeugZeigen(); stiftLeiste();
   }
@@ -538,6 +549,7 @@ export function seite(A, el, id) {
   }
   function werkzeugZeigen() {
     if (!wz) { wzEbene.innerHTML = ""; return; }
+    if (wz.art === "zirkel") { zirkelZeigen(); return; }
     const g = werkzeugSvg(wz.art);
     wzEbene.innerHTML = '<div class="werkzeug" id="wz" style="left:' + wz.x * k + 'px;top:' + wz.y * k + 'px;width:' + g.w * k + 'px;height:' + g.h * k + 'px;transform:rotate(' + wz.w + 'deg)">' +
       '<svg viewBox="0 0 ' + g.w + ' ' + g.h + '" width="100%" height="100%">' + g.svg + '</svg>' +
@@ -572,6 +584,58 @@ export function seite(A, el, id) {
     });
     const los = (e) => { finger.delete(e.pointerId); if (!finger.size) modus = null; };
     w.addEventListener("pointerup", los); w.addEventListener("pointercancel", los);
+  }
+  /* --- Zirkel: Nadel verschieben, Mine ziehen (Radius) oder drehen (zeichnen) --- */
+  function zirkelZeigen() {
+    const W = blatt.clientWidth / k, H = blatt.clientHeight / k;
+    const zz = () => { const g = F.zirkelScharnier(wz.cx, wz.cy, wz.r, wz.w); return g; };
+    const bild = () => { const g = zz(); return '<line x1="' + g.oben[0] + '" y1="' + g.oben[1] + '" x2="' + wz.cx + '" y2="' + wz.cy + '" class="zk-bein"/><line x1="' + g.oben[0] + '" y1="' + g.oben[1] + '" x2="' + g.mine[0] + '" y2="' + g.mine[1] + '" class="zk-bein"/>' +
+      '<circle cx="' + wz.cx + '" cy="' + wz.cy + '" r="' + wz.r + '" class="zk-kreis"/><line x1="' + wz.cx + '" y1="' + wz.cy + '" x2="' + g.mine[0] + '" y2="' + g.mine[1] + '" class="zk-radius"/>' +
+      '<circle cx="' + g.oben[0] + '" cy="' + g.oben[1] + '" r="3" class="zk-kopf"/><circle cx="' + wz.cx + '" cy="' + wz.cy + '" r="4" class="zk-nadel" data-z="nadel"/><circle cx="' + g.mine[0] + '" cy="' + g.mine[1] + '" r="4.5" class="zk-mine ' + wz.modus + '" data-z="mine"/>' +
+      '<text x="' + (wz.cx + 6) + '" y="' + (wz.cy - 6) + '" class="zk-text">r = ' + (wz.r / 10).toFixed(1).replace(".", ",") + ' cm</text>'; };
+    wzEbene.innerHTML = '<svg class="zirkel" viewBox="0 0 ' + W + ' ' + H + '" width="' + W * k + '" height="' + H * k + '">' + bild() + '</svg>' +
+      '<div class="zk-leiste" style="left:' + Math.max(4, Math.min(W - 70, wz.cx - 30)) * k + 'px;top:' + (wz.cy + 10) * k + 'px"><button type="button" data-zm="radius" class="' + (wz.modus === "radius" ? "an" : "") + '">↔ Radius</button><button type="button" data-zm="zeichnen" class="' + (wz.modus === "zeichnen" ? "an" : "") + '">✏️ Zeichnen</button><button type="button" data-zm="kreis" title="Ganzer Kreis">◯</button><button type="button" data-zm="zu" aria-label="Zirkel wegräumen">✕</button></div>';
+    const svgEl = wzEbene.querySelector("svg");
+    const neu = () => { svgEl.innerHTML = bild(); const l = wzEbene.querySelector(".zk-leiste"); l.style.left = Math.max(4, Math.min(W - 70, wz.cx - 30)) * k + "px"; l.style.top = (wz.cy + 10) * k + "px"; };
+    const mm = (e) => { const r = blatt.getBoundingClientRect(); return [(e.clientX - r.left) / k, (e.clientY - r.top) / k]; };
+    const linie = () => ({ art: Z.typ === "marker" || Z.typ === "radierer" || Z.typ === "lasso" ? "kuli" : Z.typ, farbe: Z.farbe, b: Z.dicke });
+    wzEbene.querySelectorAll("[data-zm]").forEach(b => b.onclick = () => {
+      const m = b.dataset.zm;
+      if (m === "zu") { wz = null; werkzeugZeigen(); stiftLeiste(); return; }
+      if (m === "kreis") { sichern(); s.striche.push(Object.assign(linie(), { p: F.zirkelBogen(wz.cx, wz.cy, wz.r, 0, 360, 3) })); allesZeichnen(); spaeter(); leiste(); KW.toast("◯ Kreis gezeichnet."); return; }
+      wz.modus = m; zirkelZeigen();
+    });
+    let zieh = null;
+    svgEl.addEventListener("pointerdown", (e) => {
+      const t = e.target.dataset && e.target.dataset.z; if (!t) return;
+      e.preventDefault(); e.stopPropagation(); svgEl.setPointerCapture(e.pointerId);
+      const [x, y] = mm(e);
+      zieh = { t, x, y, cx: wz.cx, cy: wz.cy, w: wz.w };
+      if (t === "mine" && wz.modus === "zeichnen") { sichern(); zieh.strich = Object.assign(linie(), { p: F.zirkelBogen(wz.cx, wz.cy, wz.r, wz.w, wz.w, 1) }); }
+    });
+    svgEl.addEventListener("pointermove", (e) => {
+      if (!zieh) return;
+      const [x, y] = mm(e);
+      if (zieh.t === "nadel") { wz.cx = zieh.cx + x - zieh.x; wz.cy = zieh.cy + y - zieh.y; }
+      else {
+        const wNeu = Math.atan2(y - wz.cy, x - wz.cx) * 180 / Math.PI;
+        if (wz.modus === "radius") { let r = Math.hypot(x - wz.cx, y - wz.cy); r = Math.max(3, Math.min(150, Math.round(r))); wz.r = r; wz.w = wNeu; }
+        else {
+          const d = F.winkelDelta(wz.w, wNeu), alt = wz.w; wz.w = alt + d;
+          const bogen = F.zirkelBogen(wz.cx, wz.cy, wz.r, alt, wz.w, 2).slice(1);
+          zieh.strich.p.push(...bogen);
+          zeichneStrich(ctx, Object.assign({}, zieh.strich, { p: [zieh.strich.p[zieh.strich.p.length - bogen.length - 1], ...bogen] }), k);
+        }
+      }
+      neu();
+    });
+    const los = () => {
+      if (!zieh) return;
+      if (zieh.strich) { if (zieh.strich.p.length > 2) { s.striche.push(zieh.strich); spaeter(); } else rueck.pop(); allesZeichnen(); leiste(); }
+      if (zieh.t === "mine" && wz.modus === "radius") KW.save("kw-zirkel", { r: wz.r });
+      zieh = null;
+    };
+    svgEl.addEventListener("pointerup", los); svgEl.addEventListener("pointercancel", los);
   }
   // Mittelpunkt des Werkzeugs in Seiten-mm (zum Drehen um die Mitte)
   function drehpunkt(g) { const b = wz.w * Math.PI / 180, cx = g.w / 2, cy = g.h / 2; return [wz.x + cx * Math.cos(b) - cy * Math.sin(b), wz.y + cx * Math.sin(b) + cy * Math.cos(b)]; }
@@ -631,7 +695,7 @@ export function seite(A, el, id) {
     if (typ === "lasso") { lassoPoly = [roh]; strich = { lasso: true }; return; }
     sichern();
     if (typ === "radierer") { radiertGerade = radieren(roh); if (radiertGerade) allesZeichnen(); strich = { radierer: true }; return; }
-    if (wz) { kante = F.naechsteKante(roh, F.kanten(wz), 6); }
+    if (wz && wz.art !== "zirkel") { kante = F.naechsteKante(roh, F.kanten(wz), 6); }
     const p = kante ? F.aufKante(roh, kante) : roh;
     strich = typ === "marker" ? { art: "marker", farbe: Z.marker, b: 5, p: [p] } : { art: typ, farbe: Z.farbe, b: Z.dicke, p: [p] };
     if (e.pointerType === "touch") Object.defineProperty(strich, "finger", { value: true, enumerable: false });
@@ -871,7 +935,7 @@ export function seite(A, el, id) {
   Extras.versionMerken(A, s);
 
   return () => {
-    try { linkZu(); } catch (e) {}
+    try { linkZu(); snLos(); } catch (e) {}
     ro.disconnect();
     document.removeEventListener("keydown", tasten);
     if (window.speechSynthesis) window.speechSynthesis.cancel();
