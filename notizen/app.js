@@ -17,6 +17,7 @@ import * as Tabellen from "./tabellen.js";
 import * as Folien from "./folien.js";
 import * as Werkzeuge from "./werkzeuge.js";
 import * as Schule from "./schule.js";
+import * as KIH from "./ki-helfer.js";
 
 const KW = window.KW, esc = KW.esc;
 
@@ -339,6 +340,7 @@ async function starten() {
   }
   A.neuAufbauen();
   try { Werkzeuge.start(A); } catch (e) { console.warn("Werkzeuge", e); }
+  try { KIH.textBlaseStarten(A); } catch (e) { console.warn("KI-Helfer", e); }
   window.addEventListener("hashchange", zeigen);
   zeigen();
 }

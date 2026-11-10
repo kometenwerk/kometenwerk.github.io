@@ -780,3 +780,33 @@ table.gitter{border-collapse:separate;border-spacing:0;table-layout:fixed;font-s
 .ha-hinweis{display:flex;align-items:center;gap:10px;padding:10px 14px;margin-bottom:10px;border-left:5px solid var(--accent)}
 .ha-hinweis>span{flex:1}
 .ha-hinweis small{color:var(--muted)}
+
+/* ---------- KI-Helfer: ✨-Blase, Aufgaben-Helfer, Formel-Hilfe ---------- */
+.ki-blase{position:fixed;z-index:60;max-width:min(380px,calc(100vw - 24px));background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 30px rgba(16,24,38,.18);padding:4px}
+.ki-blase[hidden]{display:none}
+.ki-auf{border:0;background:var(--accent);color:#1a1205;font:inherit;font-weight:600;padding:6px 12px;border-radius:10px;cursor:pointer}
+.ki-menue{display:flex;flex-direction:column;padding:4px 0 2px;min-width:220px}
+.ki-menue[hidden],.ki-ergebnis[hidden]{display:none}
+.ki-menue>button{border:0;background:transparent;font:inherit;text-align:left;padding:9px 10px;border-radius:8px;color:var(--ink);cursor:pointer}
+.ki-menue>button:hover,.ki-menue>button:focus-visible{background:var(--soft)}
+.ki-sprachen{display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:6px 8px;border-top:1px solid var(--line);margin-top:4px}
+.ki-sprachen button{border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:.82rem;padding:4px 8px;border-radius:999px;cursor:pointer}
+.ki-ergebnis{padding:8px 10px 6px}
+.ki-text{max-height:220px;overflow:auto;line-height:1.5;padding:8px 10px;background:var(--soft);border-radius:10px;margin-bottom:8px}
+.ki-knoepfe,.ki-woerter{display:flex;flex-wrap:wrap;gap:6px}
+.ki-ergebnis .klein{margin:6px 0 0}
+.ah .field{display:block;margin-bottom:8px}
+.ah textarea{width:100%;resize:vertical}
+.ah-reihe{gap:8px;margin:0 0 10px}
+.ah-verlauf{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.ah-blase{padding:10px 12px;border-radius:12px;background:var(--soft);border-left:4px solid var(--accent)}
+.ah-blase.pruefen{border-left-color:var(--good)}
+.ah-blase.loesung{border-left-color:var(--app)}
+.ah-blase.warte{opacity:.7}
+.ah-blase p{margin:4px 0 0;line-height:1.5}
+.fx-ki{padding:10px 12px;border-radius:12px;background:var(--soft);margin-bottom:12px}
+.fx-ki .field{display:block;margin-bottom:8px}
+.fx-vorschlag{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.fx-vorschlag code{font-size:1rem;padding:6px 10px;background:var(--card);border-radius:8px;border:1px solid var(--line);word-break:break-all}
+.fx-vorschlag .btn{align-self:flex-start}
+.merke{padding:8px 12px;border-left:4px solid var(--accent);background:var(--soft);border-radius:8px}

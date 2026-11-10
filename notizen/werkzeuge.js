@@ -1,17 +1,18 @@
-// FIDELIA Notizen · Werkzeug-Seitenleiste (überall aufklappbar): Taschenrechner, Wunschnote – weitere Reiter folgen
+// FIDELIA Notizen · Werkzeug-Seitenleiste (überall aufklappbar): Taschenrechner, Aufgaben-Helfer, Wunschnote
 // Merkt sich, wo dein Cursor zuletzt war (Heft, Tabelle, Folie), damit „→ einfügen“ genau dort landet.
 
 import * as Rechner from "./rechner.js";
 import * as Schule from "./schule.js";
+import * as KIH from "./ki-helfer.js";
 
 const KW = window.KW;
 
-const REITER = [["rechner", "🧮 Rechner"], ["note", "🎯 Wunschnote"]];
+const REITER = [["rechner", "🧮 Rechner"], ["hilfe", "💡 Aufgabe"], ["note", "🎯 Wunschnote"]];
 
 export function start(A) {
   if (document.getElementById("wzLeiste")) return;
   const knopf = document.createElement("button");
-  knopf.type = "button"; knopf.id = "wzKnopf"; knopf.className = "wz-knopf"; knopf.title = "Werkzeuge: Rechner, Wunschnote (Strg+K)"; knopf.setAttribute("aria-label", "Werkzeuge öffnen"); knopf.setAttribute("aria-expanded", "false");
+  knopf.type = "button"; knopf.id = "wzKnopf"; knopf.className = "wz-knopf"; knopf.title = "Werkzeuge: Rechner, Aufgaben-Helfer, Wunschnote (Strg+K)"; knopf.setAttribute("aria-label", "Werkzeuge öffnen"); knopf.setAttribute("aria-expanded", "false");
   knopf.textContent = "🧮";
   const leiste = document.createElement("aside");
   leiste.id = "wzLeiste"; leiste.className = "wz-leiste"; leiste.hidden = true; leiste.setAttribute("aria-label", "Werkzeuge");
@@ -54,7 +55,8 @@ export function start(A) {
   }
 
   const teile = {};
-  const bauen = { rechner: (box) => Rechner.aufbauen(box, { einfuegen }), note: (box) => Schule.wunschnoteAufbauen(box, A) };
+  const bauen = { rechner: (box) => Rechner.aufbauen(box, { einfuegen }), note: (box) => Schule.wunschnoteAufbauen(box, A),
+    hilfe: (box) => KIH.aufgabenHelferAufbauen(box, A, { auswahlText: () => (bereich && bereich.toString().trim()) || (auswahlFeld && document.body.contains(auswahlFeld.el) ? auswahlFeld.el.value.slice(auswahlFeld.a, auswahlFeld.b).trim() : "") }) };
   let reiter = KW.load("kw-werkzeuge-reiter", "rechner");
   if (!bauen[reiter]) reiter = "rechner";
   function reiterZeigen(id, fokus) {

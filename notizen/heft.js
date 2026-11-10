@@ -183,7 +183,7 @@ export function liste(A, el, fach) {
     const mitVorschlag = aktiv.filter(s => s.vorschlag && s.vorschlag.fach && !s.fach);
     let h = '<div class="kopfzeile"><h2 class="titel">📓 Heft</h2><span class="sp"></span>' +
       (imKorb ? '<a class="btn small" href="#heft/*papierkorb">🗑️ ' + imKorb + '</a>' : "") +
-      (fachWahl && fachWahl[0] !== "*" ? '<button type="button" class="btn small" id="fachDruck" title="Ganzes Fach drucken oder als PDF">🖨️ Fach</button>' : "") +
+      (fachWahl && fachWahl[0] !== "*" ? '<button type="button" class="btn small" id="fachDruck" title="Ganzes Fach drucken oder als PDF">🖨️ Fach</button>' + (A.einst.ki && A.einst.ki.art !== "aus" ? '<button type="button" class="btn small" id="lernzettel" title="Die KI fasst alle Seiten des Fachs auf einem Lernzettel zusammen">✨ Lernzettel</button>' : "") : "") +
       '<label class="btn small" title="FIDELIA-Datei von Mitschülern öffnen">📥 Öffnen<input type="file" id="oeffnen" accept=".fidelia,.json" hidden></label>' +
       '<button type="button" class="btn primary" id="neu">+ Neue Seite</button></div>' +
       '<div class="suche"><input class="inp" type="search" id="q" placeholder="In allen Seiten suchen" aria-label="In allen Seiten suchen" value="' + esc(suche) + '"></div>' +
@@ -208,6 +208,13 @@ export function liste(A, el, fach) {
       if (s) A.gehe("seite/" + s.id);
     };
     const fd = el.querySelector("#fachDruck");
+    const lz = el.querySelector("#lernzettel");
+    if (lz) lz.onclick = async () => {
+      lz.disabled = true; lz.textContent = "✨ Schreibt …";
+      try { const KIH = await import("./ki-helfer.js"); const s = await KIH.lernzettel(A, fachWahl); if (s) { KW.toast("📄 Lernzettel fertig!"); A.gehe("seite/" + s.id); return; } }
+      catch (e) { const KIH = await import("./ki-helfer.js"); KW.toast(KIH.kiFehlerText(e)); }
+      lz.disabled = false; lz.textContent = "✨ Lernzettel";
+    };
     if (fd) fd.onclick = () => Export.drucken(A, liste.slice().sort((a, b) => String(a.erstellt).localeCompare(String(b.erstellt))));
     const qi = el.querySelector("#q");
     qi.oninput = () => { suche = qi.value; const pos = qi.selectionStart; zeichnen(); const n = el.querySelector("#q"); n.focus(); n.setSelectionRange(pos, pos); };

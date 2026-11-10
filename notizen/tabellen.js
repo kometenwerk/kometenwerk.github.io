@@ -670,10 +670,28 @@ export function seite(A, el, id) {
     ["HEUTE", "Datum von heute", "=HEUTE()"], ["VERKETTEN", "Text zusammenfügen (oder &)", '=VERKETTEN(A1;" ";B1)'], ["WENNFEHLER", "Fehler durch etwas anderes ersetzen", '=WENNFEHLER(A1/B1;"")'], ["UND", "Alle Bedingungen wahr?", "=UND(A1>0;B1>0)"], ["ODER", "Eine Bedingung wahr?", "=ODER(A1>0;B1>0)"]];
   el.querySelector("#fxBtn").onclick = () => {
     const d = document.createElement("dialog"); d.className = "sheet";
-    d.innerHTML = '<div class="sheet-in"><h2>ƒx Funktion einfügen</h2><input class="inp" id="fq" placeholder="Suchen …" aria-label="Funktion suchen"><div class="fn-liste" id="fl"></div><p class="muted klein">Zwischen den Teilen steht „;“. Mit „$“ bleibt ein Bezug beim Kopieren fest ($A$1).</p><div class="sheet-foot"><button type="button" class="btn" id="ab">Schließen</button></div></div>';
+    const mitKI = A.einst.ki && A.einst.ki.art !== "aus";
+    d.innerHTML = '<div class="sheet-in"><h2>ƒx Funktion einfügen</h2>' +
+      (mitKI ? '<div class="fx-ki"><label class="field"><span>✨ Sag einfach, was die Formel machen soll</span><input class="inp" id="fki" placeholder="z. B. Durchschnitt der Noten in Spalte B"></label><button type="button" class="btn small primary" id="fkiLos">Formel bauen</button><div id="fkiErg" aria-live="polite"></div></div>' : "") +
+      '<input class="inp" id="fq" placeholder="Suchen …" aria-label="Funktion suchen"><div class="fn-liste" id="fl"></div><p class="muted klein">Zwischen den Teilen steht „;“. Mit „$“ bleibt ein Bezug beim Kopieren fest ($A$1).</p><div class="sheet-foot"><button type="button" class="btn" id="ab">Schließen</button></div></div>';
     document.body.appendChild(d);
     const zeichne = (q) => { d.querySelector("#fl").innerHTML = HILFE.filter(h => !q || (h[0] + h[1]).toLowerCase().includes(q.toLowerCase())).map(h => '<button type="button" class="fn-z" data-fn="' + h[0] + '"><b>' + h[0] + "</b><span>" + esc(h[1]) + "</span><code>" + esc(h[2]) + "</code></button>").join(""); d.querySelectorAll("[data-fn]").forEach(b => b.onclick = () => { d.close(); bearbeiten("=" + b.dataset.fn + "("); }); };
     zeichne(""); d.querySelector("#fq").oninput = (e) => zeichne(e.target.value);
+    if (mitKI) {
+      const los = async () => {
+        const w = d.querySelector("#fki").value.trim(), erg = d.querySelector("#fkiErg"); if (!w) return;
+        const b = s.mappe.blaetter[bi], kopf = [];
+        for (let sp = 0; sp < 12; sp++) { const c = b.zellen && b.zellen[F.zelleName(0, sp)]; if (c && c.v != null && c.v !== "") kopf.push(F.spalteName(sp) + "=" + String(c.v).slice(0, 20)); }
+        const kontext = "Ausgewählte Zelle: " + F.zelleName(sel.a.z, sel.a.s) + (sel.a.z !== sel.b.z || sel.a.s !== sel.b.s ? ", markierter Bereich " + F.zelleName(sel.a.z, sel.a.s) + ":" + F.zelleName(sel.b.z, sel.b.s) : "") + (kopf.length ? ". Überschriften in Zeile 1: " + kopf.join(", ") : "");
+        erg.innerHTML = '<p class="muted">✨ Baut die Formel …</p>';
+        try {
+          const KIH = await import("./ki-helfer.js"), r = await KIH.formelVorschlag(A, w, kontext);
+          erg.innerHTML = '<div class="fx-vorschlag"><code>' + esc(r.formel) + '</code>' + (r.erklaerung ? '<small>' + esc(r.erklaerung) + '</small>' : "") + '<button type="button" class="btn small primary" id="fkiRein">In ' + F.zelleName(sel.a.z, sel.a.s) + ' einsetzen</button></div>';
+          erg.querySelector("#fkiRein").onclick = () => { d.close(); bearbeiten(r.formel); };
+        } catch (e) { const KIH = await import("./ki-helfer.js"); erg.innerHTML = '<p>' + esc(e.message === "keine-formel" ? "Daraus konnte ich keine Formel bauen. Beschreib es etwas genauer (welche Spalten, welche Zeilen?)." : KIH.kiFehlerText(e)) + '</p>'; }
+      };
+      d.querySelector("#fkiLos").onclick = los; d.querySelector("#fki").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); los(); } };
+    }
     d.querySelector("#ab").onclick = () => d.close(); d.addEventListener("close", () => d.remove()); d.showModal();
   };
   el.querySelector("#nameBox").onkeydown = (e) => { if (e.key !== "Enter") return; e.preventDefault(); const [a, b] = e.target.value.trim().toUpperCase().split(":"), p = F.zelleLesen(a), q = F.zelleLesen(b || a); if (p && q) { sel = { a: p, b: q }; if (q.z >= zeilen - 5 || q.s >= spalten - 2) aufbauen(); else markieren(); box.focus(); } };
