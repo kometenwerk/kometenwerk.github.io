@@ -77,7 +77,7 @@ export function aufbauen(box, { einfuegen }) {
   const letztes = () => daten.verlauf[daten.verlauf.length - 1];
 
   function befehl(a) {
-    if (a.startsWith("t:")) { tippen(a.slice(2)); return; }
+    if (a.startsWith("t:")) { tippen(a.slice(2)); zeigen(); return; }
     switch (a) {
       case "zweit": zweit = !zweit; return zeigen();
       case "del": loeschen(); break;
