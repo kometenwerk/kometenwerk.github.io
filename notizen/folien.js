@@ -127,7 +127,7 @@ export function seite(A, el, id) {
       '<button type="button" class="btn small" id="menueBtn" aria-haspopup="true" aria-expanded="false">⋯ Mehr</button>' +
     "</div>" +
     '<div class="seiten-menue card" id="menue" hidden>' +
-      '<button type="button" data-a="ab1">▶ Ab Folie 1 vorführen</button><button type="button" data-a="pptx">📙 Als PowerPoint speichern (.pptx)</button><button type="button" data-a="druck">🖨️ Drucken / PDF</button>' +
+      '<button type="button" data-a="ab1">▶ Ab Folie 1 vorführen</button><button type="button" data-a="beamer">🖥️ Mit Beamer (Referentenansicht)</button><button type="button" data-a="pptx">📙 Als PowerPoint speichern (.pptx)</button><button type="button" data-a="druck">🖨️ Drucken / PDF</button>' +
       '<button type="button" data-a="teilen">📤 An Mitschüler schicken</button><button type="button" data-a="versionen">🕘 Ältere Versionen</button><button type="button" data-a="weg" class="rot">🗑️ In den Papierkorb</button>' +
     "</div>" +
     '<div class="unter-leiste fol-band" id="band">' +
@@ -598,6 +598,7 @@ export function seite(A, el, id) {
     const a = e.target.closest("[data-a]"); if (!a) return; menue.hidden = true; textFertig();
     const w = a.dataset.a;
     if (w === "ab1") vorfuehren(A, s, 0);
+    if (w === "beamer") { textFertig(); import("./referent.js").then(R => R.referentansicht(A, s, fi, { katex: katexHtml })); }
     if (w === "pptx") { try { KW.toast("PowerPoint-Datei wird gebaut …"); const P = await import("./pptx.js"); herunterladen(await P.alsPptx(A, s), (s.titel || "Präsentation").replace(/[\\/:*?"<>|]/g, "").slice(0, 60) + ".pptx"); KW.toast("✓ PowerPoint-Datei gespeichert."); } catch (err) { console.error(err); KW.toast("Speichern hat nicht geklappt."); } }
     if (w === "druck") drucken(s);
     if (w === "teilen") Extras.teilen(A, s);

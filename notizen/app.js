@@ -216,7 +216,7 @@ A.neuAufbauen = () => {
   markieren();
 };
 function markieren() {
-  const m = aktuell.modul === "arbeit" ? "planer" : aktuell.modul === "seite" || aktuell.modul === "tafel" ? "heft" : aktuell.modul === "tabelle" ? "tabellen" : aktuell.modul;
+  const m = aktuell.modul === "fern" ? "folien" : aktuell.modul === "arbeit" ? "planer" : aktuell.modul === "seite" || aktuell.modul === "tafel" ? "heft" : aktuell.modul === "tabelle" ? "tabellen" : aktuell.modul;
   document.querySelectorAll("#leiste a[data-m]").forEach(a => {
     if (a.dataset.m === m) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
   });
@@ -253,6 +253,7 @@ function zeigen() {
   else if (modul === "lernen") r = Lernen.zeigen(A, el, aktuell.param);
   else if (modul === "audio") r = Audio.zeigen(A, el);
   else if (modul === "tafel") r = Tafel.seite(A, el, aktuell.param);
+  else if (modul === "fern") { r = null; import("./referent.js").then(R => { const z = R.fernbedienung(A, el, aktuell.param); if (aktuell.modul === "fern") aufraeumen = z; }); }
   else if (modul === "arbeit") Schule.arbeitSeite(A, el, aktuell.param, Planer);
   else if (modul === "einst") E.seite(A, el);
   else { aktuell.modul = "start"; r = Start.zeigen(A, el); }
@@ -347,6 +348,8 @@ async function starten() {
   A.neuAufbauen();
   try { Werkzeuge.start(A); } catch (e) { console.warn("Werkzeuge", e); }
   try { KIH.textBlaseStarten(A); } catch (e) { console.warn("KI-Helfer", e); }
+  // Läuft auf dem anderen Gerät eine Präsentation? → Fernbedienung anbieten
+  Sync.hoeren("fern-start", (d) => { if (aktuell.modul === "fern") return; KW.toast("🖥️ „" + (d.titel || "Präsentation") + "“ läuft auf deinem anderen Gerät.", "📱 Fernbedienung", () => A.gehe("fern/" + d.id)); });
   window.addEventListener("hashchange", zeigen);
   zeigen();
 }

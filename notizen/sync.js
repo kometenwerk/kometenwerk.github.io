@@ -187,6 +187,12 @@ export async function allesSenden(anzeige) {
   return n;
 }
 
+/* ---------- Kurze Nachrichten zwischen den Geräten (z. B. Handy-Fernbedienung) ---------- */
+const kanalHoerer = new Map();
+export const bereit = () => gekoppelt() && verbunden;
+export function hoeren(typ, cb) { if (!kanalHoerer.has(typ)) kanalHoerer.set(typ, new Set()); kanalHoerer.get(typ).add(cb); return () => kanalHoerer.get(typ).delete(cb); }
+export function blitz(typ, daten) { if (!bereit()) return false; senden({ art: "blitz", typ, daten, um: Date.now() }).catch(() => {}); return true; }
+
 /* ---------- Empfangen ---------- */
 
 let neuZaehler = 0, neuTimer = null;
@@ -221,6 +227,8 @@ async function empfangen(pid, post) {
       neuZaehler++;
     }
     const w = wegListe(); w[obj.id] = obj.um; KW.save(WEG_KEY, w);
+  } else if (obj.art === "blitz" && obj.typ) {
+    if (Date.now() - (obj.um || 0) < 120000) (kanalHoerer.get(obj.typ) || []).forEach(cb => { try { cb(obj.daten || {}); } catch (e) {} });
   } else if (obj.art === "planer" && Array.isArray(obj.eintraege)) {
     const p = KW.load("kw-planer", null) || { eintraege: [] };
     if (!Array.isArray(p.eintraege)) p.eintraege = [];

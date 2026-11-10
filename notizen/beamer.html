@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FIDELIA Präsentation – Beamer</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="../shared/fonts/fonts.css">
+<link rel="stylesheet" href="notizen.css">
+<style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:"Space Grotesk",system-ui,sans-serif}
+#buehne{position:absolute;left:0;top:0;transform-origin:0 0;width:960px;height:540px}
+#laser{position:fixed;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:#ff2b2b;box-shadow:0 0 14px 6px rgba(255,43,43,.55);pointer-events:none}
+#hinweis{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#fff;background:rgba(10,16,28,.88);text-align:center;padding:20px;cursor:pointer}
+#hinweis b{font-size:1.6rem}#hinweis small{opacity:.75;max-width:520px;line-height:1.5}
+#schwarz{position:fixed;inset:0;background:#000}
+#warte{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#9aa7bd}
+</style>
+</head>
+<body>
+<div id="buehne"></div>
+<div id="laser" hidden></div>
+<div id="schwarz" hidden></div>
+<div id="warte">Warte auf die Präsentation …</div>
+<div id="hinweis" role="button" tabindex="0"><b>🖥️ Beamer-Fenster</b><span>Zieh dieses Fenster auf den Beamer und klick hier für Vollbild.</span><small>Gesteuert wird alles im anderen Fenster (Referentenansicht) – oder mit dem Handy.</small></div>
+<script type="module" src="beamer-fenster.js"></script>
+</body>
+</html>
