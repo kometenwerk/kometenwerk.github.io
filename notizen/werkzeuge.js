@@ -1,18 +1,21 @@
-// FIDELIA Notizen · Werkzeug-Seitenleiste (überall aufklappbar): Taschenrechner – später mehr Reiter
+// FIDELIA Notizen · Werkzeug-Seitenleiste (überall aufklappbar): Taschenrechner, Wunschnote – weitere Reiter folgen
 // Merkt sich, wo dein Cursor zuletzt war (Heft, Tabelle, Folie), damit „→ einfügen“ genau dort landet.
 
 import * as Rechner from "./rechner.js";
+import * as Schule from "./schule.js";
 
 const KW = window.KW;
+
+const REITER = [["rechner", "🧮 Rechner"], ["note", "🎯 Wunschnote"]];
 
 export function start(A) {
   if (document.getElementById("wzLeiste")) return;
   const knopf = document.createElement("button");
-  knopf.type = "button"; knopf.id = "wzKnopf"; knopf.className = "wz-knopf"; knopf.title = "Taschenrechner (Strg+K)"; knopf.setAttribute("aria-label", "Taschenrechner öffnen"); knopf.setAttribute("aria-expanded", "false");
+  knopf.type = "button"; knopf.id = "wzKnopf"; knopf.className = "wz-knopf"; knopf.title = "Werkzeuge: Rechner, Wunschnote (Strg+K)"; knopf.setAttribute("aria-label", "Werkzeuge öffnen"); knopf.setAttribute("aria-expanded", "false");
   knopf.textContent = "🧮";
   const leiste = document.createElement("aside");
   leiste.id = "wzLeiste"; leiste.className = "wz-leiste"; leiste.hidden = true; leiste.setAttribute("aria-label", "Werkzeuge");
-  leiste.innerHTML = '<div class="wz-kopf"><div class="wz-reiter" role="tablist"><button type="button" role="tab" class="an" aria-selected="true">🧮 Rechner</button></div><span class="sp"></span><button type="button" class="btn small" id="wzZu" aria-label="Werkzeuge schließen">✕</button></div><div class="wz-inhalt" id="wzInhalt"></div>';
+  leiste.innerHTML = '<div class="wz-kopf"><div class="wz-reiter" role="tablist">' + REITER.map(r => '<button type="button" role="tab" data-reiter="' + r[0] + '" aria-controls="wz-' + r[0] + '">' + r[1] + '</button>').join("") + '</div><span class="sp"></span><button type="button" class="btn small" id="wzZu" aria-label="Werkzeuge schließen">✕</button></div>' + REITER.map(r => '<div class="wz-inhalt" role="tabpanel" id="wz-' + r[0] + '" hidden></div>').join("");
   document.body.append(knopf, leiste);
 
   /* Wo war der Cursor zuletzt? */
@@ -50,11 +53,23 @@ export function start(A) {
     if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => KW.toast("In die Zwischenablage kopiert – tipp erst ins Heft, dann wird direkt eingefügt.")).catch(() => KW.toast("Tipp erst ins Heft oder in eine Zelle, dann nochmal."));
   }
 
-  const rechner = Rechner.aufbauen(leiste.querySelector("#wzInhalt"), { einfuegen });
+  const teile = {};
+  const bauen = { rechner: (box) => Rechner.aufbauen(box, { einfuegen }), note: (box) => Schule.wunschnoteAufbauen(box, A) };
+  let reiter = KW.load("kw-werkzeuge-reiter", "rechner");
+  if (!bauen[reiter]) reiter = "rechner";
+  function reiterZeigen(id, fokus) {
+    reiter = id; KW.save("kw-werkzeuge-reiter", id);
+    leiste.querySelectorAll("[data-reiter]").forEach(b => { const an = b.dataset.reiter === id; b.classList.toggle("an", an); b.setAttribute("aria-selected", an); b.tabIndex = an ? 0 : -1; });
+    leiste.querySelectorAll(".wz-inhalt").forEach(p => { p.hidden = p.id !== "wz-" + id; });
+    if (!teile[id]) teile[id] = bauen[id](leiste.querySelector("#wz-" + id));
+    if (fokus) setTimeout(() => teile[id].fokus && teile[id].fokus(), 30);
+  }
+  leiste.querySelectorAll("[data-reiter]").forEach(b => b.onclick = () => reiterZeigen(b.dataset.reiter, true));
+  reiterZeigen(reiter, false);
   const auf = (an) => {
     leiste.hidden = !an; knopf.setAttribute("aria-expanded", an); document.body.classList.toggle("wz-offen", an);
     knopf.classList.toggle("an", an);
-    if (an) setTimeout(() => rechner.fokus(), 30);
+    if (an) reiterZeigen(reiter, true);
     KW.save("kw-werkzeuge-offen", an);
   };
   knopf.onclick = () => auf(leiste.hidden);
@@ -64,6 +79,6 @@ export function start(A) {
     else if (e.key === "Escape" && !leiste.hidden && leiste.contains(document.activeElement) && !leiste.querySelector(".re-menue:not([hidden])")) auf(false);
   });
   // Knöpfe in der Leiste nehmen dem Heft nicht den Cursor weg (außer Eingabefelder in Menüs)
-  leiste.addEventListener("mousedown", (e) => { if (e.target.closest("button") && !e.target.closest(".re-menue")) { e.preventDefault(); leiste.querySelector(".re").focus({ preventScroll: true }); } });
+  leiste.addEventListener("mousedown", (e) => { if (e.target.closest("button") && e.target.closest(".re") && !e.target.closest(".re-menue")) { e.preventDefault(); leiste.querySelector(".re").focus({ preventScroll: true }); } });
   if (KW.load("kw-werkzeuge-offen", false) && window.innerWidth >= 1100) auf(true);
 }

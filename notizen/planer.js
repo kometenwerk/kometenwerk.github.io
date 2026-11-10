@@ -74,7 +74,7 @@ export function zeigen(A, el) {
       if (t.length) h += '<section class="card abschnitt"><h3>Klassenarbeiten</h3><ul class="countdowns">' + t.slice(0, 5).map(e => {
         const n = KW.days(heute, e.datum);
         return '<li style="--f:' + esc(A.fachFarbe(e.fach)) + '"><span class="zahl">' + (n === 0 ? "Heute" : n) + '</span><span><b>' + esc(e.fach || "") + '</b> ' + esc(e.titel) + '<small>' + (n === 0 ? "Viel Erfolg! 🍀" : n === 1 ? "Morgen!" : "Tage") + '</small></span>' +
-          (A.einst.an.lernen ? '<a class="btn small" href="#lernen">Üben</a>' : "") + '</li>';
+          '<a class="btn small" href="#arbeit/' + esc(e.id) + '">Lernplan</a>' + '</li>';
       }).join("") + '</ul></section>';
     }
     const o = offen(D);
@@ -87,7 +87,7 @@ export function zeigen(A, el) {
 }
 
 // Dialog zum Eintragen. art: "hausaufgabe" | "test" | "gruppe"
-export function eintragen(A, { fach = "", art = "hausaufgabe", titel = "", fertig } = {}) {
+export function eintragen(A, { fach = "", art = "hausaufgabe", titel = "", datum: datumVor = "", fertig } = {}) {
   const D = daten();
   const d = document.createElement("dialog");
   d.className = "sheet";
@@ -95,7 +95,7 @@ export function eintragen(A, { fach = "", art = "hausaufgabe", titel = "", ferti
   d.innerHTML = '<form class="sheet-in" method="dialog"><h2>Eintragen</h2>' +
     '<div class="tabs" role="radiogroup" aria-label="Art">' + [["hausaufgabe", "📝 Hausaufgabe"], ["test", "✏️ Arbeit/Test"], ["gruppe", "👥 Gruppenarbeit"]].map(a => '<button type="button" role="radio" data-art="' + a[0] + '" aria-selected="' + (a[0] === art) + '" aria-checked="' + (a[0] === art) + '">' + a[1] + '</button>').join("") + '</div>' +
     '<div class="row" style="margin-top:12px"><label class="field"><span>Fach</span><select class="inp" id="pFach"><option value="">Kein Fach</option>' + faecher.map(f => '<option' + (f.name === fach ? " selected" : "") + '>' + esc(f.name) + '</option>').join("") + '</select></label>' +
-    '<label class="field"><span>Bis wann?</span><input class="inp" type="date" id="pDatum" required value="' + naechsteStunde(D, fach) + '"></label></div>' +
+    '<label class="field"><span>Bis wann?</span><input class="inp" type="date" id="pDatum" required value="' + (datumVor || naechsteStunde(D, fach)) + '"></label></div>' +
     '<label class="field"><span>Was?</span><input class="inp" id="pTitel" maxlength="120" required placeholder="z. B. Buch S. 42 Nr. 3" value="' + esc(titel) + '"></label>' +
     '<div id="pGruppe" hidden><label class="field"><span>Wer ist in deiner Gruppe?</span><input class="inp" id="pWer" maxlength="160" placeholder="z. B. Lea, Tim, Noah"></label>' +
     '<label class="field"><span>Wer bringt was mit? (eine Zeile pro Sache)</span><textarea class="inp" id="pMit" rows="3" placeholder="Plakat – Lea&#10;Kleber – Tim"></textarea></label></div>' +

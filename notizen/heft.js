@@ -281,6 +281,7 @@ export function seite(A, el, id) {
       '<button type="button" data-a="pin">' + (s.pin ? "📌 Nicht mehr anpinnen" : "📌 Anpinnen") + '</button>' +
       '<button type="button" data-a="weg" class="rot">🗑️ In den Papierkorb</button>' +
     '</div>' +
+    (s.ha ? '<div class="card ha-hinweis" role="status">📝 <span><b>Hausaufgabe erkannt:</b> ' + esc(s.ha.titel) + (s.ha.datum ? ' <small>bis ' + KW.parse(s.ha.datum).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" }) + '</small>' : "") + '</span><button type="button" class="btn small primary" id="haRein">In den Planer</button><button type="button" class="btn small" id="haWeg" aria-label="Hinweis ausblenden">✕</button></div>' : "") +
     '<div class="blatt-rahmen" id="rahmen"><div class="blatt" id="blatt">' +
       (s.bild ? '<img id="scanBild" alt="Eingescanntes Blatt">' : "") +
       '<div class="rich" id="rich" contenteditable="true" spellcheck="true" lang="de" aria-label="Text der Seite" data-leer="' + (s.bild ? "" : "Tippe hier …") + '"></div>' +
@@ -290,6 +291,7 @@ export function seite(A, el, id) {
     '<div class="seite-fuss"><span id="zaehler" class="muted klein"></span><span class="muted klein">Wird automatisch gespeichert · ' + QUELLE[s.quelle || "heft"] + ' angelegt ' + datum(s.erstellt) + '</span></div>' +
     (s.bild || s.ocr ? '<details class="card erkannt"><summary>🔍 Erkannter Text' + (s.ocr ? "" : " (noch keiner)") + '</summary><textarea class="inp" id="ocr" rows="6" aria-label="Erkannter Text">' + esc(s.ocr) + '</textarea></details>' : "");
 
+  if (s.ha) { el.querySelector("#haRein").onclick = () => A.haEintragen(s); el.querySelector("#haWeg").onclick = async () => { s.ha = null; await A.seiteSpeichern(s); el.querySelector(".ha-hinweis").remove(); }; }
   const blatt = el.querySelector("#blatt"), rahmenEl = el.querySelector("#rahmen"), canvas = el.querySelector("#tinte"), ctx = canvas.getContext("2d"), rich = el.querySelector("#rich");
   const wzEbene = el.querySelector("#wzEbene");
   rich.innerHTML = s.html;

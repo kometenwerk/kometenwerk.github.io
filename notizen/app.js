@@ -16,6 +16,7 @@ import * as Nachbau from "./nachbau.js";
 import * as Tabellen from "./tabellen.js";
 import * as Folien from "./folien.js";
 import * as Werkzeuge from "./werkzeuge.js";
+import * as Schule from "./schule.js";
 
 const KW = window.KW, esc = KW.esc;
 
@@ -126,6 +127,7 @@ async function verarbeitenJetzt(s, ocr, zwingen, nurText) {
       await A.seiteSpeichern(s);
     }
   }
+  hausaufgabePruefen(s);
   if (A.einst.an.kisort && !s.fach) {
     const text = A.seitenText(s);
     if (text.replace(/\s/g, "").length < 15) return;
@@ -142,6 +144,40 @@ async function verarbeitenJetzt(s, ocr, zwingen, nurText) {
     if (aktuell.modul === "start" || aktuell.modul === "heft") zeigen();
   }
 }
+// Steht auf dem Scan eine Hausaufgabe (z. B. Tafelfoto „bis Montag S. 45 Nr. 3“)? Einmal pro Scan nachsehen.
+function hausaufgabePruefen(s) {
+  if (!s.bild || s.haGeprueft || !A.einst.an.planer || !A.einst.f.planer.hausaufgaben) return;
+  const text = A.seitenText(s);
+  if (text.replace(/\s/g, "").length < 8) return;
+  s.haGeprueft = true;
+  const r = Schule.hausaufgabenErkennen(text);
+  if (r) {
+    s.ha = r;
+    KW.toast("📝 Hausaufgabe erkannt: " + r.titel, "Eintragen", () => A.haEintragen(s));
+  }
+  A.seiteSpeichern(s);
+}
+A.haEintragen = (s) => {
+  const r = s.ha; if (!r) return;
+  Planer.eintragen(A, { fach: s.fach, titel: r.titel, datum: r.datum, fertig: async () => { s.ha = null; await A.seiteSpeichern(s); const b = document.querySelector(".ha-hinweis"); if (b) b.remove(); } });
+};
+
+/* ---------- Lernzeit messen (nur, wenn du wirklich etwas tust) ---------- */
+let zuletztAktiv = 0;
+["keydown", "pointerdown", "input", "wheel"].forEach(t => document.addEventListener(t, () => { zuletztAktiv = Date.now(); }, { passive: true, capture: true }));
+function lernFach() {
+  const { modul, param } = aktuell;
+  if (["seite", "tabelle", "folien"].includes(modul) && param) { const s = A.seite(param.split("/")[0]); return s ? s.fach || "" : null; }
+  if (modul === "lernen" && param) { const l = A.lern.find(x => x.id === param.split("/")[0]); return l ? l.fach || "" : ""; }
+  if (modul === "arbeit") { const t = Planer.daten().eintraege.find(e => e.id === param); return t ? t.fach || "" : ""; }
+  return null;
+}
+setInterval(() => {
+  if (document.hidden || Date.now() - zuletztAktiv > 120000) return;
+  const f = lernFach();
+  if (f !== null) Schule.lernzeitPlus(f, 1);
+}, 60000);
+
 let ocrVersprechen = null;
 function ocrLaden() {
   if (window.KWOCR) return Promise.resolve();
@@ -175,7 +211,7 @@ A.neuAufbauen = () => {
   markieren();
 };
 function markieren() {
-  const m = aktuell.modul === "seite" ? "heft" : aktuell.modul === "tabelle" ? "tabellen" : aktuell.modul;
+  const m = aktuell.modul === "arbeit" ? "planer" : aktuell.modul === "seite" ? "heft" : aktuell.modul === "tabelle" ? "tabellen" : aktuell.modul;
   document.querySelectorAll("#leiste a[data-m]").forEach(a => {
     if (a.dataset.m === m) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
   });
@@ -211,6 +247,7 @@ function zeigen() {
   else if (modul === "planer") r = Planer.zeigen(A, el);
   else if (modul === "lernen") r = Lernen.zeigen(A, el, aktuell.param);
   else if (modul === "audio") r = Audio.zeigen(A, el);
+  else if (modul === "arbeit") Schule.arbeitSeite(A, el, aktuell.param, Planer);
   else if (modul === "einst") E.seite(A, el);
   else { aktuell.modul = "start"; r = Start.zeigen(A, el); }
   if (typeof r === "function") aufraeumen = r;

@@ -5,6 +5,7 @@
 import * as Planer from "./planer.js";
 import * as Lernen from "./lernen.js";
 import * as Heft from "./heft.js";
+import * as Schule from "./schule.js";
 
 const KW = window.KW, esc = KW.esc;
 
@@ -25,6 +26,7 @@ export function zeigen(A, el) {
   if (an.planer) {
     if (P.stundenplan) {
       const st = Planer.stundenFuer(D, heute);
+      h += Schule.jetztKachel(A, st);
       if (st.length) h += '<section class="card kachel"><h3>Heute</h3><div class="stunden">' + st.map(z => '<span class="stunde" style="--f:' + esc(A.fachFarbe(z.fach)) + '"><small>' + z.stunde + '.</small> ' + esc(z.fach) + '</span>').join("") + '</div></section>';
     }
     const offen = Planer.offen(D);
@@ -36,13 +38,14 @@ export function zeigen(A, el) {
     if (!offen.length) h += '<section class="card kachel"><h3>📝 Hausaufgaben</h3><p class="muted">Alles erledigt 🎉</p></section>';
     if (P.countdown) {
       const t = Planer.arbeiten(D)[0];
-      if (t) { const n = KW.days(heute, t.datum); h += '<section class="card kachel countdown" style="--f:' + esc(A.fachFarbe(t.fach)) + '"><h3>✏️ Nächste Arbeit</h3><div class="gross-zahl">' + (n === 0 ? "Heute" : n + (n === 1 ? " Tag" : " Tage")) + '</div><p><b>' + esc(t.fach || "") + '</b> ' + esc(t.titel) + '</p></section>'; }
+      if (t) { const n = KW.days(heute, t.datum); h += '<section class="card kachel countdown" style="--f:' + esc(A.fachFarbe(t.fach)) + '"><h3>✏️ Nächste Arbeit</h3><div class="gross-zahl">' + (n === 0 ? "Heute" : n + (n === 1 ? " Tag" : " Tage")) + '</div><p><b>' + esc(t.fach || "") + '</b> ' + esc(t.titel) + '</p><a class="btn small primary" href="#arbeit/' + esc(t.id) + '">📋 Lernplan öffnen</a></section>'; }
     }
   }
   for (const r of Lernen.erinnerungen(A)) {
     h += '<section class="card kachel" style="--f:' + esc(A.fachFarbe(r.fach)) + '"><h3>🧠 Lernen für ' + esc(r.fach || "die Arbeit") + '</h3><p>' + (r.karten ? r.karten + " Karten warten auf dich." : "Mach aus deinen Heftseiten Karteikarten.") + '</p>' +
       (r.set ? '<a class="btn small primary" href="#lernen/' + r.set.id + '/karten">Jetzt üben</a>' : '<a class="btn small" href="#heft/' + encodeURIComponent(r.fach) + '">Zum ' + esc(r.fach) + '-Ordner</a>') + '</section>';
   }
+  h += Schule.statistikKachel(A);
   const vorschlaege = A.aktiv().filter(s => !s.fach && s.vorschlag && s.vorschlag.fach).length;
   if (vorschlaege) h += '<section class="card kachel"><h3>🤖 Sortieren</h3><p>' + vorschlaege + (vorschlaege === 1 ? " Seite wartet" : " Seiten warten") + ' auf dein OK.</p><a class="btn small" href="#heft/*unsortiert">Ansehen</a></section>';
   h += '</div>';
@@ -60,5 +63,6 @@ export function zeigen(A, el) {
     if (!s) return;
     A.gehe("seite/" + s.id);
   });
+  el.querySelectorAll("[data-jetzt-seite]").forEach(b => b.onclick = async () => { const s = await Heft.neueSeite(A, b.dataset.jetztSeite); if (s) A.gehe("seite/" + s.id); });
   Planer.abhakenBinden(A, el, () => A.zeigen());
 }
