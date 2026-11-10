@@ -5,6 +5,7 @@ import * as Rechner from "./rechner.js";
 import * as Schule from "./schule.js";
 import * as KIH from "./ki-helfer.js";
 import * as WR from "./werkzeug-reiter.js";
+import * as Verkn from "./verknuepfen.js";
 
 const KW = window.KW;
 
@@ -46,8 +47,11 @@ export function start(A) {
       if (extra.tex) {
         const z = ziel, b = bereich;
         import("./editor.js").then(E => E.katex().then(() => {
-          z.focus({ preventScroll: true }); const s2 = getSelection(); if (b && z.contains(b.startContainer)) { s2.removeAllRanges(); s2.addRange(b); }
-          document.execCommand("insertHTML", false, E.formelHtml(extra.tex) + "&nbsp;"); z.dispatchEvent(new Event("input", { bubbles: true }));
+          z.focus({ preventScroll: true });
+          let r = b && z.contains(b.startContainer) ? b : null;
+          if (!r) { r = document.createRange(); r.selectNodeContents(z.lastElementChild || z); r.collapse(false); }
+          Verkn.einsetzen(r, E.formelHtml(extra.tex)); bereich = getSelection().getRangeAt(0).cloneRange();
+          z.dispatchEvent(new Event("input", { bubbles: true }));
         })).catch(() => document.execCommand("insertText", false, text));
         KW.toast("✓ Eingefügt."); return;
       }

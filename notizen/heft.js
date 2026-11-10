@@ -7,6 +7,7 @@ import * as Lernen from "./lernen.js";
 import * as Planer from "./planer.js";
 import * as Papier from "./papier.js";
 import * as Editor from "./editor.js";
+import * as Verkn from "./verknuepfen.js";
 import * as F from "./formen.js";
 import * as Export from "./export.js";
 import * as KI from "./ki.js";
@@ -142,7 +143,8 @@ export function neueSeite(A, fach, { aendern = null } = {}) {
 /* ---------- Liste: Fach-Ordner, Seiten, Papierkorb ---------- */
 
 export function liste(A, el, fach) {
-  let suche = "", urls = [];
+  let suche = sessionStorage.getItem("kw-heft-suche") || "", urls = [];
+  sessionStorage.removeItem("kw-heft-suche");
   const fachWahl = fach || "";
   function karte(s) {
     const f = A.fachInfo(s.fach);
@@ -177,7 +179,8 @@ export function liste(A, el, fach) {
     urls.forEach(u => URL.revokeObjectURL(u)); urls = [];
     const q = suche.toLowerCase(), aktiv = A.aktiv();
     let liste = aktiv.filter(s => !fachWahl ? true : fachWahl === "*unsortiert" ? !s.fach : s.fach === fachWahl);
-    if (q) liste = liste.filter(s => A.seitenText(s).toLowerCase().includes(q));
+    if (q) liste = q[0] === "#" && q.length > 1 ? liste.filter(s => (s.tags || []).some(t => t.startsWith(q.slice(1)))) : liste.filter(s => A.seitenText(s).toLowerCase().includes(q));
+    const alleTags = {}; aktiv.forEach(s => (s.tags || []).forEach(t => { alleTags[t] = (alleTags[t] || 0) + 1; }));
     const anzahl = (n) => aktiv.filter(s => s.fach === n).length;
     const unsortiert = aktiv.filter(s => !s.fach).length, imKorb = A.seiten.filter(s => s.papierkorb).length;
     const mitVorschlag = aktiv.filter(s => s.vorschlag && s.vorschlag.fach && !s.fach);
@@ -191,6 +194,8 @@ export function liste(A, el, fach) {
       '<button type="button" role="tab" data-f="" aria-selected="' + (!fachWahl) + '">Alle <small>' + aktiv.length + '</small></button>' +
       A.einst.faecher.map(f => '<button type="button" role="tab" data-f="' + esc(f.name) + '" aria-selected="' + (fachWahl === f.name) + '"><span class="punkt" style="background:' + esc(f.farbe) + '"></span>' + esc(f.name) + ' <small>' + anzahl(f.name) + '</small></button>').join("") +
       '<button type="button" role="tab" data-f="*unsortiert" aria-selected="' + (fachWahl === "*unsortiert") + '">📥 Unsortiert <small>' + unsortiert + '</small></button></div>';
+    const tagListe = Object.entries(alleTags).sort((a, b) => b[1] - a[1]).slice(0, 14);
+    if (tagListe.length) h += '<div class="tag-reihe" aria-label="Tags">' + tagListe.map(([t, n]) => '<button type="button" class="tag' + (q === "#" + t ? " an" : "") + '" data-tag="' + esc(t) + '">#' + esc(t) + ' <small>' + n + '</small></button>').join("") + '</div>';
     if (mitVorschlag.length && (!fachWahl || fachWahl === "*unsortiert")) {
       h += '<div class="card vorschlaege"><b>🤖 Sortier-Vorschläge</b>' + mitVorschlag.slice(0, 5).map(s =>
         '<div class="vs-zeile"><span>„' + esc(s.titel || "Ohne Titel") + '“ → <b>' + esc(s.vorschlag.fach) + '</b>' + (s.vorschlag.titel ? ' <small class="muted">(' + esc(s.vorschlag.titel) + ')</small>' : "") + '</span>' +
@@ -218,6 +223,7 @@ export function liste(A, el, fach) {
     if (fd) fd.onclick = () => Export.drucken(A, liste.slice().sort((a, b) => String(a.erstellt).localeCompare(String(b.erstellt))));
     const qi = el.querySelector("#q");
     qi.oninput = () => { suche = qi.value; const pos = qi.selectionStart; zeichnen(); const n = el.querySelector("#q"); n.focus(); n.setSelectionRange(pos, pos); };
+    el.querySelectorAll("[data-tag]").forEach(b => b.onclick = () => { suche = suche.toLowerCase() === "#" + b.dataset.tag ? "" : "#" + b.dataset.tag; zeichnen(); });
     el.querySelectorAll("[data-f]").forEach(b => b.onclick = () => A.gehe("heft" + (b.dataset.f ? "/" + b.dataset.f : "")));
     const uebernehmen = async (s) => { s.fach = s.vorschlag.fach; if (s.vorschlag.titel && /^Scan |^Neue Seite|^Mitschrift /.test(s.titel)) s.titel = s.vorschlag.titel; s.vorschlag = null; await A.seiteSpeichern(s); };
     el.querySelectorAll("[data-ja]").forEach(b => b.onclick = async () => { await uebernehmen(A.seite(b.dataset.ja)); zeichnen(); });
@@ -280,6 +286,7 @@ export function seite(A, el, id) {
       '<button type="button" data-a="word">💾 Als Word-Datei (.docx)</button>' +
       '<button type="button" data-a="gitter">▦ Gitternetz ein/aus (Hilfslinien)</button>' +
       '<button type="button" data-a="raender">⬚ Seitenränder zeigen ein/aus</button>' +
+      '<button type="button" data-a="lesehilfe">📖 Lesehilfe ein/aus (Leselineal, mehr Abstand)</button>' +
       '<button type="button" data-a="druck">🖨️ Drucken / PDF</button>' +
       '<button type="button" data-a="bild">🖼️ Als Bild speichern</button>' +
       (A.einst.an.folien !== false && !s.bild ? '<button type="button" data-a="folien">🖥️ Als Präsentation (Folien)</button>' : "") +
@@ -295,6 +302,7 @@ export function seite(A, el, id) {
       '<canvas id="tinte" aria-label="Zeichenfläche"></canvas>' +
       '<div class="werkzeug-ebene" id="wzEbene"></div>' +
     '</div></div>' +
+    '<div id="verweise">' + Verkn.fussHtml(A, s) + '</div>' +
     '<div class="seite-fuss"><span id="zaehler" class="muted klein"></span><span class="muted klein">Wird automatisch gespeichert · ' + QUELLE[s.quelle || "heft"] + ' angelegt ' + datum(s.erstellt) + '</span></div>' +
     (s.bild || s.ocr ? '<details class="card erkannt"><summary>🔍 Erkannter Text' + (s.ocr ? "" : " (noch keiner)") + '</summary><textarea class="inp" id="ocr" rows="6" aria-label="Erkannter Text">' + esc(s.ocr) + '</textarea></details>' : "");
 
@@ -365,6 +373,11 @@ export function seite(A, el, id) {
   function zaehlen() { const t = s.text || ""; el.querySelector("#zaehler").textContent = Editor.woerter(t) + " Wörter · " + t.replace(/\s/g, "").length + " Zeichen"; }
   zaehlen();
   rich.addEventListener("input", textGeaendert);
+  const linkZu = Verkn.editorAnbinden(A, rich, s, textGeaendert);
+  const tagsBinden = () => el.querySelectorAll("#verweise [data-tag]").forEach(a => a.onclick = (e) => { e.preventDefault(); sessionStorage.setItem("kw-heft-suche", "#" + a.dataset.tag); A.gehe("heft"); });
+  tagsBinden();
+  let tagsAlt = (s.tags || []).join();
+  rich.addEventListener("input", () => { const t = Verkn.tagsAusText(s.text).join(); if (t !== tagsAlt) { tagsAlt = t; s.tags = t ? t.split(",") : []; el.querySelector("#verweise").innerHTML = Verkn.fussHtml(A, s); tagsBinden(); } });
   const wort = Editor.leisteBinden(el.querySelector("#wortLeiste"), rich, textGeaendert, { bild: Editor.bildWaehlen, sprachModell: A.einst.f.audio.modell,
     autokorrektur: () => A.einst.f.heft.autokorrektur !== false, autokorrekturSetzen: (an) => { A.einst.f.heft.autokorrektur = an; A.einstSpeichern(); } });
   el.querySelector("#titel").oninput = (e) => { s.titel = e.target.value; spaeter(); };
@@ -794,6 +807,7 @@ export function seite(A, el, id) {
     if (a === "ecken") { await jetztSpeichern(); A.eckenAnpassen(s); }
     if (a === "word") { await jetztSpeichern(); Export.alsWord(A, s); }
     if (a === "druck") { await jetztSpeichern(); Export.drucken(A, [s]); }
+    if (a === "lesehilfe") { const hv = KW.load("kw-heft-ansicht", {}); hv.lesehilfe = !hv.lesehilfe; KW.save("kw-heft-ansicht", hv); heftAnsicht(); KW.toast(hv.lesehilfe ? "📖 Lesehilfe an – das Lineal folgt deinem Finger oder der Maus." : "Lesehilfe aus."); return; }
     if (a === "gitter" || a === "raender") { const hv = KW.load("kw-heft-ansicht", {}); hv[a] = !hv[a]; KW.save("kw-heft-ansicht", hv); heftAnsicht(); KW.toast(hv[a] ? (a === "gitter" ? "▦ Gitternetz an (wird nicht gedruckt)" : "⬚ Seitenränder sichtbar") : "Aus."); return; }
     if (a === "teilen") { await jetztSpeichern(); Extras.teilen(A, s); }
     if (a === "versionen") { await jetztSpeichern(); Extras.versionen(A, s, () => A.zeigen()); }
@@ -845,11 +859,19 @@ export function seite(A, el, id) {
   groesse();
   setTimeout(wachsen, 50);
   if (Z.modus === "tippen" && !s.text && !s.bild) rich.focus();
-  function heftAnsicht() { const hv = KW.load("kw-heft-ansicht", {}); blatt.classList.toggle("mit-gitter", !!hv.gitter); blatt.classList.toggle("mit-raendern", !!hv.raender); }
+  function heftAnsicht() {
+    const hv = KW.load("kw-heft-ansicht", {}); blatt.classList.toggle("mit-gitter", !!hv.gitter); blatt.classList.toggle("mit-raendern", !!hv.raender);
+    rahmenEl.classList.toggle("lesehilfe", !!hv.lesehilfe);
+    let lineal = rahmenEl.querySelector(".leselineal");
+    if (hv.lesehilfe && !lineal) { lineal = document.createElement("div"); lineal.className = "leselineal"; lineal.setAttribute("aria-hidden", "true"); rahmenEl.appendChild(lineal); lineal.style.top = "40px"; }
+    if (!hv.lesehilfe && lineal) lineal.remove();
+  }
+  rahmenEl.addEventListener("pointermove", (e) => { const l = rahmenEl.querySelector(".leselineal"); if (!l || e.pointerType === "pen") return; const r = rahmenEl.getBoundingClientRect(); l.style.top = (e.clientY - r.top + rahmenEl.scrollTop - 18) + "px"; });
   heftAnsicht();
   Extras.versionMerken(A, s);
 
   return () => {
+    try { linkZu(); } catch (e) {}
     ro.disconnect();
     document.removeEventListener("keydown", tasten);
     if (window.speechSynthesis) window.speechSynthesis.cancel();

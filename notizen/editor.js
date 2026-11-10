@@ -135,18 +135,51 @@ export function bildWaehlen() {
 
 /* ---------- Vorlesen (nur Stimmen auf dem Gerät) ---------- */
 
+// Vorlesen mit kleinem Player: Pause, Stopp, Tempo (0,75× bis 2×). Nur Stimmen auf dem Gerät.
 export function vorlesen(text, knopf) {
   const sy = window.speechSynthesis;
   if (!sy) { KW.toast("Dein Browser kann nicht vorlesen."); return; }
-  if (sy.speaking) { sy.cancel(); if (knopf) knopf.classList.remove("an"); return; }
+  const alt = document.querySelector(".vl-player");
+  if (alt) { alt._stopp(); return; }
   const stimmen = sy.getVoices().filter(v => /^de/i.test(v.lang));
   const stimme = stimmen.find(v => v.localService) || null; // nur lokale Stimmen: nichts geht ins Internet
   if (!stimme) { KW.toast(stimmen.length ? "Auf diesem Gerät gibt es nur Online-Stimmen – die nutze ich nicht." : "Auf diesem Gerät ist keine deutsche Stimme installiert."); return; }
-  const u = new SpeechSynthesisUtterance(String(text).slice(0, 30000));
-  u.voice = stimme; u.lang = stimme.lang; u.rate = 0.95;
-  u.onend = u.onerror = () => knopf && knopf.classList.remove("an");
+  const ganz = String(text).slice(0, 30000).trim();
+  if (!ganz) { KW.toast("Hier steht noch nichts zum Vorlesen."); return; }
+  let tempo = KW.load("kw-vorlesen-tempo", 1), pos = 0, basis = 0, pausiert = false;
+  const p = document.createElement("div");
+  p.className = "vl-player"; p.setAttribute("role", "region"); p.setAttribute("aria-label", "Vorlesen");
+  p.innerHTML = '<button type="button" class="btn small" data-v="pause" aria-label="Pause">⏸</button><div class="vl-mitte"><div class="vl-balken"><i></i></div><div class="vl-tempo" role="radiogroup" aria-label="Tempo">' +
+    [0.75, 1, 1.25, 1.5, 2].map(t => '<button type="button" role="radio" data-t="' + t + '" aria-checked="' + (t === tempo) + '">' + String(t).replace(".", ",") + '×</button>').join("") + '</div></div><button type="button" class="btn small" data-v="stopp" aria-label="Vorlesen beenden">✕</button>';
+  document.body.appendChild(p);
+  const balken = p.querySelector(".vl-balken i");
+  function sprechen(ab) {
+    sy.cancel(); basis = ab;
+    const u = new SpeechSynthesisUtterance(ganz.slice(ab));
+    u.voice = stimme; u.lang = stimme.lang; u.rate = 0.95 * tempo;
+    u.onboundary = (e) => { pos = basis + e.charIndex; balken.style.width = Math.round(pos / ganz.length * 100) + "%"; };
+    u.onend = () => { if (!pausiert && sy.speaking === false && u._aktiv) stopp(); };
+    u._aktiv = true; p._u && (p._u._aktiv = false); p._u = u;
+    sy.speak(u);
+  }
+  function stopp() { if (p._u) p._u._aktiv = false; sy.cancel(); p.remove(); if (knopf) knopf.classList.remove("an"); }
+  p._stopp = stopp;
+  p.querySelector('[data-v="stopp"]').onclick = stopp;
+  const pk = p.querySelector('[data-v="pause"]');
+  pk.onclick = () => {
+    if (!pausiert) { pausiert = true; if (p._u) p._u._aktiv = false; sy.cancel(); pk.textContent = "▶"; pk.setAttribute("aria-label", "Weiter"); }
+    else { pausiert = false; pk.textContent = "⏸"; pk.setAttribute("aria-label", "Pause"); sprechen(satzAnfang(pos)); }
+  };
+  // beim Weitermachen am Satzanfang einsetzen, damit nichts abgehackt klingt
+  const satzAnfang = (i) => { const vor = ganz.slice(0, i), m = Math.max(vor.lastIndexOf(". "), vor.lastIndexOf("\n"), vor.lastIndexOf("! "), vor.lastIndexOf("? ")); return m > 0 ? m + 1 : 0; };
+  p.querySelectorAll("[data-t]").forEach(b => b.onclick = () => {
+    tempo = Number(b.dataset.t); KW.save("kw-vorlesen-tempo", tempo);
+    p.querySelectorAll("[data-t]").forEach(x => x.setAttribute("aria-checked", x === b));
+    if (!pausiert) sprechen(satzAnfang(pos));
+  });
   if (knopf) knopf.classList.add("an");
-  sy.speak(u);
+  window.addEventListener("hashchange", stopp, { once: true });
+  sprechen(0);
 }
 
 /* ---------- Diktieren (Whisper auf dem Gerät) ---------- */

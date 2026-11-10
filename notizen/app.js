@@ -18,6 +18,7 @@ import * as Folien from "./folien.js";
 import * as Werkzeuge from "./werkzeuge.js";
 import * as Schule from "./schule.js";
 import * as KIH from "./ki-helfer.js";
+import * as Verkn from "./verknuepfen.js";
 
 const KW = window.KW, esc = KW.esc;
 
@@ -40,12 +41,13 @@ A.seiteNeu = async (werte) => {
   const jetzt = new Date().toISOString();
   const s = Object.assign({ id: KW.id(), fach: "", titel: "", erstellt: jetzt, geaendert: jetzt, quelle: "heft",
     raster: A.einst.f.heft.raster, hoehe: 297, text: "", striche: [], bild: null, ocr: "", vorschlag: null, pin: false }, werte);
+  if (!s.art || s.art === "heft") s.tags = Verkn.tagsAusText(A.seitenText(s) + " " + (s.html ? s.html.replace(/<[^>]+>/g, " ") : ""));
   A.seiten.unshift(s);
   await S.lege("seiten", s);
   Sync.melden("seite", s);
   return s;
 };
-A.seiteSpeichern = async (s) => { s.geaendert = new Date().toISOString(); await S.lege("seiten", s); Sync.melden("seite", s); };
+A.seiteSpeichern = async (s) => { if (!s.art || s.art === "heft") s.tags = Verkn.tagsAusText(A.seitenText(s)); s.geaendert = new Date().toISOString(); await S.lege("seiten", s); Sync.melden("seite", s); };
 // Löschen = in den Papierkorb (30 Tage), erst „endgültig“ ist wirklich weg
 // Nur Heftseiten (art fehlt), oder eine andere Art: "tabelle", "folien"; "*" = alles
 A.aktiv = (art = "heft") => A.seiten.filter(s => !s.papierkorb && (art === "*" || (s.art || "heft") === art));
@@ -323,6 +325,7 @@ async function starten() {
     A.einst.migriert = true; E.speichern(A.einst);
   }
   for (const s of A.seiten.slice()) if (s.papierkorb && Date.now() - new Date(s.papierkorb) > 30 * 864e5) await A.seiteEndgueltig(s.id);
+  for (const s of A.seiten) if (!s.tags && (!s.art || s.art === "heft")) s.tags = Verkn.tagsAusText(A.seitenText(s));
   A.seiten.sort((a, b) => (b.pin - a.pin) || String(b.geaendert).localeCompare(String(a.geaendert)));
   A.lern.sort((a, b) => String(b.erstellt).localeCompare(String(a.erstellt)));
   if (!A.einst.fertig) await E.assistent(A.einst);
