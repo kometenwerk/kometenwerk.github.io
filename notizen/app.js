@@ -175,6 +175,7 @@ function lernFach() {
 }
 setInterval(() => {
   if (document.hidden || Date.now() - zuletztAktiv > 120000) return;
+  const tm = KW.load("kw-timer", null); if (tm && tm.art === "lernen" && tm.pausiert == null) return; // zählt der Lern-Timer selbst
   const f = lernFach();
   if (f !== null) Schule.lernzeitPlus(f, 1);
 }, 60000);

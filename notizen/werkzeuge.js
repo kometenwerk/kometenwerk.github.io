@@ -1,22 +1,23 @@
-// FIDELIA Notizen · Werkzeug-Seitenleiste (überall aufklappbar): Taschenrechner, Aufgaben-Helfer, Wunschnote
+// FIDELIA Notizen · Werkzeug-Seitenleiste (überall aufklappbar): Rechner, Aufgaben-Helfer, Formelsammlung, Periodensystem, Einheiten, Lern-Timer, Wunschnote
 // Merkt sich, wo dein Cursor zuletzt war (Heft, Tabelle, Folie), damit „→ einfügen“ genau dort landet.
 
 import * as Rechner from "./rechner.js";
 import * as Schule from "./schule.js";
 import * as KIH from "./ki-helfer.js";
+import * as WR from "./werkzeug-reiter.js";
 
 const KW = window.KW;
 
-const REITER = [["rechner", "🧮 Rechner"], ["hilfe", "💡 Aufgabe"], ["note", "🎯 Wunschnote"]];
+const REITER = [["rechner", "🧮", "Rechner"], ["hilfe", "💡", "Aufgabe"], ["formeln", "📐", "Formeln"], ["pse", "⚛️", "Elemente"], ["einheiten", "📏", "Einheiten"], ["timer", "⏱️", "Timer"], ["note", "🎯", "Note"]];
 
 export function start(A) {
   if (document.getElementById("wzLeiste")) return;
   const knopf = document.createElement("button");
-  knopf.type = "button"; knopf.id = "wzKnopf"; knopf.className = "wz-knopf"; knopf.title = "Werkzeuge: Rechner, Aufgaben-Helfer, Wunschnote (Strg+K)"; knopf.setAttribute("aria-label", "Werkzeuge öffnen"); knopf.setAttribute("aria-expanded", "false");
+  knopf.type = "button"; knopf.id = "wzKnopf"; knopf.className = "wz-knopf"; knopf.title = "Werkzeuge: Rechner, Formeln, Periodensystem, Timer … (Strg+K)"; knopf.setAttribute("aria-label", "Werkzeuge öffnen"); knopf.setAttribute("aria-expanded", "false");
   knopf.textContent = "🧮";
   const leiste = document.createElement("aside");
   leiste.id = "wzLeiste"; leiste.className = "wz-leiste"; leiste.hidden = true; leiste.setAttribute("aria-label", "Werkzeuge");
-  leiste.innerHTML = '<div class="wz-kopf"><div class="wz-reiter" role="tablist">' + REITER.map(r => '<button type="button" role="tab" data-reiter="' + r[0] + '" aria-controls="wz-' + r[0] + '">' + r[1] + '</button>').join("") + '</div><span class="sp"></span><button type="button" class="btn small" id="wzZu" aria-label="Werkzeuge schließen">✕</button></div>' + REITER.map(r => '<div class="wz-inhalt" role="tabpanel" id="wz-' + r[0] + '" hidden></div>').join("");
+  leiste.innerHTML = '<div class="wz-kopf"><div class="wz-reiter" role="tablist">' + REITER.map(r => '<button type="button" role="tab" data-reiter="' + r[0] + '" aria-controls="wz-' + r[0] + '" title="' + r[2] + '"><span aria-hidden="true">' + r[1] + '</span><small>' + r[2] + '</small></button>').join("") + '</div><span class="sp"></span><button type="button" class="btn small" id="wzZu" aria-label="Werkzeuge schließen">✕</button></div>' + REITER.map(r => '<div class="wz-inhalt" role="tabpanel" id="wz-' + r[0] + '" hidden></div>').join("");
   document.body.append(knopf, leiste);
 
   /* Wo war der Cursor zuletzt? */
@@ -42,6 +43,14 @@ export function start(A) {
       ziel.focus({ preventScroll: true });
       const s = getSelection();
       if (bereich && ziel.contains(bereich.startContainer)) { s.removeAllRanges(); s.addRange(bereich); }
+      if (extra.tex) {
+        const z = ziel, b = bereich;
+        import("./editor.js").then(E => E.katex().then(() => {
+          z.focus({ preventScroll: true }); const s2 = getSelection(); if (b && z.contains(b.startContainer)) { s2.removeAllRanges(); s2.addRange(b); }
+          document.execCommand("insertHTML", false, E.formelHtml(extra.tex) + "&nbsp;"); z.dispatchEvent(new Event("input", { bubbles: true }));
+        })).catch(() => document.execCommand("insertText", false, text));
+        KW.toast("✓ Eingefügt."); return;
+      }
       if (extra.tabelle) document.execCommand("insertHTML", false, '<table class="tab mit-kopf"><tbody>' + extra.tabelle.map(r => "<tr>" + r.map(c => "<td>" + KW.esc(c) + "</td>").join("") + "</tr>").join("") + "</tbody></table><p><br></p>");
       else document.execCommand("insertText", false, text);
       KW.toast("✓ Eingefügt."); return;
@@ -56,6 +65,8 @@ export function start(A) {
 
   const teile = {};
   const bauen = { rechner: (box) => Rechner.aufbauen(box, { einfuegen }), note: (box) => Schule.wunschnoteAufbauen(box, A),
+    formeln: (box) => WR.formelnAufbauen(box, { einfuegen }), pse: (box) => WR.pseAufbauen(box, { einfuegen }), einheiten: (box) => WR.einheitenAufbauen(box, { einfuegen }),
+    timer: (box) => WR.timerAufbauen(box, A, { knopf }),
     hilfe: (box) => KIH.aufgabenHelferAufbauen(box, A, { auswahlText: () => (bereich && bereich.toString().trim()) || (auswahlFeld && document.body.contains(auswahlFeld.el) ? auswahlFeld.el.value.slice(auswahlFeld.a, auswahlFeld.b).trim() : "") }) };
   let reiter = KW.load("kw-werkzeuge-reiter", "rechner");
   if (!bauen[reiter]) reiter = "rechner";
@@ -68,6 +79,7 @@ export function start(A) {
   }
   leiste.querySelectorAll("[data-reiter]").forEach(b => b.onclick = () => reiterZeigen(b.dataset.reiter, true));
   reiterZeigen(reiter, false);
+  if (WR.timerZustand() && !teile.timer) teile.timer = bauen.timer(leiste.querySelector("#wz-timer")); // läuft weiter
   const auf = (an) => {
     leiste.hidden = !an; knopf.setAttribute("aria-expanded", an); document.body.classList.toggle("wz-offen", an);
     knopf.classList.toggle("an", an);
