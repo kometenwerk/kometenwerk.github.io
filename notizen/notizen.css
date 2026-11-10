@@ -1010,3 +1010,9 @@ table.gitter{border-collapse:separate;border-spacing:0;table-layout:fixed;font-s
 .tl-jetzt{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#1a1205;background:var(--accent);padding:2px 8px;border-radius:999px}
 .tl-fort{display:block;height:4px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:5px}
 .tl-fort i{display:block;height:100%;background:var(--f)}
+/* 2nd: Zweitfunktion groß zeigen, Tasten ohne Zweitfunktion abdunkeln */
+.re.zweit .re-taste.hat2 span{font-size:.62rem;opacity:.7;order:2}
+.re.zweit .re-taste.hat2 small{font-size:.98rem;order:1}
+.re-taste.hat2{display:flex;flex-direction:column;align-items:center;justify-content:center}
+.re.zweit .re-taste:not(.hat2):not(.re-zweit):not(.re-zahl):not(.re-enter):not(.re-pfeil){opacity:.5}
+.re.zweit .re-taste.re-zahl.hat2 small{color:#8a5a00}

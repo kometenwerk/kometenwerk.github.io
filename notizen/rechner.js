@@ -31,7 +31,7 @@ export function aufbauen(box, { einfuegen }) {
   box.innerHTML = '<div class="re" tabindex="0" aria-label="Taschenrechner – du kannst auch mit der Tastatur tippen">' +
     '<div class="re-display"><div class="re-status" id="reStatus"></div><div class="re-verlauf" id="reVerlauf" aria-live="polite"></div><div class="re-zeile" id="reZeile"></div><div class="re-fehler" id="reFehler" role="alert"></div></div>' +
     '<div class="re-einfuegen"><button type="button" class="btn small" data-ein="ergebnis" title="Ergebnis dort einfügen, wo dein Cursor war">→ Ergebnis einfügen</button><button type="button" class="btn small" data-ein="rechnung" title="Rechnung = Ergebnis einfügen">→ Rechnung einfügen</button></div>' +
-    '<div class="re-tasten" id="reTasten">' + TASTEN.map((k, i) => '<button type="button" class="re-taste re-' + k[4] + '" data-i="' + i + '" aria-label="' + esc(k[0]) + (k[2] ? " (2nd: " + esc(k[2]) + ")" : "") + '">' + (k[2] ? '<small>' + esc(k[2]) + "</small>" : "<small>&nbsp;</small>") + "<span>" + esc(k[0]) + "</span></button>").join("") + "</div>" +
+    '<div class="re-tasten" id="reTasten">' + TASTEN.map((k, i) => '<button type="button" class="re-taste re-' + k[4] + (k[2] ? " hat2" : "") + '" data-i="' + i + '" aria-label="' + esc(k[0]) + (k[2] ? " (2nd: " + esc(k[2]) + ")" : "") + '">' + (k[2] ? '<small>' + esc(k[2]) + "</small>" : "<small>&nbsp;</small>") + "<span>" + esc(k[0]) + "</span></button>").join("") + "</div>" +
     '<div class="re-menue" id="reMenue" hidden></div>' +
     '<p class="muted klein re-hinweis">In Klassenarbeiten brauchst du deinen echten Taschenrechner.</p></div>';
   const wurzel = box.querySelector(".re"), zeile = box.querySelector("#reZeile"), verlaufEl = box.querySelector("#reVerlauf"), fehler = box.querySelector("#reFehler"), menueEl = box.querySelector("#reMenue");
@@ -81,7 +81,7 @@ export function aufbauen(box, { einfuegen }) {
     switch (a) {
       case "zweit": zweit = !zweit; return zeigen();
       case "del": loeschen(); break;
-      case "verlaufWeg": daten.verlauf = []; auswahl = -1; speichern(); break;
+      case "verlaufWeg": if (!daten.verlauf.length) KW.toast("Der Verlauf ist schon leer."); else { daten.verlauf = []; auswahl = -1; speichern(); KW.toast("Verlauf gelöscht."); } break;
       case "links": cursor = Math.max(0, cursor - 1); break;
       case "rechts": cursor = Math.min(eingabe.length, cursor + 1); break;
       case "hoch": auswahl = auswahl < 0 ? daten.verlauf.length - 1 : Math.max(0, auswahl - 1); break;
@@ -89,8 +89,8 @@ export function aufbauen(box, { einfuegen }) {
       case "clear": if (eingabe) { eingabe = ""; cursor = 0; } else if (auswahl >= 0) auswahl = -1; fehler.textContent = ""; break;
       case "enter": ausrechnen(); break;
       case "umschalten": { const v = letztes(); if (v) { const a2 = art(v); v.art = a2 === "bruch" ? "gemischt" : a2 === "gemischt" ? "komma" : "bruch"; if (v.art === "gemischt" && !(R.istBruch(v.wert) && Math.abs(v.wert.n) > v.wert.d)) v.art = "komma"; speichern(); } break; }
-      case "gemischt": { const v = letztes(); if (v) { v.art = art(v) === "gemischt" ? "bruch" : "gemischt"; speichern(); } break; }
-      case "mode": case "quit": return a === "quit" ? menueZu() : menueMode();
+      case "gemischt": { const v = letztes(); if (!v) KW.toast("Erst etwas ausrechnen – dann zeigt U n⁄d das Ergebnis als gemischte Zahl."); if (v) { v.art = art(v) === "gemischt" ? "bruch" : "gemischt"; speichern(); } break; }
+      case "mode": case "quit": if (a === "quit" && !menue) { zeigen(); return; } return a === "quit" ? menueZu() : menueMode();
       case "math": return menueMath();
       case "data": return menueData();
       case "table": return menueTabelle();
