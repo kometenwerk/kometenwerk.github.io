@@ -994,3 +994,19 @@ table.gitter{border-collapse:separate;border-spacing:0;table-layout:fixed;font-s
 .fern-k{height:120px;border-radius:20px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:2.4rem;cursor:pointer;touch-action:manipulation}
 .fern-k.primaer{background:var(--accent);border-color:var(--accent);color:#1a1205}
 .fern-notiz{padding:12px 14px;line-height:1.5}
+
+/* ---------- Heute: Stundenplan als Zeitleiste ---------- */
+.heute-kachel h3 small{font-weight:500;color:var(--muted);font-size:.8rem;margin-left:4px}
+.tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.tl-z{position:relative;display:grid;grid-template-columns:44px 4px 1fr auto;align-items:center;gap:10px;padding:7px 8px 7px 4px;border-radius:12px}
+.tl-zeit{font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+.tl-balken{align-self:stretch;border-radius:4px;background:var(--f);min-height:30px}
+.tl-inhalt{display:flex;flex-direction:column;min-width:0;gap:1px}
+.tl-inhalt b{font-size:.98rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-inhalt small{color:var(--muted);font-size:.76rem}
+.tl-z.vorbei{opacity:.45}
+.tl-z.vorbei .tl-balken{background:var(--line)}
+.tl-z.jetzt{background:color-mix(in srgb,var(--f) 14%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--f) 45%,transparent)}
+.tl-jetzt{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#1a1205;background:var(--accent);padding:2px 8px;border-radius:999px}
+.tl-fort{display:block;height:4px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:5px}
+.tl-fort i{display:block;height:100%;background:var(--f)}

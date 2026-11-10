@@ -37,3 +37,9 @@ test("Welche Stunde ist gerade?", () => {
   assert.equal(S.jetztStunde(st, "10:00").jetzt, true); assert.equal(S.jetztStunde(st, "12:00"), null);
 });
 console.log(ok + " Tests bestanden.");
+{
+  const b = S.stundenBloecke([{ stunde: 2, fach: "Latein" }, { stunde: 1, fach: "Latein" }, { stunde: 3, fach: "Chemie" }, { stunde: 5, fach: "Chemie" }]);
+  assert.deepEqual(b.map(x => [x.von, x.bis, x.fach]), [[1, 2, "Latein"], [3, 3, "Chemie"], [5, 5, "Chemie"]]);
+  assert.equal(b[0].start, "07:45"); assert.equal(b[0].ende, "09:20");
+  console.log("✓ Doppelstunden zusammenfassen");
+}

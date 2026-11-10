@@ -3,6 +3,8 @@
 // Was hier eingetragen wird, steht also auch in der Planer-App – und umgekehrt.
 // Gruppenarbeit: danach Knöpfe für ein Treffen in OMNIVIA Events und eine Gruppe im FIDELIA Chat.
 
+import * as Schule from "./schule.js";
+
 const KW = window.KW, esc = KW.esc;
 const KEY = "kw-planer";
 
@@ -66,7 +68,7 @@ export function zeigen(A, el) {
     if (F.hausaufgaben) h += '<div class="row knopf-reihe"><button type="button" class="btn primary" data-neu="hausaufgabe">📝 Hausaufgabe</button><button type="button" class="btn" data-neu="test">✏️ Klassenarbeit</button><button type="button" class="btn" data-neu="gruppe">👥 Gruppenarbeit</button></div>';
     if (F.stundenplan) {
       const st = stundenFuer(D, heute);
-      h += '<section class="card abschnitt"><h3>Heute</h3>' + (st.length ? '<div class="stunden">' + st.map(z => '<span class="stunde" style="--f:' + esc(A.fachFarbe(z.fach)) + '"><small>' + z.stunde + '.</small> ' + esc(z.fach) + (z.raum ? ' <small>' + esc(z.raum) + '</small>' : "") + '</span>').join("") + '</div>'
+      h += '<section class="card abschnitt"><h3>Heute</h3>' + (st.length ? Schule.heuteHtml(A, st)
         : '<p class="muted">' + (Object.keys(D.plan.zellen).length ? "Heute keine Schule 🎉" : 'Noch kein Stundenplan. <a href="../planer/">Im Planer eintragen ↗</a>') + '</p>') + '</section>';
     }
     if (F.countdown) {

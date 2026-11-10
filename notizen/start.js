@@ -27,7 +27,7 @@ export function zeigen(A, el) {
     if (P.stundenplan) {
       const st = Planer.stundenFuer(D, heute);
       h += Schule.jetztKachel(A, st);
-      if (st.length) h += '<section class="card kachel"><h3>Heute</h3><div class="stunden">' + st.map(z => '<span class="stunde" style="--f:' + esc(A.fachFarbe(z.fach)) + '"><small>' + z.stunde + '.</small> ' + esc(z.fach) + '</span>').join("") + '</div></section>';
+      if (st.length) h += '<section class="card kachel heute-kachel"><h3>📅 Heute <small>' + st.length + ' Stunden</small></h3>' + Schule.heuteHtml(A, st) + '</section>';
     }
     const offen = Planer.offen(D);
     const bald = offen.filter(e => e.datum <= morgen);

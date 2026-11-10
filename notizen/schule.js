@@ -213,3 +213,29 @@ export function wunschnoteAufbauen(box, A) {
   zeichnen();
   return { fokus: () => { const n = box.querySelector("#wnNote"); n && n.focus(); } };
 }
+
+/* ---------- Stundenplan von heute als Zeitleiste ---------- */
+// Gleiche Fächer direkt hintereinander werden zu einer Doppelstunde zusammengefasst
+export function stundenBloecke(stunden) {
+  const out = [];
+  for (const st of stunden.slice().sort((a, b) => a.stunde - b.stunde)) {
+    const l = out[out.length - 1];
+    if (l && l.fach === st.fach && (l.raum || "") === (st.raum || "") && l.bis === st.stunde - 1) l.bis = st.stunde;
+    else out.push({ von: st.stunde, bis: st.stunde, fach: st.fach, raum: st.raum || "" });
+  }
+  return out.map(b => ({ ...b, start: (STUNDEN[b.von - 1] || [])[0] || "", ende: (STUNDEN[b.bis - 1] || [])[1] || "" }));
+}
+export function heuteHtml(A, stunden, uhr = uhrJetzt()) {
+  const esc = A.esc, bl = stundenBloecke(stunden);
+  if (!bl.length) return "";
+  const zuMin = (t) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+  return '<ol class="tl">' + bl.map(b => {
+    const vorbei = b.ende && uhr >= b.ende, jetzt = b.start && uhr >= b.start && uhr < b.ende;
+    const anteil = jetzt ? Math.round((zuMin(uhr) - zuMin(b.start)) / (zuMin(b.ende) - zuMin(b.start)) * 100) : 0;
+    return '<li class="tl-z' + (vorbei ? " vorbei" : "") + (jetzt ? " jetzt" : "") + '" style="--f:' + esc(A.fachFarbe(b.fach)) + '">' +
+      '<span class="tl-zeit">' + esc(b.start) + '</span><span class="tl-balken" aria-hidden="true"></span>' +
+      '<span class="tl-inhalt"><b>' + esc(b.fach) + '</b><small>' + (b.von === b.bis ? b.von + ". Stunde" : b.von + ".–" + b.bis + ". Stunde") + (b.raum ? " · " + esc(b.raum) : "") + (b.ende ? " · bis " + esc(b.ende) : "") + '</small>' +
+      (jetzt ? '<span class="tl-fort" role="progressbar" aria-valuenow="' + anteil + '" aria-valuemin="0" aria-valuemax="100" aria-label="Fortschritt der Stunde"><i style="width:' + anteil + '%"></i></span>' : "") + '</span>' +
+      (jetzt ? '<span class="tl-jetzt">jetzt</span>' : "") + '</li>';
+  }).join("") + '</ol>';
+}
