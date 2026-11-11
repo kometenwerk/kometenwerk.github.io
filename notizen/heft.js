@@ -207,7 +207,8 @@ export function liste(A, el, fach) {
     let h = '<div class="kopfzeile"><h2 class="titel">📓 Heft</h2><span class="sp"></span>' +
       (imKorb ? '<a class="btn small" href="#heft/*papierkorb">🗑️ ' + imKorb + '</a>' : "") +
       (fachWahl && fachWahl[0] !== "*" ? '<button type="button" class="btn small" id="fachDruck" title="Ganzes Fach drucken oder als PDF">🖨️ Fach</button>' + (A.einst.ki && A.einst.ki.art !== "aus" ? '<button type="button" class="btn small" id="lernzettel" title="Die KI fasst alle Seiten des Fachs auf einem Lernzettel zusammen">✨ Lernzettel</button>' : "") : "") +
-      '<label class="btn small" title="FIDELIA-Datei von Mitschülern öffnen">📥 Öffnen<input type="file" id="oeffnen" accept=".fidelia,.json" hidden></label>' +
+      '<button type="button" class="btn small" id="pdfSammeln" title="Mehrere Seiten oder Scans zu einem PDF zusammenfassen">📄 PDF</button>' +
+      '<label class="btn small" title="Word-Datei oder FIDELIA-Datei öffnen">📥 Öffnen<input type="file" id="oeffnen" accept=".docx,.pptx,.xlsx,.fidelia,.json" hidden></label>' +
       '<button type="button" class="btn primary" id="neu">+ Neu</button></div>' +
       '<div class="suche"><input class="inp" type="search" id="q" placeholder="In allen Seiten suchen" aria-label="In allen Seiten suchen" value="' + esc(suche) + '"></div>' +
       '<div class="ordner" role="tablist" aria-label="Fach-Ordner">' +
@@ -232,6 +233,7 @@ export function liste(A, el, fach) {
     el.querySelectorAll("img[data-bild]").forEach(async img => { const b = await A.bildHolen(img.dataset.bild); if (b) { const u = URL.createObjectURL(b); urls.push(u); img.src = u; } });
     el.querySelector("#oeffnen").onchange = (e) => { const d = e.target.files[0]; if (d) Extras.importieren(A, d); };
     el.querySelector("#neu").onclick = () => neuWaehlen(fachWahl && fachWahl[0] !== "*" ? fachWahl : "");
+    el.querySelector("#pdfSammeln").onclick = () => pdfSammeln(A, liste.filter(x => !x.art || x.art === "heft"));
     el.querySelectorAll("[data-art]").forEach(b => b.onclick = () => { artWahl = b.dataset.art; sessionStorage.setItem("kw-heft-art", artWahl); zeichnen(); });
     el.querySelectorAll("[data-mehr]").forEach(b => b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); mehrMenue(A.seite(b.dataset.mehr), b); });
     const fd = el.querySelector("#fachDruck");
@@ -341,6 +343,7 @@ export function seite(A, el, id) {
       (s.bild && s.original ? '<button type="button" data-a="ecken">📐 Ecken anpassen</button>' : "") +
       (s.bild ? '<button type="button" data-a="drehen">⟳ Scan drehen</button>' : "") +
       '<button type="button" data-a="word">💾 Als Word-Datei (.docx)</button>' +
+      '<button type="button" data-a="kopffuss">⎺ Kopf- und Fußzeile …</button>' +
       '<button type="button" data-a="gitter">▦ Gitternetz ein/aus (Hilfslinien)</button>' +
       '<button type="button" data-a="raender">⬚ Seitenränder zeigen ein/aus</button>' +
       '<button type="button" data-a="lesehilfe">📖 Lesehilfe ein/aus (Leselineal, mehr Abstand)</button>' +
@@ -396,8 +399,17 @@ export function seite(A, el, id) {
   }
   // Seitenumbrüche sichtbar machen und Seitenzahlen unten rechts (wie in Word)
   function seitenZahlen() {
-    blatt.querySelectorAll(".seiten-nr").forEach(x => x.remove());
+    blatt.querySelectorAll(".seiten-nr, .kopf-fuss").forEach(x => x.remove());
     const kachel = kachelMm(s), n = Math.max(1, Math.round((s.hoehe || kachel) / kachel));
+    // Kopf- und Fußzeile auf jeder Seite (z. B. Name links, Fach rechts)
+    const kf = s.kopfFuss || {}, ersetz = (t, i) => String(t || "").replace(/\{seite\}/g, i).replace(/\{seiten\}/g, n).replace(/\{datum\}/g, new Date(s.erstellt || Date.now()).toLocaleDateString("de-DE")).replace(/\{titel\}/g, s.titel || "");
+    for (let i = 1; i <= n; i++) for (const [teil, oben] of [["kopf", true], ["fuss", false]]) {
+      const l = ersetz(kf[teil + "L"], i), r = ersetz(kf[teil + "R"], i); if (!l && !r) continue;
+      const d = document.createElement("div"); d.className = "kopf-fuss"; d.setAttribute("aria-hidden", "true");
+      d.innerHTML = "<span>" + esc(l) + "</span><span>" + esc(r) + "</span>";
+      d.style.top = "calc(var(--u) * " + ((i - 1) * kachel + (oben ? 6 : kachel - 10)) + ")";
+      blatt.appendChild(d);
+    }
     if (n < 2) return;
     for (let i = 1; i <= n; i++) {
       const d = document.createElement("div"); d.className = "seiten-nr"; d.setAttribute("aria-hidden", "true");
@@ -405,6 +417,19 @@ export function seite(A, el, id) {
       d.style.top = "calc(var(--u) * " + (i * kachel - 7) + ")";
       blatt.appendChild(d);
     }
+  }
+  async function kopfFussDialog() {
+    const kf = s.kopfFuss || {}, d = document.createElement("dialog"); d.className = "dialog";
+    const f = (k, l) => '<label class="klein">' + l + '<input class="inp" data-kf="' + k + '" value="' + esc(kf[k] || "") + '"></label>';
+    d.innerHTML = "<h3>⎺ Kopf- und Fußzeile</h3><p class=\"klein muted\">Steht auf jeder Seite oben bzw. unten – auch beim Drucken und in Word. Platzhalter: {seite}, {seiten}, {datum}, {titel}</p>" +
+      '<div class="zwei-spalten" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' + f("kopfL", "Kopfzeile links") + f("kopfR", "Kopfzeile rechts") + f("fussL", "Fußzeile links") + f("fussR", "Fußzeile rechts") + "</div>" +
+      '<div class="zeile" style="justify-content:flex-end;margin-top:12px"><button type="button" class="btn" data-a="vorschlag">Name · Fach · Datum</button><button type="button" class="btn primary" data-a="ok">OK</button></div>';
+    document.body.appendChild(d); d.showModal();
+    d.querySelector('[data-a="vorschlag"]').onclick = () => { const v = { kopfL: (A.einst.name || "Name") + (A.einst.klasse ? " · " + A.einst.klasse : ""), kopfR: (s.fach ? s.fach + " · " : "") + "{datum}", fussL: "{titel}", fussR: "Seite {seite} von {seiten}" }; d.querySelectorAll("[data-kf]").forEach(i => { i.value = v[i.dataset.kf]; }); };
+    await new Promise(r => { d.querySelector('[data-a="ok"]').onclick = r; d.addEventListener("close", r); });
+    const neu = {}; d.querySelectorAll("[data-kf]").forEach(i => { if (i.value.trim()) neu[i.dataset.kf] = i.value.trim(); });
+    s.kopfFuss = Object.keys(neu).length ? neu : null; d.remove();
+    await A.seiteSpeichern(s); seitenZahlen();
   }
   function allesZeichnen() { ctx.clearRect(0, 0, canvas.width, canvas.height); (s.striche || []).forEach(st => zeichneStrich(ctx, st, k)); }
   // Text länger als die Seite? Dann kommt eine Seite dazu (wie in Word)
@@ -921,6 +946,7 @@ export function seite(A, el, id) {
     if (a === "ecken") { await jetztSpeichern(); A.eckenAnpassen(s); }
     if (a === "word") { await jetztSpeichern(); Export.alsWord(A, s); }
     if (a === "druck") { await jetztSpeichern(); Export.drucken(A, [s]); }
+    if (a === "kopffuss") { await kopfFussDialog(); return; }
     if (a === "lesehilfe") { const hv = KW.load("kw-heft-ansicht", {}); hv.lesehilfe = !hv.lesehilfe; KW.save("kw-heft-ansicht", hv); heftAnsicht(); KW.toast(hv.lesehilfe ? "📖 Lesehilfe an – das Lineal folgt deinem Finger oder der Maus." : "Lesehilfe aus."); return; }
     if (a === "gitter" || a === "raender") { const hv = KW.load("kw-heft-ansicht", {}); hv[a] = !hv[a]; KW.save("kw-heft-ansicht", hv); heftAnsicht(); KW.toast(hv[a] ? (a === "gitter" ? "▦ Gitternetz an (wird nicht gedruckt)" : "⬚ Seitenränder sichtbar") : "Aus."); return; }
     if (a === "teilen") { await jetztSpeichern(); Extras.teilen(A, s); }
@@ -993,5 +1019,29 @@ export function seite(A, el, id) {
     if (speicherTimer) { clearTimeout(speicherTimer); A.seiteSpeichern(s); }
     if (bildUrl) URL.revokeObjectURL(bildUrl);
     Extras.versionMerken(A, s);
+  };
+}
+
+/* ---------- Mehrere Seiten / Scans → ein PDF ---------- */
+async function pdfSammeln(A, kandidaten) {
+  const liste = kandidaten.slice().sort((a, b) => String(a.erstellt || "").localeCompare(String(b.erstellt || "")));
+  if (!liste.length) { KW.toast("Hier sind keine Heftseiten."); return; }
+  const d = document.createElement("dialog"); d.className = "dialog";
+  d.innerHTML = '<h3>📄 Mehrere Seiten → ein PDF</h3><p class="klein muted">Wähl die Seiten und die Reihenfolge. Danach öffnet sich das Druckfenster – dort „Als PDF speichern“ wählen.</p>' +
+    '<div class="zeile"><button type="button" class="btn small" data-a="alle">Alle</button><button type="button" class="btn small" data-a="scans">Nur Scans</button><button type="button" class="btn small" data-a="keine">Keine</button></div>' +
+    '<ol class="pdf-liste">' + liste.map((s, i) => '<li data-i="' + i + '"><label><input type="checkbox" data-c="' + i + '"' + (s.bild ? " checked" : "") + '> ' + (s.bild ? "📷 " : "📝 ") + esc(s.titel || "Ohne Titel") + ' <small class="muted">' + esc(s.fach || "") + " · " + new Date(s.erstellt || Date.now()).toLocaleDateString("de-DE") + '</small></label><span><button type="button" class="btn small" data-hoch="' + i + '" aria-label="Nach oben">▲</button><button type="button" class="btn small" data-runter="' + i + '" aria-label="Nach unten">▼</button></span></li>').join("") + "</ol>" +
+    '<div class="zeile" style="justify-content:flex-end;margin-top:10px"><button type="button" class="btn" data-a="zu">Abbrechen</button><button type="button" class="btn primary" data-a="los">🖨️ PDF machen</button></div>';
+  document.body.appendChild(d); d.showModal(); d.addEventListener("close", () => d.remove());
+  const ol = d.querySelector(".pdf-liste");
+  d.querySelector('[data-a="alle"]').onclick = () => d.querySelectorAll("[data-c]").forEach(c => c.checked = true);
+  d.querySelector('[data-a="keine"]').onclick = () => d.querySelectorAll("[data-c]").forEach(c => c.checked = false);
+  d.querySelector('[data-a="scans"]').onclick = () => d.querySelectorAll("[data-c]").forEach(c => c.checked = !!liste[c.dataset.c].bild);
+  ol.onclick = (e) => { const b = e.target.closest("[data-hoch],[data-runter]"); if (!b) return; const li = b.closest("li"); if (b.dataset.hoch != null && li.previousElementSibling) li.previousElementSibling.before(li); if (b.dataset.runter != null && li.nextElementSibling) li.nextElementSibling.after(li); };
+  d.querySelector('[data-a="zu"]').onclick = () => d.close();
+  d.querySelector('[data-a="los"]').onclick = async () => {
+    const wahl = Array.from(ol.children).filter(li => li.querySelector("[data-c]").checked).map(li => liste[li.dataset.i]);
+    if (!wahl.length) { KW.toast("Mindestens eine Seite auswählen."); return; }
+    d.close(); KW.toast("PDF wird vorbereitet …");
+    await Export.drucken(A, wahl);
   };
 }

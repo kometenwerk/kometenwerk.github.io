@@ -6,6 +6,7 @@
 import * as F from "./formel.js";
 import * as D from "./diagramm.js";
 import * as X from "./xlsx.js";
+import * as Rg from "./tabellen-regeln.js";
 import * as KI from "./ki.js";
 import * as Extras from "./extras.js";
 import { herunterladen } from "./export.js";
@@ -49,9 +50,27 @@ function vorlage(id, A) {
     const zellen = z({ A1: kopf("Deutsch"), B1: kopf("Englisch"), C1: kopf("Kann ich (x)"), E1: kopf("Gelernt"), E2: { v: '=ZÄHLENWENN(C2:C100;"x")&" von "&ANZAHL2(A2:A100)', f: { b: 1 } } });
     return { titel: "Vokabeln", blaetter: [Object.assign(neuesBlatt("Vokabeln"), { zellen, spalten: { A: 160, B: 160, C: 100, E: 120 }, fix: { z: 1, s: 0 } })] };
   }
+  if (id === "hausaufgaben") {
+    const zellen = z({ A1: kopf("Fach"), B1: kopf("Aufgabe"), C1: kopf("Bis"), D1: kopf("Status") });
+    for (let r = 2; r <= 30; r++) zellen["C" + r] = { v: "", f: { format: "datum" } };
+    return { titel: "Hausaufgaben", blaetter: [Object.assign(neuesBlatt("Hausaufgaben"), { zellen, spalten: { A: 110, B: 260, C: 100, D: 110 }, fix: { z: 1, s: 0 },
+      auswahl: [{ bereich: "D2:D30", werte: ["offen", "angefangen", "erledigt"] }, { bereich: "A2:A30", werte: (A.einst.faecher || []).map(f => f.name).slice(0, 20).concat((A.einst.faecher || []).length ? [] : ["Deutsch", "Mathe", "Englisch"]) }],
+      regeln: [{ id: KW.id(), bereich: "D2:D30", art: "gleich", wert: "erledigt", farbe: "#c8e6c9", schrift: "#1b5e20" }, { id: KW.id(), bereich: "D2:D30", art: "gleich", wert: "offen", farbe: "#ffcdd2", schrift: "#b71c1c" }] })] };
+  }
+  if (id === "reaktion") {
+    const zellen = z({ A1: { v: "Reaktionstest", f: { b: 1, groesse: 14 } }, A3: kopf("Versuch"), B3: kopf("Proband 1 (ms)"), C3: kopf("Proband 2 (ms)"), D3: kopf("Proband 3 (ms)") });
+    for (let r = 4; r <= 13; r++) zellen["A" + r] = { v: String(r - 3) };
+    return { titel: "Reaktionszeiten", blaetter: [Object.assign(neuesBlatt("Messung"), { zellen, spalten: { A: 90, B: 130, C: 130, D: 130 }, fix: { z: 3, s: 0 }, regeln: [{ id: KW.id(), bereich: "B4:D13", art: "skala", umkehren: true }], diagramme: [{ id: KW.id(), art: "saeule", bereich: "A3:D13", titel: "Reaktionszeit pro Versuch" }] })] };
+  }
+  if (id === "stundenplan") {
+    const tage = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"], zellen = z({ A1: kopf("Stunde") });
+    tage.forEach((t, i) => { zellen[F.zelleName(0, i + 1)] = kopf(t); });
+    for (let r = 2; r <= 11; r++) zellen["A" + r] = { v: String(r - 1) + ".", f: { b: 1, ausr: "c" } };
+    return { titel: "Stundenplan", blaetter: [Object.assign(neuesBlatt("Stundenplan"), { zellen, spalten: { A: 70, B: 120, C: 120, D: 120, E: 120, F: 120 }, fix: { z: 1, s: 1 }, auswahl: [{ bereich: "B2:F11", werte: (A.einst.faecher || []).map(f => f.name).slice(0, 25).concat("Pause") }] })] };
+  }
   return { titel: "Neue Tabelle", blaetter: [neuesBlatt("Blatt1")] };
 }
-const VORLAGEN = [["leer", "📄", "Leere Tabelle"], ["noten", "🎓", "Notenrechner"], ["geld", "💶", "Taschengeld"], ["messung", "🔬", "Messwerte (NWT/Physik)"], ["vokabeln", "🔤", "Vokabel-Liste"]];
+const VORLAGEN = [["leer", "📄", "Leere Tabelle"], ["noten", "🎓", "Notenrechner"], ["geld", "💶", "Taschengeld"], ["messung", "🔬", "Messwerte (NWT/Physik)"], ["reaktion", "⏱️", "Reaktionszeiten"], ["vokabeln", "🔤", "Vokabel-Liste"], ["hausaufgaben", "📝", "Hausaufgaben-Liste"], ["stundenplan", "🗓️", "Stundenplan"]];
 
 export function textVon(mappe) {
   return mappe.blaetter.map(b => Object.values(b.zellen).map(c => c && typeof c.v === "string" && c.v[0] !== "=" ? c.v : "").filter(Boolean).join(" ")).join(" ").slice(0, 4000);
@@ -156,6 +175,7 @@ export function seite(A, el, id) {
         '<span class="gruppe" data-gruppe="daten">' +
           '<button type="button" data-sort="auf" title="Aufsteigend sortieren">A→Z Sortieren</button><button type="button" data-sort="ab" title="Absteigend sortieren">Z→A</button>' +
           '<button type="button" id="filter" title="Filter an/aus">⏷ Filter</button>' +
+          '<button type="button" id="bedingt" title="Bedingte Formatierung: Zellen färben sich nach Regeln">🎨 Bedingt</button><button type="button" id="ddListe" title="Auswahlliste (Dropdown) für die markierten Zellen">▾ Auswahlliste</button>' +
           '<select id="fix" aria-label="Fixieren" title="Zeilen/Spalten fixieren"><option value="0,0">📌 Nichts fixiert</option><option value="1,0">📌 Erste Zeile</option><option value="0,1">📌 Erste Spalte</option><option value="1,1">📌 Zeile + Spalte</option></select>' +
           '<button type="button" id="fuellUnten" title="Nach unten ausfüllen (Strg+D)">⬇ Ausfüllen</button><button type="button" id="fuellRechts" title="Nach rechts ausfüllen (Strg+R)">➡ Ausfüllen</button>' +
           '<span class="trenn"></span><button type="button" id="zeilePlus" title="Zeile darüber einfügen">+ Zeile</button><button type="button" id="zeileMinus" title="Zeile löschen">− Zeile</button><button type="button" id="spaltePlus" title="Spalte links einfügen">+ Spalte</button><button type="button" id="spalteMinus" title="Spalte löschen">− Spalte</button>' +
@@ -206,7 +226,8 @@ export function seite(A, el, id) {
   function zelleZeigen(z, sp) {
     const t = td(z, sp); if (!t) return;
     const name = F.zelleName(z, sp), c = blatt().zellen[name];
-    if (!c) { if (t.textContent || t.getAttribute("style") || t.className) { t.textContent = ""; t.removeAttribute("style"); t.className = ""; } return; }
+    const dd = (blatt().auswahl || []).length && Rg.auswahlFuer(blatt(), z, sp) ? "dropdown" : "";
+    if (!c) { if (t.textContent || t.getAttribute("style") || t.className !== dd) { t.textContent = ""; t.removeAttribute("style"); t.className = dd; } return; }
     const w = rech.wert(blatt().name, name), f = c.f || {};
     const txt = F.anzeigen(w, F.formatVon(c), f.stellen);
     t.textContent = txt;
@@ -217,8 +238,9 @@ export function seite(A, el, id) {
     const ausr = f.ausr || (typeof w === "number" ? "r" : typeof w === "boolean" || F.istFehler(w) ? "c" : "l");
     st += "text-align:" + { l: "left", c: "center", r: "right" }[ausr] + ";";
     if (f.umbruch) st += "white-space:normal;";
+    if ((blatt().regeln || []).length) st += Rg.stilFuer(blatt(), z, sp, w, rech);
     t.setAttribute("style", st);
-    t.className = (f.rahmen ? "rahmen " : "") + (F.istFehler(w) ? "fehler " : "") + (typeof c.v === "string" && c.v[0] === "=" ? "formel" : "");
+    t.className = (f.rahmen ? "rahmen " : "") + (F.istFehler(w) ? "fehler " : "") + (typeof c.v === "string" && c.v[0] === "=" ? "formel " : "") + dd;
   }
   function alleZeigen() {
     rech = F.alleRechnen(s.mappe);
@@ -271,6 +293,20 @@ export function seite(A, el, id) {
     leisteZeigen(c);
     statusZeigen();
     if (a) sichtbar(a);
+    ddZeigen();
+  }
+  // Auswahlliste: kleines Menü an der Zelle
+  function ddZeigen() {
+    const alt = box.querySelector(".dd-wahl"); if (alt) alt.remove();
+    if (bearb) return;
+    const werte = (blatt().auswahl || []).length && Rg.auswahlFuer(blatt(), sel.a.z, sel.a.s); if (!werte) return;
+    const t = td(sel.a.z, sel.a.s); if (!t) return;
+    const c = blatt().zellen[F.zelleName(sel.a.z, sel.a.s)], jetzt = c ? String(c.v) : "";
+    const w = document.createElement("select"); w.className = "dd-wahl"; w.setAttribute("aria-label", "Auswahl");
+    w.innerHTML = '<option value="">▾</option>' + werte.map(v => '<option' + (v === jetzt ? " selected" : "") + ">" + esc(v) + "</option>").join("");
+    w.style.left = (t.offsetLeft + t.offsetWidth - 22) + "px"; w.style.top = t.offsetTop + "px"; w.style.height = t.offsetHeight + "px";
+    w.onchange = () => { sichern(); setzen(sel.a.z, sel.a.s, w.value); geaendert(); markieren(); box.focus(); };
+    box.appendChild(w);
   }
   function sichtbar(t) {
     const fixZ = (blatt().fix || {}).z ? (td(0, 0) || {}).offsetHeight || 0 : 0;
@@ -371,7 +407,7 @@ export function seite(A, el, id) {
     const wert = edit.hidden ? fx.value : edit.value;
     const { z, s: sp, alt } = bearb;
     bearb = null; edit.hidden = true; refMarken([]);
-    if (speichern && wert !== alt) { sichern(); setzen(z, sp, wert); geaendert(); }
+    if (speichern && wert !== alt) { sichern(); setzen(z, sp, wert); geaendert(); const liste = (blatt().auswahl || []).length && Rg.auswahlFuer(blatt(), z, sp); if (liste && wert !== "" && !liste.includes(wert)) KW.toast("„" + wert + "“ steht nicht in der Auswahlliste."); }
     else fx.value = alt;
     if (weiter) gehe(z + weiter[0], sp + weiter[1]); else markieren();
     box.focus({ preventScroll: true });
@@ -648,6 +684,8 @@ export function seite(A, el, id) {
     geaendert(); KW.toast("Sortiert nach Spalte " + F.spalteName(sp) + (kopf ? " (Kopfzeile bleibt oben)" : "") + ".");
   }
   el.querySelectorAll("[data-sort]").forEach(b => b.onclick = () => sortieren(b.dataset.sort === "auf"));
+  el.querySelector("#bedingt").onclick = () => Rg.regelnDialog(blatt(), bereichText(), () => { sichern(); alleZeigen(); geaendert(); });
+  el.querySelector("#ddListe").onclick = () => Rg.auswahlDialog(blatt(), bereichText(), () => { sichern(); alleZeigen(); markieren(); geaendert(); });
   el.querySelector("#filter").onclick = () => { filterAn = !filterAn; el.querySelector("#filter").classList.toggle("an", filterAn); aufbauen(); };
   el.querySelector("#fix").onchange = (e) => { const [z, sp] = e.target.value.split(",").map(Number); sichern(); blatt().fix = { z, s: sp }; fixieren(); spaeter(); };
 
@@ -726,9 +764,10 @@ export function seite(A, el, id) {
     if (!b.diagramme.length) { box2.innerHTML = ""; return; }
     box2.innerHTML = b.diagramme.map(dg => {
       const daten = D.datenAusBereich(rech, b.name, dg.bereich);
-      return '<figure class="card diagramm-karte" data-id="' + dg.id + '"><div class="dg-svg">' + D.svg(daten, dg.art, dg.titel, 640, 360) + "</div>" +
+      return '<figure class="card diagramm-karte" data-id="' + dg.id + '"><div class="dg-svg">' + D.svg(daten, dg.art, dg.titel, 640, 360, { trend: dg.trend !== false }) + "</div>" +
         '<figcaption><input class="inp" data-dt="titel" value="' + esc(dg.titel || "") + '" placeholder="Titel" aria-label="Diagramm-Titel">' +
         '<select class="inp" data-dt="art" aria-label="Diagramm-Art">' + D.ARTEN.map(a => '<option value="' + a[0] + '"' + (a[0] === dg.art ? " selected" : "") + ">" + a[1] + "</option>").join("") + "</select>" +
+        (dg.art === "punkt" ? '<label class="klein"><input type="checkbox" data-dt="trend"' + (dg.trend !== false ? " checked" : "") + "> Trendlinie</label>" : "") +
         '<span class="muted klein">' + esc(dg.bereich) + '</span><button type="button" class="btn small" data-dt="bereich" title="Bereich = aktuelle Markierung">↻ Markierung</button>' +
         '<button type="button" class="btn small" data-dt="png" title="Als Bild speichern">🖼️</button><button type="button" class="btn small danger" data-dt="weg" aria-label="Diagramm löschen">🗑</button></figcaption></figure>';
     }).join("");
@@ -736,9 +775,10 @@ export function seite(A, el, id) {
       const dg = b.diagramme.find(x => x.id === k.dataset.id);
       k.querySelector('[data-dt="titel"]').onchange = (e) => { sichern(); dg.titel = e.target.value; diagrammeZeigen(); spaeter(); };
       k.querySelector('[data-dt="art"]').onchange = (e) => { sichern(); dg.art = e.target.value; diagrammeZeigen(); spaeter(); };
+      const tr = k.querySelector('[data-dt="trend"]'); if (tr) tr.onchange = () => { sichern(); dg.trend = tr.checked; diagrammeZeigen(); spaeter(); };
       k.querySelector('[data-dt="bereich"]').onclick = () => { sichern(); dg.bereich = bereichText(); diagrammeZeigen(); spaeter(); };
       k.querySelector('[data-dt="weg"]').onclick = () => { sichern(); b.diagramme = b.diagramme.filter(x => x !== dg); diagrammeZeigen(); spaeter(); };
-      k.querySelector('[data-dt="png"]').onclick = async () => { const url = await D.alsPng(D.svg(D.datenAusBereich(rech, b.name, dg.bereich), dg.art, dg.titel, 640, 360), 640, 360); const a = document.createElement("a"); a.href = url; a.download = (dg.titel || "Diagramm") + ".png"; a.click(); };
+      k.querySelector('[data-dt="png"]').onclick = async () => { const url = await D.alsPng(D.svg(D.datenAusBereich(rech, b.name, dg.bereich), dg.art, dg.titel, 640, 360, { trend: dg.trend !== false }), 640, 360); const a = document.createElement("a"); a.href = url; a.download = (dg.titel || "Diagramm") + ".png"; a.click(); };
     });
   }
   el.querySelectorAll("[data-diagramm]").forEach(btn => btn.onclick = () => {

@@ -83,7 +83,7 @@ A.lernSpeichern = async (set) => { set.geaendert = new Date().toISOString(); con
 A.lernLoeschen = async (id) => { A.lern = A.lern.filter(x => x.id !== id); await S.weg("lern", id); Sync.melden("weg", { typ: "lern", id }); };
 
 // Text einer Seite für Suche und KI: Getipptes + erkannter Text
-A.seitenText = (s) => [s.titel, s.text, s.ocr && s.ocr !== s.text ? s.ocr : ""].filter(Boolean).join("\n");
+A.seitenText = (s) => [s.titel, s.text, s.ocr && s.ocr !== s.text ? s.ocr : "", s.tinte || ""].filter(Boolean).join("\n");
 A.einstSpeichern = () => E.speichern(A.einst);
 A.richStil = Heft.richStil;
 A.eckenAnpassen = (s) => Scanner.eckenAnpassen(A, s);
@@ -183,6 +183,26 @@ setInterval(() => {
   const f = lernFach();
   if (f !== null) Schule.lernzeitPlus(f, 1);
 }, 60000);
+
+/* ---------- Suche in Handschrift: Gemaltes im Hintergrund lesen (nur auf diesem Gerät) ---------- */
+let tinteLaeuft = false;
+async function tinteLesen() {
+  if (tinteLaeuft || document.hidden || Date.now() - zuletztAktiv < 15000) return;
+  if (A.einst.f.scanner && A.einst.f.scanner.ocr === false) return;
+  const s = A.aktiv("*").find(x => (x.art || "seite") !== "tafel" && (x.striche || []).length >= 3 && x.tinteN !== x.striche.length);
+  if (!s) return;
+  tinteLaeuft = true;
+  try {
+    const Ex = await import("./export.js"), c = Ex.stricheAlsPng(s, 5), blob = await new Promise(ok => c.toBlob(ok, "image/png"));
+    let t = "";
+    if (A.einst.ki.bildModell && A.einst.ki.art !== "aus" && A.einst.ki.art !== "aoris") { try { t = (await KI.abschreiben(A.einst.ki, blob)).trim(); } catch (e) {} }
+    if (!t) { await ocrLaden(); t = (await window.KWOCR.erkenne(blob, "deu+eng")).trim(); }
+    s.tinte = t.replace(/\s+/g, " ").slice(0, 5000); s.tinteN = s.striche.length;
+    await S.lege("seiten", s);
+  } catch (e) { s.tinteN = (s.striche || []).length; }
+  tinteLaeuft = false;
+}
+setInterval(tinteLesen, 20000);
 
 let ocrVersprechen = null;
 function ocrLaden() {

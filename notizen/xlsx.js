@@ -39,6 +39,7 @@ export function schreiben(mappe, fflate) {
     return xfIndex.get(xf);
   };
 
+  const dxfs = [];
   const blaetter = mappe.blaetter.map((b, bi) => {
     const zeilen = new Map();
     for (const [name, c] of Object.entries(b.zellen)) {
@@ -73,9 +74,45 @@ export function schreiben(mappe, fflate) {
     }
     const spalten = Object.entries(b.spalten || {}).map(([sp, px]) => { const i = F.spalteNr(sp) + 1; return '<col min="' + i + '" max="' + i + '" width="' + Math.max(2, px / 7).toFixed(2) + '" customWidth="1"/>'; }).join("");
     const fix = b.fix && (b.fix.z || b.fix.s) ? '<sheetViews><sheetView workbookViewId="0"' + (bi === 0 ? ' tabSelected="1"' : "") + '><pane' + (b.fix.s ? ' xSplit="' + b.fix.s + '"' : "") + (b.fix.z ? ' ySplit="' + b.fix.z + '"' : "") + ' topLeftCell="' + F.zelleName(b.fix.z || 0, b.fix.s || 0) + '" activePane="' + (b.fix.z && b.fix.s ? "bottomRight" : b.fix.z ? "bottomLeft" : "topRight") + '" state="frozen"/></sheetView></sheetViews>' : "";
+    const mitDia = (b.diagramme || []).some(d => d.bereich);
+    // bedingte Formatierung und Auswahllisten
+    let cf = "", prio = 1;
+    for (const r of b.regeln || []) {
+      const ber = String(r.bereich || "").toUpperCase(); if (!/^[A-Z]+\d+(:[A-Z]+\d+)?$/.test(ber)) continue;
+      const erste = ber.split(":")[0], num = (v) => { const n = Number(String(v).replace(",", ".")); return Number.isFinite(n) ? String(n) : '"' + x(String(v)).replace(/"/g, "") + '"'; };
+      if (r.art === "skala") { cf += '<conditionalFormatting sqref="' + ber + '"><cfRule type="colorScale" priority="' + (prio++) + '"><colorScale><cfvo type="min"/><cfvo type="percentile" val="50"/><cfvo type="max"/><color rgb="FF' + (r.umkehren ? "63BE7B" : "F8696B") + '"/><color rgb="FFFFEB84"/><color rgb="FF' + (r.umkehren ? "F8696B" : "63BE7B") + '"/></colorScale></cfRule></conditionalFormatting>'; continue; }
+      if (r.art === "balken") { cf += '<conditionalFormatting sqref="' + ber + '"><cfRule type="dataBar" priority="' + (prio++) + '"><dataBar><cfvo type="min"/><cfvo type="max"/><color rgb="FF' + (hex6(r.farbe) || "9CC3FF") + '"/></dataBar></cfRule></conditionalFormatting>'; continue; }
+      const dxf = dxfs.push('<dxf>' + (r.schrift ? '<font>' + (r.fett ? "<b/>" : "") + '<color rgb="FF' + hex6(r.schrift) + '"/></font>' : "") + (r.farbe ? '<fill><patternFill patternType="solid"><fgColor rgb="FF' + hex6(r.farbe) + '"/><bgColor rgb="FF' + hex6(r.farbe) + '"/></patternFill></fill>' : "") + "</dxf>") - 1;
+      if (r.art === "enthaelt") cf += '<conditionalFormatting sqref="' + ber + '"><cfRule type="containsText" dxfId="' + dxf + '" priority="' + (prio++) + '" operator="containsText" text="' + x(r.wert) + '"><formula>NOT(ISERROR(SEARCH("' + x(String(r.wert).replace(/"/g, "")) + '",' + erste + ')))</formula></cfRule></conditionalFormatting>';
+      else { const op = { groesser: "greaterThan", kleiner: "lessThan", zwischen: "between", gleich: "equal" }[r.art]; if (!op) continue; cf += '<conditionalFormatting sqref="' + ber + '"><cfRule type="cellIs" dxfId="' + dxf + '" priority="' + (prio++) + '" operator="' + op + '"><formula>' + num(r.wert) + "</formula>" + (r.art === "zwischen" ? "<formula>" + num(r.wert2) + "</formula>" : "") + "</cfRule></conditionalFormatting>"; }
+    }
+    const dv = (b.auswahl || []).filter(a => /^[A-Z]+\d+(:[A-Z]+\d+)?$/.test(a.bereich) && a.werte.length);
+    const dvXml = dv.length ? '<dataValidations count="' + dv.length + '">' + dv.map(a => '<dataValidation type="list" allowBlank="1" showErrorMessage="1" sqref="' + a.bereich + '"><formula1>"' + x(a.werte.map(w => String(w).replace(/[",]/g, " ")).join(",")).slice(0, 250) + '"</formula1></dataValidation>').join("") + "</dataValidations>" : "";
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
-      fix + '<sheetFormatPr defaultRowHeight="15"/>' + (spalten ? "<cols>" + spalten + "</cols>" : "") + "<sheetData>" + xml + "</sheetData></worksheet>";
+      fix + '<sheetFormatPr defaultRowHeight="15"/>' + (spalten ? "<cols>" + spalten + "</cols>" : "") + "<sheetData>" + xml + "</sheetData>" + cf + dvXml + (mitDia ? '<drawing r:id="rIdD1"/>' : "") + "</worksheet>";
   });
+  // Diagramme: pro Blatt eine Zeichnung, darin die Diagramme (Daten bleiben mit den Zellen verknüpft)
+  const diaDateien = {}, diaTypen = []; let chartNr = 0;
+  mappe.blaetter.forEach((b, bi) => {
+    const liste = (b.diagramme || []).filter(d => d.bereich); if (!liste.length) return;
+    const blattName = String(b.name || "Blatt" + (bi + 1)).replace(/[\\/?*[\]:]/g, "").slice(0, 31) || "Blatt" + (bi + 1);
+    let anker = "", drels = "";
+    liste.forEach((d, k) => {
+      const c = chartXml(d, blattName, b.name, rechnung); if (!c) return;
+      chartNr++; diaDateien["xl/charts/chart" + chartNr + ".xml"] = c; diaTypen.push('<Override PartName="/xl/charts/chart' + chartNr + '.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>');
+      const spalte = maxSpalte(b) + 2, zeile = k * 20 + 1;
+      anker += '<xdr:twoCellAnchor><xdr:from><xdr:col>' + spalte + '</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>' + zeile + '</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:to><xdr:col>' + (spalte + 8) + '</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>' + (zeile + 18) + '</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to>' +
+        '<xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="' + (k + 2) + '" name="Diagramm ' + (k + 1) + '"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" r:id="rIdC' + (k + 1) + '"/></a:graphicData></a:graphic></xdr:graphicFrame><xdr:clientData/></xdr:twoCellAnchor>';
+      drels += '<Relationship Id="rIdC' + (k + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart' + chartNr + '.xml"/>';
+    });
+    if (!anker) return;
+    diaDateien["xl/drawings/drawing" + (bi + 1) + ".xml"] = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' + anker + "</xdr:wsDr>";
+    diaDateien["xl/drawings/_rels/drawing" + (bi + 1) + ".xml.rels"] = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + drels + "</Relationships>";
+    diaDateien["xl/worksheets/_rels/sheet" + (bi + 1) + ".xml.rels"] = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdD1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing' + (bi + 1) + '.xml"/></Relationships>';
+    diaTypen.push('<Override PartName="/xl/drawings/drawing' + (bi + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>');
+  });
+  // Blätter ohne gültiges Diagramm dürfen kein <drawing> haben
+  blaetter.forEach((xmlB, i) => { if (!diaDateien["xl/drawings/drawing" + (i + 1) + ".xml"]) blaetter[i] = xmlB.replace('<drawing r:id="rIdD1"/>', ""); });
 
   const styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
     (fmtListe.length ? '<numFmts count="' + fmtListe.length + '">' + fmtListe.map((c, i) => '<numFmt numFmtId="' + (164 + i) + '" formatCode="' + x(c) + '"/>').join("") + "</numFmts>" : "") +
@@ -84,7 +121,7 @@ export function schreiben(mappe, fflate) {
     '<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border>' + ["left", "right", "top", "bottom"].map(s => "<" + s + ' style="thin"><color rgb="FF999999"/></' + s + ">").join("") + "<diagonal/></border></borders>" +
     '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
     '<cellXfs count="' + xfs.length + '">' + xfs.join("") + "</cellXfs>" +
-    '<cellStyles count="1"><cellStyle name="Standard" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+    '<cellStyles count="1"><cellStyle name="Standard" xfId="0" builtinId="0"/></cellStyles>' + (dxfs.length ? '<dxfs count="' + dxfs.length + '">' + dxfs.join("") + "</dxfs>" : "") + "</styleSheet>";
   const namen = mappe.blaetter.map((b, i) => x(String(b.name || "Blatt" + (i + 1)).replace(/[\\/?*[\]:]/g, "").slice(0, 31) || "Blatt" + (i + 1)));
   const workbook = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView/></bookViews><sheets>' +
     namen.map((n, i) => '<sheet name="' + n + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>').join("") + '</sheets><calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>';
@@ -95,14 +132,61 @@ export function schreiben(mappe, fflate) {
   const dateien = {
     "[Content_Types].xml": u('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>' +
       '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
-      namen.map((n, i) => '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join("") + "</Types>"),
+      namen.map((n, i) => '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join("") + diaTypen.join("") + "</Types>"),
     "_rels/.rels": u('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'),
     "xl/workbook.xml": u(workbook),
     "xl/_rels/workbook.xml.rels": u(wbRels),
     "xl/styles.xml": u(styles)
   };
   blaetter.forEach((b, i) => { dateien["xl/worksheets/sheet" + (i + 1) + ".xml"] = u(b); });
+  for (const [k, v] of Object.entries(diaDateien)) dateien[k] = u(v);
   return fflate.zipSync(dateien, { level: 6 });
+}
+
+/* ---------- Diagramme für Excel ---------- */
+const DIA_FARBEN = ["2F6FDB", "FF8A3C", "1A8F4C", "C93A3A", "6D3FD6", "0F766E", "B8235A", "A36B00"];
+function maxSpalte(b) { let m = 0; for (const n of Object.keys(b.zellen || {})) { const p = F.zelleLesen(n); if (p && p.s > m) m = p.s; } return m; }
+// gleiche Regeln wie diagramm.js: erste Zeile = Namen (wenn Text), erste Spalte = Beschriftungen (Text oder steigende Zahlen)
+export function diagrammBereich(rechnung, blatt, bereich) {
+  const [a, b] = String(bereich).split(":"), p = F.zelleLesen(a), q = F.zelleLesen(b || a);
+  if (!p || !q) return null;
+  const z0 = Math.min(p.z, q.z), z1 = Math.max(p.z, q.z), s0 = Math.min(p.s, q.s), s1 = Math.max(p.s, q.s), w = (z, s) => rechnung.wert(blatt, F.zelleName(z, s));
+  const kopf = s1 > s0 || z1 > z0 ? Array.from({ length: s1 - s0 + 1 }, (_, i) => w(z0, s0 + i)).slice(1).some(v => typeof v === "string" && v !== "") : false;
+  const erste = Array.from({ length: z1 - z0 + 1 }, (_, i) => w(z0 + i, s0)).slice(kopf ? 1 : 0);
+  const steigend = erste.length > 1 && erste.every((v, i) => typeof v === "number" && (i === 0 || v > erste[i - 1]));
+  const links = s1 > s0 && (erste.some(v => typeof v === "string" && v !== "") || steigend);
+  return { z0, z1, s0, s1, kopf, links, zs: kopf ? z0 + 1 : z0, ss: links ? s0 + 1 : s0, w };
+}
+function chartXml(d, blattName, blattIntern, rechnung) {
+  const g = diagrammBereich(rechnung, blattIntern, d.bereich); if (!g || g.ss > g.s1 || g.zs > g.z1) return null;
+  const ref = (s, za, zb) => "'" + blattName.replace(/'/g, "''") + "'!$" + F.spalteName(s) + "$" + (za + 1) + (zb != null && zb !== za ? ":$" + F.spalteName(s) + "$" + (zb + 1) : "");
+  const n = g.z1 - g.zs + 1;
+  const zahlen = (s) => '<c:numRef><c:f>' + x(ref(s, g.zs, g.z1)) + '</c:f><c:numCache><c:formatCode>General</c:formatCode><c:ptCount val="' + n + '"/>' + Array.from({ length: n }, (_, i) => { const v = g.w(g.zs + i, s); return typeof v === "number" ? '<c:pt idx="' + i + '"><c:v>' + v + "</c:v></c:pt>" : ""; }).join("") + "</c:numCache></c:numRef>";
+  const texte = (s) => '<c:strRef><c:f>' + x(ref(s, g.zs, g.z1)) + '</c:f><c:strCache><c:ptCount val="' + n + '"/>' + Array.from({ length: n }, (_, i) => '<c:pt idx="' + i + '"><c:v>' + x(F.anzeigen(g.w(g.zs + i, s))) + "</c:v></c:pt>").join("") + "</c:strCache></c:strRef>";
+  const art = d.art || "saeule", punkt = art === "punkt", kreis = art === "kreis";
+  let reihen = "";
+  for (let s = g.ss, i = 0; s <= g.s1; s++, i++) {
+    const farbe = DIA_FARBEN[i % DIA_FARBEN.length];
+    const name = g.kopf ? '<c:tx><c:strRef><c:f>' + x(ref(s, g.z0)) + '</c:f><c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>' + x(F.anzeigen(g.w(g.z0, s))) + "</c:v></c:pt></c:strCache></c:strRef></c:tx>" : "";
+    const sp = punkt ? '<c:spPr><a:ln w="28575"><a:noFill/></a:ln></c:spPr>' : art === "linie" ? '<c:spPr><a:ln w="28575"><a:solidFill><a:srgbClr val="' + farbe + '"/></a:solidFill></a:ln></c:spPr>' : kreis ? "" : '<c:spPr><a:solidFill><a:srgbClr val="' + farbe + '"/></a:solidFill></c:spPr>';
+    const kreisFarben = kreis ? Array.from({ length: n }, (_, k) => '<c:dPt><c:idx val="' + k + '"/><c:bubble3D val="0"/><c:spPr><a:solidFill><a:srgbClr val="' + DIA_FARBEN[k % DIA_FARBEN.length] + '"/></a:solidFill></c:spPr></c:dPt>').join("") : "";
+    const trend = punkt && d.trend !== false ? '<c:trendline><c:spPr><a:ln w="19050"><a:solidFill><a:srgbClr val="' + farbe + '"/></a:solidFill><a:prstDash val="dash"/></a:ln></c:spPr><c:trendlineType val="linear"/><c:dispRSqr val="0"/><c:dispEq val="1"/></c:trendline>' : "";
+    reihen += '<c:ser><c:idx val="' + i + '"/><c:order val="' + i + '"/>' + name + sp + (punkt ? '<c:marker><c:symbol val="circle"/><c:size val="6"/><c:spPr><a:solidFill><a:srgbClr val="' + farbe + '"/></a:solidFill></c:spPr></c:marker>' : art === "linie" ? '<c:marker><c:symbol val="none"/></c:marker>' : "") + kreisFarben + trend +
+      (punkt ? (g.links ? "<c:xVal>" + zahlen(g.s0) + "</c:xVal>" : "") + "<c:yVal>" + zahlen(s) + "</c:yVal>" + '<c:smooth val="0"/>' : (g.links ? "<c:cat>" + texte(g.s0) + "</c:cat>" : "") + "<c:val>" + zahlen(s) + "</c:val>" + (art === "linie" ? '<c:smooth val="0"/>' : "")) + "</c:ser>";
+    if (kreis) break;
+  }
+  const achsen = '<c:axId val="111"/><c:axId val="222"/>';
+  const achsXml = punkt ? '<c:valAx><c:axId val="111"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:numFmt formatCode="General" sourceLinked="1"/><c:tickLblPos val="nextTo"/><c:crossAx val="222"/><c:crosses val="autoZero"/></c:valAx>' +
+      '<c:valAx><c:axId val="222"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:majorGridlines/><c:numFmt formatCode="General" sourceLinked="1"/><c:tickLblPos val="nextTo"/><c:crossAx val="111"/><c:crosses val="autoZero"/></c:valAx>'
+    : '<c:catAx><c:axId val="111"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="' + (art === "balken" ? "l" : "b") + '"/><c:tickLblPos val="nextTo"/><c:crossAx val="222"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/></c:catAx>' +
+      '<c:valAx><c:axId val="222"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="' + (art === "balken" ? "b" : "l") + '"/><c:majorGridlines/><c:numFmt formatCode="General" sourceLinked="1"/><c:tickLblPos val="nextTo"/><c:crossAx val="111"/><c:crosses val="autoZero"/><c:crossBetween val="between"/></c:valAx>';
+  const plot = kreis ? '<c:pieChart><c:varyColors val="1"/>' + reihen + '<c:firstSliceAng val="0"/></c:pieChart>'
+    : punkt ? '<c:scatterChart><c:scatterStyle val="lineMarker"/><c:varyColors val="0"/>' + reihen + achsen + "</c:scatterChart>" + achsXml
+    : art === "linie" ? '<c:lineChart><c:grouping val="standard"/><c:varyColors val="0"/>' + reihen + '<c:marker val="1"/>' + achsen + "</c:lineChart>" + achsXml
+    : '<c:barChart><c:barDir val="' + (art === "balken" ? "bar" : "col") + '"/><c:grouping val="clustered"/><c:varyColors val="0"/>' + reihen + '<c:gapWidth val="80"/>' + achsen + "</c:barChart>" + achsXml;
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><c:roundedCorners val="0"/><c:chart>' +
+    (d.titel ? '<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>' + x(d.titel) + '</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title>' : "") +
+    '<c:autoTitleDeleted val="' + (d.titel ? 0 : 1) + '"/><c:plotArea><c:layout/>' + plot + '</c:plotArea><c:legend><c:legendPos val="' + (kreis ? "r" : "b") + '"/><c:overlay val="0"/></c:legend><c:plotVisOnly val="1"/></c:chart></c:chartSpace>';
 }
 
 /* ---------- Lesen ---------- */

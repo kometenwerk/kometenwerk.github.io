@@ -84,7 +84,7 @@ function wordBauen(rich, bilder) {
   };
   const absatz = (n, extra = "") => {
     const st = n.style || {}, jc = { center: "center", right: "right", justify: "both" }[st.textAlign];
-    const ppr = extra + (jc ? '<w:jc w:val="' + jc + '"/>' : "");
+    const lh = parseFloat(st.lineHeight), ppr = extra + (lh > 0 && lh < 4 ? '<w:spacing w:line="' + Math.round(lh * 240) + '" w:lineRule="auto"/>' : "") + (jc ? '<w:jc w:val="' + jc + '"/>' : "");
     body += "<w:p>" + (ppr ? "<w:pPr>" + ppr + "</w:pPr>" : "") + runs(n, {}) + "</w:p>";
   };
   const block = (n, ebene = 0) => {
@@ -93,6 +93,7 @@ function wordBauen(rich, bilder) {
     const tag = n.tagName;
     if (/^H[1-3]$/.test(tag)) return absatz(n, '<w:pStyle w:val="Heading' + tag[1] + '"/>');
     if (tag === "BLOCKQUOTE") return absatz(n, '<w:pStyle w:val="Quote"/>');
+    if (tag === "HR" && n.classList.contains("seitenumbruch")) { body += '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'; return; }
     if (tag === "HR") { body += '<w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="6" w:space="1" w:color="9AA7BD"/></w:pBdr></w:pPr></w:p>'; return; }
     if (tag === "UL" || tag === "OL") {
       n.childNodes.forEach(li => {
@@ -180,16 +181,23 @@ export async function alsWord(A, s, { nurBlob = false } = {}) {
     const B = s.quer ? 297 : 210, Hm = s.hoehe || 297;
     body += '<w:p><w:r><w:rPr><w:i/><w:color w:val="777777"/></w:rPr><w:t>Gezeichnet:</w:t></w:r></w:p><w:p>' + zeichnung(bilder.length, 170 * EMU_MM, 170 * Hm / B * EMU_MM) + "</w:p>";
   }
-  const quer = !!s.quer;
+  const quer = !!s.quer, kf = s.kopfFuss || null;
+  const kfText = (t) => String(t || "").replace(/\{titel\}/g, s.titel || "").replace(/\{datum\}/g, new Date(s.erstellt || Date.now()).toLocaleDateString("de-DE"));
+  const kfAbsatz = (l, r) => { const teil = (t) => { const st = kfText(t).split(/(\{seite\}|\{seiten\})/); return st.map(z => z === "{seite}" ? '<w:fldSimple w:instr="PAGE"><w:r><w:t>1</w:t></w:r></w:fldSimple>' : z === "{seiten}" ? '<w:fldSimple w:instr="NUMPAGES"><w:r><w:t>1</w:t></w:r></w:fldSimple>' : z ? '<w:r><w:rPr><w:color w:val="5B6578"/><w:sz w:val="18"/></w:rPr><w:t xml:space="preserve">' + x(z) + "</w:t></w:r>" : "").join(""); };
+    return '<w:p><w:pPr><w:tabs><w:tab w:val="right" w:pos="' + (quer ? 14570 : 9638) + '"/></w:tabs></w:pPr>' + teil(l) + "<w:r><w:tab/></w:r>" + teil(r) + "</w:p>"; };
+  const kopfXml = kf && (kf.kopfL || kf.kopfR) ? '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' + kfAbsatz(kf.kopfL, kf.kopfR) + "</w:hdr>" : "";
+  const fussXml = kf && (kf.fussL || kf.fussR) ? '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' + kfAbsatz(kf.fussL, kf.fussR) + "</w:ftr>" : "";
   const doc = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><w:body>' + body +
-    '<w:sectPr><w:pgSz w:w="' + (quer ? 16838 : 11906) + '" w:h="' + (quer ? 11906 : 16838) + '"' + (quer ? ' w:orient="landscape"' : "") + '/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>';
+    '<w:sectPr>' + (kopfXml ? '<w:headerReference w:type="default" r:id="rIdKopf"/>' : "") + (fussXml ? '<w:footerReference w:type="default" r:id="rIdFuss"/>' : "") + '<w:pgSz w:w="' + (quer ? 16838 : 11906) + '" w:h="' + (quer ? 11906 : 16838) + '"' + (quer ? ' w:orient="landscape"' : "") + '/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>';
   const rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
     '<Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
     '<Relationship Id="rIdNum" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>' +
-    bilder.map((b, i) => '<Relationship Id="rIdBild' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/' + b.name + '"/>').join("") + "</Relationships>";
+    bilder.map((b, i) => '<Relationship Id="rIdBild' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/' + b.name + '"/>').join("") +
+    (kopfXml ? '<Relationship Id="rIdKopf" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>' : "") + (fussXml ? '<Relationship Id="rIdFuss" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>' : "") + "</Relationships>";
   const dateien = {
     "[Content_Types].xml": fflate.strToU8('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="jpg" ContentType="image/jpeg"/>' +
-      '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/></Types>'),
+      '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>' +
+      (kopfXml ? '<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>' : "") + (fussXml ? '<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>' : "") + '</Types>'),
     "_rels/.rels": fflate.strToU8('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'),
     "word/document.xml": fflate.strToU8(doc),
     "word/styles.xml": fflate.strToU8(STYLES),
@@ -197,6 +205,8 @@ export async function alsWord(A, s, { nurBlob = false } = {}) {
     "word/_rels/document.xml.rels": fflate.strToU8(rels)
   };
   bilder.forEach(b => { dateien["word/media/" + b.name] = b64ZuBytes(b.daten); });
+  if (kopfXml) dateien["word/header1.xml"] = fflate.strToU8(kopfXml);
+  if (fussXml) dateien["word/footer1.xml"] = fflate.strToU8(fussXml);
   const zip = fflate.zipSync(dateien, { level: 6 });
   const blob = new Blob([zip], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
   if (nurBlob) return blob;
@@ -242,6 +252,11 @@ export async function drucken(A, seiten) {
       }
       if ((s.striche || []).length) { const c = stricheAlsPng(s, 8); c.style.cssText = "position:absolute;left:0;top:0;width:100%;height:100%"; innen.appendChild(c); }
       blatt.appendChild(innen);
+      if (s.kopfFuss) {
+        const nr = Math.round(oben / kachel) + 1, gesamt = Math.max(1, Math.round(Hm / kachel)), kf = s.kopfFuss;
+        const t = (v) => String(v || "").replace(/\{seite\}/g, nr).replace(/\{seiten\}/g, gesamt).replace(/\{datum\}/g, new Date(s.erstellt || Date.now()).toLocaleDateString("de-DE")).replace(/\{titel\}/g, s.titel || "");
+        for (const [teil, y] of [["kopf", 6], ["fuss", kachel - 10]]) { if (!kf[teil + "L"] && !kf[teil + "R"]) continue; const d = document.createElement("div"); d.className = "kopf-fuss"; d.style.top = y + "mm"; d.innerHTML = "<span></span><span></span>"; d.children[0].textContent = t(kf[teil + "L"]); d.children[1].textContent = t(kf[teil + "R"]); blatt.appendChild(d); }
+      }
       box.appendChild(blatt);
     }
   }

@@ -3,6 +3,7 @@
 // Vorlagen, Wörter zählen, Diktieren (Whisper auf dem Gerät) und Vorlesen (Stimmen auf dem Gerät).
 
 import * as Sprache from "./sprache.js";
+import * as Plus from "./heft-plus.js";
 
 const KW = window.KW, esc = KW.esc;
 const KATEX = "../shared/vendor/katex-0.16.47/";
@@ -98,6 +99,10 @@ export const VORLAGEN = [
   { id: "inhalt", icon: "📖", name: "Inhaltsangabe", raster: "lin8-r", html: "<h1>Inhaltsangabe</h1>" + p("<b>Einleitung:</b> Titel, Autor, Textsorte, Erscheinungsjahr, Thema") + p("<b>Hauptteil:</b> (im Präsens, ohne wörtliche Rede)") + p("<b>Schluss:</b>") },
   { id: "brief", icon: "✉️", name: "Brief", raster: "leer", html: '<p style="text-align:right">Ort, Datum</p>' + p() + p("Liebe/r …,") + p() + p() + p("Viele Grüße") + p() },
   { id: "lesetagebuch", icon: "📚", name: "Lesetagebuch", raster: "lin8-r", html: "<h1>Lesetagebuch</h1>" + p("<b>Buch:</b> &nbsp; <b>Kapitel/Seiten:</b>") + h("Was passiert?") + p() + h("Wichtige Figuren") + "<ul><li><br></li></ul>" + h("Meine Meinung") + p() },
+  { id: "lernzettel", icon: "🧠", name: "Lernzettel", raster: "karo5-r", html: "<h1>Lernzettel: …</h1>" + p("<b>Fach:</b> &nbsp; <b>Arbeit am:</b>") + h("Das Wichtigste in 3 Sätzen") + p() + h("Begriffe") + '<table class="tab"><tbody><tr><th>Begriff</th><th>Bedeutung</th></tr><tr><td><br></td><td><br></td></tr><tr><td><br></td><td><br></td></tr><tr><td><br></td><td><br></td></tr></tbody></table>' + h("Formeln / Regeln") + p() + h("Das kann ich noch nicht") + "<ul><li><br></li></ul>" },
+  { id: "buch", icon: "📕", name: "Buchvorstellung", raster: "leer", html: "<h1>Buchvorstellung</h1>" + p("<b>Titel:</b> &nbsp; <b>Autor/in:</b> &nbsp; <b>Erschienen:</b>") + h("Worum geht es?") + p() + h("Die Hauptfiguren") + "<ul><li><br></li></ul>" + h("Meine Lieblingsstelle") + p() + h("Meine Meinung") + p() + p("<b>Empfehlung:</b> ★★★★☆") },
+  { id: "wochenplan", icon: "🗓️", name: "Wochenplan", raster: "leer", html: "<h1>Wochenplan</h1>" + '<table class="tab"><tbody><tr><th>Tag</th><th>Schule / Hausaufgaben</th><th>Lernen</th><th>Freizeit</th></tr>' + ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Wochenende"].map(t => "<tr><td><b>" + t + "</b></td><td><br></td><td><br></td><td><br></td></tr>").join("") + "</tbody></table>" + h("Ziele diese Woche") + "<ul><li><br></li></ul>" },
+  { id: "nwtprojekt", icon: "🔧", name: "NWT-Projekt", raster: "karo5-r", html: "<h1>Projekt: …</h1>" + p("<b>Gruppe:</b> &nbsp; <b>Abgabe:</b>") + h("Aufgabe und Ziel") + p() + h("Teile und Material") + '<table class="tab"><tbody><tr><th>Teil</th><th>Anzahl</th><th>Wofür?</th></tr><tr><td><br></td><td><br></td><td><br></td></tr><tr><td><br></td><td><br></td><td><br></td></tr></tbody></table>' + h("Ablauf (Tagebuch)") + p("<b>Datum – was haben wir gemacht? Welche Version?</b>") + h("Probleme und Lösungen") + p() + h("Testergebnisse") + p() + h("Fazit") + p() },
   { id: "mathe", icon: "📐", name: "Mathe-Aufgabe", raster: "karo5-r", html: "<h2>Aufgabe …</h2>" + p("<b>Gegeben:</b>") + p("<b>Gesucht:</b>") + p("<b>Lösung:</b>") + p() + p("<b>Antwort:</b>") }
 ];
 
@@ -240,7 +245,7 @@ export function leisteHtml(extras = {}) {
       '<button type="button" data-c="insertUnorderedList" title="Aufzählung" aria-label="Aufzählung">•≡</button>' +
       '<button type="button" data-c="insertOrderedList" title="Nummerierung" aria-label="Nummerierung">1.</button>' +
       '<button type="button" data-c="outdent" title="Einzug kleiner (Umschalt+Tab)" aria-label="Einzug verkleinern">⇤</button>' +
-      '<button type="button" data-c="indent" title="Einzug größer (Tab)" aria-label="Einzug vergrößern">⇥</button>') +
+      '<button type="button" data-c="indent" title="Einzug größer (Tab)" aria-label="Einzug vergrößern">⇥</button>' + Plus.startHtml()) +
     g("einfuegen",
       '<button type="button" data-x="tabelle" title="Tabelle einfügen" aria-label="Tabelle einfügen">⊞ Tabelle</button>' +
       '<button type="button" data-x="bild" title="Bild einfügen" aria-label="Bild einfügen">🖼️ Bild</button>' +
@@ -252,11 +257,11 @@ export function leisteHtml(extras = {}) {
       '<button type="button" data-x="mindmap" title="Mindmap" aria-label="Mindmap einfügen">🧠 Mindmap</button>' +
       (extras.sprachnotiz ? '<button type="button" data-x="sprachnotiz" title="Sprachnotiz an dieser Stelle aufnehmen" aria-label="Sprachnotiz aufnehmen">🎙️ Sprachnotiz</button>' : "") +
       '<span class="trenn"></span><button type="button" data-x="fussnote" title="Fußnote an dieser Stelle" aria-label="Fußnote einfügen">¹ Fußnote</button>' +
-      '<button type="button" data-x="quelle" title="Quelle angeben (kommt automatisch ins Quellenverzeichnis)" aria-label="Quelle angeben">📚 Quelle</button>') +
+      '<button type="button" data-x="quelle" title="Quelle angeben (kommt automatisch ins Quellenverzeichnis)" aria-label="Quelle angeben">📚 Quelle</button>' + Plus.einfuegenHtml()) +
     g("werkzeuge",
       '<button type="button" data-x="diktat" title="Diktieren" aria-label="Diktieren">🎤 Diktieren</button>' +
       '<button type="button" data-x="vorlesen" title="Vorlesen" aria-label="Vorlesen">🔊 Vorlesen</button>' +
-      '<button type="button" data-x="auto" title="Autokorrektur an/aus" aria-label="Autokorrektur" aria-pressed="true">✨ Autokorrektur</button>') +
+      '<button type="button" data-x="auto" title="Autokorrektur an/aus" aria-label="Autokorrektur" aria-pressed="true">✨ Autokorrektur</button>' + Plus.werkzeugeHtml()) +
   '</div>' +
   '<div class="zeichen-leiste" hidden>' + "→ ← ⇒ ⇔ ≈ ≠ ≤ ≥ ± · × ÷ ° ² ³ ½ ¼ √ ∞ π α β γ Δ Ω µ € § © ✓ ✗ • …".split(" ").map(z => '<button type="button" data-z="' + z + '">' + z + '</button>').join("") + '</div>' +
   '<div class="tabellen-leiste" hidden><span class="muted klein">Tabelle:</span><button type="button" data-t="zeile+">+ Zeile</button><button type="button" data-t="spalte+">+ Spalte</button><button type="button" data-t="zeile-">− Zeile</button><button type="button" data-t="spalte-">− Spalte</button><button type="button" data-t="kopf">Kopfzeile</button><button type="button" data-t="weg">Tabelle löschen</button></div>';
@@ -531,13 +536,15 @@ export function leisteBinden(wurzel, rich, geaendert, extras = {}) {
     img.classList.add("gewaehlt");
     const alt = document.querySelector(".bild-menue"); if (alt) alt.remove();
     const m = document.createElement("div"); m.className = "bild-menue card";
-    m.innerHTML = (img.dataset.plot ? '<button data-a="graph">✎ Graph ändern</button>' : img.dataset.mindmap ? '<button data-a="mm">✎ Mindmap ändern</button>' : "") + '<button data-b="25">Klein</button><button data-b="50">Mittel</button><button data-b="100">Groß</button><button data-a="left">⯇</button><button data-a="center">≡</button><button data-a="right">⯈</button><button data-a="weg">🗑</button>';
+    m.innerHTML = (img.dataset.plot ? '<button data-a="graph">✎ Graph ändern</button>' : img.dataset.mindmap ? '<button data-a="mm">✎ Mindmap ändern</button>' : "") + '<button data-b="25">Klein</button><button data-b="50">Mittel</button><button data-b="100">Groß</button><button data-a="left">⯇</button><button data-a="center">≡</button><button data-a="right">⯈</button>' + (img.dataset.plot || img.dataset.mindmap ? "" : '<button data-d="-90" title="Nach links drehen">⟲</button><button data-d="90" title="Nach rechts drehen">⟳</button><button data-a="zuschnitt" title="Zuschneiden">✂</button>') + '<button data-a="weg">🗑</button>';
     const r = img.getBoundingClientRect();
     m.style.left = Math.max(8, r.left) + "px"; m.style.top = Math.max(70, r.top - 46) + "px";
     document.body.appendChild(m);
     m.onclick = (e) => {
       const b = e.target.closest("button"); if (!b) return;
       if (b.dataset.a === "graph" || b.dataset.a === "mm") { m.remove(); let d = null; try { d = JSON.parse(b.dataset.a === "graph" ? img.dataset.plot : img.dataset.mindmap); } catch (x2) {} graphEinfuegen(b.dataset.a === "graph" ? "plot" : "mindmap", d, img); return; }
+      if (b.dataset.d) { schnappschuss(true); m.remove(); Plus.bildDrehen(img, Number(b.dataset.d)).then(() => geaendert()); return; }
+      if (b.dataset.a === "zuschnitt") { schnappschuss(true); m.remove(); Plus.bildZuschneiden(img).then(ok => { if (ok) geaendert(); }); return; }
       schnappschuss(true);
       if (b.dataset.b) img.style.width = b.dataset.b + "%";
       if (b.dataset.a === "weg") img.remove();
@@ -662,6 +669,7 @@ export function leisteBinden(wurzel, rich, geaendert, extras = {}) {
     cmd("insertHTML", saeubern(html));
   });
 
+  Plus.binden(wurzel, rich, geaendert, schnappschuss);
   return { zustandZeigen, rueckgaengig, wiederholen, schnappschuss: () => schnappschuss(true) };
 }
 

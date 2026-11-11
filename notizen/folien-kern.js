@@ -17,7 +17,9 @@ export const DESIGNS = {
   bunt:    { name: "Bunt",     hg: "#fff4f8", hg2: "#ffe0ec", titel: "#6d3fd6", text: "#33244d", akzent: "#ff4f8b", schriftT: "Verdana", schrift: "Verdana", deko: "kreise" },
   minimal: { name: "Minimal",  hg: "#fafafa", hg2: "#fafafa", titel: "#111111", text: "#333333", akzent: "#111111", schriftT: "Arial", schrift: "Arial", deko: "" }
 };
-export const design = (id) => DESIGNS[id] || DESIGNS.klar;
+// Ein Design ist eine Kennung ("nacht") oder ein eigener Folienmaster: { basis: "nacht", akzent: "#…", fuss: "…", nummer: true }
+export const design = (id) => id && typeof id === "object" ? Object.assign({}, DESIGNS[id.basis] || DESIGNS.klar, ...Object.entries(id).filter(([, v]) => v !== "" && v != null).map(([k, v]) => ({ [k]: v }))) : DESIGNS[id] || DESIGNS.klar;
+export const designBasis = (id) => id && typeof id === "object" ? id.basis || "klar" : id || "klar";
 const fam = (f) => f === "Space Grotesk" ? "'Space Grotesk', Arial, sans-serif" : f === "Georgia" ? "Georgia, 'Times New Roman', serif" : f === "Comic Sans MS" ? "'Comic Sans MS', 'Comic Neue', cursive" : f + ", Arial, sans-serif";
 
 /* ---------- Layouts ---------- */
@@ -104,6 +106,8 @@ export function folieHtml(folie, designId, opt = {}) {
       h += '<div class="' + kl + '" style="' + st + "font-size:" + g + "px;color:" + (e.farbe || d.text) + '"' + attr + '><div class="el-inhalt formel-platz" data-tex="' + esc(e.tex) + '">' + (opt.katex ? opt.katex(e.tex) : esc(e.tex)) + "</div></div>";
     }
   }
+  // Folienmaster: Fußzeile und Foliennummer auf jeder Folie
+  if ((d.fuss || (d.nummer && opt.nr)) && !folie.ohneFuss) h += '<div class="folie-fuss" style="position:absolute;left:60px;right:60px;bottom:14px;display:flex;justify-content:space-between;font-size:14px;opacity:.7;color:' + d.text + '"><span>' + esc(d.fuss || "") + "</span><span>" + (d.nummer && opt.nr ? opt.nr : "") + "</span></div>";
   return h + "</div>";
 }
 
@@ -161,3 +165,27 @@ export function folienAusGliederung(gl) {
 export const KI_ANWEISUNG = "Du machst aus Schul-Notizen eine kurze Präsentation für eine Schülerin oder einen Schüler. " +
   "Antworte NUR mit JSON: {\"folien\":[{\"titel\":\"…\",\"punkte\":[\"…\"]}]}. Erste Folie = Titelfolie (punkte: [\"Untertitel\"]). " +
   "4 bis 10 Folien, pro Folie höchstens 5 kurze Stichpunkte (je höchstens 12 Wörter), auf Deutsch, nichts erfinden, was nicht im Text steht.";
+
+/* ---------- Designideen: dieselben Inhalte, anders angeordnet ---------- */
+export function designIdeen(folie) {
+  const el = (folie.el || []).filter(e => !e.aus), titel = el.find(e => e.rolle === "titel"), texte = el.filter(e => e.typ === "text" && e !== titel), bilder = el.filter(e => e.typ === "bild" && e.src), rest = el.filter(e => e !== titel && !texte.includes(e) && !bilder.includes(e));
+  const kopie = (x, pos) => Object.assign(JSON.parse(JSON.stringify(x)), pos);
+  const ideen = [];
+  const mit = (name, teile) => ideen.push({ name, folie: Object.assign(JSON.parse(JSON.stringify(folie)), { el: [...teile.filter(Boolean), ...rest.map(r => kopie(r, {}))] }) });
+  const T = (pos, extra) => titel && kopie(titel, Object.assign(pos, extra || {}));
+  const textZus = texte.length ? texte : [];
+  if (bilder.length) {
+    const b = bilder[0];
+    mit("Bild rechts", [T({ x: 60, y: 36, w: 840, h: 80, ausr: "" }), ...textZus.map((t, i) => kopie(t, { x: 60, y: 130 + i * (370 / textZus.length), w: 420, h: 370 / textZus.length - 10 })), kopie(b, { x: 510, y: 130, w: 390, h: 370 })]);
+    mit("Bild links", [T({ x: 60, y: 36, w: 840, h: 80, ausr: "" }), kopie(b, { x: 60, y: 130, w: 390, h: 370 }), ...textZus.map((t, i) => kopie(t, { x: 480, y: 130 + i * (370 / textZus.length), w: 420, h: 370 / textZus.length - 10 }))]);
+    mit("Bild als Hintergrund", [kopie(b, { x: 0, y: 0, w: 960, h: 540, zuschnitt: true }), T({ x: 60, y: 300, w: 840, h: 80, fuell: "rgba(0,0,0,.55)", farbe: "#ffffff", ausr: "" }), ...textZus.slice(0, 1).map(t => kopie(t, { x: 60, y: 390, w: 840, h: 110, fuell: "rgba(0,0,0,.45)", farbe: "#ffffff" }))]);
+    mit("Bild oben", [kopie(b, { x: 60, y: 30, w: 840, h: 280 }), T({ x: 60, y: 320, w: 840, h: 70, ausr: "c" }), ...textZus.slice(0, 1).map(t => kopie(t, { x: 120, y: 395, w: 720, h: 120, ausr: "c" }))]);
+  } else {
+    mit("Titel in der Mitte", [T({ x: 80, y: textZus.length ? 120 : 200, w: 800, h: 100, ausr: "c" }), ...textZus.map((t, i) => kopie(t, { x: 140, y: 240 + i * (240 / textZus.length), w: 680, h: 240 / textZus.length - 10, ausr: "c" }))]);
+    mit("Titel links als Band", [T({ x: 0, y: 0, w: 320, h: 540, fuell: "rgba(0,0,0,.07)", ausr: "" }), ...textZus.map((t, i) => kopie(t, { x: 360, y: 60 + i * (420 / textZus.length), w: 540, h: 420 / textZus.length - 10 }))]);
+    const liste = textZus.length === 1 && /<li/.test(textZus[0].html || "") ? (textZus[0].html.match(/<li[\s\S]*?<\/li>/g) || []) : [];
+    if (liste.length >= 4) { const h = Math.ceil(liste.length / 2); mit("Zwei Spalten", [T({ x: 60, y: 36, w: 840, h: 80, ausr: "" }), kopie(textZus[0], { x: 60, y: 130, w: 405, h: 370, html: "<ul>" + liste.slice(0, h).join("") + "</ul>" }), Object.assign(kopie(textZus[0], { x: 495, y: 130, w: 405, h: 370, html: "<ul>" + liste.slice(h).join("") + "</ul>" }), { id: neueId() })]); }
+    mit("Großer Titel oben", [T({ x: 60, y: 40, w: 840, h: 130, ausr: "", groesse: 54 }), ...textZus.map((t, i) => kopie(t, { x: 60, y: 190 + i * (310 / textZus.length), w: 840, h: 310 / textZus.length - 10 }))]);
+  }
+  return ideen.filter(i => i.folie.el.length);
+}

@@ -74,6 +74,9 @@ export async function fideliaDatei(A, s) {
 }
 
 export async function importieren(A, datei) {
+  const n = datei.name || "";
+  if (/\.(docx|pptx)$/i.test(n)) return officeOeffnen(A, datei);
+  if (/\.(xlsx|csv)$/i.test(n)) { const T = await import("./tabellen.js"); return T.oeffnen(A, datei); }
   let d;
   try { d = JSON.parse(await datei.text()); } catch (e) { KW.toast("Diese Datei kann ich nicht lesen."); return null; }
   if (!d || d.fidelia !== "notizen" || !d.seite) { KW.toast("Das ist keine FIDELIA-Datei."); return null; }
@@ -89,6 +92,25 @@ export async function importieren(A, datei) {
   KW.toast("✓ „" + s.titel + "“ ist jetzt bei dir.");
   A.gehe((s.art === "tabelle" ? "tabelle/" : s.art === "folien" ? "folien/" : "seite/") + s.id);
   return s;
+}
+
+// Word → Heftseite, PowerPoint → Präsentation
+async function officeOeffnen(A, datei) {
+  let fflate, I;
+  try { fflate = await import("../shared/vendor/fflate-0.8.3/fflate.mjs"); I = await import("./office-import.js"); } catch (e) { KW.toast("Beim ersten Mal braucht das Öffnen Internet."); return null; }
+  const name = datei.name.replace(/\.[^.]+$/, "");
+  try {
+    const bytes = new Uint8Array(await datei.arrayBuffer());
+    if (/\.docx$/i.test(datei.name)) {
+      const r = I.docxLesen(bytes, fflate), E = await import("./editor.js");
+      const s = await A.seiteNeu({ titel: name || r.titel, raster: "leer", html: r.html, text: E.htmlZuText ? E.htmlZuText(r.html) : "" });
+      KW.save("kw-notizen-stift-modus", "tippen"); KW.toast("✓ Word-Datei „" + name + "“ geöffnet."); A.gehe("seite/" + s.id); return s;
+    }
+    const r = I.pptxLesen(bytes, fflate);
+    if (!r.folien.length) { KW.toast("In der Datei sind keine Folien."); return null; }
+    const s = await A.seiteNeu({ art: "folien", titel: name || r.titel, raster: "leer", design: "minimal", folien: r.folien });
+    KW.toast("✓ PowerPoint „" + name + "“ geöffnet (" + r.folien.length + " Folien)."); A.gehe("folien/" + s.id); return s;
+  } catch (e) { console.error(e); KW.toast("Diese Datei konnte ich nicht lesen."); return null; }
 }
 
 /* ---------- An Mitschüler schicken ---------- */

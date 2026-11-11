@@ -41,7 +41,7 @@ export function liste(A, el) {
     const l = A.aktiv("folien").sort((a, b) => String(b.geaendert).localeCompare(String(a.geaendert))).filter(s => !q || A.seitenText(s).toLowerCase().includes(q.toLowerCase()));
     el.innerHTML = '<div class="kopfzeile"><h2 class="titel">🖥️ Präsentationen</h2><span class="sp"></span>' +
       (A.einst.f.folien && A.einst.f.folien.ki === false ? "" : '<button type="button" class="btn small" id="ausHeft">🤖 Aus Heftseite</button>') +
-      '<label class="btn small" title="FIDELIA-Datei öffnen">📥 Öffnen<input type="file" id="oeffnen" accept=".fidelia,.json" hidden></label>' +
+      '<label class="btn small" title="PowerPoint- oder FIDELIA-Datei öffnen">📥 Öffnen<input type="file" id="oeffnen" accept=".pptx,.fidelia,.json" hidden></label>' +
       '<button type="button" class="btn primary" id="neu">+ Neue Präsentation</button></div>' +
       '<div class="suche"><input class="inp" type="search" id="q" placeholder="In Präsentationen suchen" aria-label="In Präsentationen suchen" value="' + esc(q) + '"></div>' +
       (l.length ? '<div class="dok-gitter">' + l.map(s => { const f = A.fachInfo(s.fach); return '<a class="card dok-karte" href="#folien/' + s.id + '"><span class="dok-bild">' + (s.folien && s.folien[0] ? mini(s.folien[0], s.design, 200) : "") + "</span><b>" + esc(s.titel || "Präsentation") + '</b><small><span class="punkt" style="background:' + esc(f.farbe) + '"></span>' + esc(f.name) + " · " + (s.folien || []).length + " Folien · " + datum(s.geaendert) + "</small></a>"; }).join("") + "</div>"
@@ -55,15 +55,28 @@ export function liste(A, el) {
   zeichnen();
 }
 
+// Folien-Vorlagen: fertiger Aufbau, Inhalt schreibst du selbst
+const VORLAGEN_FOLIEN = [["leer", "Titel + 1 Folie"], ["referat", "🎤 Referat"], ["projekt", "🔧 Projekt-Vorstellung"], ["buch", "📕 Buchvorstellung"]];
+function folienVorlage(id) {
+  const f = (layout, titel, text) => { const x = K.neueFolie(layout); if (x.el[0]) x.el[0].html = "<p>" + titel + "</p>"; if (text != null && x.el[1] && x.el[1].typ === "text") x.el[1].html = text; return x; };
+  const li = (...a) => "<ul>" + a.map(t => "<li>" + t + "</li>").join("") + "</ul>";
+  if (id === "referat") return [f("titel", "Thema des Referats", "<p>Name · Klasse · Datum</p>"), f("inhalt", "Gliederung", "<ol><li>Einleitung</li><li>Hauptteil</li><li>Schluss</li></ol>"), f("abschnitt", "1. Einleitung", "<p>Warum ist das Thema spannend?</p>"), f("inhalt", "Hauptteil", li("…", "…", "…")), f("bildText", "Ein Bild dazu"), f("inhalt", "Zusammenfassung", li("Das Wichtigste …")), f("inhalt", "Quellen", li("Buch / Internetseite, Datum")), f("titel", "Danke fürs Zuhören!", "<p>Fragen?</p>")];
+  if (id === "projekt") return [f("titel", "Unser Projekt", "<p>Gruppe · Klasse · Datum</p>"), f("inhalt", "Aufgabe und Ziel", li("Was sollte das Gerät können?")), f("bildText", "Aufbau"), f("inhalt", "So funktioniert es", li("Schritt 1", "Schritt 2")), f("inhalt", "Testergebnisse", li("…")), f("zwei", "Was gut lief / Was schwierig war"), f("inhalt", "Fazit", li("…")), f("titel", "Danke!", "<p>Fragen?</p>")];
+  if (id === "buch") return [f("titel", "Buchtitel", "<p>Autor/in · vorgestellt von …</p>"), f("bildText", "Worum geht es?"), f("inhalt", "Die Hauptfiguren", li("…")), f("inhalt", "Meine Lieblingsstelle", "<p>„…“</p>"), f("inhalt", "Meine Meinung", li("Das hat mir gefallen …", "Empfehlung: ★★★★☆"))];
+  return [K.neueFolie("titel"), K.neueFolie("inhalt")];
+}
+
 export function neu(A, fach = "") {
   const d = document.createElement("dialog"); d.className = "sheet breit";
   d.innerHTML = '<div class="sheet-in"><h2>🖥️ Neue Präsentation</h2><p class="muted">Such dir ein Design aus (kannst du später ändern):</p><div class="design-gitter">' +
     Object.entries(K.DESIGNS).map(([id, ds]) => { const f = K.neueFolie("titel"); f.el[0].html = "<p>" + esc(ds.name) + "</p>"; f.el[1].html = "<p>Aa Bb Cc</p>"; return '<button type="button" class="design-knopf" data-d="' + id + '">' + mini(f, id, 200) + "<span>" + esc(ds.name) + "</span></button>"; }).join("") +
-    '</div><div class="sheet-foot"><button type="button" class="btn" id="ab">Abbrechen</button></div></div>';
+    '</div><p class="muted">Inhalt zum Start:</p><div class="zeile" role="radiogroup" id="inhaltWahl">' + VORLAGEN_FOLIEN.map((v, i) => '<label class="btn small"><input type="radio" name="fv" value="' + v[0] + '"' + (i ? "" : " checked") + "> " + v[1] + "</label>").join("") + "</div>" +
+    '<div class="sheet-foot"><button type="button" class="btn" id="ab">Abbrechen</button></div></div>';
   document.body.appendChild(d);
   d.querySelector("#ab").onclick = () => d.close();
   d.querySelectorAll("[data-d]").forEach(b => b.onclick = async () => {
-    const s = await A.seiteNeu({ art: "folien", titel: "Neue Präsentation", fach, raster: "leer", design: b.dataset.d, folien: [K.neueFolie("titel"), K.neueFolie("inhalt")] });
+    const wahl = (d.querySelector('[name="fv"]:checked') || {}).value || "leer";
+    const s = await A.seiteNeu({ art: "folien", titel: "Neue Präsentation", fach, raster: "leer", design: b.dataset.d, folien: folienVorlage(wahl) });
     d.close(); A.gehe("folien/" + s.id);
   });
   d.addEventListener("close", () => d.remove());
@@ -153,6 +166,7 @@ export function seite(A, el, id) {
         "</span>" +
         '<span class="gruppe" data-gruppe="design">' + Object.entries(K.DESIGNS).map(([k, d]) => '<button type="button" class="design-mini" data-design="' + k + '" title="' + esc(d.name) + '" style="background:linear-gradient(135deg,' + d.hg + " 55%," + d.akzent + ")\"><span style=\"color:" + d.titel + '">Aa</span></button>').join("") +
           '<span class="trenn"></span><label class="farb-knopf" title="Eigener Hintergrund für diese Folie"><span aria-hidden="true">🎨</span><input type="color" id="hg" value="#ffffff" aria-label="Hintergrund dieser Folie"></label><button type="button" id="hgWeg" title="Hintergrund vom Design">↺ Design-Hintergrund</button>' +
+          '<span class="trenn"></span><button type="button" id="ideen" title="Vorschläge, wie diese Folie aussehen kann">✨ Designideen</button><button type="button" id="master" title="Farben, Schrift, Fußzeile und Nummer für alle Folien">🎛 Folienmaster</button>' +
         "</span>" +
         '<span class="gruppe" data-gruppe="uebergang">' + UEBERGAENGE.map(u => '<button type="button" data-ueber="' + u[0] + '">' + u[1] + "</button>").join("") + '<span class="trenn"></span><button type="button" id="ueberAlle">Für alle Folien</button></span>' +
         '<span class="gruppe" data-gruppe="anordnen"><span class="muted klein">Ausrichten:</span>' +
@@ -198,7 +212,7 @@ export function seite(A, el, id) {
 
   /* --- Zeichnen --- */
   function zeichneBuehne() {
-    buehne.innerHTML = K.folieHtml(folie(), s.design, { bearbeiten: true, katex: katexHtml });
+    buehne.innerHTML = K.folieHtml(folie(), s.design, { bearbeiten: true, katex: katexHtml, nr: fi + 1 });
     el.querySelector("#notiz").value = folie().notiz || "";
     buehne.querySelectorAll("[data-bild-platz]").forEach(b => b.onclick = (e) => { e.stopPropagation(); gewaehlt = b.dataset.bildPlatz; bildWaehlen(); });
     ansichtZeigen();
@@ -409,7 +423,7 @@ export function seite(A, el, id) {
   function bandZustand() {
     const e = gewaehlt && element(gewaehlt);
     el.querySelectorAll("[data-ueber]").forEach(b => b.classList.toggle("an", (folie().ueber || "") === b.dataset.ueber));
-    el.querySelectorAll("[data-design]").forEach(b => b.classList.toggle("an", (s.design || "klar") === b.dataset.design));
+    el.querySelectorAll("[data-design]").forEach(b => b.classList.toggle("an", K.designBasis(s.design) === b.dataset.design));
     el.querySelectorAll("[data-anim]").forEach(b => { b.disabled = !e; b.classList.toggle("an", !!e && (e.anim ? (e.animArt || "einblenden") === b.dataset.anim : b.dataset.anim === "")); });
     const info = el.querySelector("#animInfo"); info.textContent = e ? (e.anim ? "Erscheint als " + (folie().el.filter(x => x.anim).sort((a, b) => a.anim - b.anim).indexOf(e) + 1) + ". beim Klicken" : "") : "Erst ein Element antippen";
     el.querySelectorAll("[data-ausr]").forEach(b => b.classList.toggle("an", !!e && (e.ausr || "l") === b.dataset.ausr));
@@ -547,7 +561,33 @@ export function seite(A, el, id) {
   }
 
   /* --- Design, Übergänge, Animation --- */
-  el.querySelectorAll("[data-design]").forEach(b => b.onclick = () => { sichern(); s.design = b.dataset.design; alles(); spaeter(); });
+  el.querySelectorAll("[data-design]").forEach(b => b.onclick = () => { sichern(); s.design = s.design && typeof s.design === "object" ? { basis: b.dataset.design, fuss: s.design.fuss, nummer: s.design.nummer } : b.dataset.design; alles(); spaeter(); });
+  el.querySelector("#ideen").onclick = () => {
+    const ideen = K.designIdeen(folie());
+    if (!ideen.length) { KW.toast("Für diese Folie habe ich keine Idee – füg erst Titel, Text oder ein Bild ein."); return; }
+    const d = document.createElement("dialog"); d.className = "dialog";
+    d.innerHTML = '<h3>✨ Designideen</h3><p class="klein muted">Dein Inhalt bleibt gleich – nur die Anordnung ändert sich. Antippen zum Übernehmen (Strg+Z macht es rückgängig).</p><div class="ideen-gitter">' + ideen.map((x, i) => '<button type="button" class="idee" data-i="' + i + '">' + mini(x.folie, s.design, 220) + "<span>" + esc(x.name) + "</span></button>").join("") + '</div><div class="zeile" style="justify-content:flex-end;margin-top:10px"><button type="button" class="btn" data-a="zu">Schließen</button></div>';
+    document.body.appendChild(d); d.showModal(); d.addEventListener("close", () => d.remove());
+    d.querySelector('[data-a="zu"]').onclick = () => d.close();
+    d.querySelectorAll("[data-i]").forEach(b => b.onclick = () => { sichern(); s.folien[fi] = Object.assign(ideen[b.dataset.i].folie, { id: folie().id }); gewaehlt = null; d.close(); alles(); spaeter(); });
+  };
+  el.querySelector("#master").onclick = () => {
+    const m = s.design && typeof s.design === "object" ? s.design : { basis: s.design || "klar" }, b = K.design(m.basis);
+    const d = document.createElement("dialog"); d.className = "dialog";
+    const farbe = (k, l) => '<label class="klein master-feld">' + l + '<input type="color" data-m="' + k + '" value="' + esc(m[k] || b[k]) + '"></label>';
+    const SCHR = ["Space Grotesk", "Arial", "Georgia", "Verdana", "Comic Sans MS"];
+    const schrift = (k, l) => '<label class="klein master-feld">' + l + '<select class="inp" data-m="' + k + '">' + SCHR.map(f => '<option' + ((m[k] || b[k]) === f ? " selected" : "") + ">" + f + "</option>").join("") + "</select></label>";
+    d.innerHTML = '<h3>🎛 Folienmaster</h3><p class="klein muted">Gilt für alle Folien dieser Präsentation (Grund-Design: ' + esc(b.name) + ').</p><div class="master-gitter">' + farbe("hg", "Hintergrund") + farbe("hg2", "Verlauf unten") + farbe("titel", "Titel") + farbe("text", "Text") + farbe("akzent", "Akzent") + schrift("schriftT", "Schrift Titel") + schrift("schrift", "Schrift Text") + "</div>" +
+      '<label class="klein master-feld" style="margin-top:8px">Fußzeile auf jeder Folie<input class="inp" data-m="fuss" value="' + esc(m.fuss || "") + '" placeholder="z. B. Max Muster · Referat Bio · 9b"></label><label class="klein"><input type="checkbox" data-m="nummer"' + (m.nummer ? " checked" : "") + "> Foliennummer unten rechts</label>" +
+      '<div class="zeile" style="justify-content:flex-end;margin-top:12px"><button type="button" class="btn" data-a="zurueck">Zurücksetzen</button><button type="button" class="btn primary" data-a="ok">Für alle übernehmen</button></div>';
+    document.body.appendChild(d); d.showModal(); d.addEventListener("close", () => d.remove());
+    d.querySelector('[data-a="zurueck"]').onclick = () => { sichern(); s.design = m.basis; d.close(); alles(); spaeter(); };
+    d.querySelector('[data-a="ok"]').onclick = () => {
+      const neu = { basis: m.basis };
+      d.querySelectorAll("[data-m]").forEach(i => { const k = i.dataset.m, v = i.type === "checkbox" ? i.checked : i.value.trim(); if (k === "fuss" || k === "nummer") { if (v) neu[k] = v; } else if (v && v !== b[k]) neu[k] = v; });
+      sichern(); s.design = Object.keys(neu).length > 1 ? neu : m.basis; d.close(); alles(); spaeter();
+    };
+  };
   el.querySelector("#hg").onchange = (e) => { sichern(); folie().hg = e.target.value; zeichneBuehne(); liesteAktualisieren(); spaeter(); };
   el.querySelector("#hgWeg").onclick = () => { sichern(); delete folie().hg; zeichneBuehne(); liesteAktualisieren(); spaeter(); };
   el.querySelectorAll("[data-ueber]").forEach(b => b.onclick = () => { sichern(); folie().ueber = b.dataset.ueber; zeichneListe(); bandZustand(); spaeter(); if (b.dataset.ueber) vorschauUebergang(b.dataset.ueber); });
@@ -648,7 +688,7 @@ export function vorfuehren(A, s, start = 0) {
     g.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
   }
   function zeigen(neu, uebergang) {
-    vb.innerHTML = K.folieHtml(s.folien[fi], s.design, { schritt, neu, katex: katexHtml });
+    vb.innerHTML = K.folieHtml(s.folien[fi], s.design, { schritt, neu, katex: katexHtml, nr: fi + 1 });
     const f = vb.querySelector(".folie");
     if (uebergang && s.folien[fi].ueber) f.classList.add("ueber-" + s.folien[fi].ueber);
     v.querySelector("#vnr").textContent = (fi + 1) + " / " + s.folien.length;
@@ -720,7 +760,7 @@ export function vorfuehren(A, s, start = 0) {
 function drucken(s) {
   const alt = document.getElementById("druck"); if (alt) alt.remove();
   const box = document.createElement("div"); box.id = "druck";
-  box.innerHTML = s.folien.map(f => '<div class="druck-folie"><div class="druck-folie-innen">' + K.folieHtml(f, s.design, { katex: katexHtml }) + "</div></div>").join("");
+  box.innerHTML = s.folien.map((f, i) => '<div class="druck-folie"><div class="druck-folie-innen">' + K.folieHtml(f, s.design, { katex: katexHtml, nr: i + 1 }) + "</div></div>").join("");
   document.body.appendChild(box); document.body.classList.add("druckt");
   const fertig = () => { document.body.classList.remove("druckt"); box.remove(); window.removeEventListener("afterprint", fertig); };
   window.addEventListener("afterprint", fertig);
