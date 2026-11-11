@@ -21,6 +21,7 @@ export const BIBLIOTHEKEN = {
 };
 
 const REGELN = [
+  [/'(\w+)' does not name a type(?:; did you mean '(\w+)')?/, (m) => ["„" + m[1] + "“ steht hier an einer Stelle, wo der Arduino einen Typ (wie int) erwartet.", "Steht die Zeile außerhalb von setup() oder loop()? Anweisungen müssen zwischen die geschweiften Klammern { }. Oder ist es ein Tippfehler?"]],
   [/'(\w+)' was not declared in this scope(?:; did you mean '(\w+)')?/, (m) => { const t = besser(m[1], [...Object.keys(KONSTANTEN), ...Object.keys(WISSEN).filter(n => !n.includes("."))]) || m[2]; return ["„" + m[1] + "“ kennt der Arduino hier nicht.", t ? "Meintest du „" + t + "“?" : "Tippfehler? Oder die Variable wurde nicht oben erstellt (z. B. int " + m[1] + " = 0;)."]; }],
   [/'class (\w+)' has no member named '(\w+)'(?:; did you mean '(\w+)')?/, (m) => { const t = m[1] === "HardwareSerial" ? besser(m[2], SERIAL) || m[3] : m[3]; return ["„" + m[2] + "“ gibt es bei " + (m[1] === "HardwareSerial" ? "Serial" : m[1]) + " nicht.", t ? "Meintest du „" + (m[1] === "HardwareSerial" ? "Serial." : "") + t + "“?" : ""]; }],
   [/expected ';' before (.*)/, () => ["Hier fehlt ein „;“.", "Meistens am Ende der Zeile davor."]],
