@@ -79,7 +79,7 @@ export function liste(A, el) {
   zeichnen();
 }
 
-function vorschau(s) {
+export function vorschau(s) {
   const b = s.mappe && s.mappe.blaetter[0]; if (!b) return "";
   let h = "<table>";
   for (let z = 0; z < 5; z++) { h += "<tr>"; for (let sp = 0; sp < 4; sp++) { const c = b.zellen[F.zelleName(z, sp)]; h += "<td" + (c && c.f && c.f.bg ? ' style="background:' + esc(c.f.bg) + '"' : "") + ">" + esc(c && typeof c.v === "string" && c.v[0] !== "=" ? c.v.slice(0, 10) : c && c.v ? "ƒ" : "") + "</td>"; } h += "</tr>"; }

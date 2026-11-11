@@ -27,7 +27,7 @@ export function textVon(s) {
 
 /* ---------- Kleine Vorschau einer Folie ---------- */
 
-function mini(folie, designId, breite) {
+export function mini(folie, designId, breite) {
   const k = breite / K.W;
   return '<div class="mini-folie" style="width:' + breite + "px;height:" + Math.round(K.H * k) + 'px"><div class="mini-innen" style="transform:scale(' + k + ')">' + K.folieHtml(folie, designId, { katex: katexHtml }) + "</div></div>";
 }

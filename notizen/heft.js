@@ -9,6 +9,9 @@ import * as Papier from "./papier.js";
 import * as Editor from "./editor.js";
 import * as Verkn from "./verknuepfen.js";
 import * as Tafel from "./tafel.js";
+import * as Tabellen from "./tabellen.js";
+import * as Folien from "./folien.js";
+import * as Code from "./code.js";
 import * as SN from "./sprachnotiz.js";
 import * as F from "./formen.js";
 import * as Export from "./export.js";
@@ -147,11 +150,18 @@ export function neueSeite(A, fach, { aendern = null } = {}) {
 /* ---------- Liste: Fach-Ordner, Seiten, Papierkorb ---------- */
 
 export function liste(A, el, fach) {
-  let suche = sessionStorage.getItem("kw-heft-suche") || "", urls = [];
+  let suche = sessionStorage.getItem("kw-heft-suche") || "", urls = [], artWahl = sessionStorage.getItem("kw-heft-art") || "";
   sessionStorage.removeItem("kw-heft-suche");
   const fachWahl = fach || "";
-  function karte(s) {
+  const ARTEN = { heft: "📓 Seite", tafel: "♾️ Tafel", tabelle: "📊 Tabelle", folien: "🖥️ Präsentation", code: "💻 Code" };
+  const knopfMehr = (s) => '<button type="button" class="sk-mehr" data-mehr="' + s.id + '" aria-label="Verschieben oder löschen" title="In Ordner verschieben …">⋮</button>';
+  function karte(s) { return '<div class="sk-huelle">' + karteInnen(s) + knopfMehr(s) + '</div>'; }
+  function karteInnen(s) {
     const f = A.fachInfo(s.fach);
+    const unten = (art, extra) => '<span class="sk-info"><b>' + (s.pin ? "📌 " : "") + esc(s.titel || "Ohne Titel") + '</b><small><span class="punkt" style="background:' + esc(f.farbe) + '"></span>' + esc(f.name) + ' · ' + ARTEN[art] + (extra || "") + ' · ' + datum(s.geaendert) + '</small></span></a>';
+    if (s.art === "tabelle") return '<a class="seiten-karte" href="#tabelle/' + s.id + '" style="--f:' + esc(f.farbe) + '"><span class="mini art-mini tab-bild">' + Tabellen.vorschau(s) + '</span>' + unten("tabelle");
+    if (s.art === "folien") return '<a class="seiten-karte" href="#folien/' + s.id + '" style="--f:' + esc(f.farbe) + '"><span class="mini art-mini folien-mini">' + (s.folien && s.folien[0] ? Folien.mini(s.folien[0], s.design, 300) : "") + '</span>' + unten("folien", " · " + (s.folien || []).length + " Folien");
+    if (s.art === "code") return '<a class="seiten-karte" href="#code/' + s.id + '" style="--f:' + esc(f.farbe) + '"><span class="mini art-mini">' + Code.vorschauHtml(s) + '</span>' + unten("code");
     if (s.art === "tafel") return '<a class="seiten-karte" href="#tafel/' + s.id + '" style="--f:' + esc(f.farbe) + '"><span class="mini tafel-mini"><canvas width="420" height="300" data-tafel="' + s.id + '"></canvas><span class="tafel-zeichen">♾️</span></span>' +
       '<span class="sk-info"><b>' + (s.pin ? "📌 " : "") + esc(s.titel || "Tafel") + '</b><small><span class="punkt" style="background:' + esc(f.farbe) + '"></span>' + esc(f.name) + ' · ♾️ Tafel ' + datum(s.geaendert) + '</small></span></a>';
     const vorschauText = (s.text || s.ocr || "").slice(0, 160);
@@ -183,8 +193,12 @@ export function liste(A, el, fach) {
   if (fachWahl === "*papierkorb") { papierkorb(); return; }
   function zeichnen() {
     urls.forEach(u => URL.revokeObjectURL(u)); urls = [];
-    const q = suche.toLowerCase(), aktiv = A.aktiv("*").filter(x => !x.art || x.art === "heft" || x.art === "tafel");
-    let liste = aktiv.filter(s => !fachWahl ? true : fachWahl === "*unsortiert" ? !s.fach : s.fach === fachWahl);
+    const q = suche.toLowerCase(), aktiv = A.aktiv("*").filter(x => !x.art || ["heft", "tafel", "tabelle", "folien", "code"].includes(x.art));
+    const artVon = (x) => !x.art || x.art === "heft" || x.art === "tafel" ? "seiten" : x.art;
+    let imOrdner = aktiv.filter(s => !fachWahl ? true : fachWahl === "*unsortiert" ? !s.fach : s.fach === fachWahl);
+    const artZahl = (a) => imOrdner.filter(x => artVon(x) === a).length;
+    if (artWahl && !artZahl(artWahl)) artWahl = "";
+    let liste = artWahl ? imOrdner.filter(x => artVon(x) === artWahl) : imOrdner;
     if (q) liste = q[0] === "#" && q.length > 1 ? liste.filter(s => (s.tags || []).some(t => t.startsWith(q.slice(1)))) : liste.filter(s => A.seitenText(s).toLowerCase().includes(q));
     const alleTags = {}; aktiv.forEach(s => (s.tags || []).forEach(t => { alleTags[t] = (alleTags[t] || 0) + 1; }));
     const anzahl = (n) => aktiv.filter(s => s.fach === n).length;
@@ -194,12 +208,14 @@ export function liste(A, el, fach) {
       (imKorb ? '<a class="btn small" href="#heft/*papierkorb">🗑️ ' + imKorb + '</a>' : "") +
       (fachWahl && fachWahl[0] !== "*" ? '<button type="button" class="btn small" id="fachDruck" title="Ganzes Fach drucken oder als PDF">🖨️ Fach</button>' + (A.einst.ki && A.einst.ki.art !== "aus" ? '<button type="button" class="btn small" id="lernzettel" title="Die KI fasst alle Seiten des Fachs auf einem Lernzettel zusammen">✨ Lernzettel</button>' : "") : "") +
       '<label class="btn small" title="FIDELIA-Datei von Mitschülern öffnen">📥 Öffnen<input type="file" id="oeffnen" accept=".fidelia,.json" hidden></label>' +
-      '<button type="button" class="btn primary" id="neu">+ Neue Seite</button></div>' +
+      '<button type="button" class="btn primary" id="neu">+ Neu</button></div>' +
       '<div class="suche"><input class="inp" type="search" id="q" placeholder="In allen Seiten suchen" aria-label="In allen Seiten suchen" value="' + esc(suche) + '"></div>' +
       '<div class="ordner" role="tablist" aria-label="Fach-Ordner">' +
       '<button type="button" role="tab" data-f="" aria-selected="' + (!fachWahl) + '">Alle <small>' + aktiv.length + '</small></button>' +
       A.einst.faecher.map(f => '<button type="button" role="tab" data-f="' + esc(f.name) + '" aria-selected="' + (fachWahl === f.name) + '"><span class="punkt" style="background:' + esc(f.farbe) + '"></span>' + esc(f.name) + ' <small>' + anzahl(f.name) + '</small></button>').join("") +
       '<button type="button" role="tab" data-f="*unsortiert" aria-selected="' + (fachWahl === "*unsortiert") + '">📥 Unsortiert <small>' + unsortiert + '</small></button></div>';
+    const artKnoepfe = [["seiten", "📓 Seiten"], ["tabelle", "📊 Tabellen"], ["folien", "🖥️ Präsentationen"], ["code", "💻 Code"]].filter(([a]) => artZahl(a));
+    if (artKnoepfe.length > 1) h += '<div class="art-filter" role="radiogroup" aria-label="Was anzeigen">' + '<button type="button" role="radio" data-art="" aria-checked="' + (!artWahl) + '">Alle <small>' + imOrdner.length + '</small></button>' + artKnoepfe.map(([a, n]) => '<button type="button" role="radio" data-art="' + a + '" aria-checked="' + (artWahl === a) + '">' + n + ' <small>' + artZahl(a) + '</small></button>').join("") + '</div>';
     const tagListe = Object.entries(alleTags).sort((a, b) => b[1] - a[1]).slice(0, 14);
     if (tagListe.length) h += '<div class="tag-reihe" aria-label="Tags">' + tagListe.map(([t, n]) => '<button type="button" class="tag' + (q === "#" + t ? " an" : "") + '" data-tag="' + esc(t) + '">#' + esc(t) + ' <small>' + n + '</small></button>').join("") + '</div>';
     if (mitVorschlag.length && (!fachWahl || fachWahl === "*unsortiert")) {
@@ -209,16 +225,15 @@ export function liste(A, el, fach) {
         (mitVorschlag.length > 1 ? '<button type="button" class="btn small" id="alleJa">Alle übernehmen</button>' : "") + '</div>';
     }
     h += liste.length ? '<div class="seiten-gitter">' + liste.map(karte).join("") + '</div>' :
-      '<div class="empty"><b>' + (q ? "Nichts gefunden" : "Noch keine Seiten") + '</b>' + (q ? "Probier ein anderes Wort." : "Tipp auf „+ Neue Seite“ oder scanne ein Arbeitsblatt.") + '</div>';
+      '<div class="empty"><b>' + (q ? "Nichts gefunden" : "Noch keine Seiten") + '</b>' + (q ? "Probier ein anderes Wort." : "Tipp auf „+ Neu“ oder scanne ein Arbeitsblatt.") + '</div>';
     el.innerHTML = h;
     el.querySelectorAll("[data-striche]").forEach(c => vorschauStriche(c, A.seite(c.dataset.striche)));
     el.querySelectorAll("canvas[data-tafel]").forEach(c => Tafel.vorschau(c, A.seite(c.dataset.tafel)));
     el.querySelectorAll("img[data-bild]").forEach(async img => { const b = await A.bildHolen(img.dataset.bild); if (b) { const u = URL.createObjectURL(b); urls.push(u); img.src = u; } });
     el.querySelector("#oeffnen").onchange = (e) => { const d = e.target.files[0]; if (d) Extras.importieren(A, d); };
-    el.querySelector("#neu").onclick = async () => {
-      const s = await neueSeite(A, fachWahl && fachWahl[0] !== "*" ? fachWahl : "");
-      if (s) A.gehe("seite/" + s.id);
-    };
+    el.querySelector("#neu").onclick = () => neuWaehlen(fachWahl && fachWahl[0] !== "*" ? fachWahl : "");
+    el.querySelectorAll("[data-art]").forEach(b => b.onclick = () => { artWahl = b.dataset.art; sessionStorage.setItem("kw-heft-art", artWahl); zeichnen(); });
+    el.querySelectorAll("[data-mehr]").forEach(b => b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); mehrMenue(A.seite(b.dataset.mehr), b); });
     const fd = el.querySelector("#fachDruck");
     const lz = el.querySelector("#lernzettel");
     if (lz) lz.onclick = async () => {
@@ -227,7 +242,7 @@ export function liste(A, el, fach) {
       catch (e) { const KIH = await import("./ki-helfer.js"); KW.toast(KIH.kiFehlerText(e)); }
       lz.disabled = false; lz.textContent = "✨ Lernzettel";
     };
-    if (fd) fd.onclick = () => Export.drucken(A, liste.slice().sort((a, b) => String(a.erstellt).localeCompare(String(b.erstellt))));
+    if (fd) fd.onclick = () => Export.drucken(A, liste.filter(x => !x.art || x.art === "heft").slice().sort((a, b) => String(a.erstellt).localeCompare(String(b.erstellt))));
     const qi = el.querySelector("#q");
     qi.oninput = () => { suche = qi.value; const pos = qi.selectionStart; zeichnen(); const n = el.querySelector("#q"); n.focus(); n.setSelectionRange(pos, pos); };
     el.querySelectorAll("[data-tag]").forEach(b => b.onclick = () => { suche = suche.toLowerCase() === "#" + b.dataset.tag ? "" : "#" + b.dataset.tag; zeichnen(); });
@@ -237,6 +252,41 @@ export function liste(A, el, fach) {
     el.querySelectorAll("[data-nein]").forEach(b => b.onclick = async () => { const s = A.seite(b.dataset.nein); s.vorschlag = null; await A.seiteSpeichern(s); zeichnen(); });
     const alle = el.querySelector("#alleJa");
     if (alle) alle.onclick = async () => { for (const s of mitVorschlag) await uebernehmen(s); KW.toast("Alles einsortiert."); zeichnen(); };
+  }
+  // „+ Neu“: was soll es werden?
+  function neuWaehlen(fach) {
+    const d = document.createElement("dialog"); d.className = "sheet";
+    const arten = [["seite", "📓", "Heftseite", "Schreiben, malen, Text wie Word"], ["tafel", "♾️", "Unendliche Tafel", "Ohne Rand, mit Zetteln"], ["tabelle", "📊", "Tabelle", "Rechnen wie Excel"], ["folien", "🖥️", "Präsentation", "Folien wie PowerPoint"], ["code", "💻", "Arduino-Code", "Selbst programmieren"]];
+    d.innerHTML = '<div class="sheet-in"><h2>Was möchtest du anlegen?</h2>' + (fach ? '<p class="muted">Kommt in den Ordner <b>' + esc(fach) + '</b>.</p>' : "") + '<div class="neu-arten">' + arten.map(a => '<button type="button" class="card" data-neu="' + a[0] + '"><span>' + a[1] + '</span><b>' + a[2] + '</b><small>' + a[3] + '</small></button>').join("") + '</div><div class="sheet-foot"><span class="sp"></span><button type="button" class="btn" data-neu="">Abbrechen</button></div></div>';
+    document.body.appendChild(d);
+    d.querySelectorAll("[data-neu]").forEach(b => b.onclick = async () => {
+      const a = b.dataset.neu; d.close(); if (!a) return;
+      if (a === "seite") { const s = await neueSeite(A, fach); if (s) A.gehe("seite/" + s.id); }
+      else if (a === "tafel") { const s = await A.seiteNeu({ art: "tafel", fach, titel: "Tafel " + new Date().toLocaleDateString("de-DE"), striche: [], zettel: [], grund: "punkte", raster: "leer" }); A.gehe("tafel/" + s.id); }
+      else if (a === "tabelle") Tabellen.neu(A, fach);
+      else if (a === "folien") Folien.neu(A, fach);
+      else if (a === "code") Code.neu(A, fach);
+    });
+    d.addEventListener("close", () => d.remove()); d.showModal();
+  }
+  // ⋮ an jeder Karte: in einen anderen Ordner, oben anheften, Papierkorb
+  function mehrMenue(s, knopf) {
+    document.querySelectorAll(".sk-menue").forEach(m => m.remove());
+    const m = document.createElement("div"); m.className = "sk-menue card"; m.setAttribute("role", "menu");
+    m.innerHTML = '<small class="muted">In Ordner verschieben</small>' + A.einst.faecher.map(f => '<button type="button" role="menuitem" data-zu="' + esc(f.name) + '"' + (s.fach === f.name ? ' class="an"' : "") + '><span class="punkt" style="background:' + esc(f.farbe) + '"></span>' + esc(f.name) + '</button>').join("") +
+      '<button type="button" role="menuitem" data-zu=""' + (!s.fach ? ' class="an"' : "") + '>📥 Unsortiert</button><hr>' +
+      '<button type="button" role="menuitem" data-x="pin">' + (s.pin ? "📌 Nicht mehr anheften" : "📌 Oben anheften") + '</button><button type="button" role="menuitem" data-x="weg">🗑️ In den Papierkorb</button>';
+    document.body.appendChild(m);
+    const r = knopf.getBoundingClientRect();
+    m.style.left = Math.max(8, Math.min(innerWidth - 230, r.right - 220)) + "px";
+    m.style.top = (r.bottom + 4 + m.offsetHeight > innerHeight ? Math.max(8, r.top - m.offsetHeight - 4) : r.bottom + 4) + "px";
+    const zu = () => { m.remove(); document.removeEventListener("pointerdown", aussen, true); };
+    const aussen = (e) => { if (!m.contains(e.target)) zu(); };
+    setTimeout(() => document.addEventListener("pointerdown", aussen, true));
+    m.querySelectorAll("[data-zu]").forEach(b => b.onclick = async () => { s.fach = b.dataset.zu; await A.seiteSpeichern(s); zu(); KW.toast("„" + (s.titel || "Ohne Titel") + "“ → " + (s.fach || "Unsortiert")); zeichnen(); });
+    m.querySelector('[data-x="pin"]').onclick = async () => { s.pin = !s.pin; await A.seiteSpeichern(s); zu(); zeichnen(); };
+    m.querySelector('[data-x="weg"]').onclick = async () => { zu(); await A.seiteLoeschen(s.id); KW.toast("🗑️ In den Papierkorb gelegt."); zeichnen(); };
+    m.querySelector("button").focus();
   }
   zeichnen();
   return () => urls.forEach(u => URL.revokeObjectURL(u));

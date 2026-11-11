@@ -20,6 +20,7 @@ import * as Schule from "./schule.js";
 import * as KIH from "./ki-helfer.js";
 import * as Verkn from "./verknuepfen.js";
 import * as Tafel from "./tafel.js";
+import * as Code from "./code.js";
 
 const KW = window.KW, esc = KW.esc;
 
@@ -52,7 +53,7 @@ A.seiteSpeichern = async (s) => { if (!s.art || s.art === "heft" || s.art === "t
 // Löschen = in den Papierkorb (30 Tage), erst „endgültig“ ist wirklich weg
 // Nur Heftseiten (art fehlt), oder eine andere Art: "tabelle", "folien"; "*" = alles
 A.aktiv = (art = "heft") => A.seiten.filter(s => !s.papierkorb && (art === "*" || (s.art || "heft") === art));
-A.link = (s) => (s.art === "tabelle" ? "tabelle/" : s.art === "folien" ? "folien/" : s.art === "tafel" ? "tafel/" : "seite/") + s.id;
+A.link = (s) => (s.art === "tabelle" ? "tabelle/" : s.art === "folien" ? "folien/" : s.art === "tafel" ? "tafel/" : s.art === "code" ? "code/" : "seite/") + s.id;
 A.seiteLoeschen = async (id) => {
   const s = A.seite(id); if (!s) return null;
   s.papierkorb = new Date().toISOString();
@@ -171,7 +172,7 @@ let zuletztAktiv = 0;
 ["keydown", "pointerdown", "input", "wheel"].forEach(t => document.addEventListener(t, () => { zuletztAktiv = Date.now(); }, { passive: true, capture: true }));
 function lernFach() {
   const { modul, param } = aktuell;
-  if (["seite", "tabelle", "folien", "tafel"].includes(modul) && param) { const s = A.seite(param.split("/")[0]); return s ? s.fach || "" : null; }
+  if (["seite", "tabelle", "folien", "tafel", "code"].includes(modul) && param) { const s = A.seite(param.split("/")[0]); return s ? s.fach || "" : null; }
   if (modul === "lernen" && param) { const l = A.lern.find(x => x.id === param.split("/")[0]); return l ? l.fach || "" : ""; }
   if (modul === "arbeit") { const t = Planer.daten().eintraege.find(e => e.id === param); return t ? t.fach || "" : ""; }
   return null;
@@ -216,7 +217,7 @@ A.neuAufbauen = () => {
   markieren();
 };
 function markieren() {
-  const m = aktuell.modul === "fern" ? "folien" : aktuell.modul === "arbeit" ? "planer" : aktuell.modul === "seite" || aktuell.modul === "tafel" ? "heft" : aktuell.modul === "tabelle" ? "tabellen" : aktuell.modul;
+  const m = aktuell.modul === "fern" ? "folien" : aktuell.modul === "arbeit" ? "planer" : aktuell.modul === "seite" || aktuell.modul === "tafel" || aktuell.modul === "code" ? "heft" : aktuell.modul === "tabelle" ? "tabellen" : aktuell.modul;
   document.querySelectorAll("#leiste a[data-m]").forEach(a => {
     if (a.dataset.m === m) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
   });
@@ -253,6 +254,7 @@ function zeigen() {
   else if (modul === "lernen") r = Lernen.zeigen(A, el, aktuell.param);
   else if (modul === "audio") r = Audio.zeigen(A, el);
   else if (modul === "tafel") r = Tafel.seite(A, el, aktuell.param);
+  else if (modul === "code") r = Code.seite(A, el, aktuell.param);
   else if (modul === "fern") { r = null; import("./referent.js").then(R => { const z = R.fernbedienung(A, el, aktuell.param); if (aktuell.modul === "fern") aufraeumen = z; }); }
   else if (modul === "arbeit") Schule.arbeitSeite(A, el, aktuell.param, Planer);
   else if (modul === "einst") E.seite(A, el);
