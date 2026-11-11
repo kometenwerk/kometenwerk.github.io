@@ -1,101 +1,164 @@
-/* Kometenwerk Code – Aussehen (Kometenwerk-Farben, dunkel und hell) */
+/* Kometenwerk Code – Aussehen wie eine klassische Arduino-Umgebung (dunkel) */
 @import url("fonts/fonts.css");
-:root{--grund:#0b111c;--flaeche:#101826;--karte:#172133;--linie:#2a3650;--text:#ffffff;--leise:#9aa7bd;--akzent:#ff8a3c;--gruen:#0f9d72;--blau:#2f62e6;--rot:#e05252;--gelb:#e0a11b;--ed:#0f1622;--ed-nr:#0b111c;--ed-text:#dfe6f2}
-@media (prefers-color-scheme:light){:root{--grund:#f4f6fa;--flaeche:#ffffff;--karte:#ffffff;--linie:#dfe3ea;--text:#101826;--leise:#5b6578}}
+:root{
+  --grund:#171e21; --leiste:#1b2326; --panel:#1f2a2d; --linie:#2c393d; --text:#dae3e3; --leise:#8d9ea3;
+  --teal:#00818a; --teal-hell:#00a4ad; --teal-dunkel:#006469; --orange:#ff8a3c;
+  --ed:#171e21; --ed-nr:#171e21; --ed-auswahl:#264b54;
+  --rot:#e05252; --gelb:#e6b340; --gruen:#1da086;
+}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--grund);color:var(--text);font:14px/1.45 "Space Grotesk",system-ui,sans-serif;overflow:hidden}
+html,body{margin:0;height:100%;background:var(--grund);color:var(--text);font:13px/1.45 "Open Sans","Segoe UI","Space Grotesk",system-ui,sans-serif;overflow:hidden}
 button,input,select{font:inherit;color:inherit}
-.kopf{display:flex;align-items:center;gap:10px;height:56px;padding:0 14px;background:var(--flaeche);border-bottom:1px solid var(--linie)}
-.marke{display:flex;align-items:center;gap:8px;margin-right:8px;font-size:15px}
-.marke b{font-weight:600}
-.rund{width:40px;height:40px;border-radius:50%;border:0;color:#fff;font-size:18px;font-weight:700;cursor:pointer;display:grid;place-items:center;transition:transform .1s}
-.rund:hover{transform:scale(1.06)}.rund:disabled{opacity:.55;cursor:wait}
-.rund.pruef{background:var(--gruen)}.rund.hoch{background:var(--blau)}
-.rund.laeuft{animation:dreh 1s linear infinite}
-@keyframes dreh{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){.rund.laeuft{animation:none;opacity:.6}}
-.board-wahl{display:flex;gap:6px;align-items:center;margin-left:8px}
-select,input{background:var(--karte);border:1px solid var(--linie);border-radius:9px;padding:7px 10px;min-height:36px}
-.board-wahl select{max-width:230px}
-.klein{border:1px solid var(--linie);background:var(--karte);border-radius:9px;padding:6px 10px;cursor:pointer;min-height:34px}
-.klein:hover{border-color:var(--akzent)}
-.klein.an,#bMonitor.an{background:var(--akzent);color:#1a1205;border-color:var(--akzent)}
+svg{width:20px;height:20px;display:block}
 .sp{flex:1}
-.haupt{display:flex;height:calc(100% - 56px)}
-.seite{width:230px;flex:none;background:var(--flaeche);border-right:1px solid var(--linie);padding:12px;overflow:auto}
-.seite h3{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--leise);margin:16px 4px 6px}
-.seite-knoepfe{display:flex;flex-direction:column;gap:6px}
-.seite-knoepfe button{text-align:left;border:1px solid var(--linie);background:var(--karte);border-radius:9px;padding:8px 10px;cursor:pointer}
-.seite-knoepfe button:hover{border-color:var(--akzent)}
-.liste{list-style:none;margin:0;padding:0}
-.liste button{width:100%;text-align:left;border:0;background:transparent;border-radius:8px;padding:6px 8px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.liste button:hover{background:var(--karte)}.liste button.an{background:var(--karte);box-shadow:inset 3px 0 0 var(--akzent)}
-.liste.kl button{font-size:13px}
 .leise{color:var(--leise)}
-li.leise{padding:6px 8px;font-size:13px}
-.bib-suche{display:flex;gap:4px}.bib-suche input{flex:1;min-width:0}
-.link{border:0;background:transparent;color:var(--leise);text-decoration:underline;cursor:pointer;margin-top:14px;padding:4px}
-.mitte{flex:1;min-width:0;display:flex;flex-direction:column;padding:10px 12px 0;gap:8px}
-.reiter-zeile{display:flex;align-items:center;gap:6px}
-.datei{background:var(--karte);border:1px solid var(--linie);border-bottom:2px solid var(--akzent);border-radius:9px 9px 0 0;padding:6px 14px;font-weight:600}
-.geaendert{color:var(--akzent);font-size:18px;line-height:1}
-.ed-box{flex:1;min-height:200px}
-.ed{--ed-schrift:15px;position:relative;display:flex;height:100%;background:var(--ed);border-radius:12px;overflow:hidden;border:1px solid #23304a}
-.ed-nr{flex:none;width:50px;padding:12px 0;overflow:hidden;text-align:right;color:#5b6a85;font:var(--ed-schrift)/1.55 "Cascadia Code",Consolas,ui-monospace,monospace;user-select:none;background:var(--ed-nr);border-right:1px solid #1d2840}
-.ed-nr div{padding-right:9px;cursor:pointer}
-.ed-nr div.f{background:rgba(224,82,82,.38);color:#fff}.ed-nr div.h{background:rgba(224,161,27,.28);color:#fff}
+
+/* Werkzeugleiste */
+.leiste{position:relative;display:flex;align-items:center;gap:8px;height:50px;padding:0 12px;background:var(--leiste);border-bottom:1px solid #0e1416}
+.kreis{width:32px;height:32px;border-radius:50%;border:0;background:var(--teal);color:#fff;display:grid;place-items:center;cursor:pointer;padding:0}
+.kreis:hover{background:var(--teal-hell)}
+.kreis svg{width:18px;height:18px}
+.kreis.aus,.kreis:disabled{background:#2f3e42;color:#6b7c80;cursor:default}
+.kreis.laeuft{background:var(--teal-hell);box-shadow:0 0 0 3px rgba(0,164,173,.35);animation:puls 1s infinite}
+@keyframes puls{50%{box-shadow:0 0 0 6px rgba(0,164,173,.15)}}
+@media (prefers-reduced-motion:reduce){.kreis.laeuft{animation:none}}
+.board-knopf{display:flex;align-items:center;gap:8px;min-width:250px;height:32px;margin-left:10px;padding:0 10px;background:transparent;border:1px solid var(--teal);border-radius:3px;cursor:pointer;color:var(--text)}
+.board-knopf:hover{background:rgba(0,129,138,.15)}
+.board-knopf #boardText{flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.board-knopf .pfeil{width:16px;height:16px}
+.usb{color:var(--teal-hell);font-weight:700}
+.board-liste{position:absolute;left:138px;top:46px;z-index:40;min-width:300px;background:var(--panel);border:1px solid var(--linie);border-radius:3px;box-shadow:0 8px 24px rgba(0,0,0,.5);padding:4px 0}
+.board-liste[hidden]{display:none}
+.board-liste button{display:flex;flex-direction:column;align-items:flex-start;width:100%;border:0;background:transparent;text-align:left;padding:7px 14px;cursor:pointer}
+.board-liste button:hover,.board-liste button.an{background:var(--teal-dunkel)}
+.board-liste small{color:var(--leise)}
+.board-liste hr{border:0;border-top:1px solid var(--linie);margin:4px 0}
+.symbol{width:32px;height:32px;border:0;background:transparent;border-radius:3px;color:var(--text);display:grid;place-items:center;cursor:pointer;padding:0}
+.symbol:hover{background:#2a383c}
+.symbol.an{color:var(--teal-hell)}
+.symbol.klein{width:26px;height:26px;font-size:15px}
+
+/* Layout */
+.haupt{display:flex;height:calc(100% - 50px - 24px)}
+.aktiv-leiste{width:48px;flex:none;display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:4px;background:var(--leiste);border-right:1px solid #0e1416}
+.aktiv-leiste button{width:40px;height:40px;border:0;background:transparent;color:#8d9ea3;display:grid;place-items:center;cursor:pointer;border-left:2px solid transparent}
+.aktiv-leiste button svg{width:24px;height:24px}
+.aktiv-leiste button:hover{color:var(--text)}
+.aktiv-leiste button.an{color:var(--text);border-left-color:var(--teal-hell)}
+.panel{width:240px;flex:none;background:var(--panel);border-right:1px solid #0e1416;overflow:auto;display:flex;flex-direction:column}
+.panel[hidden]{display:none}
+.panel section{display:flex;flex-direction:column;min-height:100%;padding:14px 14px 12px}
+.panel section[hidden]{display:none}
+.panel h2{font-size:11px;font-weight:600;letter-spacing:.06em;margin:0 0 12px;color:var(--text)}
+.panel h3{font-size:10.5px;font-weight:600;letter-spacing:.06em;margin:16px 0 6px;color:var(--leise)}
+.panel-reiter{display:flex;border-bottom:1px solid var(--linie);margin-bottom:8px}
+.panel-reiter button{border:0;background:transparent;padding:6px 14px;border-bottom:2px solid var(--teal-hell);cursor:pointer}
+.panel-fuss{margin-top:auto;padding-top:16px;display:flex;justify-content:center}
+.liste{list-style:none;margin:0;padding:0}
+.liste li>button{width:100%;text-align:left;border:0;background:transparent;padding:6px 8px;cursor:pointer;border-radius:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.liste li>button:hover{background:#2a383c}
+.liste li>button.an{background:var(--teal-dunkel);color:#fff}
+.liste li.leise{padding:6px 8px}
+.liste.bib li{padding:8px 4px;border-bottom:1px solid var(--linie)}
+.liste.bib b{display:block}.liste.bib small{display:block;color:var(--leise);margin:2px 0 6px}
+.pill{border:0;border-radius:20px;background:var(--teal);color:#fff;font-weight:600;font-size:12px;letter-spacing:.04em;padding:8px 22px;cursor:pointer}
+.pill:hover{background:var(--teal-hell)}
+.pill.klein{padding:5px 12px;font-size:11px}
+.pill.hell{background:transparent;border:1px solid var(--teal);color:var(--teal-hell)}
+.pill:disabled{opacity:.5;cursor:default}
+.suchfeld{width:100%;background:#151c1f;border:1px solid var(--linie);border-radius:3px;padding:7px 9px;margin-bottom:8px}
+.suchfeld:focus{outline:1px solid var(--teal-hell)}
+.such-knoepfe{display:flex;gap:6px;margin-bottom:10px}
+.karte-board{border:1px solid var(--linie);border-radius:3px;padding:10px}
+.karte-board small{display:block;color:var(--leise)}.karte-board p{margin:6px 0}
+.karte-board .pill{margin-top:8px}
+code{font-family:"Cascadia Code",Consolas,monospace;color:var(--orange)}
+
+/* Editor */
+.mitte{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--ed)}
+.tabs{position:relative;display:flex;align-items:center;height:34px;background:var(--leiste);border-bottom:1px solid #0e1416;padding-right:8px}
+.tab{display:flex;align-items:center;gap:8px;height:100%;padding:0 16px;background:var(--ed);border-top:2px solid var(--teal-hell);font-weight:600}
+.tab .punkt{width:8px;height:8px;border-radius:50%;background:var(--text)}
+.tab-menue{position:absolute;right:8px;top:32px;z-index:30;background:var(--panel);border:1px solid var(--linie);padding:4px 0;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.tab-menue[hidden]{display:none}
+.tab-menue button{display:block;width:100%;border:0;background:transparent;text-align:left;padding:7px 14px;cursor:pointer}
+.tab-menue button:hover{background:var(--teal-dunkel)}
+.ed-box{flex:1;min-height:120px}
+.ed{--ed-schrift:14px;position:relative;display:flex;height:100%;background:var(--ed);overflow:hidden}
+.ed-nr{flex:none;width:54px;padding:6px 0;overflow:hidden;text-align:right;color:#5d7176;font:var(--ed-schrift)/1.6 "Cascadia Code",Consolas,"Courier New",monospace;user-select:none;background:var(--ed-nr)}
+.ed-nr div{padding-right:14px;cursor:pointer}
+.ed-nr div.f{color:#fff;background:rgba(224,82,82,.45)}
+.ed-nr div.h{color:#fff;background:rgba(230,179,64,.3)}
 .ed-feld{position:relative;flex:1;min-width:0}
-.ed-farbe,.ed-text{position:absolute;inset:0;margin:0;padding:12px 14px;font:var(--ed-schrift)/1.55 "Cascadia Code",Consolas,ui-monospace,monospace;white-space:pre;tab-size:2;overflow:auto;border:0;background:transparent;letter-spacing:0}
-.ed-farbe{color:var(--ed-text);pointer-events:none;overflow:hidden}
-.ed-text{color:transparent;-webkit-text-fill-color:transparent;caret-color:var(--akzent);resize:none;outline:none}
-.ed-text::selection{background:rgba(127,170,255,.35)}
-.c-typ{color:#7fd3ff}.c-schl{color:#c792ea;font-weight:600}.c-konst{color:#ffb86b}.c-fn{color:#5ee0b0}.c-kommentar{color:#7d8aa3;font-style:italic}.c-text,.c-zeichen{color:#ffe08a}.c-zahl{color:#ff9a9a}.c-vor{color:#c792ea}.c-sym{color:#dfe6f2}
-.ed-vor{position:absolute;z-index:20;width:340px;max-height:230px;overflow:auto;background:#172133;border:1px solid #2a3650;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.45);padding:4px;color:#fff}
+.ed-farbe,.ed-text{position:absolute;inset:0;margin:0;padding:6px 14px 6px 8px;font:var(--ed-schrift)/1.6 "Cascadia Code",Consolas,"Courier New",monospace;white-space:pre;tab-size:2;overflow:auto;border:0;background:transparent;letter-spacing:0}
+.ed-farbe{color:var(--text);pointer-events:none;overflow:hidden}
+.ed-text{color:transparent;-webkit-text-fill-color:transparent;caret-color:#fff;resize:none;outline:none}
+.ed-text::selection{background:var(--ed-auswahl)}
+/* Farben ähnlich dem dunklen Arduino-Design */
+.c-typ,.c-schl{color:#00a8b0}.c-konst{color:#00a8b0}.c-fn{color:#e1883d}.c-kommentar{color:#7f8c8d}.c-text,.c-zeichen{color:#e1883d}.c-zahl{color:#e6e6e6}.c-vor{color:#7fcbcd}.c-sym{color:var(--text)}
+.ed-vor{position:absolute;z-index:20;width:360px;max-height:230px;overflow:auto;background:var(--panel);border:1px solid var(--linie);box-shadow:0 8px 24px rgba(0,0,0,.5);padding:2px}
 .ed-vor[hidden]{display:none}
-.ed-vor button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;border:0;background:transparent;text-align:left;padding:6px 8px;border-radius:7px;cursor:pointer;color:#fff}
-.ed-vor button[aria-selected=true]{background:#24324d}
-.ed-vor code{font-size:12px;color:#5ee0b0}.ed-vor small{font-size:12px;color:#9aa7bd;line-height:1.3}
-.hilfe{padding:7px 12px;border-radius:10px;background:var(--karte);border:1px solid var(--linie);min-height:36px;font-size:13.5px}
-.hilfe code{font-weight:700;color:var(--akzent)}.hilfe .fehler{color:var(--rot)}.hilfe .hinweis{color:var(--gelb)}.hilfe small{color:var(--leise)}
-.unten{height:250px;flex:none;display:flex;flex-direction:column;background:var(--flaeche);border:1px solid var(--linie);border-bottom:0;border-radius:12px 12px 0 0;overflow:hidden}
-.unten-reiter{display:flex;align-items:center;gap:2px;padding:0 8px;border-bottom:1px solid var(--linie)}
-.unten-reiter button{border:0;background:transparent;padding:9px 12px;cursor:pointer;color:var(--leise);border-bottom:2px solid transparent}
-.unten-reiter button[aria-selected=true]{color:var(--text);border-bottom-color:var(--akzent)}
-.status{font-size:12px;color:var(--leise);font-variant-numeric:tabular-nums}
-.unten-inhalt{flex:1;overflow:auto;padding:8px 10px}
+.ed-vor button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;border:0;background:transparent;text-align:left;padding:5px 8px;cursor:pointer}
+.ed-vor button[aria-selected=true]{background:var(--teal-dunkel)}
+.ed-vor code{font-size:12px;color:#7fcbcd}.ed-vor small{font-size:11.5px;color:var(--leise);line-height:1.3}
+
+/* Unten */
+.unten{height:230px;flex:none;display:flex;flex-direction:column;background:var(--grund);border-top:1px solid #0e1416}
+.unten.zu{height:30px}.unten.zu .unten-inhalt{display:none}
+.unten-kopf{display:flex;align-items:center;height:30px;background:var(--leiste);padding:0 6px 0 0}
+.unten-kopf [role=tab]{height:100%;border:0;background:transparent;padding:0 14px;cursor:pointer;color:var(--leise);border-top:2px solid transparent;display:flex;align-items:center;gap:8px}
+.unten-kopf [role=tab][aria-selected=true]{color:var(--text);background:var(--grund);border-top-color:var(--teal-hell)}
+.unten-kopf [role=tab][hidden]{display:none}
+.unten-kopf .x{font-size:15px;opacity:.7}.unten-kopf .x:hover{opacity:1}
+.unten-inhalt{flex:1;overflow:auto;padding:6px 12px}
 .unten-inhalt[hidden]{display:none}
-.meldungen .ok{padding:8px;font-size:15px}
-.zaehler{font-weight:700;padding:4px 4px 8px}
-.meld{display:flex;gap:10px;align-items:flex-start;width:100%;border:0;background:transparent;text-align:left;padding:8px;border-radius:8px;cursor:pointer;border-left:4px solid var(--rot);margin-bottom:4px}
+.roh{margin:0;font:12.5px/1.5 "Cascadia Code",Consolas,monospace;white-space:pre-wrap;color:#c9d4d4}
+.meldungen:empty{display:none}
+.meldungen{margin:8px 0 6px;padding-top:6px;border-top:1px solid var(--linie)}
+.roh:empty+.meldungen{border-top:0;margin-top:0}
+.ok{padding:4px 0;color:#9fe0cf}
+.zaehler{font-weight:600;padding:2px 0 6px}
+.meld{display:flex;gap:10px;align-items:flex-start;width:100%;border:0;background:transparent;text-align:left;padding:5px 8px;cursor:pointer;border-left:3px solid var(--rot);margin-bottom:3px}
 .meld.hinweis{border-left-color:var(--gelb)}
-.meld:hover{background:var(--karte)}
-.meld.gross{cursor:default;font-size:15px}
-.meld .mz{flex:none;width:62px;font-size:12px;color:var(--leise);padding-top:2px}
-.meld small{display:block;color:var(--leise);margin-top:2px}
-.groesse{display:grid;grid-template-columns:160px 1fr;gap:4px 10px;align-items:center;padding:4px 8px;max-width:640px}
-.groesse small{grid-column:2;color:var(--leise);margin-top:-2px;margin-bottom:6px}
-.balken{height:8px;border-radius:5px;background:var(--karte);overflow:hidden}.balken i{display:block;height:100%;background:var(--gruen)}.balken i.warn{background:var(--gelb)}
-.bib-fehlt{margin-top:8px;padding:10px;border-radius:10px;background:var(--karte)}
-.haupt-k{border:0;background:var(--akzent);color:#1a1205;font-weight:600;border-radius:9px;padding:8px 14px;cursor:pointer}
-.haupt-k.klein{padding:5px 10px;min-height:0}
-.roh{margin-top:8px}.roh summary{cursor:pointer;color:var(--leise);font-size:12px}
-.roh pre,.mon-text,.ein-log{margin:6px 0 0;font:12.5px/1.45 "Cascadia Code",Consolas,monospace;white-space:pre-wrap;background:var(--ed);color:var(--ed-text);border-radius:8px;padding:8px 10px;max-height:300px;overflow:auto}
-.mon-leiste,.mon-senden{display:flex;gap:6px;align-items:center}
-.mon-text{height:120px;max-height:none}
-.mon-senden{margin-top:6px}.mon-senden input{flex:1}
-.check{display:flex;align-items:center;gap:6px;color:var(--leise);font-size:13px}
-.einrichten{position:fixed;inset:0;background:rgba(5,9,16,.7);display:grid;place-items:center;z-index:50}
-.einrichten[hidden]{display:none}
-.einrichten .karte{width:min(560px,92vw);background:var(--flaeche);border:1px solid var(--linie);border-radius:16px;padding:22px}
-.einrichten h2{margin:0 0 8px}
-.fortschritt{height:8px;border-radius:5px;background:var(--karte);overflow:hidden;margin:14px 0 8px}.fortschritt i{display:block;height:100%;width:0;background:var(--akzent);transition:width .3s}
-.ein-log{height:130px}
-.knoepfe{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--karte);border:1px solid var(--linie);border-radius:12px;padding:10px 16px;box-shadow:0 8px 30px rgba(0,0,0,.35);z-index:60;max-width:80vw}
-.toast[hidden]{display:none}
-:focus-visible{outline:2px solid var(--akzent);outline-offset:2px}
-@media (max-width:900px){.seite{display:none}.marke span{display:none}}
-.hilfe-karte{padding:6px 10px;line-height:1.55}
-.hilfe-karte h3{margin:2px 0 6px;font-size:15px}
-.hilfe-karte ol{margin:0;padding-left:20px}.hilfe-karte li{margin-bottom:6px}
-.hilfe-karte a{color:var(--akzent)}
+.meld:hover{background:#222d30}
+.meld.gross{cursor:default}
+.meld .mz{flex:none;width:62px;font-size:12px;color:var(--leise);padding-top:1px}
+.meld small{display:block;color:var(--leise)}
+.groesse{display:grid;grid-template-columns:170px 1fr;gap:3px 10px;align-items:center;max-width:620px;margin:4px 0 6px}
+.groesse small{grid-column:2;color:var(--leise);margin-bottom:4px}
+.balken{height:6px;background:#2c393d;overflow:hidden}.balken i{display:block;height:100%;background:var(--teal-hell)}.balken i.warn{background:var(--gelb)}
+.bib-fehlt{margin:6px 0;padding:8px 10px;background:#222d30}
+.hilfe-karte{line-height:1.55}
+.hilfe-karte h3{margin:2px 0 4px;font-size:13.5px}
+.hilfe-karte ol{margin:0;padding-left:20px}.hilfe-karte li{margin-bottom:4px}
+.hilfe-karte a{color:var(--teal-hell)}
+.mon-zeile{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.mon-zeile input{flex:1;background:#151c1f;border:1px solid var(--linie);border-radius:3px;padding:6px 9px}
+.mon-zeile select{background:#151c1f;border:1px solid var(--linie);border-radius:3px;padding:5px}
+.check{display:flex;align-items:center;gap:4px;color:var(--leise)}
+.mon-text{margin:0;font:12.5px/1.5 "Cascadia Code",Consolas,monospace;white-space:pre-wrap;color:#dae3e3}
+.plot-kopf{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;margin-bottom:4px}
+.plot-kopf i{display:inline-block;width:10px;height:10px;margin-right:4px;vertical-align:-1px}
+.plot{width:100%;height:calc(100% - 22px);display:block;background:#11181a}
+
+/* Statusleiste */
+.status{display:flex;align-items:center;gap:18px;height:24px;padding:0 12px;background:var(--teal-dunkel);color:#e6f3f3;font-size:12px}
+.hilfe{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55vw}
+.hilfe code{color:#fff;font-weight:700}.hilfe .fehler{color:#ffd0d0}.hilfe small{opacity:.8}
+
+/* Fenster */
+.dialog{background:var(--panel);color:var(--text);border:1px solid var(--linie);border-radius:4px;padding:22px 24px;width:min(720px,92vw);box-shadow:0 16px 48px rgba(0,0,0,.6)}
+.dialog::backdrop{background:rgba(0,0,0,.55)}
+.dialog h2{font-size:16px;margin:0 0 4px}
+.zwei{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:12px}
+.zwei b{display:block;font-size:11px;letter-spacing:.06em;margin-bottom:8px;color:var(--leise)}
+.liste.wahl{height:240px;overflow:auto;border:1px solid var(--linie);border-radius:3px;margin-bottom:6px}
+.dialog-fuss{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+.fortschritt{height:6px;background:#2c393d;margin:14px 0 8px;overflow:hidden}.fortschritt i{display:block;height:100%;width:0;background:var(--teal-hell);transition:width .3s}
+.ein-log{height:130px;overflow:auto;background:#151c1f;padding:8px;border-radius:3px}
+
+/* Benachrichtigungen unten rechts */
+.benachrichtigungen{position:fixed;right:16px;bottom:34px;display:flex;flex-direction:column;gap:8px;z-index:60;max-width:420px}
+.benachrichtigungen div{background:var(--panel);border:1px solid var(--linie);border-radius:3px;padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:13px}
+:focus-visible{outline:1px solid var(--teal-hell);outline-offset:1px}
+@media (max-width:860px){.panel{display:none}.board-knopf{min-width:160px}}

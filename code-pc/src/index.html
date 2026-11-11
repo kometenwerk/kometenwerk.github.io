@@ -7,65 +7,131 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="kopf">
-  <div class="marke"><img src="icon.png" alt="" width="26" height="26"><span><b>Kometenwerk</b> Code</span></div>
-  <button type="button" class="rund pruef" id="bPruef" title="Prüfen (Strg+R)" aria-label="Prüfen">✓</button>
-  <button type="button" class="rund hoch" id="bHoch" title="Hochladen (Strg+U)" aria-label="Hochladen">➜</button>
-  <div class="board-wahl">
-    <select id="board" aria-label="Board" title="Board"></select>
-    <select id="port" aria-label="Port" title="Port (USB)"><option value="">Kein Arduino gefunden</option></select>
-    <button type="button" class="klein" id="bPorts" title="Ports neu suchen" aria-label="Ports neu suchen">⟳</button>
-  </div>
+<!-- Werkzeugleiste: Prüfen, Hochladen, Debug, Board-Auswahl, rechts Plotter + Monitor -->
+<header class="leiste">
+  <button type="button" class="kreis" id="bPruef" title="Überprüfen (Strg+R)" aria-label="Überprüfen"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <button type="button" class="kreis" id="bHoch" title="Hochladen (Strg+U)" aria-label="Hochladen"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <button type="button" class="kreis aus" id="bDebug" title="Debugger – gibt es für den Uno nicht" aria-label="Debugger" disabled><svg viewBox="0 0 24 24"><path d="M7 5l11 7-11 7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="17.5" cy="17.5" r="3" fill="currentColor"/></svg></button>
+  <button type="button" class="board-knopf" id="bBoard" aria-haspopup="true" aria-expanded="false"><span class="usb" id="boardUsb" hidden>⎓</span><span id="boardText">Board auswählen</span><svg viewBox="0 0 24 24" class="pfeil"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+  <div class="board-liste" id="boardListe" hidden role="menu"></div>
   <span class="sp"></span>
-  <button type="button" class="klein" id="bMonitor" title="Serieller Monitor (Strg+Umschalt+M)">🔌 Monitor</button>
+  <button type="button" class="symbol" id="bPlotter" title="Serieller Plotter" aria-label="Serieller Plotter"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 4 5-8 4 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <button type="button" class="symbol" id="bMonitor" title="Serieller Monitor (Strg+Umschalt+M)" aria-label="Serieller Monitor"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="11" cy="11" r="1.6" fill="currentColor"/></svg></button>
 </header>
+
 <div class="haupt">
-  <nav class="seite" aria-label="Sketche">
-    <div class="seite-knoepfe">
-      <button type="button" id="bNeu" title="Neuer Sketch (Strg+N)">＋ Neu</button>
-      <button type="button" id="bOeffnen" title="Öffnen (Strg+O)">📂 Öffnen</button>
-      <button type="button" id="bSpeichern" title="Speichern (Strg+S)">💾 Speichern</button>
-    </div>
-    <h3>Meine Sketche</h3>
-    <ul id="sketche" class="liste"></ul>
-    <h3>Vorlagen</h3>
-    <ul id="vorlagen" class="liste"></ul>
-    <h3>📚 Bibliotheken</h3>
-    <div class="bib-suche"><input id="bibQ" placeholder="z. B. LiquidCrystal" aria-label="Bibliothek suchen"><button type="button" id="bibLos" class="klein">Suchen</button></div>
-    <ul id="bibListe" class="liste kl"></ul>
-    <button type="button" class="link" id="bOrdner">Ordner im Explorer zeigen</button>
+  <!-- Symbolleiste links -->
+  <nav class="aktiv-leiste" aria-label="Bereiche">
+    <button type="button" data-panel="sketchbook" title="Sketchbook" aria-label="Sketchbook"><svg viewBox="0 0 24 24"><path d="M3 6.5h6l2 2h10v10.5H3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
+    <button type="button" data-panel="boards" title="Boardverwalter" aria-label="Boardverwalter"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 9h3M8 12h5M14 15h2" stroke="currentColor" stroke-width="1.8"/></svg></button>
+    <button type="button" data-panel="bibliotheken" title="Bibliotheksverwalter" aria-label="Bibliotheksverwalter"><svg viewBox="0 0 24 24"><path d="M5 4v16M9 4v16M13 5l5 14.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    <button type="button" data-panel="debug" title="Debuggen" aria-label="Debuggen"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6.7 6.7l10.6 10.6" stroke="currentColor" stroke-width="1.8"/></svg></button>
+    <button type="button" data-panel="suchen" title="Suchen" aria-label="Suchen"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15 15l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    <span class="sp"></span>
+    <button type="button" data-panel="konto" title="Über Kometenwerk Code" aria-label="Über"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6.5 18c1.4-2.3 3.3-3.3 5.5-3.3s4.1 1 5.5 3.3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
   </nav>
+
+  <!-- Seitenleiste (je nach Bereich) -->
+  <aside class="panel" id="panel" aria-label="Seitenleiste">
+    <section data-inhalt="sketchbook">
+      <h2>SKETCHBOOK</h2>
+      <div class="panel-reiter"><button type="button" class="an" title="Auf diesem Computer">🖥</button></div>
+      <ul class="liste" id="sketche"></ul>
+      <h3>VORLAGEN</h3>
+      <ul class="liste" id="vorlagen"></ul>
+      <div class="panel-fuss"><button type="button" class="pill" id="bNeuSketch">NEUER SKETCH</button></div>
+    </section>
+    <section data-inhalt="boards" hidden>
+      <h2>BOARDVERWALTER</h2>
+      <div class="karte-board"><b>Arduino AVR Boards</b><small>von Arduino</small><p>Uno, Nano, Mega, Leonardo, Micro …</p><div id="avrStatus" class="leise">wird geprüft …</div><button type="button" class="pill klein" id="bAvr">INSTALLIEREN</button></div>
+    </section>
+    <section data-inhalt="bibliotheken" hidden>
+      <h2>BIBLIOTHEKSVERWALTER</h2>
+      <input class="suchfeld" id="bibQ" placeholder="Suche filtern …" aria-label="Bibliothek suchen">
+      <ul class="liste bib" id="bibListe"><li class="leise">Gib einen Namen ein, z. B. „LiquidCrystal“, und drück Enter.</li></ul>
+    </section>
+    <section data-inhalt="debug" hidden>
+      <h2>DEBUGGEN</h2>
+      <p class="leise">Der Arduino Uno kann nicht Schritt für Schritt debuggen. Tipp: Gib Werte mit <code>Serial.println()</code> aus und schau sie im Seriellen Monitor an.</p>
+    </section>
+    <section data-inhalt="suchen" hidden>
+      <h2>SUCHEN</h2>
+      <input class="suchfeld" id="suchQ" placeholder="Suchen" aria-label="Im Sketch suchen">
+      <input class="suchfeld" id="ersetzQ" placeholder="Ersetzen" aria-label="Ersetzen durch">
+      <div class="such-knoepfe"><button type="button" class="pill klein" id="bErsetzen">ERSETZEN</button><button type="button" class="pill klein" id="bAlle">ALLE ERSETZEN</button></div>
+      <ul class="liste" id="suchListe"></ul>
+    </section>
+    <section data-inhalt="konto" hidden>
+      <h2>KOMETENWERK CODE</h2>
+      <p>Arduino programmieren – mit Erklärungen auf Deutsch.</p>
+      <p class="leise" id="version"></p>
+      <p class="leise">Ein Projekt von Kometenwerk. Übersetzer und Hochlader: arduino-cli (Open Source).</p>
+    </section>
+  </aside>
+
   <main class="mitte">
-    <div class="reiter-zeile"><span class="datei" id="dateiName">sketch.ino</span><span class="geaendert" id="geaendert" hidden title="Nicht gespeichert">●</span><span class="sp"></span><button type="button" class="klein" data-schrift="-1" aria-label="Kleinere Schrift">A−</button><button type="button" class="klein" data-schrift="1" aria-label="Größere Schrift">A+</button></div>
+    <div class="tabs"><div class="tab an"><span id="dateiName">sketch.ino</span><span class="punkt" id="geaendert" hidden title="Nicht gespeichert"></span></div><span class="sp"></span><button type="button" class="symbol klein" id="bTabMenue" title="Mehr" aria-label="Mehr">⋯</button>
+      <div class="tab-menue" id="tabMenue" hidden><button type="button" data-tm="schrift+">Schrift größer</button><button type="button" data-tm="schrift-">Schrift kleiner</button></div></div>
     <div id="ed" class="ed-box"></div>
-    <div class="hilfe" id="hilfe" aria-live="polite"></div>
-    <section class="unten">
-      <div class="unten-reiter" role="tablist"><button type="button" role="tab" data-r="ausgabe" aria-selected="true">Ausgabe</button><button type="button" role="tab" data-r="monitor" aria-selected="false">Serieller Monitor</button><span class="sp"></span><span class="status" id="status"></span></div>
+    <!-- Unten: Ausgabe / Serieller Monitor / Plotter -->
+    <section class="unten" id="unten">
+      <div class="unten-kopf" role="tablist">
+        <button type="button" role="tab" data-r="ausgabe" aria-selected="true">Ausgabe</button>
+        <button type="button" role="tab" data-r="monitor" aria-selected="false" hidden id="tabMonitor">Serieller Monitor <span class="x" data-zu="monitor" title="Schließen">×</span></button>
+        <button type="button" role="tab" data-r="plotter" aria-selected="false" hidden id="tabPlotter">Serieller Plotter <span class="x" data-zu="plotter" title="Schließen">×</span></button>
+        <span class="sp"></span>
+        <button type="button" class="symbol klein" id="bLeeren" title="Ausgabe leeren" aria-label="Ausgabe leeren">⌫</button>
+        <button type="button" class="symbol klein" id="bUntenZu" title="Bereich ein-/ausklappen" aria-label="Bereich ein-/ausklappen">▾</button>
+      </div>
       <div class="unten-inhalt" id="rAusgabe">
-        <div id="meldungen" class="meldungen"><p class="leise">Klick auf ✓ zum Prüfen oder ➜ zum Hochladen.</p></div>
-        <details class="roh"><summary>Original-Ausgabe</summary><pre id="roh"></pre></details>
+        <pre id="roh" class="roh"></pre>
+        <div id="meldungen" class="meldungen"></div>
       </div>
       <div class="unten-inhalt" id="rMonitor" hidden>
-        <div class="mon-leiste"><select id="baud" aria-label="Baud">
-          <option>9600</option><option>19200</option><option>38400</option><option>57600</option><option>115200</option></select>
-          <button type="button" class="klein" id="bVerbinden">Verbinden</button><button type="button" class="klein" id="bLeeren">Leeren</button>
-          <label class="check"><input type="checkbox" id="autoScroll" checked> automatisch scrollen</label></div>
+        <div class="mon-zeile"><input id="monEin" placeholder="Nachricht (Enter, um sie an den Arduino zu senden)" aria-label="An den Arduino senden">
+          <label class="check" title="Automatisch scrollen"><input type="checkbox" id="autoScroll" checked> ⇣</label>
+          <select id="zeilenende" aria-label="Zeilenende"><option value="nl" selected>Neue Zeile</option><option value="">Kein Zeilenende</option><option value="crnl">Sowohl NL als auch CR</option></select>
+          <select id="baud" aria-label="Baud"><option value="9600">9600 Baud</option><option value="19200">19200 Baud</option><option value="38400">38400 Baud</option><option value="57600">57600 Baud</option><option value="115200">115200 Baud</option></select></div>
         <pre id="monText" class="mon-text"></pre>
-        <div class="mon-senden"><input id="monEin" placeholder="Etwas an den Arduino schicken … (Enter)" aria-label="An den Arduino senden"><button type="button" class="klein" id="bSenden">Senden</button></div>
+      </div>
+      <div class="unten-inhalt" id="rPlotter" hidden>
+        <div class="plot-kopf" id="plotLegende"></div>
+        <canvas id="plot" class="plot"></canvas>
       </div>
     </section>
   </main>
 </div>
-<div class="einrichten" id="einrichten" hidden>
-  <div class="karte">
-    <h2>👋 Willkommen bei Kometenwerk Code</h2>
-    <p>Damit du deine Programme prüfen und auf den Arduino laden kannst, braucht das Programm einmal die <b>Arduino-Werkzeuge</b> (Übersetzer und Hochlader, ca. 150 MB). Dafür muss das Internet an sein.</p>
-    <div class="fortschritt"><i id="einFort"></i></div>
-    <pre id="einLog" class="ein-log"></pre>
-    <div class="knoepfe"><button type="button" id="einSpaeter" class="klein">Später</button><button type="button" id="einLos" class="haupt-k">Jetzt einrichten</button></div>
+
+<footer class="status">
+  <span id="hilfe" class="hilfe"></span>
+  <span class="sp"></span>
+  <span id="status">Zeile 1, Spalte 1</span>
+  <span>UTF-8</span>
+  <span id="statusBoard">Kein Board ausgewählt</span>
+  <span title="Benachrichtigungen">🔔</span>
+</footer>
+
+<!-- Fenster: anderes Board und anderen Port wählen -->
+<dialog class="dialog" id="dBoard">
+  <h2>Anderes Board und anderen Port auswählen</h2>
+  <p class="leise">Wähle Board und Port, um einen Sketch hochzuladen.</p>
+  <div class="zwei">
+    <div><b>BOARDS</b><input class="suchfeld" id="dBoardQ" placeholder="Board suchen"><ul class="liste wahl" id="dBoards"></ul></div>
+    <div><b>PORTS</b><ul class="liste wahl" id="dPorts"></ul><button type="button" class="pill hell klein" id="dNeu">⟳ NEU SUCHEN</button></div>
   </div>
-</div>
-<div class="toast" id="toast" role="status" hidden></div>
+  <div class="dialog-fuss"><button type="button" class="pill hell" id="dAbbr">ABBRECHEN</button><button type="button" class="pill" id="dOk">OK</button></div>
+</dialog>
+
+<!-- Fenster: Einrichten -->
+<dialog class="dialog" id="dEinrichten">
+  <h2>Arduino-Werkzeuge einrichten</h2>
+  <p>Damit du Sketche überprüfen und hochladen kannst, lädt Kometenwerk Code einmal die <b>Arduino AVR Boards</b> (Übersetzer und Hochlader, ca. 150 MB). Dafür muss das Internet an sein.</p>
+  <div class="fortschritt"><i id="einFort"></i></div>
+  <pre id="einLog" class="roh ein-log"></pre>
+  <div class="dialog-fuss"><button type="button" class="pill hell" id="einSpaeter">SPÄTER</button><button type="button" class="pill" id="einLos">INSTALLIEREN</button></div>
+</dialog>
+
+<div class="benachrichtigungen" id="toasts" aria-live="polite"></div>
 <script type="module" src="app.js"></script>
 </body>
 </html>

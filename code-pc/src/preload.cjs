@@ -24,5 +24,7 @@ contextBridge.exposeInMainWorld("KC", {
   beiMonitor: hoeren("monitor:daten"),
   beiMonitorFehler: hoeren("monitor:fehler"),
   beiMonitorZu: hoeren("monitor:zu"),
-  beiOeffnen: hoeren("oeffnen")
+  beiOeffnen: hoeren("oeffnen"),
+  beiMenue: hoeren("menue"),
+  version: () => ipcRenderer.invoke("version")
 });

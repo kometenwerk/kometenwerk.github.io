@@ -1,7 +1,7 @@
 // Kometenwerk Code · Hauptprozess (Electron)
 // Fenster, Dateien, und die Arbeit mit arduino-cli: einrichten, prüfen (kompilieren), hochladen, serieller Monitor.
 
-const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, shell, Menu } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
@@ -120,7 +120,7 @@ ipcMain.handle("monitor:start", async (_, { port, baud }) => {
   m.on("close", () => { if (monitor === m) { monitor = null; fenster && fenster.webContents.send("monitor:zu"); } });
   return { ok: true };
 });
-ipcMain.handle("monitor:senden", async (_, text) => { if (monitor) monitor.stdin.write(text + "\n"); return !!monitor; });
+ipcMain.handle("monitor:senden", async (_, text) => { if (monitor) monitor.stdin.write(text); return !!monitor; });
 ipcMain.handle("monitor:stopp", async () => { monitorStopp(); return true; });
 
 /* ---------- Dateien ---------- */
@@ -156,6 +156,46 @@ ipcMain.handle("datei:lesen", async (_, pfad) => ({ pfad, name: path.basename(pf
 ipcMain.handle("ordner:zeigen", async (_, pfad) => { shell.showItemInFolder(pfad || sketchbook()); return true; });
 ipcMain.handle("start:datei", async () => { const x = offenBeimStart; offenBeimStart = null; return x; });
 
+/* ---------- Menüleiste (wie in einer Arduino-Umgebung, auf Deutsch) ---------- */
+function menueBauen() {
+  const m = (id) => () => fenster && fenster.webContents.send("menue", id);
+  const vorlage = [
+    { label: "Datei", submenu: [
+      { label: "Neuer Sketch", accelerator: "CmdOrCtrl+N", click: m("neu") },
+      { label: "Öffnen …", accelerator: "CmdOrCtrl+O", click: m("oeffnen") },
+      { label: "Sketchbook", click: m("sketchbook") },
+      { type: "separator" },
+      { label: "Speichern", accelerator: "CmdOrCtrl+S", click: m("speichern") },
+      { label: "Speichern unter …", accelerator: "CmdOrCtrl+Shift+S", click: m("speichernUnter") },
+      { type: "separator" },
+      { label: "Beenden", accelerator: "CmdOrCtrl+Q", role: "quit" }] },
+    { label: "Bearbeiten", submenu: [
+      { label: "Rückgängig", role: "undo" }, { label: "Wiederholen", role: "redo" }, { type: "separator" },
+      { label: "Ausschneiden", role: "cut" }, { label: "Kopieren", role: "copy" }, { label: "Einfügen", role: "paste" }, { label: "Alles auswählen", role: "selectAll" }, { type: "separator" },
+      { label: "Kommentar ein/aus", accelerator: "CmdOrCtrl+/", click: m("kommentar") },
+      { label: "Schrift vergrößern", accelerator: "CmdOrCtrl+=", click: m("schrift+") },
+      { label: "Schrift verkleinern", accelerator: "CmdOrCtrl+-", click: m("schrift-") }, { type: "separator" },
+      { label: "Suchen und Ersetzen", accelerator: "CmdOrCtrl+F", click: m("suchen") }] },
+    { label: "Sketch", submenu: [
+      { label: "Überprüfen/Kompilieren", accelerator: "CmdOrCtrl+R", click: m("pruefen") },
+      { label: "Hochladen", accelerator: "CmdOrCtrl+U", click: m("hochladen") }, { type: "separator" },
+      { label: "Bibliotheken verwalten …", accelerator: "CmdOrCtrl+Shift+I", click: m("bibliotheken") },
+      { label: "Sketch-Ordner anzeigen", accelerator: "CmdOrCtrl+K", click: m("ordner") }] },
+    { label: "Werkzeuge", submenu: [
+      { label: "Serieller Monitor", accelerator: "CmdOrCtrl+Shift+M", click: m("monitor") },
+      { label: "Serieller Plotter", accelerator: "CmdOrCtrl+Shift+L", click: m("plotter") }, { type: "separator" },
+      { label: "Board und Port auswählen …", click: m("board") },
+      { label: "Boardverwalter …", accelerator: "CmdOrCtrl+Shift+B", click: m("boards") }, { type: "separator" },
+      { label: "Entwicklerwerkzeuge", accelerator: "F12", role: "toggleDevTools", visible: !app.isPackaged }] },
+    { label: "Hilfe", submenu: [
+      { label: "Erste Schritte", click: m("hilfe") },
+      { label: "Arduino wird nicht gefunden?", click: m("hilfePort") }, { type: "separator" },
+      { label: "Über Kometenwerk Code", click: m("ueber") }] }
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(vorlage));
+}
+ipcMain.handle("version", async () => app.getVersion());
+
 /* ---------- Links aus FIDELIA Notizen: kometenwerk-code://oeffnen?name=…&code=… ---------- */
 function linkLesen(url) {
   try {
@@ -182,9 +222,10 @@ else {
   offenBeimStart = argumenteLesen(process.argv);
 
   app.whenReady().then(() => {
+    menueBauen();
     fenster = new BrowserWindow({
-      width: 1280, height: 820, minWidth: 760, minHeight: 520, title: "Kometenwerk Code", backgroundColor: "#0b111c",
-      icon: path.join(__dirname, "icon.png"), autoHideMenuBar: true,
+      width: 1280, height: 820, minWidth: 760, minHeight: 520, title: "Kometenwerk Code", backgroundColor: "#171e21",
+      icon: path.join(__dirname, "icon.png"), autoHideMenuBar: false,
       webPreferences: { preload: path.join(__dirname, "preload.cjs"), contextIsolation: true, nodeIntegration: false, sandbox: true }
     });
     fenster.loadFile(path.join(__dirname, "index.html"));
