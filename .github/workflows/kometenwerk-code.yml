@@ -80,6 +80,10 @@ jobs:
         with:
           path: dateien
           merge-multiple: true
+      - name: Alte Version entfernen (damit nur die neueste zum Download steht)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release delete kometenwerk-code-neueste --repo ${{ github.repository }} --yes --cleanup-tag || true
       - name: Als Download „Kometenwerk Code (neueste Version)“ bereitstellen
         uses: softprops/action-gh-release@v2
         with:
