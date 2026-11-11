@@ -27,6 +27,7 @@
     <button type="button" data-panel="bibliotheken" title="Bibliotheksverwalter" aria-label="Bibliotheksverwalter"><svg viewBox="0 0 24 24"><path d="M5 4v16M9 4v16M13 5l5 14.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
     <button type="button" data-panel="debug" title="Debuggen" aria-label="Debuggen"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6.7 6.7l10.6 10.6" stroke="currentColor" stroke-width="1.8"/></svg></button>
     <button type="button" data-panel="suchen" title="Suchen" aria-label="Suchen"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15 15l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    <button type="button" data-panel="projekt" title="NWT-Projekt (Versionen, Messwerte, Zeichnen, Abgabe)" aria-label="NWT-Projekt"><svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M7.5 15h9" stroke="currentColor" stroke-width="1.8"/></svg></button>
     <span class="sp"></span>
     <button type="button" data-panel="konto" title="Über Kometenwerk Code" aria-label="Über"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6.5 18c1.4-2.3 3.3-3.3 5.5-3.3s4.1 1 5.5 3.3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
   </nav>
@@ -37,8 +38,8 @@
       <h2>SKETCHBOOK</h2>
       <div class="panel-reiter"><button type="button" class="an" title="Auf diesem Computer">🖥</button></div>
       <ul class="liste" id="sketche"></ul>
-      <h3>VORLAGEN</h3>
-      <ul class="liste" id="vorlagen"></ul>
+      <div id="vorlagenBox"><h3>VORLAGEN</h3>
+      <ul class="liste" id="vorlagen"></ul></div>
       <div class="panel-fuss"><button type="button" class="pill" id="bNeuSketch">NEUER SKETCH</button></div>
     </section>
     <section data-inhalt="boards" hidden>
@@ -61,6 +62,10 @@
       <div class="such-knoepfe"><button type="button" class="pill klein" id="bErsetzen">ERSETZEN</button><button type="button" class="pill klein" id="bAlle">ALLE ERSETZEN</button></div>
       <ul class="liste" id="suchListe"></ul>
     </section>
+    <section data-inhalt="projekt" hidden>
+      <h2>NWT-PROJEKT</h2>
+      <div id="projektInhalt"></div>
+    </section>
     <section data-inhalt="konto" hidden>
       <h2>KOMETENWERK CODE</h2>
       <p>Arduino programmieren – mit Erklärungen auf Deutsch.</p>
@@ -79,6 +84,7 @@
         <button type="button" role="tab" data-r="ausgabe" aria-selected="true">Ausgabe</button>
         <button type="button" role="tab" data-r="monitor" aria-selected="false" hidden id="tabMonitor">Serieller Monitor <span class="x" data-zu="monitor" title="Schließen">×</span></button>
         <button type="button" role="tab" data-r="plotter" aria-selected="false" hidden id="tabPlotter">Serieller Plotter <span class="x" data-zu="plotter" title="Schließen">×</span></button>
+        <button type="button" role="tab" data-r="messwerte" aria-selected="false" hidden id="tabMesswerte">Messwerte <span class="aufnahme-punkt" id="aufPunkt" hidden></span><span class="x" data-zu="messwerte" title="Schließen">×</span></button>
         <span class="sp"></span>
         <button type="button" class="symbol klein" id="bLeeren" title="Ausgabe leeren" aria-label="Ausgabe leeren">⌫</button>
         <button type="button" class="symbol klein" id="bUntenZu" title="Bereich ein-/ausklappen" aria-label="Bereich ein-/ausklappen">▾</button>
@@ -94,6 +100,7 @@
           <select id="baud" aria-label="Baud"><option value="9600">9600 Baud</option><option value="19200">19200 Baud</option><option value="38400">38400 Baud</option><option value="57600">57600 Baud</option><option value="115200">115200 Baud</option></select></div>
         <pre id="monText" class="mon-text"></pre>
       </div>
+      <div class="unten-inhalt" id="rMesswerte" hidden></div>
       <div class="unten-inhalt" id="rPlotter" hidden>
         <div class="plot-kopf" id="plotLegende"></div>
         <canvas id="plot" class="plot"></canvas>
@@ -105,6 +112,7 @@
 <footer class="status">
   <span id="hilfe" class="hilfe"></span>
   <span class="sp"></span>
+  <span id="statusUnterricht" class="status-marke" hidden title="Nur Befehle aus dem Unterricht">🏫 Unterrichts-Modus</span>
   <span id="status">Zeile 1, Spalte 1</span>
   <span>UTF-8</span>
   <span id="statusBoard">Kein Board ausgewählt</span>

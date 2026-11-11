@@ -156,6 +156,38 @@ ipcMain.handle("datei:lesen", async (_, pfad) => ({ pfad, name: path.basename(pf
 ipcMain.handle("ordner:zeigen", async (_, pfad) => { shell.showItemInFolder(pfad || sketchbook()); return true; });
 ipcMain.handle("start:datei", async () => { const x = offenBeimStart; offenBeimStart = null; return x; });
 
+/* ---------- NWT-Werkzeuge: Dateien exportieren, Versionen ablegen, PDF/Drucken ---------- */
+const FILTER = { csv: ["Tabelle (CSV, öffnet in Excel)", "csv"], zip: ["ZIP-Archiv", "zip"], png: ["Bild (PNG)", "png"], svg: ["Zeichnung (SVG)", "svg"], pdf: ["PDF", "pdf"], ino: ["Arduino-Sketch", "ino"], txt: ["Text", "txt"] };
+async function speichernDialog(name, art) {
+  const f = FILTER[art] || ["Datei", art];
+  const r = await dialog.showSaveDialog(fenster, { defaultPath: path.join(app.getPath("documents"), name), filters: [{ name: f[0], extensions: [f[1]] }] });
+  return r.canceled || !r.filePath ? null : r.filePath;
+}
+ipcMain.handle("export:speichern", async (_, { name, art, text, base64 }) => {
+  const ziel = await speichernDialog(name, art); if (!ziel) return null;
+  fs.writeFileSync(ziel, base64 != null ? Buffer.from(base64, "base64") : text);
+  return ziel;
+});
+ipcMain.handle("version:ablegen", async (_, { pfad, datei, code }) => {
+  try { if (!pfad) return null; const o = path.join(path.dirname(pfad), "Versionen"); fs.mkdirSync(o, { recursive: true }); const z = path.join(o, datei); fs.writeFileSync(z, code); return z; } catch (e) { return null; }
+});
+async function seiteLaden(html) {
+  const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true, javascript: false } });
+  await w.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html));
+  return w;
+}
+ipcMain.handle("pdf:speichern", async (_, { html, name, quer }) => {
+  const ziel = await speichernDialog(name, "pdf"); if (!ziel) return null;
+  const w = await seiteLaden(html);
+  try { const pdf = await w.webContents.printToPDF({ pageSize: "A4", landscape: !!quer, printBackground: true, margins: { marginType: "none" }, preferCSSPageSize: true }); fs.writeFileSync(ziel, pdf); }
+  finally { w.destroy(); }
+  return ziel;
+});
+ipcMain.handle("drucken", async (_, { html }) => {
+  const w = await seiteLaden(html);
+  return new Promise((fertig) => w.webContents.print({ printBackground: true, margins: { marginType: "none" } }, (ok) => { w.destroy(); fertig(ok); }));
+});
+
 /* ---------- Menüleiste (wie in einer Arduino-Umgebung, auf Deutsch) ---------- */
 function menueBauen() {
   const m = (id) => () => fenster && fenster.webContents.send("menue", id);
@@ -187,6 +219,17 @@ function menueBauen() {
       { label: "Board und Port auswählen …", click: m("board") },
       { label: "Boardverwalter …", accelerator: "CmdOrCtrl+Shift+B", click: m("boards") }, { type: "separator" },
       { label: "Entwicklerwerkzeuge", accelerator: "F12", role: "toggleDevTools", visible: !app.isPackaged }] },
+    { label: "Projekt", submenu: [
+      { label: "Version speichern …", accelerator: "CmdOrCtrl+Alt+S", click: m("versionNeu") },
+      { label: "Versionen und Vergleich", click: m("p:versionen") },
+      { label: "Messwerte sammeln", click: m("p:messwerte") }, { type: "separator" },
+      { label: "Schaltplan zeichnen", click: m("z:schaltplan") },
+      { label: "Flussdiagramm zeichnen", click: m("z:fluss") },
+      { label: "Technische Zeichnung (Bauplan)", click: m("z:bauplan") }, { type: "separator" },
+      { label: "Unterrichts-Modus", click: m("p:unterricht") },
+      { label: "Eigenleistungs-Nachweis", click: m("p:eigen") },
+      { label: "Protokoll-Checkliste", click: m("p:checkliste") },
+      { label: "Abgabe-Paket (ZIP) erstellen …", click: m("abgabe") }] },
     { label: "Hilfe", submenu: [
       { label: "Erste Schritte", click: m("hilfe") },
       { label: "Arduino wird nicht gefunden?", click: m("hilfePort") }, { type: "separator" },

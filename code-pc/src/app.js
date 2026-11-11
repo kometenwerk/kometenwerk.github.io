@@ -2,6 +2,7 @@
 import * as C from "./code-kern.js";
 import * as U from "./uebersetzer.js";
 import { editor } from "./editor.js";
+import { starten as nwtStarten } from "./nwt.js";
 
 const KC = window.KC || null;      // Brücke zum Hauptprozess (fehlt nur beim Testen im Browser)
 const $ = (s) => document.querySelector(s);
@@ -16,8 +17,10 @@ const Z = Object.assign({ name: "sketch", pfad: null, board: "", port: "", schri
 let gespeichert = true, beschaeftigt = false, monitorAn = false, avrBereit = true, ports = [];
 const zustandMerken = () => sichern("kc-zustand", { name: Z.name, pfad: Z.pfad, board: Z.board, port: Z.port, schrift: Z.schrift, baud: Z.baud, panel: Z.panel });
 
+let N = null;      // NWT-Projekt (wird gleich unten gestartet)
 const ed = editor($("#ed"), {
   wert: laden("kc-entwurf", C.LEER), schrift: Z.schrift,
+  zusatz: (c) => N ? N.zusatz(c) : [], filter: (n) => N ? N.filter(n) : true, beiEingabe: (e) => N && N.beiEingabe(e),
   beiAenderung: (code) => { sichern("kc-entwurf", code); geaendertSetzen(false); },
   beiCursor: ({ z, sp, erklaerung, meldungen }) => {
     $("#status").textContent = "Zeile " + z + ", Spalte " + sp;
@@ -38,6 +41,7 @@ function panelZeigen(name) {
   if (Z.panel === "sketchbook") sketcheZeigen();
   if (Z.panel === "bibliotheken") setTimeout(() => $("#bibQ").focus(), 30);
   if (Z.panel === "suchen") setTimeout(() => $("#suchQ").focus(), 30);
+  if (Z.panel === "projekt" && N) N.zeigen();
 }
 document.querySelectorAll("[data-panel]").forEach(b => b.onclick = () => panelZeigen(b.dataset.panel));
 { const p = Z.panel; Z.panel = ""; if (p) panelZeigen(p); else $("#panel").hidden = true; }
@@ -95,8 +99,9 @@ function boardDialog() {
 function ausgabeZeigen(code, roh, art) {
   const r = U.lesen(roh, "", code);
   const eigene = C.pruefen(code).filter(m => (art === "eigene" || m.art === "hinweis") && !r.meldungen.some(x => x.z === m.z));
-  const alle = [...r.meldungen, ...(r.meldungen.some(m => m.art === "fehler") ? [] : eigene)].sort((a, b) => a.z - b.z);
-  ed.meldungenSetzen(alle);
+  const unt = N ? N.zusatz(code).filter(m => ![...r.meldungen, ...eigene].some(x => x.z === m.z && x.text === m.text)) : [];
+  const alle = [...r.meldungen, ...(r.meldungen.some(m => m.art === "fehler") ? [] : eigene), ...unt].sort((a, b) => a.z - b.z);
+  ed.meldungenSetzen(alle.filter(m => !unt.includes(m)));
   const fehler = alle.filter(m => m.art === "fehler").length;
   let h = "";
   if (art === "ok-pruef" || art === "ok-hoch") {
@@ -184,7 +189,7 @@ async function sketcheZeigen() {
   ul.querySelectorAll("[data-pfad]").forEach(b => b.onclick = async () => { if (b.dataset.pfad === Z.pfad || !(await fragenOhneSpeichern())) return; sketchLaden(await KC.lesen(b.dataset.pfad)); });
 }
 $("#vorlagen").innerHTML = C.BEISPIELE.map((b, i) => '<li><button type="button" data-v="' + i + '">' + esc(b[0]) + "</button></li>").join("");
-$("#vorlagen").querySelectorAll("[data-v]").forEach(b => b.onclick = () => { if (ed.wert.trim() !== C.LEER.trim() && !confirm("Den Code durch die Vorlage ersetzen? (Strg+Z holt ihn zurück)")) return; ed.ersetzen(C.BEISPIELE[b.dataset.v][1]); });
+$("#vorlagen").querySelectorAll("[data-v]").forEach(b => b.onclick = () => { if (ed.wert.trim() !== C.LEER.trim() && !confirm("Den Code durch die Vorlage ersetzen? (Strg+Z holt ihn zurück)")) return; N.still(() => ed.ersetzen(C.BEISPIELE[b.dataset.v][1])); });
 if (KC) KC.beiOeffnen(async (x) => { if (!(await fragenOhneSpeichern())) return; sketchLaden(x); if (x.ausNotizen) { geaendertSetzen(false); toast("Aus FIDELIA Notizen übernommen – jetzt ➜ Hochladen."); } });
 
 /* ---------- Bibliotheken ---------- */
@@ -212,18 +217,18 @@ function suchen() {
   ul.querySelectorAll("[data-z]").forEach(b => b.onclick = () => ed.zuZeile(Number(b.dataset.z), Number(b.dataset.sp)));
 }
 $("#suchQ").oninput = suchen;
-$("#bErsetzen").onclick = () => { const q = $("#suchQ").value; if (!q) return; const i = ed.wert.indexOf(q); if (i < 0) return; ed.ersetzen(ed.wert.slice(0, i) + $("#ersetzQ").value + ed.wert.slice(i + q.length)); suchen(); };
-$("#bAlle").onclick = () => { const q = $("#suchQ").value; if (!q) return; const n = ed.wert.split(q).length - 1; if (!n) return; ed.ersetzen(ed.wert.split(q).join($("#ersetzQ").value)); toast(n + "× ersetzt."); suchen(); };
+$("#bErsetzen").onclick = () => { const q = $("#suchQ").value; if (!q) return; const i = ed.wert.indexOf(q); if (i < 0) return; N.still(() => ed.ersetzen(ed.wert.slice(0, i) + $("#ersetzQ").value + ed.wert.slice(i + q.length))); suchen(); };
+$("#bAlle").onclick = () => { const q = $("#suchQ").value; if (!q) return; const n = ed.wert.split(q).length - 1; if (!n) return; N.still(() => ed.ersetzen(ed.wert.split(q).join($("#ersetzQ").value))); toast(n + "× ersetzt."); suchen(); };
 
 /* ---------- Unten: Ausgabe, Monitor, Plotter ---------- */
 function reiter(r) {
   document.querySelectorAll("[data-r]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.r === r)));
-  $("#rAusgabe").hidden = r !== "ausgabe"; $("#rMonitor").hidden = r !== "monitor"; $("#rPlotter").hidden = r !== "plotter";
+  $("#rAusgabe").hidden = r !== "ausgabe"; $("#rMonitor").hidden = r !== "monitor"; $("#rPlotter").hidden = r !== "plotter"; $("#rMesswerte").hidden = r !== "messwerte";
   if (r === "plotter") plotGroesse();
 }
 document.querySelectorAll("[data-r]").forEach(b => b.onclick = (e) => { if (e.target.dataset.zu) { schliessen(e.target.dataset.zu); return; } reiter(b.dataset.r); });
 $("#bUntenZu").onclick = () => { $("#unten").classList.toggle("zu"); $("#bUntenZu").textContent = $("#unten").classList.contains("zu") ? "▴" : "▾"; };
-$("#bLeeren").onclick = () => { if (!$("#rMonitor").hidden) $("#monText").textContent = ""; else if (!$("#rPlotter").hidden) { plotDaten = []; plotMalen(); } else { $("#roh").textContent = ""; $("#meldungen").innerHTML = ""; } };
+$("#bLeeren").onclick = () => { if (!$("#rMesswerte").hidden) return; if (!$("#rMonitor").hidden) $("#monText").textContent = ""; else if (!$("#rPlotter").hidden) { plotDaten = []; plotMalen(); } else { $("#roh").textContent = ""; $("#meldungen").innerHTML = ""; } };
 $("#baud").value = Z.baud;
 $("#baud").onchange = (e) => { Z.baud = e.target.value; zustandMerken(); if (monitorAn) monitorStarten(); };
 async function monitorStarten() {
@@ -237,6 +242,7 @@ async function monitorStarten() {
 async function monitorOeffnen() { $("#tabMonitor").hidden = false; $("#unten").classList.remove("zu"); reiter("monitor"); if (!monitorAn) await monitorStarten(); $("#monEin").focus(); }
 async function plotterOeffnen() { $("#tabPlotter").hidden = false; $("#unten").classList.remove("zu"); reiter("plotter"); $("#bPlotter").classList.add("an"); if (!monitorAn) await monitorStarten(); }
 async function schliessen(was) {
+  if (was === "messwerte") { $("#tabMesswerte").hidden = true; reiter("ausgabe"); return; }
   if (was === "monitor") $("#tabMonitor").hidden = true; else { $("#tabPlotter").hidden = true; $("#bPlotter").classList.remove("an"); }
   if ($("#tabMonitor").hidden && $("#tabPlotter").hidden && KC) { await KC.monitorStopp(); monitorAn = false; $("#bMonitor").classList.remove("an"); }
   reiter("ausgabe");
@@ -248,6 +254,7 @@ function monText(t) {
   // Zahlen für den Plotter: jede Zeile, Werte durch Komma/Leerzeichen/Tab getrennt, optional „Name:Wert“
   const teile = (restZeile + t).split(/\r?\n/); restZeile = teile.pop();
   for (const z of teile) {
+    if (N) N.monZeile(z);
     if (/^\[.*\]$/.test(z.trim())) continue;
     const werte = []; for (const s of z.split(/[,\t; ]+/)) { const m = /^(?:([A-Za-zÄÖÜäöüß_]\w*):)?(-?\d+(?:\.\d+)?)$/.exec(s.trim()); if (m) werte.push({ name: m[1] || "", wert: Number(m[2]) }); }
     if (werte.length) { plotDaten.push(werte); if (plotDaten.length > 500) plotDaten.shift(); plotNeu = true; }
@@ -298,6 +305,9 @@ const AKTION = {
   hilfePort: () => portsSuchen(true).then(r => hilfeKeinArduino(r || {})),
   ueber: panelAuf("konto")
 };
+function messwerteAuf() { $("#tabMesswerte").hidden = false; $("#unten").classList.remove("zu"); reiter("messwerte"); N.messZeigen(); }
+N = nwtStarten({ ed, Z, KC, toast, panelAuf: (p) => panelAuf(p)(), messwerteAuf, monitorAn: async () => { $("#tabMonitor").hidden = false; if (!monitorAn) await monitorStarten(); }, reiterMarke: (an) => { $("#aufPunkt").hidden = !an; } });
+Object.assign(AKTION, N.AKTIONEN);
 if (KC) KC.beiMenue((id) => AKTION[id] && AKTION[id]());
 else document.addEventListener("keydown", (e) => { const strg = e.ctrlKey || e.metaKey, k = e.key.toLowerCase(); if (strg && k === "r") { e.preventDefault(); pruefen(); } });
 

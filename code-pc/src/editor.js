@@ -3,11 +3,12 @@ import * as C from "./code-kern.js";
 
 const esc = (t) => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
-export function editor(box, { wert = C.LEER, beiAenderung = () => {}, beiCursor = () => {}, schrift = 15 } = {}) {
+export function editor(box, { wert = C.LEER, beiAenderung = () => {}, beiCursor = () => {}, schrift = 15, zusatz = () => [], filter = () => true, beiEingabe = () => {} } = {}) {
   box.classList.add("ed");
   box.innerHTML = '<div class="ed-nr" aria-hidden="true"></div><div class="ed-feld"><pre class="ed-farbe" aria-hidden="true"></pre><textarea class="ed-text" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" aria-label="Arduino-Code"></textarea></div><div class="ed-vor" role="listbox" hidden></div>';
   const ta = box.querySelector(".ed-text"), farbe = box.querySelector(".ed-farbe"), nr = box.querySelector(".ed-nr"), vor = box.querySelector(".ed-vor");
-  let meldungen = [], vorschlag = null, vAktiv = 0;
+  let basis = [], meldungen = [], vorschlag = null, vAktiv = 0;
+  const mischen = () => { const z = zusatz(ta.value) || []; meldungen = [...basis, ...z.filter(m => !basis.some(b => b.z === m.z && b.text === m.text))]; };
   ta.value = wert; box.style.setProperty("--ed-schrift", schrift + "px");
 
   function malen() {
@@ -34,6 +35,8 @@ export function editor(box, { wert = C.LEER, beiAenderung = () => {}, beiCursor 
   function vorschlagZeigen() {
     const { vorher } = wortAmCursor(), p = vorher.split(".").pop(), punkt = vorher.includes(".");
     const liste = punkt ? (vorher.startsWith("Serial.") ? Object.keys(C.WISSEN).filter(n => n.startsWith("Serial.") && n.slice(7).toLowerCase().startsWith(p.toLowerCase()) && n.slice(7) !== p).map(n => ({ name: n.slice(7), aufbau: C.WISSEN[n][0], info: C.WISSEN[n][1] })) : []) : C.vorschlaege(p, ta.value);
+    const liste2 = liste.filter(v => filter(punkt && vorher.startsWith("Serial.") ? "Serial." + v.name : v.name));
+    liste.length = 0; liste.push(...liste2);
     if (!liste.length || (!punkt && p.length < 2)) { vor.hidden = true; vorschlag = null; return; }
     vorschlag = liste; vAktiv = Math.min(vAktiv, liste.length - 1);
     vor.innerHTML = liste.map((v, i) => '<button type="button" role="option" aria-selected="' + (i === vAktiv) + '" data-i="' + i + '"><b>' + esc(v.name) + "</b>" + (v.aufbau ? "<code>" + esc(v.aufbau) + "</code>" : "") + (v.info ? "<small>" + esc(v.info) + "</small>" : "") + "</button>").join("");
@@ -55,7 +58,8 @@ export function editor(box, { wert = C.LEER, beiAenderung = () => {}, beiCursor 
     vor.hidden = true; vorschlag = null; geaendert(false);
   }
   function geaendert(mitVorschlag = true) {
-    if (meldungen.length) meldungen = C.pruefen(ta.value);
+    if (basis.length) basis = C.pruefen(ta.value);
+    mischen();
     malen(); beiAenderung(ta.value); if (mitVorschlag) vorschlagZeigen(); cursorMelden();
   }
   ta.addEventListener("keydown", (e) => {
@@ -96,7 +100,8 @@ export function editor(box, { wert = C.LEER, beiAenderung = () => {}, beiCursor 
     }
     if ((e.key === ")" || e.key === "]") && ta.value[ta.selectionStart] === e.key) { e.preventDefault(); ta.setSelectionRange(ta.selectionStart + 1, ta.selectionStart + 1); }
   });
-  ta.addEventListener("input", () => geaendert(true));
+  ta.addEventListener("input", (e) => { beiEingabe(e); geaendert(true); });
+  ta.addEventListener("paste", (e) => beiEingabe({ inputType: "paste", text: (e.clipboardData && e.clipboardData.getData("text")) || "" }));
   ta.addEventListener("click", () => { vor.hidden = true; cursorMelden(); });
   ta.addEventListener("keyup", (e) => { if (/^Arrow|Home|End|Page/.test(e.key)) cursorMelden(); });
   ta.addEventListener("blur", () => setTimeout(() => { vor.hidden = true; }, 150));
@@ -104,9 +109,11 @@ export function editor(box, { wert = C.LEER, beiAenderung = () => {}, beiCursor 
 
   const api = {
     get wert() { return ta.value; },
-    setzen(text) { ta.value = text; meldungen = []; malen(); cursorMelden(); },
+    setzen(text) { ta.value = text; basis = []; mischen(); malen(); cursorMelden(); },
     ersetzen(text) { ta.focus(); ta.select(); einsetzen(text); },          // mit Rückgängig
-    meldungenSetzen(m) { meldungen = m; malen(); cursorMelden(); },
+    meldungenSetzen(m) { basis = m; mischen(); malen(); cursorMelden(); },
+    neuPruefen() { mischen(); malen(); cursorMelden(); },
+    get textfeld() { return ta; },
     zuZeile(z, sp) {
       const v = ta.value.split("\n"); let p = 0; for (let i = 0; i < z - 1 && i < v.length; i++) p += v[i].length + 1;
       const l = v[z - 1] || "", a = p + (sp ? sp - 1 : (/^\s*/.exec(l)[0].length));
@@ -116,6 +123,6 @@ export function editor(box, { wert = C.LEER, beiAenderung = () => {}, beiCursor 
     schrift(px) { box.style.setProperty("--ed-schrift", px + "px"); malen(); },
     fokus() { ta.focus(); }
   };
-  malen();
+  mischen(); malen();
   return api;
 }

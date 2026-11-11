@@ -162,3 +162,82 @@ code{font-family:"Cascadia Code",Consolas,monospace;color:var(--orange)}
 .benachrichtigungen div{background:var(--panel);border:1px solid var(--linie);border-radius:3px;padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:13px}
 :focus-visible{outline:1px solid var(--teal-hell);outline-offset:1px}
 @media (max-width:860px){.panel{display:none}.board-knopf{min-width:160px}}
+
+/* ---------- NWT-Projekt ---------- */
+.p-zeile{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:0 0 4px}
+.p-knopf{display:flex;justify-content:space-between;align-items:center;width:100%;border:1px solid var(--linie);background:transparent;border-radius:3px;padding:7px 9px;margin-bottom:5px;cursor:pointer;text-align:left}
+.p-knopf:hover{background:#2a383c}
+.p-check label{display:flex;align-items:center;gap:7px;padding:3px 0;cursor:pointer}
+.p-check label span{flex:1}
+.p-check input{accent-color:var(--teal-hell)}
+.ok-z{color:#5fd3b5}.nein-z{color:#ff9b9b}
+.status-marke{background:rgba(0,0,0,.25);padding:0 8px;border-radius:3px}
+.pill.rot{background:#b23a3a}.pill.hell.rot{background:transparent;border-color:#b23a3a;color:#ff9b9b}
+.aufnahme-punkt{width:8px;height:8px;border-radius:50%;background:#e05252;animation:puls 1s infinite}
+.aufnahme-punkt[hidden]{display:none}
+.mess-zeile{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:4px}
+.mess-zeile input,.mess-zeile select{background:#151c1f;border:1px solid var(--linie);border-radius:3px;padding:5px 8px}
+.mess-info{margin:2px 0 6px}
+.mess-tab{border-collapse:collapse;min-width:420px}
+.mess-tab th{text-align:left;font-size:11px;color:var(--leise);font-weight:600;padding:3px 10px;border-bottom:1px solid var(--linie)}
+.mess-tab td{padding:2px 10px;border-bottom:1px solid #222d30}
+.mess-tab tr.mp td{padding-top:8px;border-bottom:1px solid var(--linie)}
+.dialog.gross{width:min(1000px,94vw)}
+.dialog h3{font-size:12px;letter-spacing:.04em;color:var(--leise);margin:16px 0 6px}
+.dialog-fuss.links{justify-content:flex-start;flex-wrap:wrap}
+.check.gross{font-size:14px;color:var(--text);margin:10px 0}
+.check.gross input{width:18px;height:18px;accent-color:var(--teal-hell)}
+.u-liste{display:flex;flex-wrap:wrap;gap:5px}
+.u-liste code{background:#151c1f;padding:2px 6px;border-radius:3px}
+.u-liste code.fremd{background:rgba(230,179,64,.2);color:#ffd66b}
+.u-extra,.z-feld textarea{width:100%;background:#151c1f;border:1px solid var(--linie);border-radius:3px;padding:6px 8px;color:var(--text);font:13px "Cascadia Code",Consolas,monospace}
+.v-wahl{display:flex;gap:8px;align-items:center;margin:10px 0 4px;flex-wrap:wrap}
+.v-wahl select{background:#151c1f;border:1px solid var(--linie);border-radius:3px;padding:5px 8px}
+.v-info{margin-bottom:6px}
+.v-diff{max-height:60vh;overflow:auto;background:#151c1f;border:1px solid var(--linie);border-radius:3px;font:12.5px/1.55 "Cascadia Code",Consolas,monospace}
+.v-z{display:flex;white-space:pre}
+.v-z code{color:var(--text);flex:1}
+.v-z.neu{background:rgba(29,160,134,.22)}.v-z.weg{background:rgba(224,82,82,.22)}
+.v-z.neu .v-m{color:#5fd3b5}.v-z.weg .v-m{color:#ff9b9b}
+.v-z.luecke{color:var(--leise);padding-left:90px}
+.v-n{width:38px;text-align:right;color:#5d7176;padding-right:6px;flex:none}
+.v-m{width:16px;flex:none;text-align:center}
+.v-code{max-height:46vh;overflow:auto;background:#151c1f;border:1px solid var(--linie);border-radius:3px;padding:10px;font:12.5px/1.5 "Cascadia Code",Consolas,monospace;white-space:pre-wrap;margin:8px 0}
+body.unterricht .tab{border-top-color:var(--gelb)}
+
+/* ---------- Zeichner ---------- */
+.zeichner{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;background:var(--grund)}
+.z-kopf{display:flex;align-items:center;gap:4px;height:46px;padding:0 10px;background:var(--leiste);border-bottom:1px solid #0e1416;flex-wrap:nowrap;overflow-x:auto}
+.z-kopf b{font-size:14px;margin-right:4px;white-space:nowrap}
+.z-name{white-space:nowrap}
+.z-k{border:0;background:transparent;border-radius:3px;padding:6px 8px;cursor:pointer;white-space:nowrap}
+.z-k:hover{background:#2a383c}
+.z-zoom{min-width:44px;text-align:center;color:var(--leise);font-size:12px}
+.z-kopf .pill{margin-left:6px}
+.z-haupt{flex:1;display:flex;min-height:0}
+.z-palette{width:150px;flex:none;overflow:auto;background:var(--panel);border-right:1px solid #0e1416;padding:6px}
+.z-palette button{display:flex;align-items:center;gap:8px;width:100%;border:1px solid transparent;background:transparent;border-radius:3px;padding:5px 6px;cursor:pointer;text-align:left;font-size:12px}
+.z-palette button:hover{background:#2a383c}
+.z-palette button.an{background:var(--teal-dunkel);border-color:var(--teal-hell)}
+.z-palette svg{width:40px;height:24px;flex:none;background:#fff;border-radius:2px;color:#000;padding:2px}
+.z-vor path,.z-vor rect,.z-vor circle{fill:none;stroke:#000;stroke-width:2}.z-vor .voll{fill:#000}
+.z-flaeche{flex:1;overflow:auto;background:#3a464a;padding:20px}
+.z-svg{display:block;background:#fff;box-shadow:0 4px 18px rgba(0,0,0,.4);cursor:crosshair;touch-action:none}
+.z-svg .teil{cursor:move}
+.z-svg .treffer{stroke:transparent;fill:none}.z-svg .treffer.f{fill:transparent}
+.z-svg .gewaehlt .treffer{stroke:rgba(0,164,173,.35)}.z-svg .gewaehlt .treffer.f{fill:rgba(0,164,173,.12);stroke:rgba(0,164,173,.6);stroke-dasharray:4 3}
+.z-svg .anschluss{fill:rgba(255,138,60,.5);stroke:#ff8a3c;stroke-width:.6}
+.z-svg .griff{fill:#fff;stroke:#00a4ad;stroke-width:1.5;cursor:grab}
+.z-svg .entwurf path{stroke:#00818a}.z-svg .entwurf .voll{fill:#00818a}
+.z-seite{width:270px;flex:none;overflow:auto;background:var(--panel);border-left:1px solid #0e1416;padding:12px}
+.z-seite h3{font-size:11px;letter-spacing:.06em;color:var(--leise);margin:4px 0 10px}
+.z-extra{margin-top:18px;border-top:1px solid var(--linie);padding-top:12px}
+.z-feld{display:flex;flex-direction:column;gap:3px;margin-bottom:9px}
+.z-feld span{font-size:11.5px;color:var(--leise)}
+.z-feld input:not([type=checkbox]),.z-feld select{background:#151c1f;border:1px solid var(--linie);border-radius:3px;padding:6px 8px}
+.z-feld input[type=checkbox]{width:18px;height:18px;accent-color:var(--teal-hell)}
+.z-feld.breit input{width:100%}
+.z-pins{width:100%;border-collapse:collapse;font-size:12px}
+.z-pins td{padding:4px 3px;border-bottom:1px solid var(--linie);vertical-align:top}
+.z-pins small{color:var(--leise)}
+.z-fuss{height:26px;display:flex;align-items:center;padding:0 12px;background:var(--leiste);font-size:12px}

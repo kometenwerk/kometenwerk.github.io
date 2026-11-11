@@ -26,5 +26,9 @@ contextBridge.exposeInMainWorld("KC", {
   beiMonitorZu: hoeren("monitor:zu"),
   beiOeffnen: hoeren("oeffnen"),
   beiMenue: hoeren("menue"),
+  exportSpeichern: (x) => ipcRenderer.invoke("export:speichern", x),
+  versionAblegen: (x) => ipcRenderer.invoke("version:ablegen", x),
+  pdfSpeichern: (x) => ipcRenderer.invoke("pdf:speichern", x),
+  drucken: (x) => ipcRenderer.invoke("drucken", x),
   version: () => ipcRenderer.invoke("version")
 });
