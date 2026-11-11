@@ -33,14 +33,28 @@ $("#board").innerHTML = U.BOARDS.map(b => '<option value="' + b[0] + '"' + (b[0]
 $("#board").onchange = (e) => { Z.board = e.target.value; zustandMerken(); };
 async function portsSuchen(still) {
   if (!KC) return;
-  const liste = await KC.ports();
-  const sel = $("#port");
-  sel.innerHTML = liste.length ? liste.map(p => '<option value="' + esc(p.adresse) + '"' + (p.adresse === Z.port ? " selected" : "") + ">" + esc(p.adresse + (p.board ? " · " + p.board : "")) + "</option>").join("") : '<option value="">Kein Arduino gefunden – USB anstecken</option>';
+  const sel = $("#port"); if (!still) sel.innerHTML = '<option value="">Suche …</option>';
+  const r = await KC.ports(), liste = r.liste || [];
+  sel.innerHTML = liste.length ? liste.map(p => '<option value="' + esc(p.adresse) + '"' + (p.adresse === Z.port ? " selected" : "") + ">" + esc(p.adresse + (p.board ? " · " + p.board : p.geraet && p.geraet !== p.adresse ? " · " + p.geraet.replace(/\s*\(COM\d+\)/, "") : "")) + "</option>").join("") : '<option value="">Kein Arduino gefunden</option>';
   if (liste.length && !liste.some(p => p.adresse === Z.port)) { Z.port = liste[0].adresse; sel.value = Z.port; }
+  if (!liste.length) Z.port = "";
   const erkannt = liste.find(p => p.adresse === Z.port && p.fqbn);
   if (erkannt && U.BOARDS.some(b => b[0] === erkannt.fqbn) && erkannt.fqbn !== Z.board) { Z.board = erkannt.fqbn; $("#board").value = Z.board; if (!still) toast("Erkannt: " + erkannt.board); }
   zustandMerken();
-  if (!still && !liste.length) toast("Kein Arduino gefunden. Steck ihn per USB an und tipp auf ⟳.");
+  if (!liste.length && !still) hilfeKeinArduino(r);
+  else if (liste.length && !still) toast("✅ Gefunden: " + liste.map(p => p.adresse).join(", "));
+}
+// Was tun, wenn der Arduino nicht auftaucht?
+function hilfeKeinArduino(r) {
+  $("#meldungen").innerHTML = '<div class="hilfe-karte"><h3>🔍 Kein Arduino gefunden – so findest du den Fehler</h3><ol>' +
+    (r.hinweis === "einrichten" || !avrBereit ? '<li><b>Einrichten fertig machen.</b> Ohne die Arduino-Werkzeuge kann das Programm Boards schlechter erkennen. <button type="button" class="haupt-k klein" id="hEin">Einrichten</button></li>' : "") +
+    "<li><b>Anderes USB-Kabel probieren.</b> Viele Kabel (z. B. von Powerbanks) können nur laden, aber keine Daten.</li>" +
+    "<li><b>Ist es ein Nachbau?</b> Günstige Arduinos (oft mit dem Chip „CH340“) brauchen unter Windows einen Treiber. Ob er fehlt, siehst du im Geräte-Manager (Windows-Taste → „Geräte-Manager“): Steht dort unter „Andere Geräte“ ein <i>USB2.0-Serial</i> mit gelbem Dreieck, dann fehlt der Treiber. <a href=\"https://www.wch-ic.com/downloads/CH341SER_EXE.html\" target=\"_blank\">CH340-Treiber vom Hersteller</a></li>" +
+    "<li><b>Arduino IDE schließen</b>, falls sie offen ist – sonst ist der Anschluss besetzt.</li>" +
+    "<li>Den Arduino <b>ab- und wieder anstecken</b> (am besten direkt am PC, nicht am USB-Hub) und dann ⟳ drücken. Die grüne „ON“-LED am Arduino muss leuchten.</li></ol>" +
+    '<p class="leise">Windows sieht gerade ' + (r.systemZahl || 0) + " serielle Geräte.</p></div>";
+  const h = $("#hEin"); if (h) h.onclick = einrichtenZeigen;
+  reiter("ausgabe");
 }
 $("#port").onchange = (e) => { Z.port = e.target.value; zustandMerken(); };
 $("#bPorts").onclick = () => portsSuchen(false);
@@ -92,7 +106,7 @@ async function pruefen() {
 async function hochladen() {
   if (beschaeftigt || !KC) return;
   if (!avrBereit) { einrichtenZeigen(); return; }
-  if (!Z.port) { await portsSuchen(true); if (!Z.port) { toast("Kein Arduino gefunden. Steck ihn per USB an und tipp auf ⟳."); return; } }
+  if (!Z.port) { await portsSuchen(false); if (!Z.port) return; }
   const code = ed.wert;
   knopfZustand(true, "hoch"); $("#meldungen").innerHTML = '<p class="leise">⏳ Übersetzen und hochladen … Die Lichter am Arduino blinken gleich.</p>'; $("#roh").textContent = "";
   const r = await KC.hochladen({ name: Z.name, code, fqbn: Z.board, port: Z.port });
@@ -161,7 +175,7 @@ $("#baud").onchange = (e) => { Z.baud = e.target.value; zustandMerken(); if (mon
 async function monitorUmschalten(an) {
   if (!KC) return;
   if (!an) { await KC.monitorStopp(); monitorAn = false; $("#bVerbinden").textContent = "Verbinden"; $("#bMonitor").classList.remove("an"); return; }
-  if (!Z.port) { await portsSuchen(true); if (!Z.port) { toast("Kein Arduino gefunden."); return; } }
+  if (!Z.port) { await portsSuchen(false); if (!Z.port) return; }
   const r = await KC.monitorStart({ port: Z.port, baud: Z.baud });
   monitorAn = r.ok; $("#bVerbinden").textContent = r.ok ? "Trennen" : "Verbinden"; $("#bMonitor").classList.toggle("an", r.ok);
   if (r.ok) { reiter("monitor"); monText("— verbunden mit " + Z.port + " (" + Z.baud + " Baud) —\n"); $("#monEin").focus(); }
@@ -209,7 +223,8 @@ $("#einLos").onclick = async () => {
   const st = await KC.einrichtenStatus();
   if (!st.cli) { $("#meldungen").innerHTML = '<div class="meld fehler gross"><span>⚠️</span><span><b>arduino-cli fehlt.</b><small>Das Programm wurde ohne die Arduino-Werkzeuge gebaut. Bitte neu installieren.</small></span></div>'; avrBereit = false; }
   else if (!st.avr) { avrBereit = false; einrichtenZeigen(); }
-  else portsSuchen(true);
+  portsSuchen(true);
+  setInterval(() => { if (!Z.port && !beschaeftigt && !monitorAn && document.visibilityState === "visible") portsSuchen(true); }, 4000);
   const start = await KC.startDatei(); if (start) laden2(start);
 })();
 ed.fokus();

@@ -95,3 +95,7 @@ li.leise{padding:6px 8px;font-size:13px}
 .toast[hidden]{display:none}
 :focus-visible{outline:2px solid var(--akzent);outline-offset:2px}
 @media (max-width:900px){.seite{display:none}.marke span{display:none}}
+.hilfe-karte{padding:6px 10px;line-height:1.55}
+.hilfe-karte h3{margin:2px 0 6px;font-size:15px}
+.hilfe-karte ol{margin:0;padding-left:20px}.hilfe-karte li{margin-bottom:6px}
+.hilfe-karte a{color:var(--akzent)}

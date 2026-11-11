@@ -26,14 +26,14 @@ function konfig() {
 // Führt arduino-cli aus; meldet jede Zeile an den Bildschirm (kanal), gibt { code, aus } zurück
 function cli(args, kanal, eingabe) {
   return new Promise((fertig) => {
-    let aus = "";
+    let aus = "", nurAus = "";
     let p;
     try { p = spawn(cliPfad(), ["--config-file", konfig(), ...args], { windowsHide: true }); }
     catch (e) { fertig({ code: -1, aus: String(e) }); return; }
     const zeile = (d) => { const t = d.toString(); aus += t; if (kanal && fenster) fenster.webContents.send(kanal, t); };
-    p.stdout.on("data", zeile); p.stderr.on("data", zeile);
-    p.on("error", (e) => fertig({ code: -1, aus: aus + "\n" + (e.code === "ENOENT" ? "arduino-cli wurde nicht gefunden." : String(e)) }));
-    p.on("close", (code) => fertig({ code, aus }));
+    p.stdout.on("data", (d) => { nurAus += d.toString(); zeile(d); }); p.stderr.on("data", zeile);
+    p.on("error", (e) => fertig({ code: -1, aus: aus + "\n" + (e.code === "ENOENT" ? "arduino-cli wurde nicht gefunden." : String(e)), json: "" }));
+    p.on("close", (code) => fertig({ code, aus, json: nurAus }));
     if (eingabe) { p.stdin.write(eingabe); p.stdin.end(); }
   });
 }
@@ -49,7 +49,7 @@ function sketchSchreiben(name, code) {
 ipcMain.handle("einrichten:status", async () => {
   const r = await cli(["core", "list", "--format", "json"]);
   if (r.code === -1) return { cli: false, avr: false, text: r.aus };
-  let avr = false; try { const j = JSON.parse(r.aus); const liste = j.platforms || j || []; avr = liste.some(x => (x.id || (x.metadata && x.metadata.id)) === "arduino:avr"); } catch (e) { avr = /arduino:avr/.test(r.aus); }
+  let avr = false; try { const j = JSON.parse(r.json); const liste = j.platforms || j || []; avr = liste.some(x => (x.id || (x.metadata && x.metadata.id)) === "arduino:avr"); } catch (e) { avr = /arduino:avr/.test(r.aus); }
   return { cli: true, avr };
 });
 ipcMain.handle("einrichten:los", async () => {
@@ -58,12 +58,34 @@ ipcMain.handle("einrichten:los", async () => {
   const b = await cli(["core", "install", "arduino:avr"], "einrichten:zeile");
   return { ok: b.code === 0, aus: a.aus + b.aus };
 });
+// Ports ohne arduino-cli finden (klappt auch, wenn „Einrichten“ noch nicht fertig ist, und zeigt Nachbauten mit CH340)
+function systemPorts() {
+  return new Promise((fertig) => {
+    if (WIN) {
+      const ps = "Get-CimInstance Win32_PnPEntity | Where-Object { $_.Name -match '\\(COM\\d+\\)' } | ForEach-Object { $_.Name }";
+      let aus = ""; let p;
+      try { p = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", ps], { windowsHide: true }); } catch (e) { fertig([]); return; }
+      p.stdout.on("data", d => aus += d.toString()); p.on("error", () => fertig([]));
+      p.on("close", () => fertig(aus.split(/\r?\n/).map(z => z.trim()).filter(Boolean).map(z => { const m = /\((COM\d+)\)/.exec(z); return m ? { adresse: m[1], name: z } : null; }).filter(Boolean)));
+    } else {
+      try { fertig(fs.readdirSync("/dev").filter(n => /^(ttyACM|ttyUSB|cu\.usb|tty\.usb)/.test(n)).map(n => ({ adresse: "/dev/" + n, name: n }))); } catch (e) { fertig([]); }
+    }
+  });
+}
+const istArduinoName = (n) => /arduino|ch34|usb-serial|usb serial|cp210|ftdi|wch/i.test(n || "");
 ipcMain.handle("ports", async () => {
-  const r = await cli(["board", "list", "--format", "json"]);
+  const [r, sys] = await Promise.all([cli(["board", "list", "--format", "json"]), systemPorts()]);
+  let liste = [], hinweis = "";
   try {
-    const j = JSON.parse(r.aus), liste = Array.isArray(j) ? j : (j.detected_ports || []);
-    return liste.map(x => { const port = x.port || x; const b = (x.matching_boards || x.boards || [])[0]; return { adresse: port.address, name: port.label || port.address, protokoll: port.protocol, board: b ? b.name : "", fqbn: b ? b.fqbn : "" }; }).filter(p => p.adresse && p.protokoll !== "network");
-  } catch (e) { return []; }
+    const j = JSON.parse(r.json || "{}"), roh = Array.isArray(j) ? j : (j.detected_ports || []);
+    liste = roh.map(x => { const port = x.port || x; const b = (x.matching_boards || x.boards || [])[0]; return { adresse: port.address, name: port.label || port.address, protokoll: port.protocol, board: b ? b.name : "", fqbn: b ? b.fqbn : "" }; }).filter(p => p.adresse && p.protokoll !== "network");
+    if (!liste.length && /discovery|not found|nicht gefunden/i.test((j.warnings || []).join(" ") + r.aus)) hinweis = "einrichten";
+  } catch (e) { hinweis = "einrichten"; }
+  // was Windows/Linux selbst sieht, dazunehmen
+  for (const s2 of sys) if (!liste.some(p => p.adresse === s2.adresse)) liste.push({ adresse: s2.adresse, name: s2.name, protokoll: "serial", board: istArduinoName(s2.name) ? (/ch34|wch/i.test(s2.name) ? "Nachbau (CH340)" : /arduino/i.test(s2.name) ? s2.name.replace(/\s*\(COM\d+\)/, "") : "USB-Seriell") : "", fqbn: /arduino uno/i.test(s2.name) ? "arduino:avr:uno" : /mega/i.test(s2.name) ? "arduino:avr:mega" : "" });
+  for (const p of liste) { const s2 = sys.find(x => x.adresse === p.adresse); if (s2) p.geraet = s2.name; }
+  liste.sort((a, b) => (b.board ? 1 : 0) - (a.board ? 1 : 0));
+  return { liste, hinweis, systemZahl: sys.length };
 });
 ipcMain.handle("pruefen", async (_, { name, code, fqbn }) => {
   const ordner = sketchSchreiben(name, code);
@@ -79,11 +101,11 @@ ipcMain.handle("hochladen", async (_, { name, code, fqbn, port }) => {
 ipcMain.handle("bibliothek:installieren", async (_, name) => { const r = await cli(["lib", "install", name], "ausgabe:zeile"); return { ok: r.code === 0, aus: r.aus }; });
 ipcMain.handle("bibliothek:suchen", async (_, wort) => {
   const r = await cli(["lib", "search", wort, "--format", "json"]);
-  try { const j = JSON.parse(r.aus); return (j.libraries || []).slice(0, 20).map(l => ({ name: l.name, text: (l.latest || (l.releases && Object.values(l.releases)[0]) || {}).sentence || "" })); } catch (e) { return []; }
+  try { const j = JSON.parse(r.json); return (j.libraries || []).slice(0, 20).map(l => ({ name: l.name, text: (l.latest || (l.releases && Object.values(l.releases)[0]) || {}).sentence || "" })); } catch (e) { return []; }
 });
 ipcMain.handle("bibliothek:liste", async () => {
   const r = await cli(["lib", "list", "--format", "json"]);
-  try { const j = JSON.parse(r.aus); return (j.installed_libraries || j || []).map(l => (l.library || l).name); } catch (e) { return []; }
+  try { const j = JSON.parse(r.json); return (j.installed_libraries || j || []).map(l => (l.library || l).name); } catch (e) { return []; }
 });
 
 /* ---------- Serieller Monitor ---------- */
