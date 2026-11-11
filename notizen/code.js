@@ -195,7 +195,7 @@ export function seite(A, el, id) {
     const d = document.createElement("dialog"); d.className = "sheet";
     d.innerHTML = '<div class="sheet-in"><h2>➜ Auf den Arduino hochladen</h2><p>Zum echten Übersetzen und Hochladen braucht es das <b>Kometenwerk-PC-Programm</b> (Windows) – der Browser kann das nicht.</p>' +
       '<ol class="code-schritte"><li>Arduino per USB anstecken.</li><li>Auf <b>„Im PC-Programm öffnen“</b> klicken – dein Code springt hinüber.</li><li>Dort auf <b>➜ Hochladen</b>.</li></ol>' +
-      '<p class="muted klein">Noch nicht installiert? Du kannst den Code auch als .ino speichern und in der Arduino IDE öffnen.</p>' +
+      '<p class="muted klein">Noch nicht installiert? <a href="https://github.com/kometenwerk/kometenwerk.github.io/releases/tag/kometenwerk-code-neueste" target="_blank" rel="noopener">⬇ Kometenwerk Code für Windows herunterladen</a> – oder den Code als .ino speichern und in der Arduino IDE öffnen.</p>' +
       '<div class="sheet-foot"><button type="button" class="btn" data-x="ino">⬇ .ino speichern</button><span class="sp"></span><button type="button" class="btn" data-x="zu">Abbrechen</button><a class="btn primary" href="' + esc(link) + '" data-x="pc">Im PC-Programm öffnen</a></div></div>';
     document.body.appendChild(d);
     d.querySelector('[data-x="zu"]').onclick = () => d.close();

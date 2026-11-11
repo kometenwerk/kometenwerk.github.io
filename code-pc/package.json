@@ -1,0 +1,87 @@
+{
+  "name": "kometenwerk-code",
+  "productName": "Kometenwerk Code",
+  "version": "0.1.0",
+  "description": "Arduino programmieren – mit echtem Prüfen und Hochladen, Erklärungen auf Deutsch",
+  "author": "Kometenwerk",
+  "license": "UNLICENSED",
+  "main": "src/main.cjs",
+  "type": "module",
+  "scripts": {
+    "start": "electron .",
+    "test": "node tests/fehler.test.mjs",
+    "pack:win": "electron-builder --win --x64",
+    "pack:linux": "electron-builder --linux AppImage"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "io.github.kometenwerk.code",
+    "productName": "Kometenwerk Code",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "werkzeug/",
+        "to": "werkzeug/",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "protocols": [
+      {
+        "name": "Kometenwerk Code",
+        "schemes": [
+          "kometenwerk-code"
+        ]
+      }
+    ],
+    "fileAssociations": [
+      {
+        "ext": "ino",
+        "name": "Arduino-Sketch",
+        "role": "Editor"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "src/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "Kometenwerk Code",
+      "artifactName": "Kometenwerk-Code-Setup-${version}.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Development",
+      "icon": "src/icon.png",
+      "artifactName": "Kometenwerk-Code-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "Kometenwerk-Code-${version}-ohne-Installation.${ext}"
+    }
+  }
+}

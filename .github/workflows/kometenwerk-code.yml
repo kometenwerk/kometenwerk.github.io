@@ -1,0 +1,98 @@
+# Baut das PC-Programm „Kometenwerk Code“ für Windows (und Linux) und legt es als Download unter „Releases“ ab.
+name: Kometenwerk Code bauen
+
+on:
+  push:
+    branches: [main]
+    paths: ["code-pc/**", ".github/workflows/kometenwerk-code.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  ARDUINO_CLI_VERSION: "1.1.1"
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: code-pc
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: code-pc/package-lock.json
+      - name: arduino-cli holen
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path werkzeug | Out-Null
+          $url = "https://github.com/arduino/arduino-cli/releases/download/v$env:ARDUINO_CLI_VERSION/arduino-cli_$($env:ARDUINO_CLI_VERSION)_Windows_64bit.zip"
+          Invoke-WebRequest $url -OutFile cli.zip
+          Expand-Archive cli.zip -DestinationPath werkzeug -Force
+          Remove-Item cli.zip
+          Get-ChildItem werkzeug
+      - run: npm ci
+      - run: npm test
+      - name: Programm bauen
+        run: npx electron-builder --win --x64 --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kometenwerk-code-windows
+          path: |
+            code-pc/dist/*.exe
+          if-no-files-found: error
+
+  linux:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: code-pc
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: code-pc/package-lock.json
+      - name: arduino-cli holen
+        run: |
+          mkdir -p werkzeug
+          curl -sSL "https://github.com/arduino/arduino-cli/releases/download/v${ARDUINO_CLI_VERSION}/arduino-cli_${ARDUINO_CLI_VERSION}_Linux_64bit.tar.gz" | tar xz -C werkzeug arduino-cli
+      - run: npm ci
+      - run: npx electron-builder --linux AppImage --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kometenwerk-code-linux
+          path: code-pc/dist/*.AppImage
+          if-no-files-found: error
+
+  veroeffentlichen:
+    needs: [windows, linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dateien
+          merge-multiple: true
+      - name: Als Download „Kometenwerk Code (neueste Version)“ bereitstellen
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: kometenwerk-code-neueste
+          name: Kometenwerk Code – neueste Version
+          prerelease: true
+          make_latest: false
+          body: |
+            **Kometenwerk Code** – Arduino programmieren mit echtem Prüfen und Hochladen, Erklärungen auf Deutsch.
+
+            **Windows:** `…-win.exe` mit „Setup“ im Namen installieren – oder die andere `.exe` ohne Installation starten.
+            Windows zeigt beim ersten Start evtl. „Der Computer wurde durch Windows geschützt“ → „Weitere Informationen“ → „Trotzdem ausführen“ (das Programm ist nicht kostenpflichtig signiert).
+
+            Beim ersten Start lädt das Programm einmal die Arduino-Werkzeuge (ca. 150 MB, Internet nötig).
+          files: dateien/*
+          fail_on_unmatched_files: false

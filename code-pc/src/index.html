@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'">
+<title>Kometenwerk Code</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="kopf">
+  <div class="marke"><img src="icon.png" alt="" width="26" height="26"><span><b>Kometenwerk</b> Code</span></div>
+  <button type="button" class="rund pruef" id="bPruef" title="Prüfen (Strg+R)" aria-label="Prüfen">✓</button>
+  <button type="button" class="rund hoch" id="bHoch" title="Hochladen (Strg+U)" aria-label="Hochladen">➜</button>
+  <div class="board-wahl">
+    <select id="board" aria-label="Board" title="Board"></select>
+    <select id="port" aria-label="Port" title="Port (USB)"><option value="">Kein Arduino gefunden</option></select>
+    <button type="button" class="klein" id="bPorts" title="Ports neu suchen" aria-label="Ports neu suchen">⟳</button>
+  </div>
+  <span class="sp"></span>
+  <button type="button" class="klein" id="bMonitor" title="Serieller Monitor (Strg+Umschalt+M)">🔌 Monitor</button>
+</header>
+<div class="haupt">
+  <nav class="seite" aria-label="Sketche">
+    <div class="seite-knoepfe">
+      <button type="button" id="bNeu" title="Neuer Sketch (Strg+N)">＋ Neu</button>
+      <button type="button" id="bOeffnen" title="Öffnen (Strg+O)">📂 Öffnen</button>
+      <button type="button" id="bSpeichern" title="Speichern (Strg+S)">💾 Speichern</button>
+    </div>
+    <h3>Meine Sketche</h3>
+    <ul id="sketche" class="liste"></ul>
+    <h3>Vorlagen</h3>
+    <ul id="vorlagen" class="liste"></ul>
+    <h3>📚 Bibliotheken</h3>
+    <div class="bib-suche"><input id="bibQ" placeholder="z. B. LiquidCrystal" aria-label="Bibliothek suchen"><button type="button" id="bibLos" class="klein">Suchen</button></div>
+    <ul id="bibListe" class="liste kl"></ul>
+    <button type="button" class="link" id="bOrdner">Ordner im Explorer zeigen</button>
+  </nav>
+  <main class="mitte">
+    <div class="reiter-zeile"><span class="datei" id="dateiName">sketch.ino</span><span class="geaendert" id="geaendert" hidden title="Nicht gespeichert">●</span><span class="sp"></span><button type="button" class="klein" data-schrift="-1" aria-label="Kleinere Schrift">A−</button><button type="button" class="klein" data-schrift="1" aria-label="Größere Schrift">A+</button></div>
+    <div id="ed" class="ed-box"></div>
+    <div class="hilfe" id="hilfe" aria-live="polite"></div>
+    <section class="unten">
+      <div class="unten-reiter" role="tablist"><button type="button" role="tab" data-r="ausgabe" aria-selected="true">Ausgabe</button><button type="button" role="tab" data-r="monitor" aria-selected="false">Serieller Monitor</button><span class="sp"></span><span class="status" id="status"></span></div>
+      <div class="unten-inhalt" id="rAusgabe">
+        <div id="meldungen" class="meldungen"><p class="leise">Klick auf ✓ zum Prüfen oder ➜ zum Hochladen.</p></div>
+        <details class="roh"><summary>Original-Ausgabe</summary><pre id="roh"></pre></details>
+      </div>
+      <div class="unten-inhalt" id="rMonitor" hidden>
+        <div class="mon-leiste"><select id="baud" aria-label="Baud">
+          <option>9600</option><option>19200</option><option>38400</option><option>57600</option><option>115200</option></select>
+          <button type="button" class="klein" id="bVerbinden">Verbinden</button><button type="button" class="klein" id="bLeeren">Leeren</button>
+          <label class="check"><input type="checkbox" id="autoScroll" checked> automatisch scrollen</label></div>
+        <pre id="monText" class="mon-text"></pre>
+        <div class="mon-senden"><input id="monEin" placeholder="Etwas an den Arduino schicken … (Enter)" aria-label="An den Arduino senden"><button type="button" class="klein" id="bSenden">Senden</button></div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="einrichten" id="einrichten" hidden>
+  <div class="karte">
+    <h2>👋 Willkommen bei Kometenwerk Code</h2>
+    <p>Damit du deine Programme prüfen und auf den Arduino laden kannst, braucht das Programm einmal die <b>Arduino-Werkzeuge</b> (Übersetzer und Hochlader, ca. 150 MB). Dafür muss das Internet an sein.</p>
+    <div class="fortschritt"><i id="einFort"></i></div>
+    <pre id="einLog" class="ein-log"></pre>
+    <div class="knoepfe"><button type="button" id="einSpaeter" class="klein">Später</button><button type="button" id="einLos" class="haupt-k">Jetzt einrichten</button></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

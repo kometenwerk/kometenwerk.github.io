@@ -1,0 +1,97 @@
+/* Kometenwerk Code – Aussehen (Kometenwerk-Farben, dunkel und hell) */
+@import url("fonts/fonts.css");
+:root{--grund:#0b111c;--flaeche:#101826;--karte:#172133;--linie:#2a3650;--text:#ffffff;--leise:#9aa7bd;--akzent:#ff8a3c;--gruen:#0f9d72;--blau:#2f62e6;--rot:#e05252;--gelb:#e0a11b;--ed:#0f1622;--ed-nr:#0b111c;--ed-text:#dfe6f2}
+@media (prefers-color-scheme:light){:root{--grund:#f4f6fa;--flaeche:#ffffff;--karte:#ffffff;--linie:#dfe3ea;--text:#101826;--leise:#5b6578}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--grund);color:var(--text);font:14px/1.45 "Space Grotesk",system-ui,sans-serif;overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+.kopf{display:flex;align-items:center;gap:10px;height:56px;padding:0 14px;background:var(--flaeche);border-bottom:1px solid var(--linie)}
+.marke{display:flex;align-items:center;gap:8px;margin-right:8px;font-size:15px}
+.marke b{font-weight:600}
+.rund{width:40px;height:40px;border-radius:50%;border:0;color:#fff;font-size:18px;font-weight:700;cursor:pointer;display:grid;place-items:center;transition:transform .1s}
+.rund:hover{transform:scale(1.06)}.rund:disabled{opacity:.55;cursor:wait}
+.rund.pruef{background:var(--gruen)}.rund.hoch{background:var(--blau)}
+.rund.laeuft{animation:dreh 1s linear infinite}
+@keyframes dreh{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.rund.laeuft{animation:none;opacity:.6}}
+.board-wahl{display:flex;gap:6px;align-items:center;margin-left:8px}
+select,input{background:var(--karte);border:1px solid var(--linie);border-radius:9px;padding:7px 10px;min-height:36px}
+.board-wahl select{max-width:230px}
+.klein{border:1px solid var(--linie);background:var(--karte);border-radius:9px;padding:6px 10px;cursor:pointer;min-height:34px}
+.klein:hover{border-color:var(--akzent)}
+.klein.an,#bMonitor.an{background:var(--akzent);color:#1a1205;border-color:var(--akzent)}
+.sp{flex:1}
+.haupt{display:flex;height:calc(100% - 56px)}
+.seite{width:230px;flex:none;background:var(--flaeche);border-right:1px solid var(--linie);padding:12px;overflow:auto}
+.seite h3{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--leise);margin:16px 4px 6px}
+.seite-knoepfe{display:flex;flex-direction:column;gap:6px}
+.seite-knoepfe button{text-align:left;border:1px solid var(--linie);background:var(--karte);border-radius:9px;padding:8px 10px;cursor:pointer}
+.seite-knoepfe button:hover{border-color:var(--akzent)}
+.liste{list-style:none;margin:0;padding:0}
+.liste button{width:100%;text-align:left;border:0;background:transparent;border-radius:8px;padding:6px 8px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.liste button:hover{background:var(--karte)}.liste button.an{background:var(--karte);box-shadow:inset 3px 0 0 var(--akzent)}
+.liste.kl button{font-size:13px}
+.leise{color:var(--leise)}
+li.leise{padding:6px 8px;font-size:13px}
+.bib-suche{display:flex;gap:4px}.bib-suche input{flex:1;min-width:0}
+.link{border:0;background:transparent;color:var(--leise);text-decoration:underline;cursor:pointer;margin-top:14px;padding:4px}
+.mitte{flex:1;min-width:0;display:flex;flex-direction:column;padding:10px 12px 0;gap:8px}
+.reiter-zeile{display:flex;align-items:center;gap:6px}
+.datei{background:var(--karte);border:1px solid var(--linie);border-bottom:2px solid var(--akzent);border-radius:9px 9px 0 0;padding:6px 14px;font-weight:600}
+.geaendert{color:var(--akzent);font-size:18px;line-height:1}
+.ed-box{flex:1;min-height:200px}
+.ed{--ed-schrift:15px;position:relative;display:flex;height:100%;background:var(--ed);border-radius:12px;overflow:hidden;border:1px solid #23304a}
+.ed-nr{flex:none;width:50px;padding:12px 0;overflow:hidden;text-align:right;color:#5b6a85;font:var(--ed-schrift)/1.55 "Cascadia Code",Consolas,ui-monospace,monospace;user-select:none;background:var(--ed-nr);border-right:1px solid #1d2840}
+.ed-nr div{padding-right:9px;cursor:pointer}
+.ed-nr div.f{background:rgba(224,82,82,.38);color:#fff}.ed-nr div.h{background:rgba(224,161,27,.28);color:#fff}
+.ed-feld{position:relative;flex:1;min-width:0}
+.ed-farbe,.ed-text{position:absolute;inset:0;margin:0;padding:12px 14px;font:var(--ed-schrift)/1.55 "Cascadia Code",Consolas,ui-monospace,monospace;white-space:pre;tab-size:2;overflow:auto;border:0;background:transparent;letter-spacing:0}
+.ed-farbe{color:var(--ed-text);pointer-events:none;overflow:hidden}
+.ed-text{color:transparent;-webkit-text-fill-color:transparent;caret-color:var(--akzent);resize:none;outline:none}
+.ed-text::selection{background:rgba(127,170,255,.35)}
+.c-typ{color:#7fd3ff}.c-schl{color:#c792ea;font-weight:600}.c-konst{color:#ffb86b}.c-fn{color:#5ee0b0}.c-kommentar{color:#7d8aa3;font-style:italic}.c-text,.c-zeichen{color:#ffe08a}.c-zahl{color:#ff9a9a}.c-vor{color:#c792ea}.c-sym{color:#dfe6f2}
+.ed-vor{position:absolute;z-index:20;width:340px;max-height:230px;overflow:auto;background:#172133;border:1px solid #2a3650;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.45);padding:4px;color:#fff}
+.ed-vor[hidden]{display:none}
+.ed-vor button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;border:0;background:transparent;text-align:left;padding:6px 8px;border-radius:7px;cursor:pointer;color:#fff}
+.ed-vor button[aria-selected=true]{background:#24324d}
+.ed-vor code{font-size:12px;color:#5ee0b0}.ed-vor small{font-size:12px;color:#9aa7bd;line-height:1.3}
+.hilfe{padding:7px 12px;border-radius:10px;background:var(--karte);border:1px solid var(--linie);min-height:36px;font-size:13.5px}
+.hilfe code{font-weight:700;color:var(--akzent)}.hilfe .fehler{color:var(--rot)}.hilfe .hinweis{color:var(--gelb)}.hilfe small{color:var(--leise)}
+.unten{height:250px;flex:none;display:flex;flex-direction:column;background:var(--flaeche);border:1px solid var(--linie);border-bottom:0;border-radius:12px 12px 0 0;overflow:hidden}
+.unten-reiter{display:flex;align-items:center;gap:2px;padding:0 8px;border-bottom:1px solid var(--linie)}
+.unten-reiter button{border:0;background:transparent;padding:9px 12px;cursor:pointer;color:var(--leise);border-bottom:2px solid transparent}
+.unten-reiter button[aria-selected=true]{color:var(--text);border-bottom-color:var(--akzent)}
+.status{font-size:12px;color:var(--leise);font-variant-numeric:tabular-nums}
+.unten-inhalt{flex:1;overflow:auto;padding:8px 10px}
+.unten-inhalt[hidden]{display:none}
+.meldungen .ok{padding:8px;font-size:15px}
+.zaehler{font-weight:700;padding:4px 4px 8px}
+.meld{display:flex;gap:10px;align-items:flex-start;width:100%;border:0;background:transparent;text-align:left;padding:8px;border-radius:8px;cursor:pointer;border-left:4px solid var(--rot);margin-bottom:4px}
+.meld.hinweis{border-left-color:var(--gelb)}
+.meld:hover{background:var(--karte)}
+.meld.gross{cursor:default;font-size:15px}
+.meld .mz{flex:none;width:62px;font-size:12px;color:var(--leise);padding-top:2px}
+.meld small{display:block;color:var(--leise);margin-top:2px}
+.groesse{display:grid;grid-template-columns:160px 1fr;gap:4px 10px;align-items:center;padding:4px 8px;max-width:640px}
+.groesse small{grid-column:2;color:var(--leise);margin-top:-2px;margin-bottom:6px}
+.balken{height:8px;border-radius:5px;background:var(--karte);overflow:hidden}.balken i{display:block;height:100%;background:var(--gruen)}.balken i.warn{background:var(--gelb)}
+.bib-fehlt{margin-top:8px;padding:10px;border-radius:10px;background:var(--karte)}
+.haupt-k{border:0;background:var(--akzent);color:#1a1205;font-weight:600;border-radius:9px;padding:8px 14px;cursor:pointer}
+.haupt-k.klein{padding:5px 10px;min-height:0}
+.roh{margin-top:8px}.roh summary{cursor:pointer;color:var(--leise);font-size:12px}
+.roh pre,.mon-text,.ein-log{margin:6px 0 0;font:12.5px/1.45 "Cascadia Code",Consolas,monospace;white-space:pre-wrap;background:var(--ed);color:var(--ed-text);border-radius:8px;padding:8px 10px;max-height:300px;overflow:auto}
+.mon-leiste,.mon-senden{display:flex;gap:6px;align-items:center}
+.mon-text{height:120px;max-height:none}
+.mon-senden{margin-top:6px}.mon-senden input{flex:1}
+.check{display:flex;align-items:center;gap:6px;color:var(--leise);font-size:13px}
+.einrichten{position:fixed;inset:0;background:rgba(5,9,16,.7);display:grid;place-items:center;z-index:50}
+.einrichten[hidden]{display:none}
+.einrichten .karte{width:min(560px,92vw);background:var(--flaeche);border:1px solid var(--linie);border-radius:16px;padding:22px}
+.einrichten h2{margin:0 0 8px}
+.fortschritt{height:8px;border-radius:5px;background:var(--karte);overflow:hidden;margin:14px 0 8px}.fortschritt i{display:block;height:100%;width:0;background:var(--akzent);transition:width .3s}
+.ein-log{height:130px}
+.knoepfe{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--karte);border:1px solid var(--linie);border-radius:12px;padding:10px 16px;box-shadow:0 8px 30px rgba(0,0,0,.35);z-index:60;max-width:80vw}
+.toast[hidden]{display:none}
+:focus-visible{outline:2px solid var(--akzent);outline-offset:2px}
+@media (max-width:900px){.seite{display:none}.marke span{display:none}}

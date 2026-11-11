@@ -1,0 +1,11 @@
+/tmp/sk/fehler/fehler.ino: In function 'void setup()':
+/tmp/sk/fehler/fehler.ino:4:10: error: 'class HardwareSerial' has no member named 'brind'; did you mean 'find'?
+/tmp/sk/fehler/fehler.ino:6:1: error: expected ';' before '}' token
+/tmp/sk/fehler/fehler.ino: In function 'void loop()':
+/tmp/sk/fehler/fehler.ino:8:19: error: 'HIG' was not declared in this scope
+/tmp/sk/fehler/fehler.ino:8:19: note: suggested alternative: 'HIGH'
+/tmp/sk/fehler/fehler.ino:9:9: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+/tmp/sk/b2/b2.ino:1:10: fatal error: Adafruit_SSD1306.h: No such file or directory
+ #include <Adafruit_SSD1306.h>
+          ^~~~~~~~~~~~~~~~~~~~
+compilation terminated.
