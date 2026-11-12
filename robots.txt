@@ -2,5 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /team/
 Disallow: /code-pc/
+Disallow: /kunden/baukasten/
 
 Sitemap: https://kometenwerk.github.io/sitemap.xml

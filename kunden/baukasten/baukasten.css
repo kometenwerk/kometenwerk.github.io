@@ -1,0 +1,55 @@
+.b-main{max-width:1200px}
+.b-tab{margin-top:14px}
+.b-zwei{display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:16px;align-items:start}
+@media (max-width:860px){.b-zwei{grid-template-columns:1fr}}
+.b-form .field{margin-bottom:10px}
+.b-form label{display:block;font-size:.88rem;font-weight:600;margin-bottom:3px}
+.b-form textarea.inp{min-height:84px;resize:vertical;width:100%}
+.b-form .inp{width:100%;box-sizing:border-box}
+.b-form h3{margin:18px 0 6px;font-size:1rem}
+.b-vorlagen{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.b-vorlagen button[aria-pressed="true"]{outline:3px solid var(--accent,#ff8a3c)}
+.b-vorschau{position:sticky;top:10px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff}
+.b-vorschau .leiste{display:flex;gap:8px;align-items:center;padding:8px;border-bottom:1px solid var(--line);background:var(--soft);flex-wrap:wrap}
+.b-vorschau iframe{width:100%;height:72vh;border:0;display:block;background:#fff}
+.b-vorschau.handy iframe{width:390px;margin:0 auto}
+.b-hinweis{border-left:4px solid #ff8a3c;padding:8px 12px;background:var(--card);border-radius:8px;margin:10px 0;font-size:.92rem}
+.b-posten{display:grid;grid-template-columns:1fr 90px 70px 32px;gap:6px;margin-bottom:6px}
+/* Druckbereiche */
+.papier{background:#fff;color:#111;margin:14px auto;box-shadow:0 2px 14px rgba(0,0,0,.15)}
+.a4{width:210mm;min-height:297mm;padding:18mm 18mm;box-sizing:border-box;font-family:"Space Grotesk",system-ui,sans-serif}
+.a4 table{width:100%;border-collapse:collapse;margin:14px 0}
+.a4 th,.a4 td{border-bottom:1px solid #ccc;padding:7px 4px;text-align:left;vertical-align:top}
+.a4 td.r,.a4 th.r{text-align:right;white-space:nowrap}
+.a4 .summe td{font-weight:700;border-top:2px solid #111;border-bottom:0}
+.a4 .kopf{display:flex;justify-content:space-between;gap:20px;border-bottom:3px solid #7c2d92;padding-bottom:10px;margin-bottom:16px}
+.a4 .unterschrift{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:40px}
+.a4 .unterschrift div{border-top:1px solid #111;padding-top:4px;font-size:.85rem}
+.flyer{width:210mm;height:297mm;box-sizing:border-box;padding:0;display:flex;flex-direction:column;font-family:"Space Grotesk",system-ui,sans-serif;overflow:hidden}
+.flyer .fk{padding:22mm 18mm 14mm;color:#fff}
+.flyer .fk h2{font-size:34pt;line-height:1.05;margin:0 0 6mm}
+.flyer .fk p{font-size:15pt;margin:0;opacity:.95}
+.flyer .fb{padding:12mm 18mm;flex:1;font-size:14pt}
+.flyer .fb ul{padding-left:0;list-style:none;margin:0}
+.flyer .fb li{padding:3mm 0 3mm 11mm;position:relative;border-bottom:1px solid #eee}
+.flyer .fb li::before{content:"✔";position:absolute;left:0;color:#ff8a3c;font-weight:700}
+.flyer .preis{margin-top:7mm;font-size:16pt;font-weight:600}
+.flyer .ff{display:flex;gap:10mm;align-items:center;padding:10mm 18mm;background:#f4f6fa}
+.flyer .ff svg{width:34mm;height:34mm}
+.flyer .ff .k{font-size:13pt}
+.flyer .marke{font-size:10pt;letter-spacing:.2em;text-transform:uppercase;opacity:.8;margin-bottom:8mm}
+.a6-bogen{width:210mm;height:297mm;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;box-sizing:border-box}
+.a6-bogen .flyer{width:auto;height:auto;border:1px dashed #bbb;transform:none}
+.a6-bogen .flyer .fk{padding:8mm 7mm 5mm}.a6-bogen .flyer .fk h2{font-size:17pt;margin-bottom:2mm}.a6-bogen .flyer .fk p{font-size:9pt}
+.a6-bogen .flyer .fb{padding:4mm 7mm;font-size:8.5pt}.a6-bogen .flyer .fb li{padding:1mm 0 1mm 5mm}
+.a6-bogen .flyer .ff{padding:4mm 7mm;gap:4mm}.a6-bogen .flyer .ff svg{width:20mm;height:20mm}.a6-bogen .flyer .ff .k{font-size:8pt}
+.a6-bogen .flyer .preis{font-size:9pt;margin-top:2mm}.a6-bogen .flyer .marke{font-size:6pt;margin-bottom:3mm}
+.vorschau-klein{transform-origin:top center}
+@media (max-width:900px){.papier{zoom:.45}}
+@media print{
+  @page{size:A4;margin:0}
+  body *{visibility:hidden}
+  .druck, .druck *{visibility:visible}
+  .druck{position:absolute;left:0;top:0;margin:0;box-shadow:none;zoom:1}
+  .kw-bar,.kw-foot{display:none}
+}

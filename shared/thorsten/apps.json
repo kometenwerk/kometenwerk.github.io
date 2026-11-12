@@ -422,6 +422,20 @@
         "Ohne Algorithmus",
         "Ohne Werbung"
       ]
+    },
+    {
+      "id": "einfach",
+      "name": "FIDELIA Einfach",
+      "marke": "fidelia",
+      "farbe": "#4d7c0f",
+      "status": "fertig",
+      "pfad": "einfach/",
+      "bilder": [],
+      "punkte": [
+        "Große Knöpfe",
+        "Familie mit Foto anrufen",
+        "Von der Familie eingerichtet"
+      ]
     }
   ]
 }

@@ -1756,6 +1756,24 @@
       "gruppe": "app_feed",
       "text": "Kein Algorithmus, keine Werbung. Nur Nachrichten.",
       "nr": 3
+    },
+    {
+      "id": "app-einfach-1",
+      "gruppe": "app_einfach",
+      "text": "Oma kommt mit dem Tablet nicht klar? Dann probier FIDELIA Einfach!",
+      "nr": 1
+    },
+    {
+      "id": "app-einfach-2",
+      "gruppe": "app_einfach",
+      "text": "Große Knöpfe: Familie anrufen, Fotos ansehen, Wetter – mehr nicht.",
+      "nr": 2
+    },
+    {
+      "id": "app-einfach-3",
+      "gruppe": "app_einfach",
+      "text": "Du richtest alles ein, Oma muss nur noch tippen.",
+      "nr": 3
     }
   ]
 }
