@@ -1,0 +1,56 @@
+.s-kopf{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:4px 0 14px}
+.s-kat{padding:12px;margin-bottom:12px}
+.s-kat-kopf{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.s-kat-kopf .inp{font-weight:600;flex:1}
+.s-ger{display:grid;grid-template-columns:1fr 90px;gap:6px;padding:8px 0;border-top:1px solid var(--line)}
+.s-ger .inp{width:100%;box-sizing:border-box}
+.s-ger .voll{grid-column:1/-1}
+.s-ger .tags{grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:.85rem}
+.s-ger .tags label{display:flex;gap:4px;align-items:center}
+.s-ger .tags .inp{width:120px}
+.s-hinweis{border-left:4px solid var(--accent);padding:8px 12px;background:var(--card);border-radius:8px;margin:10px 0;font-size:.92rem}
+.s-qr{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.s-qr svg{width:180px;height:180px;background:#fff;padding:8px;border-radius:8px}
+/* Gäste-Ansicht */
+body.gast .kw-bar,body.gast .kw-foot{display:none}
+body.gast{background:#faf8f4;color:#1c1917}
+.g-karte{max-width:720px;margin:0 auto;padding:0 0 40px;font-family:"Space Grotesk",system-ui,sans-serif}
+.g-kopf{background:var(--k,#14532d);color:#fff;padding:34px 22px 26px;text-align:center}
+.g-kopf h1{margin:0;font-size:2rem;line-height:1.1}
+.g-kopf p{margin:6px 0 0;opacity:.9}
+.g-nav{position:sticky;top:0;background:#faf8f4;display:flex;gap:6px;overflow-x:auto;padding:10px 14px;border-bottom:1px solid #e7e5e4;z-index:3;scrollbar-width:none}
+.g-nav a{flex:none;padding:7px 14px;border-radius:999px;background:#fff;border:1px solid #e7e5e4;color:#1c1917;text-decoration:none;font-weight:600;font-size:.92rem}
+.g-kat{padding:6px 18px}
+.g-kat h2{font-size:1.35rem;margin:22px 0 6px;color:var(--k,#14532d)}
+.g-ger{display:flex;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px dashed #d6d3d1}
+.g-ger b{font-size:1.05rem}
+.g-ger p{margin:3px 0 0;color:#57534e;font-size:.95rem}
+.g-ger .preis{font-weight:700;white-space:nowrap}
+.g-ger .t{display:inline-block;font-size:.75rem;padding:1px 7px;border-radius:999px;background:#ecfccb;color:#365314;margin-left:6px;vertical-align:2px}
+.g-ger .t.scharf{background:#fee2e2;color:#991b1b}
+.g-ger .al{font-size:.78rem;color:#78716c}
+.g-fuss{padding:20px 18px;font-size:.85rem;color:#57534e}
+.g-fuss summary{cursor:pointer;font-weight:600}
+.g-filter{display:flex;gap:8px;padding:8px 18px 0;flex-wrap:wrap}
+.g-filter button{border:1px solid #d6d3d1;background:#fff;border-radius:999px;padding:6px 12px;cursor:pointer;color:#1c1917}
+.g-filter button[aria-pressed="true"]{background:#365314;color:#fff;border-color:#365314}
+/* Druck */
+.druck-bogen{display:none}
+@media print{
+  @page{size:A4;margin:0}
+  body *{visibility:hidden}
+  .druck-bogen,.druck-bogen *{visibility:visible}
+  .druck-bogen{display:block;position:absolute;left:0;top:0;width:210mm}
+  .kw-bar,.kw-foot{display:none}
+}
+.aufsteller{width:210mm;height:297mm;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;font-family:"Space Grotesk",system-ui,sans-serif;color:#111}
+.aufsteller>div{border:1px dashed #bbb;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10mm;gap:4mm}
+.aufsteller h2{margin:0;font-size:18pt}
+.aufsteller svg{width:55mm;height:55mm}
+.aufsteller p{margin:0;font-size:11pt}
+.karte-druck{padding:16mm 18mm;font-family:"Space Grotesk",system-ui,sans-serif;color:#111;font-size:11pt}
+.karte-druck h1{text-align:center;margin:0}
+.karte-druck .u{text-align:center;margin:2mm 0 8mm;color:#444}
+.karte-druck h2{border-bottom:2px solid #111;font-size:14pt;margin:7mm 0 2mm;break-after:avoid}
+.karte-druck .z{display:flex;justify-content:space-between;gap:8mm;padding:1.6mm 0;break-inside:avoid}
+.karte-druck .z small{display:block;color:#555}

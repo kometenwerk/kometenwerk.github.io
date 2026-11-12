@@ -142,7 +142,11 @@
     ["Änderung", "Änderung an der Webseite (Texte, Bilder, Termine)", 10],
     ["Wartung / Monat", "Wartung pro Monat (bis zu 3 Änderungen)", 7],
     ["Tablet einrichten", "Tablet für ältere Menschen einrichten (große Ansicht, Kontakte, Fotos, Einweisung) – ca. 2 Stunden", 30],
-    ["Technik-Hilfe / Std.", "Technik-Hilfe oder Nachhilfe (pro Stunde)", 12]
+    ["Technik-Hilfe / Std.", "Technik-Hilfe oder Nachhilfe (pro Stunde)", 12],
+    ["Speisekarte", "Digitale Speisekarte mit QR-Aufstellern (FIDELIA Speisekarte) einrichten und drucken", 40],
+    ["Turnier", "Turnier planen (Spielplan, Tabelle) und am Turniertag Ergebnisse auf dem Beamer zeigen (FIDELIA Turnier)", 25],
+    ["Quiz-Show", "Quiz-Show mit Buzzern für eine Feier: Fragen vorbereiten und Technik aufbauen (FLARESSA Buzzer)", 30],
+    ["Fotobox", "Fotobox für eine Feier einrichten – Tablet mit Ständer stellt der Kunde, Fotos danach als ZIP (FLARESSA Fotobox)", 20]
   ];
   function blatt() {
     var a = S.angebot, sum = a.posten.reduce(function (s, x) { return s + (x.menge || 0) * (x.preis || 0); }, 0);
@@ -162,6 +166,7 @@
   var FLYER = {
     webseite: { farbe: "#7c2d92", titel: "Ihre eigene Webseite", unter: "Für Vereine, Läden, Ferienwohnungen und Handwerker – modern, schnell und fürs Handy gemacht.", punkte: ["Fertig in 1–3 Wochen", "Sieht auf Handy, Tablet und PC gut aus", "Keine Werbung, keine Tracker", "Termine, Öffnungszeiten, Kontakt – alles drin", "Änderungen später schnell erledigt"], preis: "Ab 75 € · erstes Gespräch kostenlos" },
     technik: { farbe: "#0369a1", titel: "Technik-Hilfe & Nachhilfe", unter: "Handy, Tablet oder Computer streikt? Ich erkläre es geduldig und in Ruhe.", punkte: ["Handy und Tablet einrichten", "WhatsApp, E-Mail und Videoanrufe erklären", "Fotos sichern und ordnen", "Drucker und WLAN verbinden", "Nachhilfe in Informatik und Mathe"], preis: "12 € pro Stunde" },
+    feste: { farbe: "#b45309", titel: "Digital für Feste & Vereine", unter: "Speisekarte zum Scannen, Turnierplan auf dem Beamer, Quiz-Show mit Buzzern und Fotobox – ich richte alles ein.", punkte: ["Digitale Speisekarte mit QR-Aufstellern", "Turnier: Spielplan, Tabelle, Beamer", "Quiz-Show mit Buzzern für die Feier", "Fotobox auf dem Tablet", "Ohne Werbung, ohne Abo"], preis: "Ab 20 € pro Einsatz" },
     tablet: { farbe: "#4d7c0f", titel: "Das Tablet für Oma und Opa", unter: "Große Knöpfe statt Durcheinander: Familie anrufen, Fotos ansehen, Wetter – ganz einfach.", punkte: ["Einrichtung mit FIDELIA Einfach", "Familie mit Foto – ein Tipp zum Anrufen", "Fotos der Enkel als Diashow", "Erinnerungen an Termine", "Persönliche Einweisung zu Hause"], preis: "Einrichtung ab 30 € (ca. 2 Stunden)" }
   };
   function flyerZeigen() {
@@ -177,7 +182,7 @@
     $("#fPreis").onchange = function () { fl.preise = this.checked; sichern(); flyerZeigen(); };
     $("#fDruck").onclick = function () { window.print(); };
     var x = FLYER[fl.art], qr = "";
-    try { var q = window.qrcode(0, "M"); q.addData(KUNDEN_URL + (fl.art === "tablet" ? "#tablet" : fl.art === "technik" ? "#hilfe" : "")); q.make(); qr = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }); } catch (e) {}
+    try { var q = window.qrcode(0, "M"); q.addData(KUNDEN_URL + (fl.art === "tablet" ? "#tablet" : fl.art === "technik" ? "#hilfe" : fl.art === "feste" ? "#vereine" : "")); q.make(); qr = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }); } catch (e) {}
     var einer = '<div class="flyer"><div class="fk" style="background:' + x.farbe + '"><div class="marke">FIDELIA Digital · OMNIVIA Group</div><h2>' + esc(x.titel) + "</h2><p>" + esc(x.unter) + '</p></div><div class="fb"><ul>' + x.punkte.map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("") + "</ul>" + (fl.preise ? '<div class="preis">' + esc(x.preis) + "</div>" : "") + '</div><div class="ff">' + qr + '<div class="k"><b>Einfach melden:</b><br>kometenwerk.kontakt@gmail.com<br>kometenwerk.github.io/kunden</div></div></div>';
     $("#flyerBlatt").innerHTML = fl.format === "a6" ? '<div class="a6-bogen">' + einer + einer + einer + einer + "</div>" : einer;
   }

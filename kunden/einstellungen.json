@@ -32,7 +32,7 @@
         "Kontakt & Anfahrt",
         "Einweisung, wie du Texte änderst"
       ],
-      "preis": "",
+      "preis": "ab 75 €",
       "hervor": false
     },
     {
@@ -45,7 +45,7 @@
         "Mannschaften, Team oder Angebot",
         "Texte und Termine selbst ändern"
       ],
-      "preis": "",
+      "preis": "ab 180 €",
       "hervor": true
     },
     {
@@ -58,7 +58,7 @@
         "Besondere Effekte & Animationen",
         "Hilfe bei eigener Internet-Adresse"
       ],
-      "preis": "",
+      "preis": "ab 250 €",
       "hervor": false
     },
     {
@@ -70,7 +70,7 @@
         "Funktioniert auch offline",
         "Ohne App-Store"
       ],
-      "preis": "",
+      "preis": "ab 40 €",
       "hervor": false
     }
   ],

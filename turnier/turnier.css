@@ -1,0 +1,42 @@
+.t-oben{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.t-oben select{flex:1;min-width:180px}
+.t-tab{margin-top:14px}
+.t-spiel{display:grid;grid-template-columns:64px 1fr 56px 14px 56px 1fr;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+.t-spiel .zeit{font-size:.82rem;color:var(--muted);line-height:1.2}
+.t-spiel .a{text-align:right;font-weight:600}
+.t-spiel .b{font-weight:600}
+.t-spiel input{text-align:center;padding:8px 4px;width:100%;box-sizing:border-box}
+.t-spiel.fertig .a,.t-spiel.fertig .b{opacity:.75}
+.t-spiel .sieg{color:var(--good)}
+.t-runde{margin:16px 0 4px;font-size:1rem}
+table.t-tab-tabelle{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.t-tab-tabelle th,.t-tab-tabelle td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:center}
+.t-tab-tabelle td:nth-child(2),.t-tab-tabelle th:nth-child(2){text-align:left}
+.t-tab-tabelle tr.weiter td:first-child{box-shadow:inset 4px 0 0 var(--good)}
+.t-baum{display:flex;gap:18px;overflow-x:auto;padding-bottom:10px}
+.t-baum .r{display:flex;flex-direction:column;justify-content:space-around;gap:10px;min-width:200px}
+.t-baum h3{font-size:.9rem;margin:0 0 6px;color:var(--muted);text-align:center}
+.t-ko{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px 8px}
+.t-ko .z{display:grid;grid-template-columns:1fr 48px;gap:6px;align-items:center;padding:3px 0}
+.t-ko .z input{text-align:center;padding:5px 2px;width:100%;box-sizing:border-box}
+.t-ko .z.gew{font-weight:700;color:var(--good)}
+.t-ko .elf{font-size:.78rem;color:var(--muted);margin-top:4px}
+.t-hinweis{border-left:4px solid var(--accent);padding:8px 12px;background:var(--card);border-radius:8px;margin:10px 0;font-size:.92rem}
+.t-sieger{font-size:1.4rem;font-weight:700;text-align:center;padding:14px;border-radius:14px;background:var(--app);color:var(--app-ink);margin:10px 0}
+/* Beamer / Zuschauer */
+body.beamer .kw-bar,body.beamer .kw-foot{display:none}
+body.beamer{background:#0b111c;color:#fff}
+body.beamer .kw-main{max-width:none;padding:2vh 3vw}
+body.beamer .card{background:#172133;border-color:#2a3650;color:#fff}
+.bm-kopf{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.bm-kopf h1{margin:0;font-size:clamp(1.4rem,3vw,2.6rem)}
+.bm-kopf button{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer}
+.bm-zwei{display:grid;grid-template-columns:3fr 2fr;gap:3vw;margin-top:2vh}
+@media (max-width:800px){.bm-zwei{grid-template-columns:1fr}}
+body.beamer .t-tab-tabelle{font-size:clamp(1rem,1.8vw,1.6rem)}
+body.beamer .t-tab-tabelle th,body.beamer .t-tab-tabelle td{border-color:#2a3650}
+.bm-spiel{display:flex;justify-content:space-between;gap:10px;padding:1.2vh 0;border-bottom:1px solid #2a3650;font-size:clamp(1rem,1.7vw,1.5rem)}
+.bm-spiel .z{color:#fcd34d;min-width:4.5em}
+@media print{.kw-bar,.kw-foot,.t-oben,.tabs,.no-print{display:none!important}body{background:#fff;color:#000}.t-spiel input{border:1px solid #999}}
+body.beamer .t-ko{background:#172133;border-color:#2a3650}
+body.beamer .t-baum h3{color:#9aa7bd}

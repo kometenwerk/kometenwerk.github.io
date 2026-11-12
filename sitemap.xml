@@ -34,4 +34,8 @@
   <url><loc>https://kometenwerk.github.io/datenschutz/</loc><lastmod>2026-10-16</lastmod><changefreq>yearly</changefreq><priority>0.3</priority></url>
   <url><loc>https://kometenwerk.github.io/einfach/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://kometenwerk.github.io/code/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kometenwerk.github.io/speisekarte/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kometenwerk.github.io/turnier/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kometenwerk.github.io/buzzer/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kometenwerk.github.io/fotobox/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
 </urlset>

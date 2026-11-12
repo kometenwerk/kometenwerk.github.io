@@ -1,0 +1,27 @@
+.f-hinweis{border-left:4px solid var(--accent);padding:8px 12px;background:var(--card);border-radius:8px;margin:10px 0;font-size:.92rem}
+.f-galerie{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.f-galerie figure{margin:0;position:relative}
+.f-galerie img{width:100%;border-radius:8px;display:block;background:#eee}
+.f-galerie button{position:absolute;top:4px;right:4px;border:0;border-radius:50%;width:30px;height:30px;background:rgba(0,0,0,.6);color:#fff;cursor:pointer}
+.f-galerie a{position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border-radius:8px;padding:2px 8px;text-decoration:none;font-size:.85rem}
+.f-vorschau-rahmen{max-width:360px}
+.f-vorschau-rahmen canvas{width:100%;border-radius:8px;box-shadow:var(--shadow)}
+/* Fotobox-Modus */
+body.box .kw-bar,body.box .kw-foot{display:none}
+body.box{background:#000;overflow:hidden}
+body.box .kw-main{max-width:none;padding:0}
+.b-box{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;color:#fff;user-select:none}
+.b-box video{width:100%;height:100%;object-fit:cover}
+.b-box video.spiegel{transform:scaleX(-1)}
+.b-titel{position:absolute;top:0;left:0;right:0;text-align:center;padding:18px;font-size:clamp(1.2rem,3vw,2.2rem);font-weight:600;background:linear-gradient(rgba(0,0,0,.55),transparent);text-shadow:0 2px 8px #000}
+.b-los{position:absolute;bottom:5vh;left:50%;transform:translateX(-50%);border:0;border-radius:999px;background:var(--app);color:#fff;font:inherit;font-weight:700;font-size:clamp(1.4rem,4vw,2.6rem);padding:20px 48px;cursor:pointer;box-shadow:0 6px 30px rgba(0,0,0,.5)}
+.b-zahl{position:absolute;font-size:min(40vw,40vh);font-weight:700;text-shadow:0 4px 30px #000;animation:puls 1s ease-out}
+@keyframes puls{from{transform:scale(1.4);opacity:0}30%{opacity:1}to{transform:scale(1);opacity:.9}}
+.b-blitz{position:absolute;inset:0;background:#fff;animation:blitz .45s ease-out forwards;pointer-events:none}
+@keyframes blitz{from{opacity:1}to{opacity:0}}
+.b-ergebnis{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(0,0,0,.88)}
+.b-ergebnis img{max-width:92vw;max-height:72vh;border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,.6)}
+.b-ergebnis .k{display:flex;gap:12px}
+.b-ergebnis button{border:0;border-radius:999px;font:inherit;font-weight:600;font-size:1.2rem;padding:14px 28px;cursor:pointer}
+.b-ecke{position:absolute;top:10px;right:10px;border:0;background:rgba(255,255,255,.15);color:#fff;border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer}
+.b-schritt{position:absolute;top:70px;left:50%;transform:translateX(-50%);font-size:1.4rem;font-weight:600;background:rgba(0,0,0,.5);padding:6px 16px;border-radius:999px}

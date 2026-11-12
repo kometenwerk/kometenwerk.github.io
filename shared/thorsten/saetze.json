@@ -1774,6 +1774,78 @@
       "gruppe": "app_einfach",
       "text": "Du richtest alles ein, Oma muss nur noch tippen.",
       "nr": 3
+    },
+    {
+      "id": "app-speisekarte-1",
+      "gruppe": "app_speisekarte",
+      "text": "Ein Café ohne digitale Karte? Dann probier FIDELIA Speisekarte!",
+      "nr": 1
+    },
+    {
+      "id": "app-speisekarte-2",
+      "gruppe": "app_speisekarte",
+      "text": "Gerichte eintragen, QR-Aufsteller drucken, fertig.",
+      "nr": 2
+    },
+    {
+      "id": "app-speisekarte-3",
+      "gruppe": "app_speisekarte",
+      "text": "Gäste sehen Preise, Allergene und alles Vegane sofort.",
+      "nr": 3
+    },
+    {
+      "id": "app-turnier-1",
+      "gruppe": "app_turnier",
+      "text": "Euer Turnier-Plan ist ein Zettelchaos? Dann probier FIDELIA Turnier!",
+      "nr": 1
+    },
+    {
+      "id": "app-turnier-2",
+      "gruppe": "app_turnier",
+      "text": "Teams eintragen, und der Spielplan steht sofort.",
+      "nr": 2
+    },
+    {
+      "id": "app-turnier-3",
+      "gruppe": "app_turnier",
+      "text": "Tabelle und K.-o.-Baum rechnen sich von selbst.",
+      "nr": 3
+    },
+    {
+      "id": "app-buzzer-1",
+      "gruppe": "app_buzzer",
+      "text": "Party ohne Programm? Dann probier FLARESSA Buzzer!",
+      "nr": 1
+    },
+    {
+      "id": "app-buzzer-2",
+      "gruppe": "app_buzzer",
+      "text": "Jedes Team bekommt eine Taste – wer zuerst buzzert, darf antworten.",
+      "nr": 2
+    },
+    {
+      "id": "app-buzzer-3",
+      "gruppe": "app_buzzer",
+      "text": "Punkte, Countdown und Sound inklusive.",
+      "nr": 3
+    },
+    {
+      "id": "app-fotobox-1",
+      "gruppe": "app_fotobox",
+      "text": "Keine Fotobox für die Feier? Dann probier FLARESSA Fotobox!",
+      "nr": 1
+    },
+    {
+      "id": "app-fotobox-2",
+      "gruppe": "app_fotobox",
+      "text": "Tablet aufstellen, Knopf drücken, lächeln.",
+      "nr": 2
+    },
+    {
+      "id": "app-fotobox-3",
+      "gruppe": "app_fotobox",
+      "text": "Mit Rahmen, Collage und allen Fotos als ZIP.",
+      "nr": 3
     }
   ]
 }

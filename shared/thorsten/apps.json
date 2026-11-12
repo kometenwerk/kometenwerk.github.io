@@ -436,6 +436,62 @@
         "Familie mit Foto anrufen",
         "Von der Familie eingerichtet"
       ]
+    },
+    {
+      "id": "speisekarte",
+      "name": "FIDELIA Speisekarte",
+      "marke": "fidelia",
+      "farbe": "#14532d",
+      "status": "fertig",
+      "pfad": "speisekarte/",
+      "bilder": [],
+      "punkte": [
+        "Speisekarte zum Scannen",
+        "QR-Aufsteller drucken",
+        "Ohne Server"
+      ]
+    },
+    {
+      "id": "turnier",
+      "name": "FIDELIA Turnier",
+      "marke": "fidelia",
+      "farbe": "#eab308",
+      "status": "fertig",
+      "pfad": "turnier/",
+      "bilder": [],
+      "punkte": [
+        "Gruppen und K.-o.",
+        "Tabelle automatisch",
+        "Beamer-Ansicht"
+      ]
+    },
+    {
+      "id": "buzzer",
+      "name": "FLARESSA Buzzer",
+      "marke": "flaressa",
+      "farbe": "#b45309",
+      "status": "fertig",
+      "pfad": "buzzer/",
+      "bilder": [],
+      "punkte": [
+        "Buzzern per Taste",
+        "Punkte und Timer",
+        "Für den Beamer"
+      ]
+    },
+    {
+      "id": "fotobox",
+      "name": "FLARESSA Fotobox",
+      "marke": "flaressa",
+      "farbe": "#be185d",
+      "status": "fertig",
+      "pfad": "fotobox/",
+      "bilder": [],
+      "punkte": [
+        "Countdown und Blitz",
+        "Rahmen mit eurem Text",
+        "Alle Fotos als ZIP"
+      ]
     }
   ]
 }
