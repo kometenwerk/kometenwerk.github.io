@@ -36,6 +36,7 @@ contextBridge.exposeInMainWorld("KC", {
   beiUpdateFortschritt: (f) => ipcRenderer.on("update:fortschritt", (_, p) => f(p)),
   sicherungSchreiben: (t) => ipcRenderer.invoke("sicherung:schreiben", t),
   sicherungLaden: () => ipcRenderer.invoke("sicherung:laden"),
+  projektOeffnen: () => ipcRenderer.invoke("projekt:oeffnen"),
   sicherungZeigen: () => ipcRenderer.invoke("sicherung:zeigen"),
   anNotizen: (x) => ipcRenderer.invoke("notizen:senden", x),
   version: () => ipcRenderer.invoke("version")

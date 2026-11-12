@@ -278,3 +278,29 @@ body.hell .ok-z{color:#11806b}body.hell .nein-z{color:#c03838}
 .z-mass{display:flex;align-items:center;gap:6px}.z-mass input{flex:1;min-width:0}.z-mass i{font-style:normal;color:var(--leise)}
 .z-feld input.falsch{border-color:var(--rot)!important}
 .z-fuss.warnung{background:#5a3a12;color:#ffe2b8;gap:10px}
+.mess-teile{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+.mess-dia{width:380px;max-width:100%}
+.mess-svg{width:100%;height:auto;display:block;background:rgba(0,0,0,.12);border-radius:4px}
+.mess-svg .achse{stroke:var(--leise);stroke-width:1}
+.mess-svg text{fill:var(--leise);font-size:10px}
+.mess-legende{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;font-size:12px}
+.mess-legende i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+.vollbild-count{position:fixed;inset:0;z-index:90;background:#0e1416;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;cursor:pointer;user-select:none}
+.vc-name{font-size:28px;color:#9fb3b8}
+.vc-zahl{font-size:120px;font-weight:700;line-height:1}
+.vc-hilfe{font-size:15px;color:#9fb3b8}
+.pc-test.rot{background:#8c1f1f}.pc-test.gruen{background:#127a3a}
+.pc-test .vc-zahl{font-size:84px}
+.wer-wahl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:4px 0 8px}
+.wer-wahl .check{display:flex;align-items:center;gap:4px}
+.lx-such{flex:1;background:#151c1f;border:1px solid var(--linie);border-radius:3px;padding:6px 10px}
+body.hell .lx-such,body.hell .fs textarea{background:#fff}
+.lx-liste,.fs-liste{max-height:58vh;overflow:auto}
+.lx{padding:7px 0;border-bottom:1px solid var(--linie)}
+.lx code{color:#7fcbcd;font-size:13px}body.hell .lx code{color:#00878f}
+.lx p{margin:3px 0 0;color:var(--leise)}
+.lx-fremd{margin-left:8px;font-size:11px;color:#ffd66b;background:rgba(230,179,64,.15);padding:1px 6px;border-radius:8px}
+.fs{padding:8px 0;border-bottom:1px solid var(--linie)}
+.fs p{margin:3px 0}
+.fs textarea{width:100%;margin-top:4px;background:#151c1f;border:1px solid var(--linie);border-radius:3px;padding:6px 8px;color:var(--text)}
+#projektInhalt .panel-fuss{flex-direction:column;align-items:stretch;gap:8px}

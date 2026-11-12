@@ -4,6 +4,7 @@
 import * as U from "./unterricht.js";
 import * as Zei from "./zeichnen.js";
 import { zip, base64 } from "./zip.js";
+import * as C from "./code-kern.js";
 
 const $ = (s) => document.querySelector(s);
 const esc = (t) => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -21,10 +22,102 @@ export const CHECKLISTE = [
 
 export function starten(A) {
   // A: { ed, Z, KC, toast, ausgabeStart, reiter, panelZeigen, untenAuf }
-  const P = Object.assign({ name: "Reaktionstester", versionen: [], messwerte: { probanden: [], werte: [], aktiv: 0, filter: "" }, zeichnungen: {}, unterricht: { an: false, extra: [] }, eigen: { an: false, sitzungen: [] }, checkliste: {}, tagebuch: [], teile: [] }, laden("kc-projekt", {}));
+  const P = Object.assign({ name: "Reaktionstester", versionen: [], messwerte: { probanden: [], werte: [], aktiv: 0, filter: "" }, zeichnungen: {}, unterricht: { an: false, extra: [] }, eigen: { an: false, sitzungen: [] }, checkliste: {}, tagebuch: [], teile: [], gruppe: [], fehler: [] }, laden("kc-projekt", {}));
+  if (!Array.isArray(P.gruppe)) P.gruppe = []; if (!Array.isArray(P.fehler)) P.fehler = [];
   if (!Array.isArray(P.tagebuch)) P.tagebuch = []; if (!Array.isArray(P.teile)) P.teile = [];
   const sichern = () => { try { localStorage.setItem("kc-projekt", JSON.stringify(P)); } catch (e) { A.toast("Speicher voll – lösch alte Versionen oder exportiere die Messwerte."); } };
   let erlaubt = U.erlaubteListe(P.unterricht.extra), intern = false, aufnahme = false;
+
+  /* ---------- Befehls-Lexikon (zum Nachschlagen, wie in der Bauanleitung) ---------- */
+  const SPRACHE = { void: "Funktion ohne Rückgabewert, z. B. setup und loop", int: "ganze Zahl (−32768 bis 32767)", long: "große ganze Zahl (für Zeiten in ms)", float: "Kommazahl", if: "wenn … dann: Bedingung in ( ), Anweisungen in { }", else: "sonst – gehört zu if", for: "Schleife mit Zähler: for (Start; Bedingung; Schritt)", while: "Schleife, solange die Bedingung stimmt", setup: "läuft einmal beim Start", loop: "läuft immer wieder" };
+  function lexikon() {
+    const eintraege = [];
+    for (const [n, w] of Object.entries(C.WISSEN)) eintraege.push({ n, aufbau: w[0] || w.aufbau, info: w[1] || w.info });
+    for (const [n, i] of Object.entries(C.KONSTANTEN)) eintraege.push({ n, aufbau: n, info: i });
+    for (const [n, i] of Object.entries(SPRACHE)) if (!eintraege.some(e => e.n === n)) eintraege.push({ n, aufbau: n, info: i });
+    const d = dialog('<h2>📚 Befehls-Lexikon</h2><div class="v-wahl"><input id="lxQ" class="lx-such" placeholder="Befehl suchen, z. B. tone"><label class="check"><input type="checkbox" id="lxNur"' + (P.unterricht.an ? " checked" : "") + '> nur aus dem Unterricht</label></div><div class="lx-liste"></div><div class="dialog-fuss"><button type="button" class="pill" data-a="zu">SCHLIESSEN</button></div>', "gross");
+    const malen = () => {
+      const q = d.querySelector("#lxQ").value.trim().toLowerCase(), nur = d.querySelector("#lxNur").checked;
+      const l = eintraege.filter(e => (!nur || !U.istFremd(e.n, erlaubt)) && (!q || e.n.toLowerCase().includes(q) || String(e.info).toLowerCase().includes(q))).sort((a, b) => (U.istFremd(a.n, erlaubt) - U.istFremd(b.n, erlaubt)) || a.n.localeCompare(b.n));
+      d.querySelector(".lx-liste").innerHTML = l.map(e => '<div class="lx"><code>' + esc(e.aufbau) + "</code>" + (U.istFremd(e.n, erlaubt) ? '<span class="lx-fremd">nicht im Unterricht</span>' : "") + "<p>" + esc(e.info) + "</p></div>").join("") || '<p class="leise">Nichts gefunden.</p>';
+    };
+    d.querySelector("#lxQ").oninput = malen; d.querySelector("#lxNur").onchange = malen; d.querySelector('[data-a="zu"]').onclick = () => d.close();
+    malen(); d.querySelector("#lxQ").focus();
+  }
+
+  /* ---------- Fehler-Sammlung: deine Fehler und wie du sie gelöst hast ---------- */
+  function fehlerMerken(liste) {
+    let neu = false;
+    for (const m of liste) {
+      if (m.art !== "fehler") continue;
+      const schl = String(m.text).replace(/„[^“]*“|"[^"]*"|'[^']*'/g, "…").slice(0, 120);
+      const da = P.fehler.find(f => f.schl === schl);
+      if (da) { da.anzahl++; da.zuletzt = Date.now(); } else { P.fehler.push({ schl, text: m.text, tipp: m.tipp || "", zeit: Date.now(), zuletzt: Date.now(), anzahl: 1, notiz: "" }); neu = true; }
+    }
+    if (P.fehler.length > 60) P.fehler = P.fehler.sort((a, b) => b.zuletzt - a.zuletzt).slice(0, 60);
+    sichern(); if (neu) zeigen();
+  }
+  function fehlerDialog() {
+    const d = dialog('<h2>🐞 Fehler-Sammlung</h2><p class="leise">Jeder Fehler, den der Übersetzer gefunden hat. Schreib dazu, wie du ihn gelöst hast – das hilft dir beim nächsten Mal (und im Protokoll bei „Probleme und Lösungen“).</p>' +
+      (P.fehler.length ? '<div class="fs-liste">' + P.fehler.slice().sort((a, b) => b.zuletzt - a.zuletzt).map(f => '<div class="fs"><b>' + esc(f.text) + '</b> <small class="leise">' + f.anzahl + "× · zuletzt " + new Date(f.zuletzt).toLocaleDateString("de-DE") + "</small>" + (f.tipp ? '<p class="leise">' + esc(f.tipp) + "</p>" : "") + '<textarea data-fs="' + esc(f.schl) + '" rows="2" placeholder="So habe ich es gelöst …">' + esc(f.notiz) + "</textarea></div>").join("") + "</div>" : '<p class="leise">Noch keine Fehler gesammelt – klick auf ✓ Prüfen, dann landen sie hier.</p>') +
+      '<div class="dialog-fuss links"><button type="button" class="pill hell klein" data-a="txt">ALS TEXT SPEICHERN</button><span class="sp"></span><button type="button" class="pill" data-a="zu">FERTIG</button></div>', "gross");
+    d.querySelectorAll("[data-fs]").forEach(t => t.oninput = () => { const f = P.fehler.find(x => x.schl === t.dataset.fs); if (f) { f.notiz = t.value; sichern(); } });
+    d.querySelector('[data-a="zu"]').onclick = () => d.close();
+    d.querySelector('[data-a="txt"]').onclick = async () => { const z = await A.KC.exportSpeichern({ name: dateiTeil(P.name) + "_Fehler.txt", art: "txt", text: fehlerText() }); if (z) A.toast("Gespeichert: " + z); };
+  }
+  const fehlerText = () => "Fehler-Sammlung – " + P.name + "\n\n" + P.fehler.map(f => "• " + f.text + " (" + f.anzahl + "×)\n  Gelöst: " + (f.notiz || "–")).join("\n\n") + "\n";
+
+  /* ---------- Gruppe: wer hat was gemacht ---------- */
+  function werWahl() {
+    if (!P.gruppe.length) return '<p class="leise klein">Tipp: Trag im Projekt-Bereich unter „Gruppe“ eure Namen ein, dann kannst du hier ankreuzen, wer mitgemacht hat.</p>';
+    return '<div class="wer-wahl"><span class="leise">Wer hat mitgemacht?</span>' + P.gruppe.map((n, i) => '<label class="check"><input type="checkbox" data-wer="' + i + '"' + (P.ich === n ? " checked" : "") + "> " + esc(n) + "</label>").join("") + "</div>";
+  }
+  function werLesen(d) { return [...d.querySelectorAll("[data-wer]:checked")].map(c => P.gruppe[Number(c.dataset.wer)]).filter(Boolean); }
+  function gruppeDialog() {
+    const d = dialog('<h2>👥 Gruppe</h2><label class="z-feld breit"><span>Namen der Gruppenmitglieder (durch Komma getrennt)</span><input id="gNamen" value="' + esc(P.gruppe.join(", ")) + '" placeholder="z. B. Max, Lena, Tim"></label><label class="z-feld breit"><span>Wer bin ich an diesem PC?</span><select id="gIch"><option value="">–</option>' + P.gruppe.map(n => "<option" + (P.ich === n ? " selected" : "") + ">" + esc(n) + "</option>").join("") + '</select></label><p class="leise">Nur Vornamen reichen. Sie stehen bei Versionen und im Tagebuch.</p><div class="dialog-fuss"><button type="button" class="pill" data-ok>OK</button></div>');
+    d.querySelector("#gNamen").oninput = () => { const n = d.querySelector("#gNamen").value.split(",").map(x => x.trim()).filter(Boolean); d.querySelector("#gIch").innerHTML = '<option value="">–</option>' + n.map(x => "<option>" + esc(x) + "</option>").join(""); };
+    d.querySelector("[data-ok]").onclick = () => { P.gruppe = [...new Set(d.querySelector("#gNamen").value.split(",").map(x => x.trim()).filter(Boolean))].slice(0, 8); P.ich = d.querySelector("#gIch").value || ""; sichern(); zeigen(); d.close(); };
+  }
+
+  /* ---------- Projekt mit der Gruppe teilen ---------- */
+  async function projektTeilen() {
+    const inhalt = JSON.stringify({ art: "kometenwerk-code-projekt", version: 1, zeit: new Date().toISOString(), von: P.ich || "", projekt: P, code: A.ed.wert, sketch: A.Z.name });
+    const z = await A.KC.exportSpeichern({ name: dateiTeil(P.name) + (P.ich ? "_" + dateiTeil(P.ich) : "") + ".kcprojekt", art: "kcprojekt", text: inhalt });
+    if (z) A.toast("Gespeichert: " + z + " – schick die Datei deiner Gruppe (z. B. über die Schul-Cloud).", 8000);
+  }
+  async function projektZusammenfuehren() {
+    const t = await A.KC.projektOeffnen(); if (!t) return;
+    let j; try { j = JSON.parse(t); } catch (e) { A.toast("Das ist keine Projekt-Datei."); return; }
+    if (!j.projekt || !/kometenwerk-code-(projekt|sicherung)/.test(j.art || "")) { A.toast("Das ist keine Kometenwerk-Code-Projekt-Datei."); return; }
+    const Q = j.projekt, von = j.von || "Gruppe";
+    if (!confirm("Projekt von " + von + " (" + datumZeit(j.zeit) + ") zu deinem dazunehmen? Deine eigenen Sachen bleiben erhalten.")) return;
+    await sicherungJetzt(true);
+    let neuV = 0, neuW = 0, neuT = 0;
+    // Versionen: gleiche (gleicher Code) überspringen, sonst hinten anhängen und neu nummerieren
+    for (const v of (Q.versionen || []).slice().sort((a, b) => a.zeit - b.zeit)) {
+      if (P.versionen.some(x => x.code === v.code && x.titel === v.titel)) continue;
+      P.versionen.push(Object.assign({}, v, { nr: (P.versionen.length ? P.versionen[P.versionen.length - 1].nr : 0) + 1, titel: v.titel + (v.nr ? " (" + von + " V" + v.nr + ")" : ""), wer: v.wer && v.wer.length ? v.wer : [von] })); neuV++;
+    }
+    P.versionen.sort((a, b) => a.zeit - b.zeit).forEach((v, i) => { v.nr = i + 1; });
+    // Messwerte: Probanden bekommen neue Nummern, gleiche Werte (gleiche Zeit) werden nicht doppelt genommen
+    const QM = Q.messwerte || { probanden: [], werte: [] }, umb = {};
+    for (const p of QM.probanden || []) { const nr = Math.max(0, ...M.probanden.map(x => x.nr)) + 1; umb[p.nr] = nr; M.probanden.push({ nr, name: "Proband " + nr + (von ? " (" + von + ")" : "") }); }
+    for (const w of QM.werte || []) { if (M.werte.some(x => x.zeit === w.zeit && x.wert === w.wert)) continue; M.werte.push(Object.assign({}, w, { p: umb[w.p] || w.p })); neuW++; }
+    M.probanden = M.probanden.filter(p => M.werte.some(w => w.p === p.nr) || !Object.values(umb).includes(p.nr));
+    // Tagebuch und Teile
+    for (const e of Q.tagebuch || []) if (!P.tagebuch.some(x => x.zeit === e.zeit && x.text === e.text)) { P.tagebuch.push(e); neuT++; }
+    P.tagebuch.sort((a, b) => a.zeit - b.zeit);
+    for (const t2 of Q.teile || []) if (!P.teile.some(x => String(x.name).toLowerCase() === String(t2.name).toLowerCase())) P.teile.push(t2);
+    for (const n of Q.gruppe || []) if (!P.gruppe.includes(n)) P.gruppe.push(n);
+    // Zeichnungen: nur wenn du selbst noch keine hast – sonst fragen
+    for (const [m, titel] of [["schaltplan", "Schaltplan"], ["fluss", "Flussdiagramm"], ["bauplan", "Technische Zeichnung"]]) {
+      const q = Q.zeichnungen && Q.zeichnungen[m]; if (!q || !q.el || !q.el.length) continue;
+      const eig = P.zeichnungen[m]; if (!eig || !eig.el || !eig.el.length || confirm(titel + ": Deine Zeichnung durch die von " + von + " ersetzen? (Abbrechen = deine behalten)")) P.zeichnungen[m] = q;
+    }
+    for (const [k, v] of Object.entries(Q.checkliste || {})) if (v) P.checkliste[k] = true;
+    sichern(); zeigen(); messZeigen();
+    A.toast("Zusammengeführt: " + neuV + " Versionen, " + neuW + " Messwerte, " + neuT + " Tagebuch-Einträge.", 7000);
+  }
 
   /* ---------- Automatische Sicherung (Dokumente/Kometenwerk Code/Sicherung) ---------- */
   let letzteSicherung = "";
@@ -50,16 +143,16 @@ export function starten(A) {
 
   /* ---------- Tagebuch (du schreibst, das Programm merkt Datum und Version) ---------- */
   async function tagebuchNeu() {
-    const d = dialog('<h2>📒 Tagebuch-Eintrag</h2><p class="leise">Was habt ihr heute gemacht? Was hat geklappt, was nicht? Das hilft dir später beim Protokoll.</p><label class="z-feld breit"><span>Eintrag (' + new Date().toLocaleDateString("de-DE") + " · " + esc(aktuelleVersion()) + ')</span><textarea id="tbText" rows="5"></textarea></label><div class="dialog-fuss"><button type="button" class="pill hell" data-x>ABBRECHEN</button><button type="button" class="pill" data-ok>SPEICHERN</button></div>');
+    const d = dialog('<h2>📒 Tagebuch-Eintrag</h2><p class="leise">Was habt ihr heute gemacht? Was hat geklappt, was nicht? Das hilft dir später beim Protokoll.</p><label class="z-feld breit"><span>Eintrag (' + new Date().toLocaleDateString("de-DE") + " · " + esc(aktuelleVersion()) + ')</span><textarea id="tbText" rows="5"></textarea></label>' + werWahl() + '<div class="dialog-fuss"><button type="button" class="pill hell" data-x>ABBRECHEN</button><button type="button" class="pill" data-ok>SPEICHERN</button></div>');
     d.querySelector("#tbText").focus();
     const ok = await new Promise(r => { d.querySelector("[data-ok]").onclick = () => r(true); d.querySelector("[data-x]").onclick = () => r(false); d.onclose = () => r(false); });
-    const t = d.querySelector("#tbText").value.trim(); d.close();
+    const t = d.querySelector("#tbText").value.trim(), wer = werLesen(d); d.close();
     if (!ok || !t) return;
-    P.tagebuch.push({ zeit: Date.now(), text: t, version: aktuelleVersion() }); sichern(); zeigen();
+    P.tagebuch.push({ zeit: Date.now(), text: t, version: aktuelleVersion(), wer }); sichern(); zeigen();
   }
-  function tagebuchText() { return "Projekt-Tagebuch – " + P.name + "\n\n" + (P.tagebuch.map(e => datumZeit(e.zeit) + "  (" + e.version + ")\n" + e.text + "\n").join("\n") || "(noch keine Einträge)\n"); }
+  function tagebuchText() { return "Projekt-Tagebuch – " + P.name + (P.gruppe.length ? "\nGruppe: " + P.gruppe.join(", ") : "") + "\n\n" + (P.tagebuch.map(e => datumZeit(e.zeit) + "  (" + e.version + ")" + (e.wer && e.wer.length ? "  · " + e.wer.join(", ") : "") + "\n" + e.text + "\n").join("\n") || "(noch keine Einträge)\n"); }
   function tagebuchDialog() {
-    const d = dialog("<h2>📒 Tagebuch</h2>" + (P.tagebuch.length ? '<ul class="tb-liste">' + P.tagebuch.map((e, i) => "<li><small>" + datumZeit(e.zeit) + " · " + esc(e.version) + '</small> <button type="button" class="symbol klein" data-weg="' + i + '" aria-label="Eintrag löschen">×</button><div>' + esc(e.text).replace(/\n/g, "<br>") + "</div></li>").reverse().join("") + "</ul>" : '<p class="leise">Noch keine Einträge.</p>') +
+    const d = dialog("<h2>📒 Tagebuch</h2>" + (P.tagebuch.length ? '<ul class="tb-liste">' + P.tagebuch.map((e, i) => "<li><small>" + datumZeit(e.zeit) + " · " + esc(e.version) + (e.wer && e.wer.length ? " · " + esc(e.wer.join(", ")) : "") + '</small> <button type="button" class="symbol klein" data-weg="' + i + '" aria-label="Eintrag löschen">×</button><div>' + esc(e.text).replace(/\n/g, "<br>") + "</div></li>").reverse().join("") + "</ul>" : '<p class="leise">Noch keine Einträge.</p>') +
       '<div class="dialog-fuss links"><button type="button" class="pill hell klein" data-a="neu">+ EINTRAG</button><button type="button" class="pill hell klein" data-a="txt">ALS TEXT SPEICHERN</button><span class="sp"></span><button type="button" class="pill klein" data-a="zu">SCHLIESSEN</button></div>', "gross");
     d.querySelector('[data-a="zu"]').onclick = () => d.close();
     d.querySelector('[data-a="neu"]').onclick = async () => { d.close(); await tagebuchNeu(); tagebuchDialog(); };
@@ -96,13 +189,13 @@ export function starten(A) {
     const nr = (letzte ? letzte.nr : 0) + 1;
     const d = dialog("<h2>Version " + nr + " speichern</h2><p class=\"leise\">Gib der Version einen kurzen Namen und schreib auf, was du geändert hast. So siehst du später (und deine Lehrkraft), wie dein Programm gewachsen ist.</p>" +
       '<label class="z-feld breit"><span>Name</span><input id="vName" placeholder="z. B. LED leuchtet nach Zufallszeit" maxlength="60"></label>' +
-      '<label class="z-feld breit"><span>Was hast du geändert? (optional)</span><textarea id="vNotiz" rows="3"></textarea></label>' +
+      '<label class="z-feld breit"><span>Was hast du geändert? (optional)</span><textarea id="vNotiz" rows="3"></textarea></label>' + werWahl() +
       '<div class="dialog-fuss"><button type="button" class="pill hell" data-x>ABBRECHEN</button><button type="button" class="pill" data-ok>SPEICHERN</button></div>');
     d.querySelector("#vName").focus();
     const ok = await new Promise(r => { d.querySelector("[data-ok]").onclick = () => r(true); d.querySelector("[data-x]").onclick = () => r(false); d.onclose = () => r(false); d.querySelector("#vName").onkeydown = (e) => { if (e.key === "Enter") r(true); }; });
-    const titel = d.querySelector("#vName").value.trim() || "Version " + nr, notiz = d.querySelector("#vNotiz").value.trim(); d.close(); d.remove();
+    const titel = d.querySelector("#vName").value.trim() || "Version " + nr, notiz = d.querySelector("#vNotiz").value.trim(), wer = werLesen(d); d.close(); d.remove();
     if (!ok) return;
-    const v = { nr, titel, notiz, zeit: Date.now(), code, sketch: A.Z.name };
+    const v = { nr, titel, notiz, zeit: Date.now(), code, sketch: A.Z.name, wer };
     P.versionen.push(v); sichern(); zeigen();
     let wo = "";
     if (A.KC && A.Z.pfad) { const z = await A.KC.versionAblegen({ pfad: A.Z.pfad, datei: "V" + nr + "_" + dateiTeil(titel) + ".ino", code }); if (z) wo = " – auch im Sketch-Ordner unter „Versionen“"; }
@@ -137,7 +230,7 @@ export function starten(A) {
   }
   function versionMenue(i) {
     const v = P.versionen[i];
-    const d = dialog("<h2>V" + v.nr + " · " + esc(v.titel) + '</h2><p class="leise">' + datumZeit(v.zeit) + (v.sketch ? " · Sketch „" + esc(v.sketch) + "“" : "") + "</p>" + (v.notiz ? "<p>" + esc(v.notiz) + "</p>" : "") +
+    const d = dialog("<h2>V" + v.nr + " · " + esc(v.titel) + '</h2><p class="leise">' + datumZeit(v.zeit) + (v.wer && v.wer.length ? " · von " + esc(v.wer.join(", ")) : "") + (v.sketch ? " · Sketch „" + esc(v.sketch) + "“" : "") + "</p>" + (v.notiz ? "<p>" + esc(v.notiz) + "</p>" : "") +
       '<pre class="v-code">' + esc(v.code) + '</pre><div class="dialog-fuss links"><button type="button" class="pill hell klein" data-a="vgl">MIT AKTUELLEM VERGLEICHEN</button>' + (i > 0 ? '<button type="button" class="pill hell klein" data-a="vor">MIT V' + P.versionen[i - 1].nr + " VERGLEICHEN</button>" : "") +
       '<button type="button" class="pill hell klein" data-a="ino">ALS .INO SPEICHERN</button><button type="button" class="pill hell klein" data-a="laden">IN DEN EDITOR LADEN</button><span class="sp"></span><button type="button" class="pill hell klein rot" data-a="weg">LÖSCHEN</button><button type="button" class="pill klein" data-a="zu">SCHLIESSEN</button></div>', "gross");
     const zu = () => { d.close(); d.remove(); };
@@ -153,9 +246,9 @@ export function starten(A) {
   const M = P.messwerte;
   function proband(nr) { return M.probanden.find(p => p.nr === nr); }
   function probandNeu() { const nr = Math.max(0, ...M.probanden.map(p => p.nr)) + 1; M.probanden.push({ nr, name: "Proband " + nr }); M.aktiv = nr; sichern(); messZeigen(); }
-  function wertDazu(wert, zeile) {
+  function wertDazu(wert, zeile, version) {
     if (!M.aktiv || !proband(M.aktiv)) probandNeu();
-    M.werte.push({ p: M.aktiv, wert, version: aktuelleVersion(), zeit: Date.now(), zeile: zeile ? String(zeile).slice(0, 80) : "" });
+    M.werte.push({ p: M.aktiv, wert, version: version || aktuelleVersion(), zeit: Date.now(), zeile: zeile ? String(zeile).slice(0, 80) : "" });
     sichern(); messZeigen(); zeigen();
   }
   function monZeile(z) {
@@ -176,18 +269,66 @@ export function starten(A) {
       '<select id="mP" aria-label="Proband">' + (wahl || "<option>– noch kein Proband –</option>") + '</select><button type="button" class="pill hell klein" id="mNeu">+ PROBAND</button>' +
       '<input id="mFilter" placeholder="nur Zeilen mit … (z. B. Zeit)" value="' + esc(M.filter) + '" title="Nur Zeilen aufnehmen, in denen dieses Wort vorkommt">' +
       '<input id="mHand" placeholder="Wert von Hand" inputmode="decimal" style="width:110px"><span class="sp"></span>' +
+      '<button type="button" class="pill hell klein" id="mSpiel" title="Reaktionstest am PC – zum Vergleich mit eurem Arduino-Tester">🎮 PC-TEST</button><button type="button" class="pill hell klein" id="mCount" title="Großer Countdown für den Probanden">⏱ COUNTDOWN</button>' +
       '<button type="button" class="pill hell klein" id="mCsv">EXCEL (CSV)</button><button type="button" class="pill hell klein" id="mKopie" title="Zum Einfügen in Excel oder FIDELIA Tabellen">KOPIEREN</button><button type="button" class="pill hell klein" id="mLeer">ALLE LÖSCHEN</button></div>' +
       '<p class="leise mess-info">' + (aufnahme ? "Nimmt aus dem Seriellen Monitor die erste Zahl jeder Zeile auf – für <b>" + esc((proband(M.aktiv) || {}).name || "") + "</b>. Version: " + esc(aktuelleVersion()) + "." : "Starte den Seriellen Monitor und dann die Aufnahme. Jeder Wert bekommt den Probanden und die Code-Version. Auswerten (Mittelwert, Diagramm) machst du selbst.") + "</p>" +
-      (tab ? '<table class="mess-tab"><thead><tr><th>Nr.</th><th>Wert</th><th>Version</th><th>Uhrzeit</th><th></th></tr></thead><tbody>' + tab + "</tbody></table>" : '<p class="leise">Noch keine Messwerte.</p>');
+      (tab ? '<div class="mess-teile"><table class="mess-tab"><thead><tr><th>Nr.</th><th>Wert</th><th>Version</th><th>Uhrzeit</th><th></th></tr></thead><tbody>' + tab + '</tbody></table><div class="mess-dia" aria-label="Messwerte als Punkte">' + punkteBild() + "</div></div>" : '<p class="leise">Noch keine Messwerte.</p>');
     r.querySelector("#mAuf").onclick = async () => { aufnahme = !aufnahme; if (aufnahme) { if (!M.probanden.length) probandNeu(); await A.monitorAn(); } messZeigen(); A.reiterMarke(aufnahme); };
     r.querySelector("#mP").onchange = (e) => { M.aktiv = Number(e.target.value); sichern(); messZeigen(); };
     r.querySelector("#mNeu").onclick = probandNeu;
     r.querySelector("#mFilter").onchange = (e) => { M.filter = e.target.value.trim(); sichern(); };
     r.querySelector("#mHand").onkeydown = (e) => { if (e.key !== "Enter") return; const v = Number(e.target.value.replace(",", ".")); if (e.target.value.trim() === "" || isNaN(v)) { A.toast("Bitte eine Zahl eingeben."); return; } wertDazu(v, "von Hand"); setTimeout(() => $("#mHand") && $("#mHand").focus(), 0); };
+    r.querySelector("#mSpiel").onclick = pcTest;
+    r.querySelector("#mCount").onclick = () => countdown(null);
     r.querySelector("#mCsv").onclick = async () => { if (!M.werte.length) { A.toast("Noch keine Messwerte."); return; } if (!A.KC) return; const z = await A.KC.exportSpeichern({ name: dateiTeil(P.name) + "_Messwerte.csv", art: "csv", text: csv() }); if (z) A.toast("Gespeichert: " + z); };
     r.querySelector("#mKopie").onclick = async () => { try { await navigator.clipboard.writeText(tabelle("\t")); A.toast("Kopiert – in Excel oder FIDELIA Tabellen einfügen (Strg+V)."); } catch (e) { A.toast("Kopieren ging nicht."); } };
     r.querySelector("#mLeer").onclick = () => { if (!M.werte.length || !confirm("Alle " + M.werte.length + " Messwerte löschen? Exportier sie vorher, wenn du sie noch brauchst.")) return; M.werte = []; sichern(); messZeigen(); zeigen(); };
     r.querySelectorAll("[data-weg]").forEach(b => b.onclick = () => { M.werte.splice(Number(b.dataset.weg), 1); sichern(); messZeigen(); zeigen(); });
+  }
+  // Nur zum Anschauen: jeder Wert ein Punkt (x = Versuch, y = Wert), eine Farbe pro Proband. Kein Mittelwert, keine Auswertung.
+  const FARBEN = ["#00a4ad", "#ff8a3c", "#a77bff", "#5fd35f", "#ff6b8b", "#e6b340", "#4ea1ff", "#c0c0c0"];
+  function punkteBild() {
+    const W = 360, H = 200, l = 44, o = 12, u = 26, rr = 10, nachP = new Map();
+    M.werte.forEach(w => { if (!nachP.has(w.p)) nachP.set(w.p, []); nachP.get(w.p).push(w.wert); });
+    const alle = M.werte.map(w => w.wert), max = Math.max(...alle, 1), min = Math.min(0, ...alle), n = Math.max(...[...nachP.values()].map(a => a.length), 1);
+    const px = (i) => l + (n === 1 ? (W - l - rr) / 2 : i / (n - 1) * (W - l - rr)), py = (v) => o + (1 - (v - min) / (max - min || 1)) * (H - o - u);
+    let h = '<svg viewBox="0 0 ' + W + " " + H + '" class="mess-svg"><line x1="' + l + '" y1="' + o + '" x2="' + l + '" y2="' + (H - u) + '" class="achse"/><line x1="' + l + '" y1="' + (H - u) + '" x2="' + (W - rr) + '" y2="' + (H - u) + '" class="achse"/>' +
+      '<text x="' + (l - 4) + '" y="' + (o + 4) + '" text-anchor="end">' + zahlDe(Math.round(max)) + '</text><text x="' + (l - 4) + '" y="' + (H - u) + '" text-anchor="end">' + zahlDe(Math.round(min)) + '</text><text x="' + ((W + l) / 2) + '" y="' + (H - 6) + '" text-anchor="middle">Versuch</text>';
+    let k = 0;
+    for (const [p, werte] of nachP) { const f = FARBEN[k++ % FARBEN.length]; werte.forEach((v, i) => { h += '<circle cx="' + px(i).toFixed(1) + '" cy="' + py(v).toFixed(1) + '" r="4" fill="' + f + '"><title>' + esc((proband(p) || {}).name || "") + ": " + zahlDe(v) + "</title></circle>"; }); }
+    h += "</svg>";
+    k = 0; h += '<div class="mess-legende">' + [...nachP.keys()].map(p => '<span><i style="background:' + FARBEN[k++ % FARBEN.length] + '"></i>' + esc((proband(p) || {}).name || "") + "</span>").join("") + "</div>";
+    return h + '<p class="leise klein">Nur zum Anschauen (z. B. Ausreißer finden). Auswerten machst du selbst.</p>';
+  }
+  // Großer Countdown für den Probanden (Vollbild)
+  function countdown(danach) {
+    const v = document.createElement("div"); v.className = "vollbild-count"; v.setAttribute("role", "dialog");
+    const name = (proband(M.aktiv) || {}).name || "Proband";
+    v.innerHTML = '<div class="vc-name">' + esc(name) + '</div><div class="vc-zahl">bereit?</div><div class="vc-hilfe">Leertaste oder Klick = Start · Esc = abbrechen</div>';
+    document.body.appendChild(v);
+    let laeuft = false;
+    const zu = () => { v.remove(); document.removeEventListener("keydown", taste, true); };
+    const start = () => { if (laeuft) return; laeuft = true; let n = 3; const z = v.querySelector(".vc-zahl"); z.textContent = n; const t = setInterval(() => { n--; if (n > 0) z.textContent = n; else { clearInterval(t); z.textContent = "LOS!"; setTimeout(() => { zu(); if (danach) danach(); }, 700); } }, 800); };
+    const taste = (e) => { if (e.key === "Escape") { e.preventDefault(); zu(); } else if (e.key === " " || e.key === "Enter") { e.preventDefault(); start(); } };
+    v.onclick = start; document.addEventListener("keydown", taste, true);
+  }
+  // Reaktionstest am PC: rot = warten, grün = so schnell wie möglich klicken / Leertaste
+  function pcTest() {
+    if (!M.probanden.length) probandNeu();
+    const runden = 5; let runde = 0, gruenAb = 0, timer = null;
+    const v = document.createElement("div"); v.className = "vollbild-count pc-test"; v.setAttribute("role", "dialog");
+    v.innerHTML = '<div class="vc-name">PC-Test · ' + esc((proband(M.aktiv) || {}).name || "") + '</div><div class="vc-zahl">Klick zum Starten</div><div class="vc-hilfe">Wenn es grün wird: sofort klicken oder Leertaste. ' + runden + " Runden · Esc = beenden</div>";
+    document.body.appendChild(v);
+    const zahl = v.querySelector(".vc-zahl");
+    const zu = () => { clearTimeout(timer); v.remove(); document.removeEventListener("keydown", taste, true); messZeigen(); zeigen(); };
+    const warten = () => { v.className = "vollbild-count pc-test rot"; zahl.textContent = "warten …"; gruenAb = 0; timer = setTimeout(() => { v.className = "vollbild-count pc-test gruen"; zahl.textContent = "JETZT!"; gruenAb = performance.now(); }, 1500 + Math.random() * 3000); };
+    const druck = () => {
+      if (v.classList.contains("rot")) { clearTimeout(timer); zahl.textContent = "Zu früh! Nochmal …"; v.className = "vollbild-count pc-test"; setTimeout(warten, 1200); return; }
+      if (gruenAb) { const ms = Math.round(performance.now() - gruenAb); gruenAb = 0; runde++; wertDazu(ms, "PC-Test", "PC-Test"); v.className = "vollbild-count pc-test"; zahl.textContent = ms + " ms"; if (runde >= runden) { setTimeout(() => { zahl.textContent = "Fertig – " + runden + " Werte gespeichert"; setTimeout(zu, 1400); }, 900); } else setTimeout(warten, 1200); return; }
+      if (!v.classList.contains("rot") && !v.classList.contains("gruen") && runde === 0 && zahl.textContent === "Klick zum Starten") warten();
+    };
+    const taste = (e) => { if (e.key === "Escape") { e.preventDefault(); zu(); } else if (e.key === " " || e.key === "Enter") { e.preventDefault(); druck(); } };
+    v.addEventListener("pointerdown", druck); document.addEventListener("keydown", taste, true);
   }
   function tabelle(trenn) {
     const nummer = new Map(); const zeilen = [["Proband", "Versuch", "Wert", "Code-Version", "Datum", "Uhrzeit"]];
@@ -263,13 +404,33 @@ export function starten(A) {
     Zei.oeffnen(modus, P.zeichnungen[modus], { name: P.name, KC: A.KC, toast: A.toast, code: () => A.ed.wert, speichern: (z) => { P.zeichnungen[modus] = z; sichern(); zeigen(); } });
   }
 
+  /* ---------- Folien für die Präsentation in FIDELIA Notizen ---------- */
+  // Bringt nur Bausteine rüber (Zeichnungen und die Messwert-Tabelle). Den Text der Präsentation schreibst du selbst.
+  async function folienNachNotizen() {
+    if (!A.KC || !A.KC.anNotizen) { A.toast("Geht erst mit der neuesten Version."); return; }
+    const bilder = [];
+    for (const [m, titel] of [["schaltplan", "Schaltplan"], ["fluss", "Flussdiagramm"], ["bauplan", "Technische Zeichnung"]]) {
+      const z = P.zeichnungen[m]; if (!z || !z.el || !z.el.length) continue;
+      try { bilder.push({ titel, bild: "data:image/png;base64," + await Zei.pngAusSvg(Zei.svgText(m, z), 1800) }); } catch (e) {}
+    }
+    let tabelle = null;
+    if (M.werte.length) {
+      const pr = M.probanden.filter(p => M.werte.some(w => w.p === p.nr)), spalten = pr.map(p => M.werte.filter(w => w.p === p.nr).map(w => zahlDe(w.wert)));
+      const n = Math.max(...spalten.map(c => c.length));
+      tabelle = [["Versuch", ...pr.map(p => p.name)], ...Array.from({ length: n }, (_, i) => [String(i + 1), ...spalten.map(c => c[i] || "")])];
+    }
+    if (!bilder.length && !tabelle) { A.toast("Es gibt noch keine Zeichnungen oder Messwerte."); return; }
+    const r = await A.KC.anNotizen({ art: "folien", name: P.name, gruppe: P.gruppe.join(", "), bilder, tabelle, fach: "NWT" });
+    if (r && r.ok) A.toast("FIDELIA Notizen öffnet sich und legt eine Präsentation mit " + bilder.length + " Zeichnung(en)" + (tabelle ? " und der Messwert-Tabelle" : "") + " an. Den Text schreibst du selbst.", 9000);
+  }
+
   /* ---------- Abgabe-Paket ---------- */
   async function abgabe() {
     if (!A.KC) { A.toast("Das Abgabe-Paket geht nur im PC-Programm."); return; }
     const wurzel = dateiTeil(P.name) + "/", dateien = [], liste = [];
     const sk = dateiTeil(A.Z.name || "sketch");
     dateien.push({ name: wurzel + "Code/aktuell_" + sk + "/aktuell_" + sk + ".ino", inhalt: A.ed.wert });
-    for (const v of P.versionen) { const n = "V" + v.nr + "_" + dateiTeil(v.titel); dateien.push({ name: wurzel + "Code/" + n + "/" + n + ".ino", inhalt: v.code }); liste.push("V" + v.nr + "  " + datumZeit(v.zeit) + "  " + v.titel + (v.notiz ? "\n     " + v.notiz.replace(/\n/g, "\n     ") : "")); }
+    for (const v of P.versionen) { const n = "V" + v.nr + "_" + dateiTeil(v.titel); dateien.push({ name: wurzel + "Code/" + n + "/" + n + ".ino", inhalt: v.code }); liste.push("V" + v.nr + "  " + datumZeit(v.zeit) + "  " + v.titel + (v.wer && v.wer.length ? "  [" + v.wer.join(", ") + "]" : "") + (v.notiz ? "\n     " + v.notiz.replace(/\n/g, "\n     ") : "")); }
     dateien.push({ name: wurzel + "Code/Versionen.txt", inhalt: "Programm-Versionen – " + P.name + "\n\n" + (liste.join("\n") || "(keine Versionen gespeichert)") + "\n" });
     if (M.werte.length) dateien.push({ name: wurzel + "Messwerte/Messwerte.csv", inhalt: csv() });
     for (const [modus, titel] of [["schaltplan", "Schaltplan"], ["fluss", "Flussdiagramm"], ["bauplan", "Technische_Zeichnung"]]) {
@@ -279,6 +440,7 @@ export function starten(A) {
     }
     if (E.sitzungen.length) dateien.push({ name: wurzel + "Eigenleistung.txt", inhalt: eigenBericht() });
     if (P.tagebuch.length) dateien.push({ name: wurzel + "Tagebuch.txt", inhalt: tagebuchText() });
+    if (P.fehler.some(f => f.notiz)) dateien.push({ name: wurzel + "Fehler-Sammlung.txt", inhalt: fehlerText() });
     if (P.teile.some(t => String(t.name).trim())) dateien.push({ name: wurzel + "Teileliste.csv", inhalt: teileCsv() });
     dateien.push({ name: wurzel + "Checkliste.txt", inhalt: "Protokoll-Checkliste – " + P.name + "\n\n" + CHECKLISTE.map(([k, t]) => (P.checkliste[k] ? "[x] " : "[ ] ") + t).join("\n") + "\n\nDas Protokoll selbst ist handschriftlich.\n" });
     const ziel = await A.KC.exportSpeichern({ name: dateiTeil(P.name) + "_Abgabe_" + new Date().toISOString().slice(0, 10) + ".zip", art: "zip", base64: base64(zip(dateien)) });
@@ -290,15 +452,18 @@ export function starten(A) {
     const s = $("#projektInhalt"); if (!s) return;
     const V = P.versionen, Z = P.zeichnungen, teile = (m) => (Z[m] && Z[m].el && Z[m].el.length) || 0, fertig = CHECKLISTE.filter(([k]) => P.checkliste[k]).length;
     s.innerHTML = '<input class="suchfeld" id="pName" value="' + esc(P.name) + '" aria-label="Projektname" title="Projektname">' +
+      '<h3>GRUPPE</h3><button type="button" class="p-knopf" id="pGruppe">👥 ' + (P.gruppe.length ? esc(P.gruppe.join(", ")) : "Namen eintragen") + '<small class="leise">' + (P.ich ? "ich: " + esc(P.ich) : "") + '</small></button><div class="such-knoepfe"><button type="button" class="pill hell klein" id="pTeilen" title="Alles in eine Datei für die Gruppe">PROJEKT TEILEN</button><button type="button" class="pill hell klein" id="pHolen" title="Datei von der Gruppe dazunehmen">VON GRUPPE LADEN</button></div>' +
+      '<h3>GRUPPE</h3><button type="button" class="p-knopf" id="pGruppe">👥 ' + (P.gruppe.length ? esc(P.gruppe.join(", ")) : "Namen eintragen") + '<small class="leise">' + (P.ich ? "ich: " + esc(P.ich) : "") + '</small></button><div class="such-knoepfe"><button type="button" class="pill hell klein" id="pTeilen" title="Alles in eine Datei für die Gruppe">PROJEKT TEILEN</button><button type="button" class="pill hell klein" id="pHolen" title="Datei von der Gruppe dazunehmen">VON GRUPPE LADEN</button></div>' +
       '<h3>VERSIONEN <small class="leise">· jetzt: ' + esc(aktuelleVersion()) + "</small></h3>" +
       '<ul class="liste">' + (V.length ? V.slice().reverse().slice(0, 30).map((v, j) => '<li><button type="button" data-v="' + (V.length - 1 - j) + '"><b>V' + v.nr + "</b> " + esc(v.titel) + '<small class="leise"> · ' + new Date(v.zeit).toLocaleDateString("de-DE") + "</small></button></li>").join("") : '<li class="leise">Noch keine Version.</li>') + "</ul>" +
       '<div class="such-knoepfe"><button type="button" class="pill klein" id="pVers">VERSION SPEICHERN</button>' + (V.length ? '<button type="button" class="pill hell klein" id="pVgl">VERGLEICHEN</button>' : "") + "</div>" +
       '<h3>MESSWERTE</h3><p class="p-zeile">' + (M.werte.length ? M.werte.length + " Werte · " + M.probanden.length + " Proband" + (M.probanden.length === 1 ? "" : "en") : '<span class="leise">noch keine</span>') + ' <button type="button" class="pill hell klein" id="pMess">ÖFFNEN</button></p>' +
       '<h3>TAGEBUCH UND TEILE</h3><button type="button" class="p-knopf" id="pTb">📒 Tagebuch<small class="leise">' + (P.tagebuch.length ? P.tagebuch.length + " Einträge" : "leer") + '</small></button><button type="button" class="p-knopf" id="pTeile">🧩 Teileliste<small class="leise">' + (P.teile.length ? P.teile.length + " Teile" : "leer") + "</small></button>" +
+      '<h3>LERNEN</h3><button type="button" class="p-knopf" id="pLex">📚 Befehls-Lexikon<small class="leise"></small></button><button type="button" class="p-knopf" id="pFehler">🐞 Fehler-Sammlung<small class="leise">' + (P.fehler.length || "leer") + "</small></button>" +
       "<h3>ZEICHNEN</h3>" + [["schaltplan", "🔌 Schaltplan"], ["fluss", "🔀 Flussdiagramm"], ["bauplan", "📐 Technische Zeichnung"]].map(([m, t]) => '<button type="button" class="p-knopf" data-z="' + m + '">' + t + '<small class="leise">' + (teile(m) ? teile(m) + " Teile" : "leer") + "</small></button>").join("") +
       '<h3>FAIR ARBEITEN</h3><button type="button" class="p-knopf" id="pUnt">🏫 Unterrichts-Modus<small class="' + (P.unterricht.an ? "ok-z" : "leise") + '">' + (P.unterricht.an ? "an" : "aus") + '</small></button><button type="button" class="p-knopf" id="pEig">✍️ Eigenleistungs-Nachweis<small class="' + (E.an ? "ok-z" : "leise") + '">' + (E.an ? "an" : "aus") + "</small></button>" +
       '<h3>PROTOKOLL <small class="leise">· ' + fertig + "/" + CHECKLISTE.length + '</small></h3><div class="p-check">' + CHECKLISTE.map(([k, t, ak]) => '<label><input type="checkbox" data-c="' + k + '"' + (P.checkliste[k] ? " checked" : "") + "><span>" + esc(t) + "</span>" + (ak ? '<button type="button" class="symbol klein" data-ak="' + ak + '" title="Öffnen" aria-label="' + esc(t) + ' öffnen">↗</button>' : "") + "</label>").join("") + '</div><p class="leise">Das Protokoll schreibst du von Hand – das Programm hakt nur ab.</p>' +
-      '<div class="panel-fuss"><button type="button" class="pill" id="pZip">ABGABE-PAKET (ZIP)</button></div>' +
+      '<div class="panel-fuss"><button type="button" class="pill" id="pZip">ABGABE-PAKET (ZIP)</button><button type="button" class="pill hell" id="pFolien" title="Zeichnungen und Messwert-Tabelle als Folien in FIDELIA Notizen">🎤 FOLIEN IN NOTIZEN</button></div>' +
       '<h3>SICHERUNG</h3><p class="leise">Alle 5 Minuten automatisch in Dokumente › Kometenwerk Code › Sicherung.</p><div class="such-knoepfe"><button type="button" class="pill hell klein" id="pSichJetzt">JETZT SICHERN</button><button type="button" class="pill hell klein" id="pSichLaden">LADEN …</button><button type="button" class="pill hell klein" id="pSichOrdner">ORDNER</button></div>';
     s.querySelector("#pName").onchange = (e) => { P.name = e.target.value.trim() || "Projekt"; sichern(); };
     s.querySelectorAll("[data-v]").forEach(b => b.onclick = () => versionMenue(Number(b.dataset.v)));
@@ -309,8 +474,10 @@ export function starten(A) {
     s.querySelector("#pUnt").onclick = unterrichtDialog; s.querySelector("#pEig").onclick = eigenDialog;
     s.querySelectorAll("[data-c]").forEach(c => c.onchange = () => { P.checkliste[c.dataset.c] = c.checked; sichern(); zeigen(); });
     s.querySelectorAll("[data-ak]").forEach(b => b.onclick = (e) => { e.preventDefault(); AKTIONEN[b.dataset.ak](); });
-    s.querySelector("#pZip").onclick = abgabe;
-    s.querySelector("#pTb").onclick = tagebuchDialog; s.querySelector("#pTeile").onclick = teileDialog;
+    s.querySelector("#pZip").onclick = abgabe; s.querySelector("#pFolien").onclick = folienNachNotizen;
+    s.querySelector("#pGruppe").onclick = gruppeDialog; s.querySelector("#pTeilen").onclick = projektTeilen; s.querySelector("#pHolen").onclick = projektZusammenfuehren;
+    s.querySelector("#pTb").onclick = tagebuchDialog;
+    s.querySelector("#pLex").onclick = lexikon; s.querySelector("#pFehler").onclick = fehlerDialog; s.querySelector("#pTeile").onclick = teileDialog;
     s.querySelector("#pSichJetzt").onclick = () => sicherungJetzt(true); s.querySelector("#pSichLaden").onclick = sicherungLaden; s.querySelector("#pSichOrdner").onclick = () => A.KC.sicherungZeigen();
   }
   function dialog(html, gross) { const d = document.createElement("dialog"); d.className = "dialog" + (gross ? " gross" : ""); d.innerHTML = html; document.body.appendChild(d); d.showModal(); d.addEventListener("close", () => setTimeout(() => d.remove(), 0)); return d; }
@@ -318,9 +485,9 @@ export function starten(A) {
   const AKTIONEN = {
     versionNeu: versionSpeichern, "p:versionen": () => { A.panelAuf("projekt"); if (P.versionen.length) vergleichen(P.versionen.length - 1, -1); },
     "p:messwerte": () => A.messwerteAuf(), "z:schaltplan": () => zeichnen("schaltplan"), "z:fluss": () => zeichnen("fluss"), "z:bauplan": () => zeichnen("bauplan"),
-    "p:unterricht": unterrichtDialog, "p:tagebuch": tagebuchNeu, "p:teile": teileDialog, "p:eigen": eigenDialog, "p:checkliste": () => A.panelAuf("projekt"), abgabe
+    "p:unterricht": unterrichtDialog, "p:lexikon": lexikon, "p:fehler": fehlerDialog, "p:teilen": projektTeilen, "p:holen": projektZusammenfuehren, "p:tagebuch": tagebuchNeu, "p:teile": teileDialog, "p:eigen": eigenDialog, "p:checkliste": () => A.panelAuf("projekt"), abgabe
   };
   unterrichtSetzen(P.unterricht.an);
   zeigen(); messZeigen();
-  return { AKTIONEN, zusatz, filter, beiEingabe, still, monZeile, zeigen, messZeigen, aktuelleVersion, diff, get P() { return P; } };
+  return { AKTIONEN, fehlerMerken, zusatz, filter, beiEingabe, still, monZeile, zeigen, messZeigen, aktuelleVersion, diff, get P() { return P; } };
 }

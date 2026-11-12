@@ -255,6 +255,7 @@ async function zeichnungHolen(port, token) {
   try {
     const r = await fetch("http://127.0.0.1:" + port + "/zeichnung?t=" + token);
     const j = await r.json();
+    if (j.art === "folien") return folienAusCode(j);
     if (!/^data:image\/png;base64,/.test(j.bild || "")) throw new Error("kein Bild");
     const fach = (A.einst.faecher || []).find(f => String(f.name).toLowerCase().includes(String(j.fach || "nwt").toLowerCase()));
     const titel = String(j.name || "Zeichnung").slice(0, 80);
@@ -266,6 +267,31 @@ async function zeichnungHolen(port, token) {
     KW.toast("Abholen ging nicht. Die Zeichnung liegt als Bild in Dokumente › Kometenwerk Code › Für Notizen – über 📥 Öffnen einfügen.");
     zeigen();
   }
+}
+// Präsentation aus Kometenwerk Code: Titelfolie, je Zeichnung eine Bild-Folie, Messwerte als Tabelle (Text schreibt man selbst)
+async function folienAusCode(j) {
+  const K = await import("./folien-kern.js");
+  const fach = (A.einst.faecher || []).find(f => String(f.name).toLowerCase().includes(String(j.fach || "nwt").toLowerCase()));
+  const titel = String(j.name || "Projekt").slice(0, 80), folien = [];
+  const t = K.neueFolie("titel"); t.el[0].html = "<p>" + KW.esc(titel) + "</p>"; if (t.el[1]) t.el[1].html = "<p>" + KW.esc(j.gruppe || "Name · Klasse") + "</p>"; folien.push(t);
+  for (const b of j.bilder || []) {
+    if (!/^data:image\/png;base64,/.test(b.bild || "")) continue;
+    const f = K.neueFolie("bildGross"); f.el[0].html = "<p>" + KW.esc(b.titel || "") + "</p>";
+    const bild = f.el.find(e => e.typ === "bild"); if (bild) bild.src = b.bild;
+    folien.push(f);
+  }
+  const tab = Array.isArray(j.tabelle) ? j.tabelle.map(z => (Array.isArray(z) ? z : []).slice(0, 8).map(x => String(x).slice(0, 40))) : null;
+  if (tab && tab.length > 1) {
+    const kopf = tab[0], rest = tab.slice(1);
+    for (let i = 0; i < rest.length; i += 10) {
+      const f = K.neueFolie("nurTitel"); f.el[0].html = "<p>Messwerte" + (rest.length > 10 ? " (" + (i / 10 + 1) + ")" : "") + "</p>";
+      f.el.push({ id: KW.id(), typ: "tabelle", x: 60, y: 130, w: 840, h: 370, groesse: 16, zeilen: [kopf, ...rest.slice(i, i + 10)] });
+      folien.push(f);
+    }
+  }
+  const s = await A.seiteNeu({ art: "folien", titel: titel + " – Präsentation", fach: fach ? fach.name : "", raster: "leer", design: "klar", folien });
+  KW.toast("✓ Präsentation mit " + (folien.length) + " Folien angelegt" + (fach ? " im Fach " + fach.name : "") + ". Den Text schreibst du selbst.");
+  A.gehe("folien/" + s.id);
 }
 function zeigen() {
   const h = decodeURIComponent(location.hash.slice(1)) || "start";

@@ -160,6 +160,7 @@ function ausgabeZeigen(code, roh, art) {
   const unt = N ? N.zusatz(code).filter(m => ![...r.meldungen, ...eigene].some(x => x.z === m.z && x.text === m.text)) : [];
   const alle = [...r.meldungen, ...(r.meldungen.some(m => m.art === "fehler") ? [] : eigene), ...unt].sort((a, b) => a.z - b.z);
   ed.meldungenSetzen(alle.filter(m => !unt.includes(m)));
+  if (N && /^(fehler|fehler-hoch|eigene)$/.test(art)) N.fehlerMerken(alle);
   const fehler = alle.filter(m => m.art === "fehler").length;
   let h = "";
   if (art === "ok-pruef" || art === "ok-hoch") {

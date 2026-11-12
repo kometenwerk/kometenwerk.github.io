@@ -260,15 +260,24 @@ ipcMain.handle("sicherung:laden", async () => {
   if (r.canceled || !r.filePaths[0]) return null;
   try { return fs.readFileSync(r.filePaths[0], "utf8"); } catch (e) { return null; }
 });
+ipcMain.handle("projekt:oeffnen", async () => {
+  const r = await dialog.showOpenDialog(fenster, { defaultPath: app.getPath("documents"), filters: [{ name: "Kometenwerk-Code-Projekt", extensions: ["kcprojekt", "json"] }], properties: ["openFile"] });
+  if (r.canceled || !r.filePaths[0]) return null;
+  try { return fs.readFileSync(r.filePaths[0], "utf8"); } catch (e) { return null; }
+});
 ipcMain.handle("sicherung:zeigen", async () => { fs.mkdirSync(sicherungOrdner(), { recursive: true }); shell.openPath(sicherungOrdner()); return true; });
 
 /* ---------- Zeichnung an FIDELIA Notizen schicken ---------- */
 // Kleiner Server nur auf diesem Computer (127.0.0.1): Notizen holt das Bild genau einmal ab, danach geht er wieder aus.
-ipcMain.handle("notizen:senden", async (_, { name, bild, fach }) => {
-  const token = crypto.randomBytes(12).toString("hex"), daten = JSON.stringify({ name, bild, fach });
+ipcMain.handle("notizen:senden", async (_, paket) => {
+  const { name, bild } = paket || {};
+  const token = crypto.randomBytes(12).toString("hex"), daten = JSON.stringify(paket);
   // zusätzlich als Datei ablegen (falls der Browser die Abholung blockiert)
   let datei = null;
-  try { const o = path.join(sketchbook(), "Für Notizen"); fs.mkdirSync(o, { recursive: true }); datei = path.join(o, String(name).replace(/[^\wäöüÄÖÜß -]+/g, "_") + ".png"); fs.writeFileSync(datei, Buffer.from(String(bild).split(",")[1] || "", "base64")); } catch (e) {}
+  try { const o = path.join(sketchbook(), "Für Notizen"); fs.mkdirSync(o, { recursive: true });
+    const bilder = bild ? [{ titel: name, bild }] : (paket.bilder || []);
+    for (const b of bilder) { datei = path.join(o, String(b.titel || name).replace(/[^\wäöüÄÖÜß -]+/g, "_") + ".png"); fs.writeFileSync(datei, Buffer.from(String(b.bild).split(",")[1] || "", "base64")); }
+  } catch (e) {}
   const server = http.createServer((req, res) => {
     const kopf = { "Access-Control-Allow-Origin": "https://kometenwerk.github.io", "Access-Control-Allow-Private-Network": "true", "Access-Control-Allow-Methods": "GET, OPTIONS", "Access-Control-Allow-Headers": "*", Vary: "Origin" };
     if (req.method === "OPTIONS") { res.writeHead(204, kopf); res.end(); return; }
@@ -284,7 +293,7 @@ ipcMain.handle("notizen:senden", async (_, { name, bild, fach }) => {
 });
 
 /* ---------- NWT-Werkzeuge: Dateien exportieren, Versionen ablegen, PDF/Drucken ---------- */
-const FILTER = { csv: ["Tabelle (CSV, öffnet in Excel)", "csv"], zip: ["ZIP-Archiv", "zip"], png: ["Bild (PNG)", "png"], svg: ["Zeichnung (SVG)", "svg"], pdf: ["PDF", "pdf"], ino: ["Arduino-Sketch", "ino"], txt: ["Text", "txt"] };
+const FILTER = { csv: ["Tabelle (CSV, öffnet in Excel)", "csv"], zip: ["ZIP-Archiv", "zip"], png: ["Bild (PNG)", "png"], svg: ["Zeichnung (SVG)", "svg"], pdf: ["PDF", "pdf"], ino: ["Arduino-Sketch", "ino"], txt: ["Text", "txt"], kcprojekt: ["Kometenwerk-Code-Projekt", "kcprojekt"] };
 async function speichernDialog(name, art) {
   const f = FILTER[art] || ["Datei", art];
   const r = await dialog.showSaveDialog(fenster, { defaultPath: path.join(app.getPath("documents"), name), filters: [{ name: f[0], extensions: [f[1]] }] });
@@ -351,7 +360,10 @@ function menueBauen() {
       { label: "Versionen und Vergleich", click: m("p:versionen") },
       { label: "Messwerte sammeln", click: m("p:messwerte") },
       { label: "Tagebuch-Eintrag …", accelerator: "CmdOrCtrl+Alt+T", click: m("p:tagebuch") },
-      { label: "Teileliste", click: m("p:teile") }, { type: "separator" },
+      { label: "Teileliste", click: m("p:teile") },
+      { label: "Fehler-Sammlung", click: m("p:fehler") },
+      { label: "Projekt mit der Gruppe teilen …", click: m("p:teilen") },
+      { label: "Projekt von der Gruppe laden …", click: m("p:holen") }, { type: "separator" },
       { label: "Schaltplan zeichnen", click: m("z:schaltplan") },
       { label: "Flussdiagramm zeichnen", click: m("z:fluss") },
       { label: "Technische Zeichnung (Bauplan)", click: m("z:bauplan") }, { type: "separator" },
@@ -363,6 +375,7 @@ function menueBauen() {
       { label: "Erste Schritte", click: m("hilfe") },
       { label: "Arduino wird nicht gefunden?", click: m("hilfePort") },
       { label: "Verbindung testen", click: m("verbindungTest") },
+      { label: "Befehls-Lexikon", accelerator: "F1", click: m("p:lexikon") },
       { label: "Nach Updates suchen", click: m("update") }, { type: "separator" },
       { label: "Über Kometenwerk Code", click: m("ueber") }] }
   ];

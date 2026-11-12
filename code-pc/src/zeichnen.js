@@ -92,13 +92,14 @@ export const LINIEN = {
   draht: { modus: "schaltplan", name: "Leitung", viele: true },
   pfeil: { modus: "fluss", name: "Pfeil", viele: true, felder: [["text", "Beschriftung (ja / nein)"]] },
   linie: { modus: "bauplan", name: "Linie", felder: [["stil", "Linienart", "wahl", [["voll", "Volllinie (Kante)"], ["verdeckt", "Strichlinie (verdeckte Kante)"], ["mittel", "Strichpunktlinie (Mittellinie)"], ["schmal", "schmale Volllinie"]]]] },
+  kette: { modus: "bauplan", name: "Maßkette", viele: true },
   mass: { modus: "bauplan", name: "Bemaßung", felder: [["abstand", "Abstand zur Kante", "laenge"], ["text", "Maßzahl selbst eintragen (leer = gemessen)"]] }
 };
 
 const PALETTE = {
   schaltplan: ["arduino", "led", "widerstand", "taster", "summer", "motor", "poti", "display", "masse", "plus", "knoten", "draht", "text"],
   fluss: ["start", "op", "verzweigung", "ea", "unter", "verbinder", "pfeil", "text"],
-  bauplan: ["platte", "ausschnitt", "bohrung", "linie", "mass", "text"]
+  bauplan: ["platte", "ausschnitt", "bohrung", "linie", "mass", "kette", "text"]
 };
 const TITEL = { schaltplan: "Schaltplan", fluss: "Flussdiagramm", bauplan: "Technische Zeichnung" };
 const RASTER = { schaltplan: 10, fluss: 10, bauplan: 1 };
@@ -127,9 +128,11 @@ function linieSvg(l, k, modus) {
   if (l.typ === "linie") { const st = l.stil || "voll", w = st === "voll" ? 0.5 : 0.25, da = st === "verdeckt" ? [3, 1.5] : st === "mittel" ? [8, 1.5, 1, 1.5] : null;
     return '<path d="' + d + '" style="stroke-width:' + r2(w / k) + (da ? ";stroke-dasharray:" + da.map(v => r2(v / k)).join(" ") : "") + '"/>'; }
   if (l.typ === "mass") return massSvg(l, k);
+  if (l.typ === "kette") return '<path d="' + d + '" style="stroke-width:' + r2(0.3 / k) + ";stroke-dasharray:" + r2(1.5 / k) + " " + r2(1 / k) + '"/>' + p.map(q => '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="' + r2(0.9 / k) + '" class="voll"/>').join("");
   return "";
 }
 function massSvg(l, k) {
+  if (l.richtung === "h" || l.richtung === "v") return massKetteSvg(l, k);
   const [p1, p2] = l.punkte, dx = p2[0] - p1[0], dy = p2[1] - p1[1], L = Math.hypot(dx, dy); if (!L) return "";
   const ux = dx / L, uy = dy / L, nx = -uy, ny = ux, a = l.abstand ?? 10, sg = a < 0 ? -1 : 1, ue = 2 / k;
   const q1 = [p1[0] + nx * a, p1[1] + ny * a], q2 = [p2[0] + nx * a, p2[1] + ny * a];
@@ -141,6 +144,19 @@ function massSvg(l, k) {
   h += '<text x="' + r2(mx) + '" y="' + r2(my) + '" font-size="' + r2(3.5 / k) + '" text-anchor="middle" class="txt" transform="rotate(' + r2(w) + " " + r2(mx) + " " + r2(my) + ')">' + esc(t) + "</text></g>";
   return h;
 }
+// Teil einer Maßkette: waagerecht (h) oder senkrecht (v), Maßlinie auf fester Höhe „lage“
+function massKetteSvg(l, k) {
+  const [p1, p2] = l.punkte, h = l.richtung === "h", ue = 2 / k;
+  const a = h ? p1[0] : p1[1], b = h ? p2[0] : p2[1], L = Math.abs(b - a); if (!L) return "";
+  const lage = l.lage, sg1 = Math.sign(lage - (h ? p1[1] : p1[0])) || 1, sg2 = Math.sign(lage - (h ? p2[1] : p2[0])) || 1;
+  const P = (u, v) => h ? [u, v] : [v, u];
+  const q1 = P(a, lage), q2 = P(b, lage), e1 = P(a, lage + sg1 * ue), e2 = P(b, lage + sg2 * ue), dir = Math.sign(b - a);
+  let o = '<g style="stroke-width:' + r2(0.25 / k) + '"><path d="M' + r2(p1[0]) + " " + r2(p1[1]) + "L" + r2(e1[0]) + " " + r2(e1[1]) + "M" + r2(p2[0]) + " " + r2(p2[1]) + "L" + r2(e2[0]) + " " + r2(e2[1]) + "M" + r2(q1[0]) + " " + r2(q1[1]) + "L" + r2(q2[0]) + " " + r2(q2[1]) + '"/>';
+  o += pfeilSpitze(q1[0], q1[1], h ? -dir : 0, h ? 0 : -dir, k) + pfeilSpitze(q2[0], q2[1], h ? dir : 0, h ? 0 : dir, k);
+  const t = l.text ? String(l.text) : masszahl(L), m = (a + b) / 2, tp = h ? [m, lage - 1 / k] : [lage - 1 / k, m];
+  o += '<text x="' + r2(tp[0]) + '" y="' + r2(tp[1]) + '" font-size="' + r2(3.5 / k) + '" text-anchor="middle" class="txt"' + (h ? "" : ' transform="rotate(-90 ' + r2(tp[0]) + " " + r2(tp[1]) + ')"') + ">" + esc(t) + "</text></g>";
+  return o;
+}
 function elementSvg(e, k) {
   const s = SYM[e.typ]; if (!s) return "";
   if (s.modus === "bauplan" && e.typ !== "text" || e.typ === "bohrung") return '<g transform="translate(' + e.x + " " + e.y + ')">' + s.svg(e, k) + "</g>";
@@ -151,9 +167,10 @@ function elementSvg(e, k) {
 
 /* ================= Blatt (Rahmen + Schriftfeld) für den Bauplan ================= */
 export const BLATT = { w: 297, h: 210 };
+export const blattMass = (z) => z && z.blatt === "A3" ? { w: 420, h: 297, name: "A3" } : { w: 297, h: 210, name: "A4" };
 function massstabFaktor(m) { const x = /^(\d+(?:[.,]\d+)?)\s*:\s*(\d+(?:[.,]\d+)?)$/.exec(String(m || "1:1").trim()); return x ? Number(x[1].replace(",", ".")) / Number(x[2].replace(",", ".")) || 1 : 1; }
-function schriftfeld(sf) {
-  const x0 = 287 - 180, y0 = 200 - 28, z = (x, y, w, h) => '<rect x="' + (x0 + x) + '" y="' + (y0 + y) + '" width="' + w + '" height="' + h + '"/>';
+function schriftfeld(sf, B = BLATT) {
+  const x0 = B.w - 10 - 180, y0 = B.h - 10 - 28, z = (x, y, w, h) => '<rect x="' + (x0 + x) + '" y="' + (y0 + y) + '" width="' + w + '" height="' + h + '"/>';
   const lab = (x, y, t) => '<text x="' + (x0 + x + 1) + '" y="' + (y0 + y + 2.6) + '" font-size="2">' + esc(t) + "</text>";
   const wert = (x, y, t, g = 3.5) => '<text x="' + (x0 + x + 1.5) + '" y="' + (y0 + y + 6) + '" font-size="' + g + '" class="txt">' + esc(t || "") + "</text>";
   let h = '<g class="sf" style="stroke-width:0.35">' + z(0, 0, 180, 28);
@@ -164,21 +181,22 @@ function schriftfeld(sf) {
   return h + "</g>";
 }
 export function blattSvg(z, mitRaster) {
-  const k = massstabFaktor(z.schriftfeld && z.schriftfeld.massstab);
-  let h = '<rect x="0" y="0" width="297" height="210" fill="#fff" stroke="none"/>';
-  if (mitRaster) h += '<g class="raster">' + Array.from({ length: Math.floor(297 / (5 * k)) + 1 }, (_, i) => '<path d="M' + r2(i * 5 * k) + ' 0V210"/>').join("") + Array.from({ length: Math.floor(210 / (5 * k)) + 1 }, (_, i) => '<path d="M0 ' + r2(i * 5 * k) + 'H297"/>').join("") + "</g>";
-  h += '<rect x="20" y="10" width="267" height="190" fill="none" style="stroke-width:0.7"/>' + schriftfeld(z.schriftfeld || {});
+  const k = massstabFaktor(z.schriftfeld && z.schriftfeld.massstab), B = blattMass(z);
+  let h = '<rect x="0" y="0" width="' + B.w + '" height="' + B.h + '" fill="#fff" stroke="none"/>';
+  if (mitRaster) h += '<g class="raster">' + Array.from({ length: Math.floor(B.w / (5 * k)) + 1 }, (_, i) => '<path d="M' + r2(i * 5 * k) + ' 0V' + B.h + '"/>').join("") + Array.from({ length: Math.floor(B.h / (5 * k)) + 1 }, (_, i) => '<path d="M0 ' + r2(i * 5 * k) + "H" + B.w + '"/>').join("") + "</g>";
+  h += '<rect x="20" y="10" width="' + (B.w - 30) + '" height="' + (B.h - 20) + '" fill="none" style="stroke-width:0.7"/>' + schriftfeld(z.schriftfeld || {}, B);
   return { h, k };
 }
 
 /* ================= SVG zum Speichern/Drucken ================= */
-const STIL = 'text{font-family:"Open Sans",Arial,sans-serif;fill:#000;stroke:none}.txt{fill:#000}path,rect,circle{fill:none;stroke:#000;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.dick{stroke-width:2}.voll{fill:#000}.draht{stroke-width:1.6}.sf rect{stroke-width:.35}.raster path{stroke:#e3e9ec;stroke-width:inherit}.raster{stroke-width:.15}';
+const STIL = 'text{font-family:"Open Sans",Arial,sans-serif;fill:#000;stroke:none}.txt{fill:#000}path,rect,circle{fill:none;stroke:#000;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.dick{stroke-width:2}.voll{fill:#000}.draht{stroke-width:1.6}.sf rect{stroke-width:.35}.raster path{stroke:#e3e9ec;stroke-width:inherit}.raster{stroke-width:.15}.ansicht-hilfe path{stroke:#4ea1ff}';
 export function svgText(modus, z) {
   EINH = (z && z.einheit) || "mm";
   if (modus === "bauplan") {
     const { h, k } = blattSvg(z, false);
     const inhalt = (z.el || []).map(e => e.punkte ? linieSvg(e, k, modus) : elementSvg(e, k)).join("");
-    return '<svg xmlns="http://www.w3.org/2000/svg" width="297mm" height="210mm" viewBox="0 0 297 210"><style>' + STIL + "path,rect,circle{stroke-width:.35}</style>" + h + '<g transform="scale(' + k + ')">' + inhalt + "</g></svg>";
+    const B = blattMass(z);
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + B.w + 'mm" height="' + B.h + 'mm" viewBox="0 0 ' + B.w + " " + B.h + '"><style>' + STIL + "path,rect,circle{stroke-width:.35}</style>" + h + '<g transform="scale(' + k + ')">' + inhalt + "</g></svg>";
   }
   const b = grenzen(z); const inhalt = (z.el || []).map(e => e.punkte ? linieSvg(e, 1, modus) : elementSvg(e, 1)).join("") + (z.titel ? T(b.x, b.y - 8, z.titel, 'font-size="16" font-weight="600"') : "");
   return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + [b.x - 20, b.y - (z.titel ? 34 : 20), b.w + 40, b.h + (z.titel ? 54 : 40)].join(" ") + '" width="' + (b.w + 40) + '" height="' + (b.h + (z.titel ? 54 : 40)) + '"><style>' + STIL + '</style><rect x="-99999" y="-99999" width="199999" height="199999" fill="#fff" stroke="none"/>' + inhalt + "</svg>";
@@ -195,14 +213,15 @@ function grenzen(z) {
 }
 export function druckHtml(modus, z) {
   const svg = svgText(modus, z);
-  return '<!doctype html><html><head><meta charset="utf-8"><style>@page{size:A4 landscape;margin:0}html,body{margin:0;padding:0}' + (modus === "bauplan" ? "svg{display:block;width:297mm;height:210mm}" : "body{display:flex;align-items:center;justify-content:center;width:297mm;height:210mm}svg{max-width:277mm;max-height:190mm;width:auto;height:auto}") + "</style></head><body>" + svg + "</body></html>";
+  const B = modus === "bauplan" ? blattMass(z) : BLATT;
+  return '<!doctype html><html><head><meta charset="utf-8"><style>@page{size:' + (B.name || "A4") + ' landscape;margin:0}html,body{margin:0;padding:0}' + (modus === "bauplan" ? "svg{display:block;width:" + B.w + "mm;height:" + B.h + "mm}" : "body{display:flex;align-items:center;justify-content:center;width:297mm;height:210mm}svg{max-width:277mm;max-height:190mm;width:auto;height:auto}") + "</style></head><body>" + svg + "</body></html>";
 }
 export function pngAusSvg(svg, breitePx) {
   return new Promise((ok, nein) => {
     const img = new Image();
     img.onload = () => { const s = breitePx / img.width, c = document.createElement("canvas"); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s); const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height); ok(c.toDataURL("image/png").split(",")[1]); };
     img.onerror = nein;
-    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg.replace(/width="297mm" height="210mm"/, 'width="1188" height="840"'));
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg.replace(/width="(\d+)mm" height="(\d+)mm"/, (_, w, h) => 'width="' + w * 4 + '" height="' + h * 4 + '"'));
   });
 }
 
@@ -261,7 +280,7 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
   }
   function werkzeugSetzen(w) { werkzeug = w; entwurf = null; pal.querySelectorAll("[data-w]").forEach(b => b.classList.toggle("an", b.dataset.w === w)); fussText(); malen(); }
   function fussText() {
-    const t = { auswahl: "Klick auf ein Teil, um es auszuwählen und zu verschieben. Entf = löschen, R = drehen, Strg+D = verdoppeln.", draht: "Leitung: Klick auf einen Anschluss, dann weitere Punkte; Klick auf einen anderen Anschluss beendet sie. Esc bricht ab.", pfeil: "Pfeil: Klick am Startpunkt (z. B. unten an einem Kasten), dann weitere Punkte; Klick auf einen Anschluss oder Doppelklick beendet ihn.", linie: "Linie: Anfangs- und Endpunkt anklicken. Rastet an Ecken, Mitten und Bohrungen ein.", mass: "Bemaßung: 1. Punkt, 2. Punkt anklicken, dann mit dem dritten Klick festlegen, wo die Maßlinie liegt." };
+    const t = { auswahl: "Klick auf ein Teil, um es auszuwählen und zu verschieben. Entf = löschen, R = drehen, Strg+D = verdoppeln.", draht: "Leitung: Klick auf einen Anschluss, dann weitere Punkte; Klick auf einen anderen Anschluss beendet sie. Esc bricht ab.", pfeil: "Pfeil: Klick am Startpunkt (z. B. unten an einem Kasten), dann weitere Punkte; Klick auf einen Anschluss oder Doppelklick beendet ihn.", linie: "Linie: Anfangs- und Endpunkt anklicken. Rastet an Ecken, Mitten und Bohrungen ein.", mass: "Bemaßung: 1. Punkt, 2. Punkt anklicken, dann mit dem dritten Klick festlegen, wo die Maßlinie liegt.", kette: "Maßkette: Punkte nacheinander anklicken (rastet an Kanten, Bohrungen, Mitten ein). Doppelklick dort, wo die Maßlinie liegen soll. Esc bricht ab." };
     fuss.textContent = t[werkzeug] || (SYM[werkzeug] ? "Klick auf die Fläche, um „" + SYM[werkzeug].name + "“ einzusetzen." : "");
   }
   function merken() { const s = JSON.stringify(z); if (s === verlauf[vPos]) return; verlauf.splice(vPos + 1); verlauf.push(s); if (verlauf.length > 80) verlauf.shift(); vPos = verlauf.length - 1; speichern(JSON.parse(s)); }
@@ -280,7 +299,7 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
   function malen() {
     const kk = k(); EINH = z.einheit || "mm";
     let w, h, vb;
-    if (modus === "bauplan") { vb = [0, 0, BLATT.w, BLATT.h]; w = BLATT.w * zoom; h = BLATT.h * zoom; }
+    if (modus === "bauplan") { const B = blattMass(z); vb = [0, 0, B.w, B.h]; w = B.w * zoom; h = B.h * zoom; }
     else { const b = grenzen(z); vb = [Math.min(0, b.x - 100), Math.min(0, b.y - 100), Math.max(1200, b.x + b.w + 300), Math.max(800, b.y + b.h + 300)]; vb[2] -= vb[0]; vb[3] -= vb[1]; w = vb[2] * zoom; h = vb[3] * zoom; }
     svg.setAttribute("viewBox", vb.join(" ")); svg.setAttribute("width", w); svg.setAttribute("height", h); svg.style.width = w + "px"; svg.style.height = h + "px";
     let o = "<style>" + STIL + (modus === "bauplan" ? "path,rect,circle{stroke-width:.35}" : "") + "</style>";
@@ -291,6 +310,12 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
       const inhalt = e.punkte ? linieSvg(e, kk, modus) : elementSvg(e, kk);
       const treff = e.punkte ? '<path d="M' + e.punkte.map(q => q.join(" ")).join("L") + '" class="treffer" style="stroke-width:' + (modus === "bauplan" ? 3 / kk : 10) + '"/>' : trefferFlaeche(e, kk);
       o += '<g data-id="' + e.id + '" class="teil' + (e.id === auswahl ? " gewaehlt" : "") + '">' + treff + inhalt + "</g>";
+    }
+    // Hilfslinien für die Ansichten: Kanten des gewählten Teils über das ganze Blatt verlängert (werden nicht gedruckt)
+    if (modus === "bauplan" && z.hilfslinien !== false) {
+      const g2 = z.el.find(e => e.id === auswahl && !e.punkte && e.typ !== "text");
+      if (g2) { const B = blattMass(z), W = B.w / kk, H = B.h / kk, xs = g2.typ === "bohrung" ? [g2.x - g2.d / 2, g2.x, g2.x + g2.d / 2] : [g2.x, g2.x + g2.w], ys = g2.typ === "bohrung" ? [g2.y - g2.d / 2, g2.y, g2.y + g2.d / 2] : [g2.y, g2.y + g2.h];
+        o += '<g class="ansicht-hilfe" style="stroke-width:' + r2(0.2 / kk) + ";stroke-dasharray:" + r2(2 / kk) + " " + r2(1.5 / kk) + '">' + xs.map(x2 => '<path d="M' + x2 + " 0V" + H + '"/>').join("") + ys.map(y2 => '<path d="M0 ' + y2 + "H" + W + '"/>').join("") + "</g>"; }
     }
     // Anschlüsse zeigen, wenn man Linien zieht
     if (LINIEN[werkzeug] || (ziehen && ziehen.griff != null)) for (const e of z.el) if (!e.punkte) for (const q of anschluesse(e)) o += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="' + (modus === "bauplan" ? 0.8 / kk : 3.5) + '" class="anschluss"/>';
@@ -316,27 +341,28 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
   function abstandAus([p1, p2], m) { const dx = p2[0] - p1[0], dy = p2[1] - p1[1], L = Math.hypot(dx, dy) || 1; return r2(((m[0] - p1[0]) * -dy + (m[1] - p1[1]) * dx) / L); }
 
   /* ---- Technische Zeichnung: passt sie aufs Blatt? ---- */
-  const NUTZ = { x0: 25, y0: 15, x1: 282, y1: 168 };   // Innenbereich des Rahmens über dem Schriftfeld (mm auf dem Papier)
+  const nutz = () => { const B = blattMass(z); return { x0: 25, y0: 15, x1: B.w - 15, y1: B.h - 42, w: B.w, h: B.h }; };   // Innenbereich des Rahmens über dem Schriftfeld (mm auf dem Papier)
   function bauBox() {
     let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity; const n = (x, y) => { a = Math.min(a, x); b = Math.min(b, y); c = Math.max(c, x); d = Math.max(d, y); };
     for (const e of z.el) {
-      if (e.punkte) { e.punkte.forEach(p => n(p[0], p[1])); if (e.typ === "mass" && e.punkte.length === 2) { const [p1, p2] = e.punkte, L = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) || 1, nx = -(p2[1] - p1[1]) / L, ny = (p2[0] - p1[0]) / L, ab = (e.abstand ?? 10) + Math.sign(e.abstand ?? 10) * 6; n(p1[0] + nx * ab, p1[1] + ny * ab); n(p2[0] + nx * ab, p2[1] + ny * ab); } }
+      if (e.punkte && e.richtung) { e.punkte.forEach(p => n(p[0], p[1])); if (e.richtung === "h") { n(e.punkte[0][0], e.lage - 6); n(e.punkte[1][0], e.lage + 3); } else { n(e.lage - 6, e.punkte[0][1]); n(e.lage + 3, e.punkte[1][1]); } }
+      else if (e.punkte) { e.punkte.forEach(p => n(p[0], p[1])); if (e.typ === "mass" && e.punkte.length === 2) { const [p1, p2] = e.punkte, L = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) || 1, nx = -(p2[1] - p1[1]) / L, ny = (p2[0] - p1[0]) / L, ab = (e.abstand ?? 10) + Math.sign(e.abstand ?? 10) * 6; n(p1[0] + nx * ab, p1[1] + ny * ab); n(p2[0] + nx * ab, p2[1] + ny * ab); } }
       else if (e.typ === "bohrung") { n(e.x - e.d / 2 - 3, e.y - e.d / 2 - 3); n(e.x + e.d / 2 + 3, e.y + e.d / 2 + 3); if (e.dmass) n(e.x + e.d / 2 + 20, e.y - e.d / 2 - 8); }
       else if (e.typ === "text") { n(e.x, e.y - 6); n(e.x + String(e.text || "").length * (e.groesse || 5) * 0.6, e.y); }
       else n(e.x, e.y), n(e.x + (e.w || 0), e.y + (e.h || 0));
     }
     return a === Infinity ? null : { x: a, y: b, w: c - a, h: d - b };
   }
-  function passtAufsBlatt() { const b = bauBox(); if (!b) return true; const kk = k(); return b.x * kk >= NUTZ.x0 - 5 && b.y * kk >= NUTZ.y0 - 5 && (b.x + b.w) * kk <= 287 && (b.y + b.h) * kk <= 200 && !((b.x + b.w) * kk > 107 && (b.y + b.h) * kk > 172); }
+  function passtAufsBlatt() { const b = bauBox(); if (!b) return true; const kk = k(), N = nutz(); return b.x * kk >= N.x0 - 5 && b.y * kk >= N.y0 - 5 && (b.x + b.w) * kk <= N.w - 10 && (b.y + b.h) * kk <= N.h - 10 && !((b.x + b.w) * kk > N.w - 190 && (b.y + b.h) * kk > N.h - 38); }
   function einpassen() {
     const b = bauBox(); if (!b) { toast("Erst etwas zeichnen."); return; }
-    const W = NUTZ.x1 - NUTZ.x0, H = NUTZ.y1 - NUTZ.y0, noetig = Math.min(W / b.w, H / b.h);
+    const NUTZ = nutz(), W = NUTZ.x1 - NUTZ.x0, H = NUTZ.y1 - NUTZ.y0, noetig = Math.min(W / b.w, H / b.h);
     const STUFEN = [[2, "2:1"], [1, "1:1"], [0.5, "1:2"], [0.4, "1:2,5"], [0.2, "1:5"], [0.1, "1:10"], [0.05, "1:20"]];
     const [kk, text] = STUFEN.find(([f]) => f <= noetig) || STUFEN[STUFEN.length - 1];
     z.schriftfeld = z.schriftfeld || {}; z.schriftfeld.massstab = text;
     // in die Mitte des freien Bereichs schieben (in echten mm)
     const zielX = (NUTZ.x0 + (W - b.w * kk) / 2) / kk, zielY = (NUTZ.y0 + (H - b.h * kk) / 2) / kk, dx = r2(zielX - b.x), dy = r2(zielY - b.y);
-    for (const e of z.el) { if (e.punkte) e.punkte = e.punkte.map(p => [r2(p[0] + dx), r2(p[1] + dy)]); else { e.x = r2(e.x + dx); e.y = r2(e.y + dy); } }
+    for (const e of z.el) { if (e.punkte) { e.punkte = e.punkte.map(p => [r2(p[0] + dx), r2(p[1] + dy)]); if (e.richtung) e.lage = r2(e.lage + (e.richtung === "h" ? dy : dx)); } else { e.x = r2(e.x + dx); e.y = r2(e.y + dy); } }
     merken(); malen(); toast("Maßstab " + text + " – die Zeichnung passt jetzt aufs Blatt.");
   }
 
@@ -344,14 +370,14 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
   function eigenschaften() {
     const e = z.el.find(x => x.id === auswahl), ziel = box.querySelector(".z-eig");
     if (!e) { ziel.innerHTML = '<h3>Eigenschaften</h3><p class="leise">Nichts ausgewählt.</p>'; extra(); return; }
-    const def = SYM[e.typ] || LINIEN[e.typ], felder = def.felder || [];
+    const def = SYM[e.typ] || LINIEN[e.typ], felder = e.typ === "mass" && e.richtung ? [["lage", "Lage der Maßlinie (" + (e.richtung === "h" ? "Y" : "X") + ")", "laenge"], ["text", "Maßzahl selbst eintragen (leer = gemessen)"]] : def.felder || [];
     ziel.innerHTML = "<h3>" + esc(def.name) + "</h3>" + felder.map(([k2, label, art, opt]) => '<label class="z-feld"><span>' + esc(label) + "</span>" +
       (art === "lang" ? '<textarea data-f="' + k2 + '" rows="2">' + esc(e[k2] ?? (SYM[e.typ] && SYM[e.typ].form ? "" : "")) + "</textarea>"
         : art === "janein" ? '<input type="checkbox" data-f="' + k2 + '"' + (e[k2] !== false && (e[k2] || k2 === "mitte") ? " checked" : "") + ">"
         : art === "wahl" ? '<select data-f="' + k2 + '">' + opt.map(([v, t]) => '<option value="' + v + '"' + ((e[k2] || opt[0][0]) === v ? " selected" : "") + ">" + esc(t) + "</option>").join("") + "</select>"
         : art === "laenge" ? '<span class="z-mass"><input data-f="' + k2 + '" inputmode="decimal" value="' + esc(e[k2] == null ? "" : masszahl(e[k2])) + '"><i>' + EINH + "</i></span>"
         : '<input data-f="' + k2 + '" ' + (art === "zahl" ? 'type="number" step="any"' : "") + ' value="' + esc(e[k2] ?? "") + '">') + "</label>").join("") +
-      (e.typ === "mass" ? '<p class="leise">Gemessen: ' + masszahl(Math.hypot(e.punkte[1][0] - e.punkte[0][0], e.punkte[1][1] - e.punkte[0][1])) + " " + EINH + "</p>" : "") +
+      (e.typ === "mass" ? '<p class="leise">Gemessen: ' + masszahl(e.richtung === "h" ? Math.abs(e.punkte[1][0] - e.punkte[0][0]) : e.richtung === "v" ? Math.abs(e.punkte[1][1] - e.punkte[0][1]) : Math.hypot(e.punkte[1][0] - e.punkte[0][0], e.punkte[1][1] - e.punkte[0][1])) + " " + EINH + "</p>" : "") +
       (!e.punkte && SYM[e.typ].pins ? '<p class="leise">Tipp: Leitungen rasten an den Anschlüssen ein.</p>' : "");
     ziel.querySelectorAll("[data-f]").forEach(f => {
       const art = (felder.find(x => x[0] === f.dataset.f) || [])[2];
@@ -383,10 +409,12 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
   function extra() {
     const x = box.querySelector(".z-extra");
     if (modus !== "schaltplan") { x.innerHTML = modus === "bauplan" ? '<h3>Einheit und Raster</h3><label class="z-feld"><span>Maße eingeben und anzeigen in</span><select id="zE"><option value="mm">mm (wie in der Norm)</option><option value="cm">cm</option></select></label><label class="z-feld"><span>Einrasten alle</span><select id="zR"><option value="0.5">0,5 mm</option><option value="1">1 mm</option><option value="5">5 mm (0,5 cm)</option><option value="10">10 mm (1 cm)</option></select></label>' +
-        '<h3>Blatt</h3><p class="leise">Maßstab jetzt: <b>' + esc((z.schriftfeld && z.schriftfeld.massstab) || "1:1") + '</b></p><button type="button" class="pill hell klein" id="zFit">📐 AUFS BLATT EINPASSEN</button><p class="leise">Wählt den passenden Maßstab (1:1, 1:2, 1:5 …) und schiebt die Zeichnung in den Rahmen. Die Maßzahlen bleiben die echten Maße. Du kannst auch „12,5 cm“ oder „120 mm“ eintippen. Beim Drucken „Tatsächliche Größe / 100 %“ wählen.</p>' : '<p class="leise">Symbole nach DIN 66001. Tipp: Verzweigung hat zwei Ausgänge – beschrifte die Pfeile mit „ja“ und „nein“.</p>';
+        '<h3>Blatt</h3><label class="z-feld"><span>Blattgröße</span><select id="zB"><option value="A4">A4 quer</option><option value="A3">A3 quer (für große Teile)</option></select></label><label class="check"><input type="checkbox" id="zH"' + (z.hilfslinien !== false ? " checked" : "") + '> Hilfslinien für Ansichten</label><p class="leise">Maßstab jetzt: <b>' + esc((z.schriftfeld && z.schriftfeld.massstab) || "1:1") + '</b></p><button type="button" class="pill hell klein" id="zFit">📐 AUFS BLATT EINPASSEN</button><p class="leise">Wählt den passenden Maßstab (1:1, 1:2, 1:5 …) und schiebt die Zeichnung in den Rahmen. Die Maßzahlen bleiben die echten Maße. Du kannst auch „12,5 cm“ oder „120 mm“ eintippen. Beim Drucken „Tatsächliche Größe / 100 %“ wählen.</p>' : '<p class="leise">Symbole nach DIN 66001. Tipp: Verzweigung hat zwei Ausgänge – beschrifte die Pfeile mit „ja“ und „nein“.</p>';
       const r = x.querySelector("#zR"); if (r) { r.value = String(z.raster || 1); r.onchange = () => { z.raster = Number(r.value); merken(); }; }
       const ei = x.querySelector("#zE"); if (ei) { ei.value = z.einheit || "mm"; ei.onchange = () => { z.einheit = ei.value; if (ei.value === "cm" && (z.raster || 1) < 5) z.raster = 5; merken(); malen(); }; }
       const fit = x.querySelector("#zFit"); if (fit) fit.onclick = einpassen;
+      const bl = x.querySelector("#zB"); if (bl) { bl.value = z.blatt || "A4"; bl.onchange = () => { z.blatt = bl.value; einpassenFenster(); merken(); malen(); }; }
+      const hl = x.querySelector("#zH"); if (hl) hl.onchange = () => { z.hilfslinien = hl.checked; merken(); malen(); };
       return; }
     const imCode = pinsAusCode(code ? code() : ""), imPlan = verbundenePins(z), hatUno = z.el.some(e => e.typ === "arduino");
     let h = "<h3>Pins: Code ↔ Plan</h3>";
@@ -401,9 +429,14 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
   }
 
   /* ---- Maus ---- */
+  let letzterDruck = { t: 0, x: 0, y: 0 };
   svg.addEventListener("pointerdown", (ev) => {
     if (ev.button !== 0) return;
     const p = punkt(ev);
+    // Doppelklick selbst erkennen (das Bild wird bei jedem Klick neu gezeichnet, dann kommt kein echtes dblclick)
+    const doppel = ev.timeStamp - letzterDruck.t < 400 && Math.hypot(ev.clientX - letzterDruck.x, ev.clientY - letzterDruck.y) < 6;
+    letzterDruck = { t: ev.timeStamp, x: ev.clientX, y: ev.clientY };
+    if (doppel && entwurf && LINIEN[entwurf.typ] && LINIEN[entwurf.typ].viele) { if (entwurf.typ === "kette") { entwurf.punkte = entwurf.punkte.slice(0, -1).length >= 2 && entwurf.zuletzt ? entwurf.punkte.slice(0, -1) : entwurf.punkte; ketteFertig(p); } else fertigLinie(); return; }
     if (werkzeug === "auswahl") {
       const gr = ev.target.closest("[data-griff]");
       if (gr) { ziehen = { griff: Number(gr.dataset.griff), id: auswahl }; svg.setPointerCapture(ev.pointerId); return; }
@@ -428,6 +461,7 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
         entwurf.abstand = abstandAus(entwurf.punkte, p); delete entwurf.maus; z.el.push(entwurf); auswahl = entwurf.id; entwurf = null; merken(); malen(); return;
       }
       let q = f.p; const letzte = entwurf.punkte[entwurf.punkte.length - 1];
+      if (werkzeug === "kette") { entwurf.zuletzt = q[0] !== letzte[0] || q[1] !== letzte[1]; if (entwurf.zuletzt) entwurf.punkte.push(q); malen(); return; }
       if (LINIEN[werkzeug].viele && !ev.shiftKey && letzte[0] !== q[0] && letzte[1] !== q[1]) entwurf.punkte.push([q[0], letzte[1]]);   // rechtwinklig
       if (q[0] !== letzte[0] || q[1] !== letzte[1]) entwurf.punkte.push(q);
       if (!LINIEN[werkzeug].viele || (f.pin && entwurf.punkte.length > 1)) fertigLinie(); else malen();
@@ -441,12 +475,22 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
     if (ziehen.griff != null) { e.punkte[ziehen.griff] = fang(p, e.id).p; malen(); return; }
     const dx = p[0] - ziehen.start[0], dy = p[1] - ziehen.start[1]; if (!ziehen.bewegt && Math.hypot(dx, dy) < (modus === "bauplan" ? 0.5 : 3)) return;
     ziehen.bewegt = true;
+    if (e.punkte && e.richtung) { e.lage = einrasten(ziehen.orig.lage + (e.richtung === "h" ? dy : dx)); malen(); return; }
     if (e.punkte) e.punkte = ziehen.orig.punkte.map(q => [einrasten(q[0] + dx), einrasten(q[1] + dy)]);
     else { e.x = einrasten(ziehen.orig.x + dx); e.y = einrasten(ziehen.orig.y + dy); drahtMitziehen(ziehen.orig, e); }
     malen();
   });
   svg.addEventListener("pointerup", () => { if (ziehen) { ziehen = null; merken(); malen(); } });
-  svg.addEventListener("dblclick", () => { if (entwurf && LINIEN[entwurf.typ].viele) fertigLinie(); });
+  svg.addEventListener("dblclick", (ev) => { if (entwurf && entwurf.typ === "kette") { ketteFertig(punkt(ev)); return; } if (entwurf && LINIEN[entwurf.typ].viele) fertigLinie(); });
+  // Maßkette in einzelne Maße zerlegen: alle auf derselben Linie (waagerecht oder senkrecht – je nach den ersten beiden Punkten)
+  function ketteFertig(maus) {
+    const p = entwurf.punkte.filter((q, i, a) => i === 0 || q[0] !== a[i - 1][0] || q[1] !== a[i - 1][1]);
+    if (p.length < 2) { toast("Mindestens zwei Punkte anklicken."); return; }
+    const h = Math.abs(p[1][0] - p[0][0]) >= Math.abs(p[1][1] - p[0][1]), lage = einrasten(h ? maus[1] : maus[0]);
+    const sortiert = p.slice().sort((a, b) => h ? a[0] - b[0] : a[1] - b[1]);
+    for (let i = 0; i < sortiert.length - 1; i++) { const a = sortiert[i], b = sortiert[i + 1]; if ((h ? b[0] - a[0] : b[1] - a[1]) < 0.01) continue; z.el.push({ id: neueId(), typ: "mass", richtung: h ? "h" : "v", lage, punkte: [a, b] }); }
+    entwurf = null; merken(); malen(); toast("Maßkette mit " + (sortiert.length - 1) + " Maßen.");
+  }
   // hängende Leitungen/Pfeile mitnehmen, wenn ein Teil verschoben wird
   function drahtMitziehen(alt, neu) {
     if (modus === "bauplan") return;
@@ -457,7 +501,7 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
       if (i >= 0) { const nb = ende === 0 ? 1 : l.punkte.length - 2, alte = l.punkte[ende]; l.punkte[ende] = [b[i][0], b[i][1]]; if (l.punkte.length > 2 && nb > 0 && nb < l.punkte.length - 1) { const nachbar = l.punkte[nb]; if (Math.abs(nachbar[1] - alte[1]) < 0.6) nachbar[1] = b[i][1]; else if (Math.abs(nachbar[0] - alte[0]) < 0.6) nachbar[0] = b[i][0]; } }
     }
   }
-  function fertigLinie() { if (!entwurf) return; delete entwurf.maus; if (entwurf.punkte.length >= 2) { z.el.push(entwurf); auswahl = entwurf.id; merken(); } entwurf = null; malen(); }
+  function fertigLinie() { if (!entwurf) return; if (entwurf.typ === "kette") { ketteFertig(entwurf.maus || entwurf.punkte[entwurf.punkte.length - 1]); return; } delete entwurf.maus; if (entwurf.punkte.length >= 2) { z.el.push(entwurf); auswahl = entwurf.id; merken(); } entwurf = null; malen(); }
 
   /* ---- Knöpfe und Tasten ---- */
   function loeschen() { if (!auswahl) return; z.el = z.el.filter(e => e.id !== auswahl); auswahl = null; merken(); malen(); }
@@ -505,12 +549,13 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
     else if (strg && t === "y") { ev.preventDefault(); zurueck(1); }
     else if (strg && t === "d") { ev.preventDefault(); verdoppeln(); }
     else if (!strg && t === "r") drehenAus();
-    else if (auswahl && /^Arrow/.test(ev.key)) { ev.preventDefault(); const e = z.el.find(x => x.id === auswahl), s = (ev.shiftKey ? 10 : 1) * (modus === "bauplan" ? (z.raster || 1) : 10), dx = ev.key === "ArrowLeft" ? -s : ev.key === "ArrowRight" ? s : 0, dy = ev.key === "ArrowUp" ? -s : ev.key === "ArrowDown" ? s : 0; if (e.punkte) e.punkte = e.punkte.map(q => [r2(q[0] + dx), r2(q[1] + dy)]); else { const alt = JSON.parse(JSON.stringify(e)); e.x = r2(e.x + dx); e.y = r2(e.y + dy); ziehen = { linien: {} }; drahtMitziehen(alt, e); ziehen = null; } merken(); malen(); }
+    else if (auswahl && /^Arrow/.test(ev.key)) { ev.preventDefault(); const e = z.el.find(x => x.id === auswahl), s = (ev.shiftKey ? 10 : 1) * (modus === "bauplan" ? (z.raster || 1) : 10), dx = ev.key === "ArrowLeft" ? -s : ev.key === "ArrowRight" ? s : 0, dy = ev.key === "ArrowUp" ? -s : ev.key === "ArrowDown" ? s : 0; if (e.punkte) { e.punkte = e.punkte.map(q => [r2(q[0] + dx), r2(q[1] + dy)]); if (e.richtung) e.lage = r2(e.lage + (e.richtung === "h" ? dy : dx)); } else { const alt = JSON.parse(JSON.stringify(e)); e.x = r2(e.x + dx); e.y = r2(e.y + dy); ziehen = { linien: {} }; drahtMitziehen(alt, e); ziehen = null; } merken(); malen(); }
   }
   document.addEventListener("keydown", taste, true);
   function schliessen() { merken(); document.removeEventListener("keydown", taste, true); box.remove(); }
   // Blatt ganz sichtbar machen (passend zum Fenster)
-  if (modus === "bauplan") { const fl = box.querySelector(".z-flaeche"); zoom = Math.max(1.2, Math.min(4, (fl.clientWidth - 44) / BLATT.w, (fl.clientHeight - 44) / BLATT.h)); }
+  const einpassenFenster = () => { const fl = box.querySelector(".z-flaeche"), B = blattMass(z); zoom = Math.max(0.8, Math.min(4, (fl.clientWidth - 44) / B.w, (fl.clientHeight - 44) / B.h)); };
+  if (modus === "bauplan") einpassenFenster();
   fussText(); malen();
   return { schliessen, get daten() { return z; } };
 }
