@@ -53,3 +53,32 @@
   .druck{position:absolute;left:0;top:0;margin:0;box-shadow:none;zoom:1}
   .kw-bar,.kw-foot{display:none}
 }
+/* Großes A4-Poster */
+.poster{width:210mm;height:297mm;box-sizing:border-box;display:flex;flex-direction:column;font-family:"Space Grotesk",system-ui,sans-serif;color:#101826;overflow:hidden;background:#fff}
+.p-kopf{position:relative;color:#fff;padding:16mm 16mm 12mm;display:flex;gap:8mm;align-items:center;overflow:hidden;min-height:64mm;box-sizing:border-box}
+.p-deko{position:absolute;right:-10mm;top:-6mm;width:130mm;height:100mm;pointer-events:none}
+.p-kt{position:relative;flex:1}
+.p-kt .marke{font-size:9pt;letter-spacing:.22em;text-transform:uppercase;opacity:.85;margin-bottom:5mm}
+.p-kt h2{font-size:34pt;line-height:1.02;margin:0 0 4mm;letter-spacing:-.01em}
+.p-kt p{font-size:13pt;margin:0;opacity:.95;max-width:120mm;line-height:1.35}
+.p-gross{position:relative;font-size:44pt;width:30mm;height:30mm;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;flex:none;margin-top:14mm}
+.p-inhalt{padding:7mm 16mm 3mm;flex:1}
+.p-z{display:flex;align-items:center;gap:5mm;padding:2.6mm 0;border-bottom:1px solid #eef0f4;font-size:13.5pt}
+.p-z>span:nth-child(2){flex:1}
+.p-ic{width:11mm;height:11mm;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15pt;flex:none}
+.p-preis{background:#ff8a3c;color:#101826;font-weight:600;border-radius:999px;padding:1.2mm 4mm;font-size:11.5pt;white-space:nowrap}
+.p-hinweis{margin-top:5mm;font-size:13pt;font-weight:600}
+.p-schritte{display:grid;grid-template-columns:repeat(3,1fr);gap:4mm;padding:2mm 16mm 6mm}
+.p-s{display:flex;gap:3mm;align-items:center;background:#f4f6fa;border-radius:4mm;padding:3.5mm}
+.p-s b{color:#fff;width:8mm;height:8mm;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;font-size:12pt}
+.p-s strong{display:block;font-size:11pt}.p-s small{font-size:9pt;color:#5b6578}
+.p-kontakt{display:flex;gap:7mm;align-items:center;padding:6mm 16mm;background:#f4f6fa}
+.p-kontakt svg{width:30mm;height:30mm;flex:none;background:#fff;padding:2mm;border-radius:2mm}
+.p-k1{font-size:12pt;font-weight:600;color:#5b6578;text-transform:uppercase;letter-spacing:.12em}
+.p-k2{font-size:17pt;font-weight:600;margin:1mm 0}
+.p-k3{font-size:10pt;color:#5b6578}
+.p-ab{display:grid;grid-template-columns:repeat(8,1fr);height:46mm;border-top:1.5px dashed #9aa7bd;flex:none}
+.p-ab div{border-right:1.5px dashed #9aa7bd;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.p-ab div:last-child{border-right:0}
+.p-ab span{transform:rotate(-90deg);white-space:nowrap;font-size:6.6pt;line-height:1.35;text-align:center}
+.p-ab b{font-size:7.5pt}
