@@ -15,7 +15,7 @@
   var S = Object.assign({
     seite: Object.assign({ vorlage: "verein", adresse: "Hauptstraße 1, 12345 Musterdorf", tel: "", mail: "", bild: "", impName: "", impAnschrift: "", impVertreten: "" }, VORLAGEN.verein),
     angebot: { nr: "", kunde: "", kundeAdresse: "", datum: "", gueltig: "4 Wochen", posten: [{ text: "Webseite mit 3–5 Unterseiten (Entwurf, Umsetzung, Handy-Ansicht)", menge: 1, preis: 180 }, { text: "Einrichtung der Internet-Adresse (Domain) – Kosten der Domain zahlt der Kunde direkt beim Anbieter", menge: 1, preis: 20 }], hinweis: "Änderungen nach der Fertigstellung: 10 € pro Änderung oder 7 € im Monat für bis zu 3 Änderungen.", absender: "FIDELIA Digital (OMNIVIA Group)", absenderName: "", kleinunternehmer: true },
-    flyer: { art: "webseite", format: "a4", preise: true }
+    flyer: { art: "alles", format: "a4", preise: true }
   }, KW.load(KEY, {}));
   var sichern = function () { KW.save(KEY, S); };
 
@@ -164,6 +164,7 @@
 
   /* ================= 3. Flyer ================= */
   var FLYER = {
+    alles: { farbe: "#101826", titel: "Ich helfe dir digital", unter: "Webseiten, Technik-Hilfe und Apps für Feste – aus der Region, geduldig erklärt, ohne Werbung und ohne Abo.", punkte: ["Webseite für Verein, Laden oder Ferienwohnung – ab 75 €", "Tablet für Oma und Opa einrichten – ab 30 €", "Technik-Hilfe & Nachhilfe – 12 € pro Stunde", "Speisekarte mit QR-Code – 40 €", "Turnier, Quiz-Show oder Fotobox fürs Fest – ab 20 €"], preis: "Das erste Gespräch ist kostenlos." },
     webseite: { farbe: "#7c2d92", titel: "Ihre eigene Webseite", unter: "Für Vereine, Läden, Ferienwohnungen und Handwerker – modern, schnell und fürs Handy gemacht.", punkte: ["Fertig in 1–3 Wochen", "Sieht auf Handy, Tablet und PC gut aus", "Keine Werbung, keine Tracker", "Termine, Öffnungszeiten, Kontakt – alles drin", "Änderungen später schnell erledigt"], preis: "Ab 75 € · erstes Gespräch kostenlos" },
     technik: { farbe: "#0369a1", titel: "Technik-Hilfe & Nachhilfe", unter: "Handy, Tablet oder Computer streikt? Ich erkläre es geduldig und in Ruhe.", punkte: ["Handy und Tablet einrichten", "WhatsApp, E-Mail und Videoanrufe erklären", "Fotos sichern und ordnen", "Drucker und WLAN verbinden", "Nachhilfe in Informatik und Mathe"], preis: "12 € pro Stunde" },
     feste: { farbe: "#b45309", titel: "Digital für Feste & Vereine", unter: "Speisekarte zum Scannen, Turnierplan auf dem Beamer, Quiz-Show mit Buzzern und Fotobox – ich richte alles ein.", punkte: ["Digitale Speisekarte mit QR-Aufstellern", "Turnier: Spielplan, Tabelle, Beamer", "Quiz-Show mit Buzzern für die Feier", "Fotobox auf dem Tablet", "Ohne Werbung, ohne Abo"], preis: "Ab 20 € pro Einsatz" },
