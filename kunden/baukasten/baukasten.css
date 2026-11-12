@@ -56,14 +56,15 @@
 /* Großes A4-Poster */
 .poster{width:210mm;height:297mm;box-sizing:border-box;display:flex;flex-direction:column;font-family:"Space Grotesk",system-ui,sans-serif;color:#101826;overflow:hidden;background:#fff}
 .p-kopf{position:relative;color:#fff;padding:16mm 16mm 12mm;display:flex;gap:8mm;align-items:center;overflow:hidden;min-height:64mm;box-sizing:border-box}
-.p-deko{position:absolute;right:-18mm;bottom:-10mm;width:150mm;height:82mm;opacity:.16;pointer-events:none}
+.p-deko{position:absolute;right:-18mm;bottom:-10mm;width:150mm;height:82mm;pointer-events:none}
+.p-deko{opacity:.14}
 .p-kt{position:relative;flex:1}
 .p-kt .marke{display:flex;align-items:center;gap:3mm;font-size:9pt;letter-spacing:.22em;text-transform:uppercase;margin-bottom:6mm}
 .p-kt .marke span{opacity:.9}
 .p-mini{width:16mm;height:9mm;flex:none}
 .p-kt h2{font-size:34pt;line-height:1.02;margin:0 0 4mm;letter-spacing:-.01em}
 .p-kt p{font-size:13pt;margin:0;opacity:.95;max-width:120mm;line-height:1.35}
-.p-gross{position:relative;font-size:44pt;width:30mm;height:30mm;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;flex:none;margin-top:14mm}
+.p-gross{position:relative;font-size:44pt;width:30mm;height:30mm;border-radius:50%;background:#ffffff;box-shadow:0 0 0 2.5mm rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;flex:none;margin-top:14mm}
 .p-inhalt{padding:7mm 16mm 3mm;flex:1}
 .p-z{display:flex;align-items:center;gap:5mm;padding:2.6mm 0;border-bottom:1px solid #eef0f4;font-size:13.5pt}
 .p-z>span:nth-child(2){flex:1}
