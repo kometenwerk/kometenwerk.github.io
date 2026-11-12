@@ -243,3 +243,35 @@ body.unterricht .tab{border-top-color:var(--gelb)}
 .z-fuss{height:26px;display:flex;align-items:center;padding:0 12px;background:var(--leiste);font-size:12px}
 .board-liste .fremd span{color:var(--leise);font-weight:400}
 .board-liste .liste-titel{font-size:11px;color:var(--leise);padding:8px 12px 2px;letter-spacing:.03em}
+
+/* ---------- Helles Design (wie Arduino IDE hell) ---------- */
+body.hell{--grund:#ffffff;--leiste:#f0f3f4;--panel:#f7f9f9;--linie:#d8e0e2;--text:#1d2b2e;--leise:#5f7176;--ed:#ffffff;--ed-nr:#f7f9f9;--ed-auswahl:#cde8ea}
+body.hell .leiste,body.hell .aktiv-leiste,body.hell .status,body.hell .z-kopf,body.hell .z-fuss{border-color:var(--linie)}
+body.hell .ed-text{caret-color:#000}
+body.hell .ed-nr{color:#9aa9ad}
+body.hell .c-typ,body.hell .c-schl,body.hell .c-konst{color:#00878f}body.hell .c-fn,body.hell .c-text,body.hell .c-zeichen{color:#c35d00}body.hell .c-zahl{color:#1d2b2e}body.hell .c-kommentar{color:#7f8c8d}body.hell .c-vor{color:#5b7f82}
+body.hell .p-knopf:hover,body.hell .z-k:hover,body.hell .z-palette button:hover{background:#e3ecee}
+body.hell .u-extra,body.hell .z-feld textarea,body.hell .z-feld input:not([type=checkbox]),body.hell .z-feld select,body.hell .v-diff,body.hell .v-code,body.hell .mess-zeile input,body.hell .mess-zeile select,body.hell .v-wahl select,body.hell .u-liste code{background:#fff;color:var(--text)}
+body.hell .z-flaeche{background:#c9d3d6}
+body.hell .ok-z{color:#11806b}body.hell .nein-z{color:#c03838}
+
+/* ---------- Verbindung testen ---------- */
+.ampel{list-style:none;padding:0;margin:10px 0}
+.ampel li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--linie)}
+.ampel li small{display:block;color:var(--leise);margin-top:2px}
+.ampel .lampe{width:14px;height:14px;border-radius:50%;flex:none;margin-top:3px;background:#777}
+.ampel .ja .lampe{background:#1da086;box-shadow:0 0 6px #1da086}.ampel .nein .lampe{background:#e05252;box-shadow:0 0 6px #e05252}.ampel .warn .lampe{background:#e6b340;box-shadow:0 0 6px #e6b340}
+
+/* ---------- Update-Leiste ---------- */
+.update-leiste{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--teal);border-radius:6px;padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:90vw}
+
+/* ---------- Tagebuch / Teileliste ---------- */
+.tb-liste{list-style:none;padding:0;margin:0 0 6px}
+.tb-liste li{padding:4px 0;border-bottom:1px solid var(--linie);font-size:12px}
+.tb-liste small{color:var(--leise)}
+.teile-tab{width:100%;border-collapse:collapse;margin:8px 0}
+.teile-tab td,.teile-tab th{border-bottom:1px solid var(--linie);padding:3px 4px;text-align:left}
+.teile-tab input{width:100%;background:transparent;border:1px solid transparent;border-radius:3px;padding:4px 6px;color:var(--text)}
+.teile-tab input:focus{border-color:var(--teal);outline:none}
+.teile-tab .anz{width:70px}
+.such-knoepfe{flex-wrap:wrap}

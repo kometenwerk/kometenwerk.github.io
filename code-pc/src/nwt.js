@@ -13,7 +13,7 @@ const dateiTeil = (t) => (String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "
 
 export const CHECKLISTE = [
   ["titel", "Titelseite"], ["inhalt", "Inhaltsübersicht"], ["einleitung", "Einleitung (Aufgabe und Ziel)"],
-  ["bau", "Entwurf und Bau (Teile, Aufbau)"], ["zeichnung", "Technische Zeichnung der Deckplatte", "z:bauplan"],
+  ["bau", "Entwurf und Bau (Teile, Aufbau)", "p:teile"], ["zeichnung", "Technische Zeichnung der Deckplatte", "z:bauplan"],
   ["schaltplan", "Schaltplan", "z:schaltplan"], ["fluss", "Flussdiagramm", "z:fluss"],
   ["code", "Programm-Versionen digital abgegeben", "p:versionen"], ["test", "Testergebnisse (Messwerte)", "p:messwerte"],
   ["auswertung", "Auswertung (selbst gerechnet / gezeichnet)"], ["fazit", "Fazit"]
@@ -21,9 +21,68 @@ export const CHECKLISTE = [
 
 export function starten(A) {
   // A: { ed, Z, KC, toast, ausgabeStart, reiter, panelZeigen, untenAuf }
-  const P = Object.assign({ name: "Reaktionstester", versionen: [], messwerte: { probanden: [], werte: [], aktiv: 0, filter: "" }, zeichnungen: {}, unterricht: { an: false, extra: [] }, eigen: { an: false, sitzungen: [] }, checkliste: {} }, laden("kc-projekt", {}));
+  const P = Object.assign({ name: "Reaktionstester", versionen: [], messwerte: { probanden: [], werte: [], aktiv: 0, filter: "" }, zeichnungen: {}, unterricht: { an: false, extra: [] }, eigen: { an: false, sitzungen: [] }, checkliste: {}, tagebuch: [], teile: [] }, laden("kc-projekt", {}));
+  if (!Array.isArray(P.tagebuch)) P.tagebuch = []; if (!Array.isArray(P.teile)) P.teile = [];
   const sichern = () => { try { localStorage.setItem("kc-projekt", JSON.stringify(P)); } catch (e) { A.toast("Speicher voll – lösch alte Versionen oder exportiere die Messwerte."); } };
   let erlaubt = U.erlaubteListe(P.unterricht.extra), intern = false, aufnahme = false;
+
+  /* ---------- Automatische Sicherung (Dokumente/Kometenwerk Code/Sicherung) ---------- */
+  let letzteSicherung = "";
+  async function sicherungJetzt(laut) {
+    if (!A.KC || !A.KC.sicherungSchreiben) return;
+    const inhalt = JSON.stringify({ art: "kometenwerk-code-sicherung", version: 1, zeit: new Date().toISOString(), projekt: P, entwurf: A.ed.wert, sketch: A.Z.name });
+    const ohneZeit = inhalt.replace(/"zeit":"[^"]*",/, "");
+    if (!laut && ohneZeit === letzteSicherung) return;
+    const r = await A.KC.sicherungSchreiben(inhalt);
+    if (r && r.ok) { letzteSicherung = ohneZeit; if (laut) A.toast("✔ Gesichert in " + r.ordner); }
+  }
+  setInterval(() => sicherungJetzt(false), 5 * 60 * 1000);
+  setTimeout(() => sicherungJetzt(false), 20000);
+  async function sicherungLaden() {
+    const t = await A.KC.sicherungLaden(); if (!t) return;
+    let j; try { j = JSON.parse(t); } catch (e) { A.toast("Das ist keine Sicherung."); return; }
+    if (j.art !== "kometenwerk-code-sicherung" || !j.projekt) { A.toast("Das ist keine Kometenwerk-Code-Sicherung."); return; }
+    if (!confirm("Sicherung vom " + datumZeit(j.zeit) + " laden? Dein jetziges Projekt (Versionen, Messwerte, Zeichnungen …) wird dadurch ersetzt.")) return;
+    await sicherungJetzt(true);
+    try { localStorage.setItem("kc-projekt", JSON.stringify(j.projekt)); if (j.entwurf) localStorage.setItem("kc-entwurf", JSON.stringify(j.entwurf)); } catch (e) {}
+    location.reload();
+  }
+
+  /* ---------- Tagebuch (du schreibst, das Programm merkt Datum und Version) ---------- */
+  async function tagebuchNeu() {
+    const d = dialog('<h2>📒 Tagebuch-Eintrag</h2><p class="leise">Was habt ihr heute gemacht? Was hat geklappt, was nicht? Das hilft dir später beim Protokoll.</p><label class="z-feld breit"><span>Eintrag (' + new Date().toLocaleDateString("de-DE") + " · " + esc(aktuelleVersion()) + ')</span><textarea id="tbText" rows="5"></textarea></label><div class="dialog-fuss"><button type="button" class="pill hell" data-x>ABBRECHEN</button><button type="button" class="pill" data-ok>SPEICHERN</button></div>');
+    d.querySelector("#tbText").focus();
+    const ok = await new Promise(r => { d.querySelector("[data-ok]").onclick = () => r(true); d.querySelector("[data-x]").onclick = () => r(false); d.onclose = () => r(false); });
+    const t = d.querySelector("#tbText").value.trim(); d.close();
+    if (!ok || !t) return;
+    P.tagebuch.push({ zeit: Date.now(), text: t, version: aktuelleVersion() }); sichern(); zeigen();
+  }
+  function tagebuchText() { return "Projekt-Tagebuch – " + P.name + "\n\n" + (P.tagebuch.map(e => datumZeit(e.zeit) + "  (" + e.version + ")\n" + e.text + "\n").join("\n") || "(noch keine Einträge)\n"); }
+  function tagebuchDialog() {
+    const d = dialog("<h2>📒 Tagebuch</h2>" + (P.tagebuch.length ? '<ul class="tb-liste">' + P.tagebuch.map((e, i) => "<li><small>" + datumZeit(e.zeit) + " · " + esc(e.version) + '</small> <button type="button" class="symbol klein" data-weg="' + i + '" aria-label="Eintrag löschen">×</button><div>' + esc(e.text).replace(/\n/g, "<br>") + "</div></li>").reverse().join("") + "</ul>" : '<p class="leise">Noch keine Einträge.</p>') +
+      '<div class="dialog-fuss links"><button type="button" class="pill hell klein" data-a="neu">+ EINTRAG</button><button type="button" class="pill hell klein" data-a="txt">ALS TEXT SPEICHERN</button><span class="sp"></span><button type="button" class="pill klein" data-a="zu">SCHLIESSEN</button></div>', "gross");
+    d.querySelector('[data-a="zu"]').onclick = () => d.close();
+    d.querySelector('[data-a="neu"]').onclick = async () => { d.close(); await tagebuchNeu(); tagebuchDialog(); };
+    d.querySelector('[data-a="txt"]').onclick = async () => { const z = await A.KC.exportSpeichern({ name: dateiTeil(P.name) + "_Tagebuch.txt", art: "txt", text: tagebuchText() }); if (z) A.toast("Gespeichert: " + z); };
+    d.querySelectorAll("[data-weg]").forEach(b => b.onclick = () => { if (!confirm("Eintrag löschen?")) return; P.tagebuch.splice(Number(b.dataset.weg), 1); sichern(); zeigen(); d.close(); tagebuchDialog(); });
+  }
+
+  /* ---------- Teileliste ---------- */
+  function teileDialog() {
+    const zeile = (t, i) => '<tr><td><input data-t="' + i + '" data-k="name" value="' + esc(t.name) + '" placeholder="z. B. Taster" aria-label="Teil"></td><td class="anz"><input data-t="' + i + '" data-k="anzahl" value="' + esc(t.anzahl) + '" inputmode="numeric" aria-label="Anzahl"></td><td><input data-t="' + i + '" data-k="wofuer" value="' + esc(t.wofuer) + '" placeholder="wofür?" aria-label="Wofür"></td><td><button type="button" class="symbol klein" data-weg="' + i + '" aria-label="Zeile löschen">×</button></td></tr>';
+    const d = dialog('<h2>🧩 Teileliste</h2><p class="leise">Welche Bauteile braucht ihr? Die Liste kommt ins Abgabe-Paket und lässt sich in Excel öffnen.</p><table class="teile-tab"><thead><tr><th>Teil</th><th>Anzahl</th><th>Wofür?</th><th></th></tr></thead><tbody></tbody></table>' +
+      '<div class="dialog-fuss links"><button type="button" class="pill hell klein" data-a="neu">+ ZEILE</button><button type="button" class="pill hell klein" data-a="csv">EXCEL (CSV)</button><span class="sp"></span><button type="button" class="pill klein" data-a="zu">FERTIG</button></div>', "gross");
+    const tb = d.querySelector("tbody");
+    const malen = () => { tb.innerHTML = P.teile.map(zeile).join("");
+      tb.querySelectorAll("input").forEach(i => i.oninput = () => { P.teile[i.dataset.t][i.dataset.k] = i.value; sichern(); });
+      tb.querySelectorAll("[data-weg]").forEach(b => b.onclick = () => { P.teile.splice(Number(b.dataset.weg), 1); sichern(); malen(); }); };
+    if (!P.teile.length) P.teile.push({ name: "Arduino Uno", anzahl: "1", wofuer: "" });
+    malen();
+    d.querySelector('[data-a="neu"]').onclick = () => { P.teile.push({ name: "", anzahl: "1", wofuer: "" }); malen(); tb.querySelector("tr:last-child input").focus(); };
+    d.querySelector('[data-a="csv"]').onclick = async () => { const z = await A.KC.exportSpeichern({ name: dateiTeil(P.name) + "_Teileliste.csv", art: "csv", text: teileCsv() }); if (z) A.toast("Gespeichert: " + z); };
+    d.querySelector('[data-a="zu"]').onclick = () => { P.teile = P.teile.filter(t => String(t.name).trim()); sichern(); zeigen(); d.close(); };
+  }
+  const teileCsv = () => "\ufeffTeil;Anzahl;Wofür\r\n" + P.teile.filter(t => String(t.name).trim()).map(t => [t.name, t.anzahl, t.wofuer].map(x => /[";\n]/.test(String(x)) ? '"' + String(x).replace(/"/g, '""') + '"' : x).join(";")).join("\r\n") + "\r\n";
 
   /* ---------- Versionen ---------- */
   function aktuelleVersion() {
@@ -219,6 +278,8 @@ export function starten(A) {
       try { const b = atob(await Zei.pngAusSvg(svg, modus === "bauplan" ? 3508 : 2400)); const u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); dateien.push({ name: wurzel + "Zeichnungen/" + titel + ".png", inhalt: u }); } catch (e) {}
     }
     if (E.sitzungen.length) dateien.push({ name: wurzel + "Eigenleistung.txt", inhalt: eigenBericht() });
+    if (P.tagebuch.length) dateien.push({ name: wurzel + "Tagebuch.txt", inhalt: tagebuchText() });
+    if (P.teile.some(t => String(t.name).trim())) dateien.push({ name: wurzel + "Teileliste.csv", inhalt: teileCsv() });
     dateien.push({ name: wurzel + "Checkliste.txt", inhalt: "Protokoll-Checkliste – " + P.name + "\n\n" + CHECKLISTE.map(([k, t]) => (P.checkliste[k] ? "[x] " : "[ ] ") + t).join("\n") + "\n\nDas Protokoll selbst ist handschriftlich.\n" });
     const ziel = await A.KC.exportSpeichern({ name: dateiTeil(P.name) + "_Abgabe_" + new Date().toISOString().slice(0, 10) + ".zip", art: "zip", base64: base64(zip(dateien)) });
     if (ziel) A.toast("Abgabe-Paket gespeichert (" + dateien.length + " Dateien): " + ziel, 8000);
@@ -233,10 +294,12 @@ export function starten(A) {
       '<ul class="liste">' + (V.length ? V.slice().reverse().slice(0, 30).map((v, j) => '<li><button type="button" data-v="' + (V.length - 1 - j) + '"><b>V' + v.nr + "</b> " + esc(v.titel) + '<small class="leise"> · ' + new Date(v.zeit).toLocaleDateString("de-DE") + "</small></button></li>").join("") : '<li class="leise">Noch keine Version.</li>') + "</ul>" +
       '<div class="such-knoepfe"><button type="button" class="pill klein" id="pVers">VERSION SPEICHERN</button>' + (V.length ? '<button type="button" class="pill hell klein" id="pVgl">VERGLEICHEN</button>' : "") + "</div>" +
       '<h3>MESSWERTE</h3><p class="p-zeile">' + (M.werte.length ? M.werte.length + " Werte · " + M.probanden.length + " Proband" + (M.probanden.length === 1 ? "" : "en") : '<span class="leise">noch keine</span>') + ' <button type="button" class="pill hell klein" id="pMess">ÖFFNEN</button></p>' +
+      '<h3>TAGEBUCH UND TEILE</h3><button type="button" class="p-knopf" id="pTb">📒 Tagebuch<small class="leise">' + (P.tagebuch.length ? P.tagebuch.length + " Einträge" : "leer") + '</small></button><button type="button" class="p-knopf" id="pTeile">🧩 Teileliste<small class="leise">' + (P.teile.length ? P.teile.length + " Teile" : "leer") + "</small></button>" +
       "<h3>ZEICHNEN</h3>" + [["schaltplan", "🔌 Schaltplan"], ["fluss", "🔀 Flussdiagramm"], ["bauplan", "📐 Technische Zeichnung"]].map(([m, t]) => '<button type="button" class="p-knopf" data-z="' + m + '">' + t + '<small class="leise">' + (teile(m) ? teile(m) + " Teile" : "leer") + "</small></button>").join("") +
       '<h3>FAIR ARBEITEN</h3><button type="button" class="p-knopf" id="pUnt">🏫 Unterrichts-Modus<small class="' + (P.unterricht.an ? "ok-z" : "leise") + '">' + (P.unterricht.an ? "an" : "aus") + '</small></button><button type="button" class="p-knopf" id="pEig">✍️ Eigenleistungs-Nachweis<small class="' + (E.an ? "ok-z" : "leise") + '">' + (E.an ? "an" : "aus") + "</small></button>" +
       '<h3>PROTOKOLL <small class="leise">· ' + fertig + "/" + CHECKLISTE.length + '</small></h3><div class="p-check">' + CHECKLISTE.map(([k, t, ak]) => '<label><input type="checkbox" data-c="' + k + '"' + (P.checkliste[k] ? " checked" : "") + "><span>" + esc(t) + "</span>" + (ak ? '<button type="button" class="symbol klein" data-ak="' + ak + '" title="Öffnen" aria-label="' + esc(t) + ' öffnen">↗</button>' : "") + "</label>").join("") + '</div><p class="leise">Das Protokoll schreibst du von Hand – das Programm hakt nur ab.</p>' +
-      '<div class="panel-fuss"><button type="button" class="pill" id="pZip">ABGABE-PAKET (ZIP)</button></div>';
+      '<div class="panel-fuss"><button type="button" class="pill" id="pZip">ABGABE-PAKET (ZIP)</button></div>' +
+      '<h3>SICHERUNG</h3><p class="leise">Alle 5 Minuten automatisch in Dokumente › Kometenwerk Code › Sicherung.</p><div class="such-knoepfe"><button type="button" class="pill hell klein" id="pSichJetzt">JETZT SICHERN</button><button type="button" class="pill hell klein" id="pSichLaden">LADEN …</button><button type="button" class="pill hell klein" id="pSichOrdner">ORDNER</button></div>';
     s.querySelector("#pName").onchange = (e) => { P.name = e.target.value.trim() || "Projekt"; sichern(); };
     s.querySelectorAll("[data-v]").forEach(b => b.onclick = () => versionMenue(Number(b.dataset.v)));
     s.querySelector("#pVers").onclick = versionSpeichern;
@@ -247,13 +310,15 @@ export function starten(A) {
     s.querySelectorAll("[data-c]").forEach(c => c.onchange = () => { P.checkliste[c.dataset.c] = c.checked; sichern(); zeigen(); });
     s.querySelectorAll("[data-ak]").forEach(b => b.onclick = (e) => { e.preventDefault(); AKTIONEN[b.dataset.ak](); });
     s.querySelector("#pZip").onclick = abgabe;
+    s.querySelector("#pTb").onclick = tagebuchDialog; s.querySelector("#pTeile").onclick = teileDialog;
+    s.querySelector("#pSichJetzt").onclick = () => sicherungJetzt(true); s.querySelector("#pSichLaden").onclick = sicherungLaden; s.querySelector("#pSichOrdner").onclick = () => A.KC.sicherungZeigen();
   }
   function dialog(html, gross) { const d = document.createElement("dialog"); d.className = "dialog" + (gross ? " gross" : ""); d.innerHTML = html; document.body.appendChild(d); d.showModal(); d.addEventListener("close", () => setTimeout(() => d.remove(), 0)); return d; }
 
   const AKTIONEN = {
     versionNeu: versionSpeichern, "p:versionen": () => { A.panelAuf("projekt"); if (P.versionen.length) vergleichen(P.versionen.length - 1, -1); },
     "p:messwerte": () => A.messwerteAuf(), "z:schaltplan": () => zeichnen("schaltplan"), "z:fluss": () => zeichnen("fluss"), "z:bauplan": () => zeichnen("bauplan"),
-    "p:unterricht": unterrichtDialog, "p:eigen": eigenDialog, "p:checkliste": () => A.panelAuf("projekt"), abgabe
+    "p:unterricht": unterrichtDialog, "p:tagebuch": tagebuchNeu, "p:teile": teileDialog, "p:eigen": eigenDialog, "p:checkliste": () => A.panelAuf("projekt"), abgabe
   };
   unterrichtSetzen(P.unterricht.an);
   zeigen(); messZeigen();

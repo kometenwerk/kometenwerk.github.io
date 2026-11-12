@@ -1,7 +1,9 @@
 // Kometenwerk Code · Hauptprozess (Electron)
 // Fenster, Dateien, und die Arbeit mit arduino-cli: einrichten, prüfen (kompilieren), hochladen, serieller Monitor.
 
-const { app, BrowserWindow, ipcMain, dialog, shell, Menu } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, shell, Menu, net } = require("electron");
+const http = require("http");
+const crypto = require("crypto");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
@@ -161,6 +163,126 @@ ipcMain.handle("datei:lesen", async (_, pfad) => ({ pfad, name: path.basename(pf
 ipcMain.handle("ordner:zeigen", async (_, pfad) => { shell.showItemInFolder(pfad || sketchbook()); return true; });
 ipcMain.handle("start:datei", async () => { const x = offenBeimStart; offenBeimStart = null; return x; });
 
+
+/* ---------- Verbindung testen: Schritt für Schritt mit Ampel ---------- */
+function portFrei(adresse) {
+  return new Promise((fertig) => {
+    const pfad = WIN ? "\\\\.\\" + adresse : adresse;
+    fs.open(pfad, "r+", (err, fd) => {
+      if (fd != null) { fs.close(fd, () => fertig({ frei: true })); return; }
+      const c = err && err.code;
+      fertig({ frei: !/EBUSY|EACCES|EPERM/.test(c || ""), code: c || "" });
+    });
+  });
+}
+ipcMain.handle("verbindung:test", async (_, { port, fqbn }) => {
+  const schritte = [];
+  const s = (titel, ok, text, tipp) => schritte.push({ titel, ok, text, tipp: tipp || "" });
+  // 1. Werkzeuge
+  const st = await cli(["core", "list", "--format", "json"]);
+  if (st.code === -1) s("Werkzeuge", "nein", "arduino-cli fehlt.", "Installier Kometenwerk Code neu.");
+  else {
+    let avr = false; try { const j = JSON.parse(st.json); const l = j.platforms || j || []; avr = l.some(x => (x.id || (x.metadata && x.metadata.id)) === "arduino:avr"); } catch (e) { avr = /arduino:avr/.test(st.aus); }
+    s("Werkzeuge", avr ? "ja" : "nein", avr ? "Arduino-Werkzeuge sind eingerichtet." : "Die Arduino-Werkzeuge fehlen noch.", avr ? "" : "Menü Werkzeuge → Einrichten (braucht einmal Internet).");
+  }
+  // 2. Arduino gefunden?
+  const sys = await systemPorts(), bl = await cli(["board", "list", "--format", "json"]);
+  let liste = []; try { const j = JSON.parse(bl.json || "{}"); liste = (Array.isArray(j) ? j : (j.detected_ports || [])).map(x => ({ adresse: (x.port || x).address, board: ((x.matching_boards || x.boards || [])[0] || {}).name || "" })); } catch (e) {}
+  for (const x of sys) { const l = liste.find(p => p.adresse === x.adresse); if (l) { if (!l.board && istArduinoName(x.name)) l.board = x.name; } else liste.push({ adresse: x.adresse, board: istArduinoName(x.name) ? x.name : "" }); }
+  const arduinos = liste.filter(p => p.board);
+  if (!arduinos.length) s("Arduino gefunden", "nein", "Es ist kein Arduino angesteckt" + (liste.length ? " (nur andere Anschlüsse: " + liste.map(p => p.adresse).join(", ") + ")." : "."), "USB-Kabel prüfen – manche Kabel laden nur und übertragen keine Daten. Anderen USB-Anschluss probieren. Bei Nachbauten den CH340-Treiber installieren.");
+  else s("Arduino gefunden", "ja", arduinos.map(p => p.board.replace(/\s*\(COM\d+\)/, "") + " an " + p.adresse).join(", "));
+  // 3. richtiger Port gewählt?
+  if (!port) s("Port gewählt", "nein", "Es ist kein Port ausgewählt.", "Oben auf die Board-Auswahl klicken und den Arduino mit ✔ wählen.");
+  else if (arduinos.some(p => p.adresse === port)) s("Port gewählt", "ja", port + " – dort ist der Arduino.");
+  else s("Port gewählt", arduinos.length ? "nein" : "warn", port + " ist gewählt, dort ist aber kein Arduino.", arduinos.length ? "Wähl oben " + arduinos[0].adresse + "." : "");
+  // 4. Port frei?
+  const ziel = arduinos.some(p => p.adresse === port) ? port : (arduinos[0] || {}).adresse;
+  if (ziel) {
+    if (monitor) s("Port frei", "ja", "Der Serielle Monitor von Kometenwerk Code ist verbunden – das ist in Ordnung, beim Hochladen wird er kurz getrennt.");
+    else { const f = await portFrei(ziel); s("Port frei", f.frei ? "ja" : "nein", f.frei ? ziel + " ist frei." : ziel + " ist von einem anderen Programm belegt.", f.frei ? "" : "Arduino IDE, Cura, ein anderer Serieller Monitor oder ein zweites Kometenwerk-Code-Fenster schließen."); }
+  }
+  // 5. Board passt?
+  const gefunden = arduinos.find(p => p.adresse === ziel);
+  if (gefunden && fqbn) { const name = gefunden.board.toLowerCase(), passt = !/uno|nano|mega|leonardo|micro/.test(name) || (fqbn.includes("uno") && name.includes("uno")) || (fqbn.includes("nano") && name.includes("nano")) || (fqbn.includes("mega") && name.includes("mega")) || (fqbn.includes("leonardo") && name.includes("leonardo")) || (fqbn.includes("micro") && name.includes("micro"));
+    s("Board passt", passt ? "ja" : "warn", passt ? "Das gewählte Board passt." : "Angesteckt ist „" + gefunden.board + "“, gewählt ist etwas anderes.", passt ? "" : "Unter Board auswählen das passende Board nehmen."); }
+  return { schritte, gut: schritte.every(x => x.ok === "ja") };
+});
+
+/* ---------- Automatisches Update (über das GitHub-Release) ---------- */
+const RELEASE = "https://api.github.com/repos/kometenwerk/kometenwerk.github.io/releases/tags/kometenwerk-code-neueste";
+const RELEASE_SEITE = "https://github.com/kometenwerk/kometenwerk.github.io/releases/tag/kometenwerk-code-neueste";
+const neuer = (a, b) => { const x = a.split(".").map(Number), y = b.split(".").map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) > (y[i] || 0)) return true; if ((x[i] || 0) < (y[i] || 0)) return false; } return false; };
+let updateInfo = null;
+ipcMain.handle("update:pruefen", async () => {
+  try {
+    const r = await net.fetch(RELEASE, { headers: { "User-Agent": "Kometenwerk-Code", Accept: "application/vnd.github+json" } });
+    if (!r.ok) return { fehler: "GitHub antwortet nicht (" + r.status + ")." };
+    const j = await r.json(), assets = j.assets || [];
+    const setup = assets.find(a => /Setup-(\d+\.\d+\.\d+)\.exe$/.test(a.name)), v = setup ? /Setup-(\d+\.\d+\.\d+)\.exe$/.exec(setup.name)[1] : (assets.map(a => (/(\d+\.\d+\.\d+)/.exec(a.name) || [])[1]).find(Boolean) || "");
+    if (!v) return { fehler: "Keine Version gefunden." };
+    const art = process.env.PORTABLE_EXECUTABLE_DIR ? "portable" : WIN ? "setup" : "seite";
+    updateInfo = { version: v, url: setup && setup.browser_download_url, art };
+    return { aktuell: app.getVersion(), neu: v, gibtNeues: neuer(v, app.getVersion()), art };
+  } catch (e) { return { fehler: "Kein Internet." }; }
+});
+ipcMain.handle("update:los", async () => {
+  if (!updateInfo || updateInfo.art !== "setup" || !updateInfo.url) { shell.openExternal(RELEASE_SEITE); return { seite: true }; }
+  const ziel = path.join(os.tmpdir(), "Kometenwerk-Code-Setup-" + updateInfo.version + ".exe");
+  try {
+    const r = await net.fetch(updateInfo.url, { headers: { "User-Agent": "Kometenwerk-Code" } });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const gesamt = Number(r.headers.get("content-length")) || 0, teile = []; let da = 0;
+    const leser = r.body.getReader();
+    for (;;) { const { done, value } = await leser.read(); if (done) break; teile.push(Buffer.from(value)); da += value.length; if (fenster && gesamt) fenster.webContents.send("update:fortschritt", Math.round(da / gesamt * 100)); }
+    fs.writeFileSync(ziel, Buffer.concat(teile));
+  } catch (e) { shell.openExternal(RELEASE_SEITE); return { fehler: String(e.message || e), seite: true }; }
+  monitorStopp();
+  const p = spawn(ziel, [], { detached: true, stdio: "ignore" }); p.unref();
+  setTimeout(() => app.quit(), 800);
+  return { ok: true };
+});
+
+/* ---------- Automatische Sicherung im Dokumente-Ordner ---------- */
+const sicherungOrdner = () => path.join(sketchbook(), "Sicherung");
+ipcMain.handle("sicherung:schreiben", async (_, text) => {
+  try {
+    const o = sicherungOrdner(); fs.mkdirSync(o, { recursive: true });
+    const tag = new Date().toISOString().slice(0, 10);
+    fs.writeFileSync(path.join(o, "projekt-" + tag + ".json"), text);
+    const alle = fs.readdirSync(o).filter(f => /^projekt-\d{4}-\d\d-\d\d\.json$/.test(f)).sort();
+    for (const f of alle.slice(0, Math.max(0, alle.length - 14))) fs.unlinkSync(path.join(o, f));
+    return { ok: true, ordner: o };
+  } catch (e) { return { ok: false }; }
+});
+ipcMain.handle("sicherung:laden", async () => {
+  const r = await dialog.showOpenDialog(fenster, { defaultPath: sicherungOrdner(), filters: [{ name: "Kometenwerk-Code-Sicherung", extensions: ["json"] }], properties: ["openFile"] });
+  if (r.canceled || !r.filePaths[0]) return null;
+  try { return fs.readFileSync(r.filePaths[0], "utf8"); } catch (e) { return null; }
+});
+ipcMain.handle("sicherung:zeigen", async () => { fs.mkdirSync(sicherungOrdner(), { recursive: true }); shell.openPath(sicherungOrdner()); return true; });
+
+/* ---------- Zeichnung an FIDELIA Notizen schicken ---------- */
+// Kleiner Server nur auf diesem Computer (127.0.0.1): Notizen holt das Bild genau einmal ab, danach geht er wieder aus.
+ipcMain.handle("notizen:senden", async (_, { name, bild, fach }) => {
+  const token = crypto.randomBytes(12).toString("hex"), daten = JSON.stringify({ name, bild, fach });
+  // zusätzlich als Datei ablegen (falls der Browser die Abholung blockiert)
+  let datei = null;
+  try { const o = path.join(sketchbook(), "Für Notizen"); fs.mkdirSync(o, { recursive: true }); datei = path.join(o, String(name).replace(/[^\wäöüÄÖÜß -]+/g, "_") + ".png"); fs.writeFileSync(datei, Buffer.from(String(bild).split(",")[1] || "", "base64")); } catch (e) {}
+  const server = http.createServer((req, res) => {
+    const kopf = { "Access-Control-Allow-Origin": "https://kometenwerk.github.io", "Access-Control-Allow-Private-Network": "true", "Access-Control-Allow-Methods": "GET, OPTIONS", "Access-Control-Allow-Headers": "*", Vary: "Origin" };
+    if (req.method === "OPTIONS") { res.writeHead(204, kopf); res.end(); return; }
+    if (req.url !== "/zeichnung?t=" + token) { res.writeHead(404, kopf); res.end(); return; }
+    res.writeHead(200, Object.assign({ "Content-Type": "application/json; charset=utf-8" }, kopf)); res.end(daten);
+    setTimeout(() => server.close(), 1000);
+  });
+  await new Promise(ok => server.listen(0, "127.0.0.1", ok));
+  setTimeout(() => { try { server.close(); } catch (e) {} }, 180000);
+  const port = server.address().port;
+  shell.openExternal("https://kometenwerk.github.io/notizen/#holen/" + port + "/" + token);
+  return { ok: true, datei };
+});
+
 /* ---------- NWT-Werkzeuge: Dateien exportieren, Versionen ablegen, PDF/Drucken ---------- */
 const FILTER = { csv: ["Tabelle (CSV, öffnet in Excel)", "csv"], zip: ["ZIP-Archiv", "zip"], png: ["Bild (PNG)", "png"], svg: ["Zeichnung (SVG)", "svg"], pdf: ["PDF", "pdf"], ino: ["Arduino-Sketch", "ino"], txt: ["Text", "txt"] };
 async function speichernDialog(name, art) {
@@ -227,7 +349,9 @@ function menueBauen() {
     { label: "Projekt", submenu: [
       { label: "Version speichern …", accelerator: "CmdOrCtrl+Alt+S", click: m("versionNeu") },
       { label: "Versionen und Vergleich", click: m("p:versionen") },
-      { label: "Messwerte sammeln", click: m("p:messwerte") }, { type: "separator" },
+      { label: "Messwerte sammeln", click: m("p:messwerte") },
+      { label: "Tagebuch-Eintrag …", accelerator: "CmdOrCtrl+Alt+T", click: m("p:tagebuch") },
+      { label: "Teileliste", click: m("p:teile") }, { type: "separator" },
       { label: "Schaltplan zeichnen", click: m("z:schaltplan") },
       { label: "Flussdiagramm zeichnen", click: m("z:fluss") },
       { label: "Technische Zeichnung (Bauplan)", click: m("z:bauplan") }, { type: "separator" },
@@ -237,7 +361,9 @@ function menueBauen() {
       { label: "Abgabe-Paket (ZIP) erstellen …", click: m("abgabe") }] },
     { label: "Hilfe", submenu: [
       { label: "Erste Schritte", click: m("hilfe") },
-      { label: "Arduino wird nicht gefunden?", click: m("hilfePort") }, { type: "separator" },
+      { label: "Arduino wird nicht gefunden?", click: m("hilfePort") },
+      { label: "Verbindung testen", click: m("verbindungTest") },
+      { label: "Nach Updates suchen", click: m("update") }, { type: "separator" },
       { label: "Über Kometenwerk Code", click: m("ueber") }] }
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(vorlage));

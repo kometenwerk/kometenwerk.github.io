@@ -89,6 +89,12 @@ async function folieXml(folie, d, bilder, nr) {
   if (!folie.hg && d.deko === "linie") sp += '<p:sp><p:nvSpPr>' + name("Deko") + '<p:cNvSpPr/><p:nvPr userDrawn="1"/></p:nvSpPr><p:spPr>' + xfrm({ x: 60, y: 503, w: 840, h: 2 }) + '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>' + fill(d.akzent) + '<a:ln><a:noFill/></a:ln></p:spPr></p:sp>';
   if (!folie.hg && d.deko === "rahmen") sp += '<p:sp><p:nvSpPr>' + name("Deko") + '<p:cNvSpPr/><p:nvPr userDrawn="1"/></p:nvSpPr><p:spPr>' + xfrm({ x: 16, y: 16, w: 928, h: 508 }) + '<a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val 2000"/></a:avLst></a:prstGeom><a:noFill/><a:ln w="38100">' + fill(d.akzent) + "</a:ln></p:spPr></p:sp>";
 
+  // Folienmaster: Fußzeile und Foliennummer
+  if ((d.fuss || d.nummer) && !folie.ohneFuss) {
+    const fussText = (t, pos, ausr) => "<p:sp><p:nvSpPr>" + name("Fußzeile") + '<p:cNvSpPr txBox="1"/><p:nvPr userDrawn="1"/></p:nvSpPr><p:spPr>' + xfrm(pos) + '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr>' + textKoerper("<p>" + x(t) + "</p>", { basis: 14, farbe: hex(d.text), schrift, ausr, anker: "b", akzent, rand: 0 }) + "</p:sp>";
+    if (d.fuss) sp += fussText(d.fuss, { x: 60, y: 506, w: 700, h: 26 }, "");
+    if (d.nummer) sp += fussText(String(nr), { x: 800, y: 506, w: 100, h: 26 }, "r");
+  }
   const anims = [];
   for (const e of folie.el || []) {
     if (e.aus) continue;

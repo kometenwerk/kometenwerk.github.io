@@ -248,8 +248,28 @@ function markieren() {
 let aktuell = { modul: "start", param: "" }, aufraeumen = null;
 A.gehe = (ziel) => { if (location.hash === "#" + ziel) zeigen(); else location.hash = ziel; };
 
+// Zeichnung aus Kometenwerk Code abholen (#holen/<port>/<token>): kommt von 127.0.0.1, also nur vom eigenen PC
+async function zeichnungHolen(port, token) {
+  history.replaceState(null, "", "#heft");
+  if (!/^\d{2,5}$/.test(port) || !/^[0-9a-f]{24}$/.test(token)) { KW.toast("Ungültiger Link."); return zeigen(); }
+  try {
+    const r = await fetch("http://127.0.0.1:" + port + "/zeichnung?t=" + token);
+    const j = await r.json();
+    if (!/^data:image\/png;base64,/.test(j.bild || "")) throw new Error("kein Bild");
+    const fach = (A.einst.faecher || []).find(f => String(f.name).toLowerCase().includes(String(j.fach || "nwt").toLowerCase()));
+    const titel = String(j.name || "Zeichnung").slice(0, 80);
+    const s = await A.seiteNeu({ titel, fach: fach ? fach.name : "", raster: "leer", html: "<h2>" + KW.esc(titel) + '</h2><p><img class="bild" src="' + j.bild + '" alt="' + KW.esc(titel) + '" style="width:100%"></p><p><br></p>', text: titel });
+    KW.save("kw-notizen-stift-modus", "tippen");
+    KW.toast("✓ „" + titel + "“ aus Kometenwerk Code" + (fach ? " im Fach " + fach.name : "") + " abgelegt.");
+    A.gehe("seite/" + s.id);
+  } catch (e) {
+    KW.toast("Abholen ging nicht. Die Zeichnung liegt als Bild in Dokumente › Kometenwerk Code › Für Notizen – über 📥 Öffnen einfügen.");
+    zeigen();
+  }
+}
 function zeigen() {
   const h = decodeURIComponent(location.hash.slice(1)) || "start";
+  if (h.startsWith("holen/")) { const [, port, token] = h.split("/"); zeichnungHolen(port, token); return; }
   const [modul, ...rest] = h.split("/");
   aktuell = { modul, param: rest.join("/") };
   const m = MODULE.find(x => x.id === modul);

@@ -418,6 +418,13 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
     if (art === "png") ziel = await KC.exportSpeichern({ name: datei + ".png", art: "png", base64: await pngAusSvg(s, modus === "bauplan" ? 3508 : 2400) });
     if (art === "pdf") ziel = await KC.pdfSpeichern({ html: druckHtml(modus, z), name: datei + ".pdf", quer: true });
     if (art === "druck") { await KC.drucken({ html: druckHtml(modus, z) }); return; }
+    if (art === "notizen") {
+      if (!KC.anNotizen) { toast("Geht erst mit der neuesten Version."); return; }
+      const png = await pngAusSvg(s, modus === "bauplan" ? 2480 : 2000);
+      const r = await KC.anNotizen({ name: TITEL[modus] + (name ? " – " + name : ""), bild: "data:image/png;base64," + png, fach: "NWT" });
+      if (r && r.ok) toast("FIDELIA Notizen öffnet sich im Browser und legt die Zeichnung im Fach NWT ab. Falls nicht: Die Datei liegt auch in Dokumente › Kometenwerk Code › Für Notizen.", 9000);
+      return;
+    }
     if (ziel) toast("Gespeichert: " + ziel);
   }
   function schriftfeldDialog() {
@@ -431,7 +438,7 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
     rueck: () => zurueck(-1), vor: () => zurueck(1), drehen: drehenAus, loeschen, raster: () => { raster = !raster; malen(); },
     "zoom+": () => { zoom *= 1.25; malen(); }, "zoom-": () => { zoom /= 1.25; malen(); },
     sf: schriftfeldDialog, titel: () => { const t = prompt("Überschrift über der Zeichnung:", z.titel || ""); if (t != null) { z.titel = t.trim(); merken(); malen(); } },
-    png: () => exportieren("png"), svg: () => exportieren("svg"), pdf: () => exportieren("pdf"), druck: () => exportieren("druck"), zu: schliessen
+    png: () => exportieren("png"), svg: () => exportieren("svg"), notizen: () => exportieren("notizen"), pdf: () => exportieren("pdf"), druck: () => exportieren("druck"), zu: schliessen
   };
   box.querySelectorAll(".z-kopf [data-a]").forEach(b => b.onclick = () => AKT[b.dataset.a]());
   function taste(ev) {

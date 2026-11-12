@@ -208,7 +208,7 @@ export function liste(A, el, fach) {
       (imKorb ? '<a class="btn small" href="#heft/*papierkorb">🗑️ ' + imKorb + '</a>' : "") +
       (fachWahl && fachWahl[0] !== "*" ? '<button type="button" class="btn small" id="fachDruck" title="Ganzes Fach drucken oder als PDF">🖨️ Fach</button>' + (A.einst.ki && A.einst.ki.art !== "aus" ? '<button type="button" class="btn small" id="lernzettel" title="Die KI fasst alle Seiten des Fachs auf einem Lernzettel zusammen">✨ Lernzettel</button>' : "") : "") +
       '<button type="button" class="btn small" id="pdfSammeln" title="Mehrere Seiten oder Scans zu einem PDF zusammenfassen">📄 PDF</button>' +
-      '<label class="btn small" title="Word-Datei oder FIDELIA-Datei öffnen">📥 Öffnen<input type="file" id="oeffnen" accept=".docx,.pptx,.xlsx,.fidelia,.json" hidden></label>' +
+      '<label class="btn small" title="Word-Datei oder FIDELIA-Datei öffnen">📥 Öffnen<input type="file" id="oeffnen" accept=".docx,.pptx,.xlsx,.png,.jpg,.jpeg,.svg,.fidelia,.json" hidden></label>' +
       '<button type="button" class="btn primary" id="neu">+ Neu</button></div>' +
       '<div class="suche"><input class="inp" type="search" id="q" placeholder="In allen Seiten suchen" aria-label="In allen Seiten suchen" value="' + esc(suche) + '"></div>' +
       '<div class="ordner" role="tablist" aria-label="Fach-Ordner">' +

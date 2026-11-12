@@ -15,7 +15,7 @@ const boardName = (fqbn) => (U.BOARDS.find(b => b[0] === fqbn) || [, fqbn])[1];
 /* ---------- Zustand ---------- */
 const Z = Object.assign({ name: "sketch", pfad: null, board: "", port: "", schrift: 14, baud: "9600", panel: "sketchbook" }, laden("kc-zustand", {}));
 let gespeichert = true, beschaeftigt = false, monitorAn = false, avrBereit = true, ports = [];
-const zustandMerken = () => sichern("kc-zustand", { name: Z.name, pfad: Z.pfad, board: Z.board, port: Z.port, schrift: Z.schrift, baud: Z.baud, panel: Z.panel });
+const zustandMerken = () => sichern("kc-zustand", { name: Z.name, pfad: Z.pfad, board: Z.board, port: Z.port, schrift: Z.schrift, baud: Z.baud, panel: Z.panel, hell: !!Z.hell });
 
 let N = null;      // NWT-Projekt (wird gleich unten gestartet)
 const ed = editor($("#ed"), {
@@ -57,9 +57,16 @@ function boardAnzeigen() {
 // Name eines Ports für die Liste: nur „Arduino …“, wenn dort wirklich einer erkannt wurde
 const geraetName = (p) => p.geraet && p.geraet !== p.adresse ? p.geraet.replace(/\s*\(COM\d+\)/, "") : "";
 const portName = (p) => p.board ? p.board : geraetName(p) || "Kein Arduino erkannt";
+let vorherArduinos = null;
 async function portsSuchen(still) {
   if (!KC) return {};
   const r = await KC.ports(); ports = r.liste || [];
+  const jetztArduinos = ports.filter(p => p.board).map(p => p.adresse);
+  if (vorherArduinos) {
+    for (const a of jetztArduinos) if (!vorherArduinos.includes(a)) toast("🔌 Arduino angesteckt an " + a);
+    for (const a of vorherArduinos) if (!jetztArduinos.includes(a)) toast("⚠ Arduino an " + a + " wurde abgezogen");
+  }
+  vorherArduinos = jetztArduinos;
   if (ports.length && !ports.some(p => p.adresse === Z.port)) Z.port = ports[0].adresse;
   // Ist am gewählten Port kein Arduino, aber an einem anderen schon? Dann den nehmen.
   const jetzt = ports.find(p => p.adresse === Z.port), arduinos = ports.filter(p => p.board);
@@ -80,10 +87,11 @@ $("#bBoard").onclick = async () => {
   const knopf = (p) => '<button type="button" data-port="' + esc(p.adresse) + '" class="' + (p.adresse === Z.port ? "an " : "") + (p.board ? "" : "fremd") + '"><span>' + (p.board ? "✔ " : "") + esc(portName(p)) + "</span><small>" + esc(p.adresse) + (p.board && geraetName(p) ? " · " + esc(geraetName(p)) : "") + "</small></button>";
   l.innerHTML = (mit.length ? mit.map(knopf).join("") : '<button type="button" disabled><span>Kein Arduino gefunden</span><small>Steck den Arduino per USB an und warte kurz.</small></button>') +
     (ohne.length ? '<div class="liste-titel">Andere Anschlüsse (kein Arduino)</div>' + ohne.map(knopf).join("") : "") +
-    '<hr><button type="button" data-anderes="1"><span>Anderes Board und Port wählen …</span></button>';
+    '<hr><button type="button" data-test="1"><span>🚦 Verbindung testen</span><small>prüft Schritt für Schritt, was fehlt</small></button><button type="button" data-anderes="1"><span>Anderes Board und Port wählen …</span></button>';
   l.hidden = false; $("#bBoard").setAttribute("aria-expanded", "true");
   l.querySelectorAll("[data-port]").forEach(b => b.onclick = () => { Z.port = b.dataset.port; const p = ports.find(x => x.adresse === Z.port); if (p && p.fqbn) Z.board = p.fqbn; l.hidden = true; if (!Z.board) { boardDialog(); return; } zustandMerken(); boardAnzeigen(); });
   l.querySelector("[data-anderes]").onclick = () => { l.hidden = true; boardDialog(); };
+  l.querySelector("[data-test]").onclick = () => { l.hidden = true; verbindungTesten(); };
 };
 document.addEventListener("pointerdown", (e) => {
   if (!e.target.closest("#boardListe, #bBoard")) { $("#boardListe").hidden = true; $("#bBoard").setAttribute("aria-expanded", "false"); }
@@ -103,6 +111,46 @@ function boardDialog() {
   $("#dAbbr").onclick = () => d.close();
   $("#dOk").onclick = () => { Z.board = wahlB; Z.port = wahlP || ""; zustandMerken(); boardAnzeigen(); d.close(); };
   zeichnen(); d.showModal();
+}
+
+/* ---------- Verbindung testen (Ampel) ---------- */
+async function verbindungTesten() {
+  if (!KC) return;
+  const d = document.createElement("dialog"); d.className = "dialog";
+  d.innerHTML = '<h2>🚦 Verbindung testen</h2><p class="leise">Ich prüfe Schritt für Schritt …</p><ul class="ampel"></ul><div class="dialog-fuss"><button type="button" class="pill hell" data-a="nochmal">NOCHMAL</button><button type="button" class="pill" data-a="zu">OK</button></div>';
+  document.body.appendChild(d); d.showModal(); d.addEventListener("close", () => d.remove());
+  d.querySelector('[data-a="zu"]').onclick = () => d.close();
+  const los = async () => {
+    const ul = d.querySelector(".ampel"); ul.innerHTML = '<li class="leise">⏳ prüft …</li>';
+    if (monitorAn) { await KC.monitorStopp(); monitorAn = false; $("#bMonitor").classList.remove("an"); }
+    const r = await KC.verbindungTest({ port: Z.port, fqbn: Z.board });
+    ul.innerHTML = r.schritte.map(x => '<li class="' + x.ok + '"><span class="lampe" aria-hidden="true"></span><span><b>' + esc(x.titel) + "</b> " + esc(x.text) + (x.tipp ? "<small>👉 " + esc(x.tipp) + "</small>" : "") + "</span></li>").join("");
+    d.querySelector("p").textContent = r.gut ? "✔ Alles bereit – Hochladen und Serieller Monitor sollten klappen." : "Hier hakt es noch:";
+    await portsSuchen(true);
+  };
+  d.querySelector('[data-a="nochmal"]').onclick = los;
+  los();
+}
+
+/* ---------- Automatisches Update ---------- */
+async function updatePruefen(laut) {
+  if (!KC || !KC.updatePruefen) return;
+  const r = await KC.updatePruefen();
+  if (r.fehler) { if (laut) toast("Update-Suche: " + r.fehler); return; }
+  if (!r.gibtNeues) { if (laut) toast("✔ Du hast die neueste Version (" + r.aktuell + ")."); return; }
+  if (document.querySelector(".update-leiste")) return;
+  const b = document.createElement("div"); b.className = "update-leiste";
+  b.innerHTML = "<span>🚀 Neue Version <b>" + esc(r.neu) + "</b> ist da (du hast " + esc(r.aktuell) + ").</span><button type=\"button\" class=\"pill klein\" data-a=\"los\">" + (r.art === "setup" ? "JETZT AKTUALISIEREN" : "HERUNTERLADEN") + '</button><button type="button" class="pill hell klein" data-a="spaeter">SPÄTER</button>';
+  document.body.appendChild(b);
+  b.querySelector('[data-a="spaeter"]').onclick = () => b.remove();
+  b.querySelector('[data-a="los"]').onclick = async () => {
+    if (!gespeichert && Z.pfad) await speichern();
+    b.querySelector("span").textContent = "⏳ Lädt herunter …";
+    KC.beiUpdateFortschritt((p) => { b.querySelector("span").textContent = "⏳ Lädt herunter … " + p + " %"; });
+    const e = await KC.updateLos();
+    if (e && e.ok) b.querySelector("span").textContent = "Gleich startet die Installation. Wenn Windows warnt: „Weitere Informationen“ → „Trotzdem ausführen“.";
+    else { b.querySelector("span").textContent = "Die Download-Seite ist im Browser offen."; setTimeout(() => b.remove(), 6000); }
+  };
 }
 
 /* ---------- Ausgabe ---------- */
@@ -304,7 +352,9 @@ addEventListener("resize", () => { if (!$("#rPlotter").hidden) plotGroesse(); })
 /* ---------- Schrift, Menüs ---------- */
 function schrift(d) { Z.schrift = Math.max(10, Math.min(28, Z.schrift + d)); ed.schrift(Z.schrift); zustandMerken(); }
 $("#bTabMenue").onclick = () => { $("#tabMenue").hidden = !$("#tabMenue").hidden; };
-$("#tabMenue").querySelectorAll("[data-tm]").forEach(b => b.onclick = () => { $("#tabMenue").hidden = true; schrift(b.dataset.tm === "schrift+" ? 1 : -1); });
+$("#tabMenue").querySelectorAll("[data-tm]").forEach(b => b.onclick = () => { $("#tabMenue").hidden = true; if (b.dataset.tm === "hell") { designSetzen(!Z.hell); return; } schrift(b.dataset.tm === "schrift+" ? 1 : -1); });
+function designSetzen(hell) { Z.hell = !!hell; document.body.classList.toggle("hell", Z.hell); const b = $('[data-tm="hell"]'); if (b) b.textContent = Z.hell ? "🌙 Dunkles Design" : "☀️ Helles Design"; zustandMerken(); }
+designSetzen(Z.hell);
 const panelAuf = (p) => () => { Z.panel = ""; panelZeigen(p); };
 const AKTION = {
   neu: neuerSketch, oeffnen, speichern: () => speichern(false), speichernUnter: () => speichern(true), sketchbook: panelAuf("sketchbook"),
@@ -313,7 +363,9 @@ const AKTION = {
   kommentar: () => { const t = document.querySelector(".ed-text"); t.focus(); t.dispatchEvent(new KeyboardEvent("keydown", { key: "/", ctrlKey: true, bubbles: true })); },
   hilfe: () => { ausgabeStart(""); $("#meldungen").innerHTML = '<div class="hilfe-karte"><h3>Erste Schritte</h3><ol><li>Arduino per USB anstecken – oben bei „Board auswählen“ erscheint er.</li><li>Code schreiben. Unten in der Statusleiste steht, was der Befehl unter dem Cursor macht.</li><li><b>✓ Überprüfen</b> – Fehler stehen hier unten auf Deutsch, ein Klick springt zur Zeile.</li><li><b>➜ Hochladen</b> – fertig! Mit dem Seriellen Monitor (rechts oben) siehst du, was der Arduino mit Serial.println schickt.</li></ol></div>'; },
   hilfePort: () => portsSuchen(true).then(r => hilfeKeinArduino(r || {})),
-  ueber: panelAuf("konto")
+  ueber: panelAuf("konto"),
+  verbindungTest: () => verbindungTesten(),
+  update: () => updatePruefen(true)
 };
 function messwerteAuf() { $("#tabMesswerte").hidden = false; $("#unten").classList.remove("zu"); reiter("messwerte"); N.messZeigen(); }
 N = nwtStarten({ ed, Z, KC, toast, panelAuf: (p) => panelAuf(p)(), messwerteAuf, monitorAn: async () => { $("#tabMonitor").hidden = false; if (!monitorAn) await monitorStarten(); }, reiterMarke: (an) => { $("#aufPunkt").hidden = !an; } });
@@ -348,5 +400,7 @@ function avrStatus() { $("#avrStatus").textContent = avrBereit ? "✔ installier
   portsSuchen(true);
   setInterval(() => { if (!beschaeftigt && !monitorAn && document.visibilityState === "visible") portsSuchen(true); }, 4000);
   const start = await KC.startDatei(); if (start) sketchLaden(start);
+  setTimeout(() => updatePruefen(false), 6000);
+  setInterval(() => updatePruefen(false), 6 * 3600 * 1000);
 })();
 ed.fokus();

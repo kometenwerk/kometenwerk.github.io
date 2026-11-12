@@ -30,5 +30,13 @@ contextBridge.exposeInMainWorld("KC", {
   versionAblegen: (x) => ipcRenderer.invoke("version:ablegen", x),
   pdfSpeichern: (x) => ipcRenderer.invoke("pdf:speichern", x),
   drucken: (x) => ipcRenderer.invoke("drucken", x),
+  verbindungTest: (x) => ipcRenderer.invoke("verbindung:test", x),
+  updatePruefen: () => ipcRenderer.invoke("update:pruefen"),
+  updateLos: () => ipcRenderer.invoke("update:los"),
+  beiUpdateFortschritt: (f) => ipcRenderer.on("update:fortschritt", (_, p) => f(p)),
+  sicherungSchreiben: (t) => ipcRenderer.invoke("sicherung:schreiben", t),
+  sicherungLaden: () => ipcRenderer.invoke("sicherung:laden"),
+  sicherungZeigen: () => ipcRenderer.invoke("sicherung:zeigen"),
+  anNotizen: (x) => ipcRenderer.invoke("notizen:senden", x),
   version: () => ipcRenderer.invoke("version")
 });

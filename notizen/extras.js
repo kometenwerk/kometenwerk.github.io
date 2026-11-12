@@ -77,6 +77,12 @@ export async function importieren(A, datei) {
   const n = datei.name || "";
   if (/\.(docx|pptx)$/i.test(n)) return officeOeffnen(A, datei);
   if (/\.(xlsx|csv)$/i.test(n)) { const T = await import("./tabellen.js"); return T.oeffnen(A, datei); }
+  if (/\.(png|jpe?g|gif|webp|svg)$/i.test(n)) {
+    const url = await new Promise((ok, nein) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = nein; r.readAsDataURL(datei); });
+    const titel = n.replace(/\.[^.]+$/, "");
+    const s = await A.seiteNeu({ titel, raster: "leer", html: "<h2>" + KW.esc(titel) + '</h2><p><img class="bild" src="' + url + '" alt="" style="width:100%"></p><p><br></p>', text: titel });
+    KW.save("kw-notizen-stift-modus", "tippen"); KW.toast("✓ Bild „" + titel + "“ als Heftseite eingefügt."); A.gehe("seite/" + s.id); return s;
+  }
   let d;
   try { d = JSON.parse(await datei.text()); } catch (e) { KW.toast("Diese Datei kann ich nicht lesen."); return null; }
   if (!d || d.fidelia !== "notizen" || !d.seite) { KW.toast("Das ist keine FIDELIA-Datei."); return null; }
