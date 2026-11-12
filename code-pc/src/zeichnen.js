@@ -5,6 +5,15 @@
 const esc = (t) => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const r2 = (v) => Math.round(v * 100) / 100;
 const zahlDe = (v) => String(r2(v)).replace(".", ",");
+// Einheit der technischen Zeichnung: gespeichert wird immer in mm, angezeigt/eingegeben in mm oder cm
+let EINH = "mm";
+const einhF = () => EINH === "cm" ? 10 : 1;
+const masszahl = (mm) => zahlDe(mm / einhF());
+export function laengeLesen(t) {   // "12,5" / "12.5 cm" / "120 mm" / "0,3 m" → mm (NaN wenn ungültig)
+  const m = /^\s*(-?\d+(?:[.,]\d+)?|-?[.,]\d+)\s*(mm|cm|m)?\s*$/i.exec(String(t)); if (!m) return NaN;
+  const v = Number(m[1].replace(",", ".")), e = (m[2] || EINH).toLowerCase();
+  return r2(v * (e === "cm" ? 10 : e === "m" ? 1000 : 1));
+}
 let idZaehler = Date.now() % 100000;
 const neueId = () => "e" + (idZaehler++).toString(36);
 
@@ -58,11 +67,11 @@ export const SYM = {
 
   /* ---- Technische Zeichnung (Einheit: mm) ---- */
   platte: { modus: "bauplan", name: "Platte / Umriss", w: 120, h: 80, form: true, svg: (e, k) => '<rect x="0" y="0" width="' + e.w + '" height="' + e.h + '" rx="' + (e.radius || 0) + '" style="stroke-width:' + r2(0.5 / k) + '"/>',
-    felder: [["x", "X links (mm)", "zahl"], ["y", "Y oben (mm)", "zahl"], ["w", "Breite (mm)", "zahl"], ["h", "Höhe (mm)", "zahl"], ["radius", "Eckenradius (mm)", "zahl"]] },
+    felder: [["x", "X links", "laenge"], ["y", "Y oben", "laenge"], ["w", "Breite", "laenge"], ["h", "Höhe", "laenge"], ["radius", "Eckenradius", "laenge"]] },
   ausschnitt: { modus: "bauplan", name: "Ausschnitt (z. B. Display)", w: 72, h: 25, form: true, svg: (e, k) => '<rect x="0" y="0" width="' + e.w + '" height="' + e.h + '" rx="' + (e.radius || 0) + '" style="stroke-width:' + r2(0.5 / k) + '"/>' + (e.mitte !== false ? mittelkreuz(e.w / 2, e.h / 2, e.w / 2, e.h / 2, k) : ""),
-    felder: [["x", "X links (mm)", "zahl"], ["y", "Y oben (mm)", "zahl"], ["w", "Breite (mm)", "zahl"], ["h", "Höhe (mm)", "zahl"], ["radius", "Eckenradius (mm)", "zahl"], ["mitte", "Mittellinien", "janein"]] },
+    felder: [["x", "X links", "laenge"], ["y", "Y oben", "laenge"], ["w", "Breite", "laenge"], ["h", "Höhe", "laenge"], ["radius", "Eckenradius", "laenge"], ["mitte", "Mittellinien", "janein"]] },
   bohrung: { modus: "bauplan", name: "Bohrung", w: 0, h: 0, d: 5, svg: (e, k) => '<circle cx="0" cy="0" r="' + e.d / 2 + '" style="stroke-width:' + r2(0.5 / k) + '"/>' + (e.mitte !== false ? mittelkreuz(0, 0, e.d / 2, e.d / 2, k) : "") + (e.dmass ? durchmesser(e, k) : ""),
-    felder: [["x", "Mitte X (mm)", "zahl"], ["y", "Mitte Y (mm)", "zahl"], ["d", "Durchmesser (mm)", "zahl"], ["mitte", "Mittellinien", "janein"], ["dmass", "⌀ bemaßen", "janein"]] }
+    felder: [["x", "Mitte X", "laenge"], ["y", "Mitte Y", "laenge"], ["d", "Durchmesser", "laenge"], ["mitte", "Mittellinien", "janein"], ["dmass", "⌀ bemaßen", "janein"]] }
 };
 function mittelkreuz(cx, cy, rx, ry, k) {
   const u = 2 / k, s = 'class="mittel" style="stroke-width:' + r2(0.25 / k) + ";stroke-dasharray:" + [8, 1.5, 1, 1.5].map(v => r2(v / k)).join(" ") + '"';
@@ -73,7 +82,7 @@ function pfeilSpitze(x, y, wx, wy, k) {   // Spitze bei (x,y), zeigt in Richtung
   return '<path d="M' + r2(x) + " " + r2(y) + "L" + r2(bx - wy * b) + " " + r2(by + wx * b) + "L" + r2(bx + wy * b) + " " + r2(by - wx * b) + 'z" class="voll" style="stroke-width:0"/>';
 }
 function durchmesser(e, k) {
-  const r = e.d / 2, a = Math.PI / 4, px = Math.cos(a) * r, py = -Math.sin(a) * r, kx = px + 6 / k, ky = py - 6 / k, t = "⌀" + zahlDe(e.d), tw = (t.length * 2.1 + 1) / k;
+  const r = e.d / 2, a = Math.PI / 4, px = Math.cos(a) * r, py = -Math.sin(a) * r, kx = px + 6 / k, ky = py - 6 / k, t = "⌀" + masszahl(e.d), tw = (t.length * 2.1 + 1) / k;
   return '<g style="stroke-width:' + r2(0.25 / k) + '"><path d="M' + r2(px) + " " + r2(py) + "L" + r2(kx) + " " + r2(ky) + "h" + r2(tw) + '"/>' + pfeilSpitze(px, py, -Math.cos(a), Math.sin(a), k) +
     '<text x="' + r2(kx + 0.5 / k) + '" y="' + r2(ky - 0.8 / k) + '" font-size="' + r2(3.5 / k) + '" class="txt">' + t + "</text></g>";
 }
@@ -83,7 +92,7 @@ export const LINIEN = {
   draht: { modus: "schaltplan", name: "Leitung", viele: true },
   pfeil: { modus: "fluss", name: "Pfeil", viele: true, felder: [["text", "Beschriftung (ja / nein)"]] },
   linie: { modus: "bauplan", name: "Linie", felder: [["stil", "Linienart", "wahl", [["voll", "Volllinie (Kante)"], ["verdeckt", "Strichlinie (verdeckte Kante)"], ["mittel", "Strichpunktlinie (Mittellinie)"], ["schmal", "schmale Volllinie"]]]] },
-  mass: { modus: "bauplan", name: "Bemaßung", felder: [["abstand", "Abstand zur Kante (mm)", "zahl"], ["text", "Maßzahl selbst eintragen (leer = gemessen)"]] }
+  mass: { modus: "bauplan", name: "Bemaßung", felder: [["abstand", "Abstand zur Kante", "laenge"], ["text", "Maßzahl selbst eintragen (leer = gemessen)"]] }
 };
 
 const PALETTE = {
@@ -128,7 +137,7 @@ function massSvg(l, k) {
   h += '<path d="M' + r2(p1[0]) + " " + r2(p1[1]) + "L" + r2(q1[0] + nx * ue * sg) + " " + r2(q1[1] + ny * ue * sg) + "M" + r2(p2[0]) + " " + r2(p2[1]) + "L" + r2(q2[0] + nx * ue * sg) + " " + r2(q2[1] + ny * ue * sg) + '"/>';
   h += '<path d="M' + r2(q1[0]) + " " + r2(q1[1]) + "L" + r2(q2[0]) + " " + r2(q2[1]) + '"/>' + pfeilSpitze(q1[0], q1[1], -ux, -uy, k) + pfeilSpitze(q2[0], q2[1], ux, uy, k);
   let w = Math.atan2(uy, ux) * 180 / Math.PI; if (w >= 89.99) w -= 180; if (w < -90.01) w += 180;
-  const t = l.text ? String(l.text) : zahlDe(L), rad = w * Math.PI / 180, mx = (q1[0] + q2[0]) / 2 + Math.sin(rad) * 1 / k, my = (q1[1] + q2[1]) / 2 - Math.cos(rad) * 1 / k;
+  const t = l.text ? String(l.text) : masszahl(L), rad = w * Math.PI / 180, mx = (q1[0] + q2[0]) / 2 + Math.sin(rad) * 1 / k, my = (q1[1] + q2[1]) / 2 - Math.cos(rad) * 1 / k;
   h += '<text x="' + r2(mx) + '" y="' + r2(my) + '" font-size="' + r2(3.5 / k) + '" text-anchor="middle" class="txt" transform="rotate(' + r2(w) + " " + r2(mx) + " " + r2(my) + ')">' + esc(t) + "</text></g>";
   return h;
 }
@@ -165,6 +174,7 @@ export function blattSvg(z, mitRaster) {
 /* ================= SVG zum Speichern/Drucken ================= */
 const STIL = 'text{font-family:"Open Sans",Arial,sans-serif;fill:#000;stroke:none}.txt{fill:#000}path,rect,circle{fill:none;stroke:#000;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.dick{stroke-width:2}.voll{fill:#000}.draht{stroke-width:1.6}.sf rect{stroke-width:.35}.raster path{stroke:#e3e9ec;stroke-width:inherit}.raster{stroke-width:.15}';
 export function svgText(modus, z) {
+  EINH = (z && z.einheit) || "mm";
   if (modus === "bauplan") {
     const { h, k } = blattSvg(z, false);
     const inhalt = (z.el || []).map(e => e.punkte ? linieSvg(e, k, modus) : elementSvg(e, k)).join("");
@@ -268,7 +278,7 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
 
   /* ---- Zeichnen ---- */
   function malen() {
-    const kk = k();
+    const kk = k(); EINH = z.einheit || "mm";
     let w, h, vb;
     if (modus === "bauplan") { vb = [0, 0, BLATT.w, BLATT.h]; w = BLATT.w * zoom; h = BLATT.h * zoom; }
     else { const b = grenzen(z); vb = [Math.min(0, b.x - 100), Math.min(0, b.y - 100), Math.max(1200, b.x + b.w + 300), Math.max(800, b.y + b.h + 300)]; vb[2] -= vb[0]; vb[3] -= vb[1]; w = vb[2] * zoom; h = vb[3] * zoom; }
@@ -291,6 +301,7 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
     svg.innerHTML = o;
     box.querySelector(".z-zoom").textContent = Math.round(zoom * (modus === "bauplan" ? 100 / 3.2 : 100)) + " %";
     if (!eigenschaftenAus) eigenschaften();
+    if (modus === "bauplan") { const ok = passtAufsBlatt(); fuss.classList.toggle("warnung", !ok); if (!ok) fuss.innerHTML = '⚠ Die Zeichnung ist größer als das Blatt oder liegt auf dem Schriftfeld. <button type="button" class="pill klein" id="zFit2">📐 EINPASSEN</button>'; else if (fuss.querySelector("#zFit2")) fussText(); const f2 = fuss.querySelector("#zFit2"); if (f2) f2.onclick = einpassen; }
   }
   function punkteRaster(vb) { let s = ""; const st = 20; for (let x = Math.ceil(vb[0] / st) * st; x < vb[0] + vb[2]; x += st) s += '<path d="M' + x + " " + vb[1] + "V" + (vb[1] + vb[3]) + '"/>'; for (let y = Math.ceil(vb[1] / st) * st; y < vb[1] + vb[3]; y += st) s += '<path d="M' + vb[0] + " " + y + "H" + (vb[0] + vb[2]) + '"/>'; return s; }
   function trefferFlaeche(e, kk) {
@@ -304,6 +315,31 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
   }
   function abstandAus([p1, p2], m) { const dx = p2[0] - p1[0], dy = p2[1] - p1[1], L = Math.hypot(dx, dy) || 1; return r2(((m[0] - p1[0]) * -dy + (m[1] - p1[1]) * dx) / L); }
 
+  /* ---- Technische Zeichnung: passt sie aufs Blatt? ---- */
+  const NUTZ = { x0: 25, y0: 15, x1: 282, y1: 168 };   // Innenbereich des Rahmens über dem Schriftfeld (mm auf dem Papier)
+  function bauBox() {
+    let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity; const n = (x, y) => { a = Math.min(a, x); b = Math.min(b, y); c = Math.max(c, x); d = Math.max(d, y); };
+    for (const e of z.el) {
+      if (e.punkte) { e.punkte.forEach(p => n(p[0], p[1])); if (e.typ === "mass" && e.punkte.length === 2) { const [p1, p2] = e.punkte, L = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) || 1, nx = -(p2[1] - p1[1]) / L, ny = (p2[0] - p1[0]) / L, ab = (e.abstand ?? 10) + Math.sign(e.abstand ?? 10) * 6; n(p1[0] + nx * ab, p1[1] + ny * ab); n(p2[0] + nx * ab, p2[1] + ny * ab); } }
+      else if (e.typ === "bohrung") { n(e.x - e.d / 2 - 3, e.y - e.d / 2 - 3); n(e.x + e.d / 2 + 3, e.y + e.d / 2 + 3); if (e.dmass) n(e.x + e.d / 2 + 20, e.y - e.d / 2 - 8); }
+      else if (e.typ === "text") { n(e.x, e.y - 6); n(e.x + String(e.text || "").length * (e.groesse || 5) * 0.6, e.y); }
+      else n(e.x, e.y), n(e.x + (e.w || 0), e.y + (e.h || 0));
+    }
+    return a === Infinity ? null : { x: a, y: b, w: c - a, h: d - b };
+  }
+  function passtAufsBlatt() { const b = bauBox(); if (!b) return true; const kk = k(); return b.x * kk >= NUTZ.x0 - 5 && b.y * kk >= NUTZ.y0 - 5 && (b.x + b.w) * kk <= 287 && (b.y + b.h) * kk <= 200 && !((b.x + b.w) * kk > 107 && (b.y + b.h) * kk > 172); }
+  function einpassen() {
+    const b = bauBox(); if (!b) { toast("Erst etwas zeichnen."); return; }
+    const W = NUTZ.x1 - NUTZ.x0, H = NUTZ.y1 - NUTZ.y0, noetig = Math.min(W / b.w, H / b.h);
+    const STUFEN = [[2, "2:1"], [1, "1:1"], [0.5, "1:2"], [0.4, "1:2,5"], [0.2, "1:5"], [0.1, "1:10"], [0.05, "1:20"]];
+    const [kk, text] = STUFEN.find(([f]) => f <= noetig) || STUFEN[STUFEN.length - 1];
+    z.schriftfeld = z.schriftfeld || {}; z.schriftfeld.massstab = text;
+    // in die Mitte des freien Bereichs schieben (in echten mm)
+    const zielX = (NUTZ.x0 + (W - b.w * kk) / 2) / kk, zielY = (NUTZ.y0 + (H - b.h * kk) / 2) / kk, dx = r2(zielX - b.x), dy = r2(zielY - b.y);
+    for (const e of z.el) { if (e.punkte) e.punkte = e.punkte.map(p => [r2(p[0] + dx), r2(p[1] + dy)]); else { e.x = r2(e.x + dx); e.y = r2(e.y + dy); } }
+    merken(); malen(); toast("Maßstab " + text + " – die Zeichnung passt jetzt aufs Blatt.");
+  }
+
   /* ---- Eigenschaften rechts ---- */
   function eigenschaften() {
     const e = z.el.find(x => x.id === auswahl), ziel = box.querySelector(".z-eig");
@@ -313,11 +349,25 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
       (art === "lang" ? '<textarea data-f="' + k2 + '" rows="2">' + esc(e[k2] ?? (SYM[e.typ] && SYM[e.typ].form ? "" : "")) + "</textarea>"
         : art === "janein" ? '<input type="checkbox" data-f="' + k2 + '"' + (e[k2] !== false && (e[k2] || k2 === "mitte") ? " checked" : "") + ">"
         : art === "wahl" ? '<select data-f="' + k2 + '">' + opt.map(([v, t]) => '<option value="' + v + '"' + ((e[k2] || opt[0][0]) === v ? " selected" : "") + ">" + esc(t) + "</option>").join("") + "</select>"
+        : art === "laenge" ? '<span class="z-mass"><input data-f="' + k2 + '" inputmode="decimal" value="' + esc(e[k2] == null ? "" : masszahl(e[k2])) + '"><i>' + EINH + "</i></span>"
         : '<input data-f="' + k2 + '" ' + (art === "zahl" ? 'type="number" step="any"' : "") + ' value="' + esc(e[k2] ?? "") + '">') + "</label>").join("") +
-      (e.typ === "mass" ? '<p class="leise">Gemessen: ' + zahlDe(Math.hypot(e.punkte[1][0] - e.punkte[0][0], e.punkte[1][1] - e.punkte[0][1])) + " mm</p>" : "") +
+      (e.typ === "mass" ? '<p class="leise">Gemessen: ' + masszahl(Math.hypot(e.punkte[1][0] - e.punkte[0][0], e.punkte[1][1] - e.punkte[0][1])) + " " + EINH + "</p>" : "") +
       (!e.punkte && SYM[e.typ].pins ? '<p class="leise">Tipp: Leitungen rasten an den Anschlüssen ein.</p>' : "");
     ziel.querySelectorAll("[data-f]").forEach(f => {
       const art = (felder.find(x => x[0] === f.dataset.f) || [])[2];
+      if (art === "laenge") {
+        // erst übernehmen, wenn die Eingabe eine gültige Zahl ist (Komma geht auch, „cm“/„mm“ dahinter auch)
+        const nehmen = (endgueltig) => {
+          const v = laengeLesen(f.value);
+          if (!Number.isFinite(v)) { f.classList.toggle("falsch", f.value.trim() !== ""); if (endgueltig) { f.value = e[f.dataset.f] == null ? "" : masszahl(e[f.dataset.f]); f.classList.remove("falsch"); } return; }
+          f.classList.remove("falsch");
+          if (["w", "h", "d"].includes(f.dataset.f) && !(v > 0)) return;
+          e[f.dataset.f] = v; malenOhneEig(); if (endgueltig) { f.value = masszahl(v); merken(); }
+        };
+        f.oninput = () => nehmen(false); f.onchange = () => nehmen(true); f.onblur = () => nehmen(true);
+        f.onkeydown = (ev) => { if (ev.key === "Enter") { nehmen(true); f.blur(); } };
+        return;
+      }
       f.onchange = f.oninput = () => {
         const v = art === "janein" ? f.checked : art === "zahl" ? (f.value === "" ? undefined : Number(f.value)) : f.value;
         if (v === undefined) delete e[f.dataset.f]; else e[f.dataset.f] = v;
@@ -332,8 +382,12 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
   function malenOhneEig() { eigenschaftenAus = true; malen(); eigenschaftenAus = false; extra(); }
   function extra() {
     const x = box.querySelector(".z-extra");
-    if (modus !== "schaltplan") { x.innerHTML = modus === "bauplan" ? '<h3>Raster</h3><label class="z-feld"><span>Einrasten alle</span><select id="zR"><option value="0.5">0,5 mm</option><option value="1">1 mm</option><option value="5">5 mm</option></select></label><p class="leise">Alle Maße in mm in echter Größe. Der Maßstab im Schriftfeld verkleinert/vergrößert das Blatt. Beim Drucken „Tatsächliche Größe / 100 %“ wählen, dann stimmt 1:1.</p>' : '<p class="leise">Symbole nach DIN 66001. Tipp: Verzweigung hat zwei Ausgänge – beschrifte die Pfeile mit „ja“ und „nein“.</p>';
-      const r = x.querySelector("#zR"); if (r) { r.value = String(z.raster || 1); r.onchange = () => { z.raster = Number(r.value); merken(); }; } return; }
+    if (modus !== "schaltplan") { x.innerHTML = modus === "bauplan" ? '<h3>Einheit und Raster</h3><label class="z-feld"><span>Maße eingeben und anzeigen in</span><select id="zE"><option value="mm">mm (wie in der Norm)</option><option value="cm">cm</option></select></label><label class="z-feld"><span>Einrasten alle</span><select id="zR"><option value="0.5">0,5 mm</option><option value="1">1 mm</option><option value="5">5 mm (0,5 cm)</option><option value="10">10 mm (1 cm)</option></select></label>' +
+        '<h3>Blatt</h3><p class="leise">Maßstab jetzt: <b>' + esc((z.schriftfeld && z.schriftfeld.massstab) || "1:1") + '</b></p><button type="button" class="pill hell klein" id="zFit">📐 AUFS BLATT EINPASSEN</button><p class="leise">Wählt den passenden Maßstab (1:1, 1:2, 1:5 …) und schiebt die Zeichnung in den Rahmen. Die Maßzahlen bleiben die echten Maße. Du kannst auch „12,5 cm“ oder „120 mm“ eintippen. Beim Drucken „Tatsächliche Größe / 100 %“ wählen.</p>' : '<p class="leise">Symbole nach DIN 66001. Tipp: Verzweigung hat zwei Ausgänge – beschrifte die Pfeile mit „ja“ und „nein“.</p>';
+      const r = x.querySelector("#zR"); if (r) { r.value = String(z.raster || 1); r.onchange = () => { z.raster = Number(r.value); merken(); }; }
+      const ei = x.querySelector("#zE"); if (ei) { ei.value = z.einheit || "mm"; ei.onchange = () => { z.einheit = ei.value; if (ei.value === "cm" && (z.raster || 1) < 5) z.raster = 5; merken(); malen(); }; }
+      const fit = x.querySelector("#zFit"); if (fit) fit.onclick = einpassen;
+      return; }
     const imCode = pinsAusCode(code ? code() : ""), imPlan = verbundenePins(z), hatUno = z.el.some(e => e.typ === "arduino");
     let h = "<h3>Pins: Code ↔ Plan</h3>";
     if (!hatUno) h += '<p class="leise">Setz einen Arduino Uno ein, dann vergleicht das Programm hier, ob die Pins aus deinem Code im Plan verbunden sind.</p>';
@@ -455,6 +509,8 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
   }
   document.addEventListener("keydown", taste, true);
   function schliessen() { merken(); document.removeEventListener("keydown", taste, true); box.remove(); }
+  // Blatt ganz sichtbar machen (passend zum Fenster)
+  if (modus === "bauplan") { const fl = box.querySelector(".z-flaeche"); zoom = Math.max(1.2, Math.min(4, (fl.clientWidth - 44) / BLATT.w, (fl.clientHeight - 44) / BLATT.h)); }
   fussText(); malen();
   return { schliessen, get daten() { return z; } };
 }

@@ -275,3 +275,6 @@ body.hell .ok-z{color:#11806b}body.hell .nein-z{color:#c03838}
 .teile-tab input:focus{border-color:var(--teal);outline:none}
 .teile-tab .anz{width:70px}
 .such-knoepfe{flex-wrap:wrap}
+.z-mass{display:flex;align-items:center;gap:6px}.z-mass input{flex:1;min-width:0}.z-mass i{font-style:normal;color:var(--leise)}
+.z-feld input.falsch{border-color:var(--rot)!important}
+.z-fuss.warnung{background:#5a3a12;color:#ffe2b8;gap:10px}
