@@ -2686,6 +2686,33 @@
    "dauer": 2.68,
    "hash": "ae110acf9fd3",
    "nr": 3
+  },
+  {
+   "id": "app-einfach-1",
+   "gruppe": "app_einfach",
+   "text": "Oma kommt mit dem Tablet nicht klar? Dann probier FIDELIA Einfach!",
+   "datei": "ton/app-einfach-1.mp3",
+   "dauer": 3.55,
+   "hash": "8187dd23f58e",
+   "nr": 1
+  },
+  {
+   "id": "app-einfach-2",
+   "gruppe": "app_einfach",
+   "text": "Große Knöpfe: Familie anrufen, Fotos ansehen, Wetter – mehr nicht.",
+   "datei": "ton/app-einfach-2.mp3",
+   "dauer": 4.34,
+   "hash": "f451a6d645b1",
+   "nr": 2
+  },
+  {
+   "id": "app-einfach-3",
+   "gruppe": "app_einfach",
+   "text": "Du richtest alles ein, Oma muss nur noch tippen.",
+   "datei": "ton/app-einfach-3.mp3",
+   "dauer": 2.35,
+   "hash": "5aeef68f6a92",
+   "nr": 3
   }
  ]
 }
