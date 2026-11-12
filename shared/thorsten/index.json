@@ -2713,6 +2713,114 @@
    "dauer": 2.35,
    "hash": "5aeef68f6a92",
    "nr": 3
+  },
+  {
+   "id": "app-speisekarte-1",
+   "gruppe": "app_speisekarte",
+   "text": "Ein Café ohne digitale Karte? Dann probier FIDELIA Speisekarte!",
+   "datei": "ton/app-speisekarte-1.mp3",
+   "dauer": 4.0,
+   "hash": "d74aded5ff2d",
+   "nr": 1
+  },
+  {
+   "id": "app-speisekarte-2",
+   "gruppe": "app_speisekarte",
+   "text": "Gerichte eintragen, QR-Aufsteller drucken, fertig.",
+   "datei": "ton/app-speisekarte-2.mp3",
+   "dauer": 2.94,
+   "hash": "a8df220c50ec",
+   "nr": 2
+  },
+  {
+   "id": "app-speisekarte-3",
+   "gruppe": "app_speisekarte",
+   "text": "Gäste sehen Preise, Allergene und alles Vegane sofort.",
+   "datei": "ton/app-speisekarte-3.mp3",
+   "dauer": 3.28,
+   "hash": "7c19a5121068",
+   "nr": 3
+  },
+  {
+   "id": "app-turnier-1",
+   "gruppe": "app_turnier",
+   "text": "Euer Turnier-Plan ist ein Zettelchaos? Dann probier FIDELIA Turnier!",
+   "datei": "ton/app-turnier-1.mp3",
+   "dauer": 3.76,
+   "hash": "7b6827082299",
+   "nr": 1
+  },
+  {
+   "id": "app-turnier-2",
+   "gruppe": "app_turnier",
+   "text": "Teams eintragen, und der Spielplan steht sofort.",
+   "datei": "ton/app-turnier-2.mp3",
+   "dauer": 2.77,
+   "hash": "1adb95cb911e",
+   "nr": 2
+  },
+  {
+   "id": "app-turnier-3",
+   "gruppe": "app_turnier",
+   "text": "Tabelle und K.-o.-Baum rechnen sich von selbst.",
+   "datei": "ton/app-turnier-3.mp3",
+   "dauer": 2.38,
+   "hash": "54ed78c314a4",
+   "nr": 3
+  },
+  {
+   "id": "app-buzzer-1",
+   "gruppe": "app_buzzer",
+   "text": "Party ohne Programm? Dann probier FLARESSA Buzzer!",
+   "datei": "ton/app-buzzer-1.mp3",
+   "dauer": 2.9,
+   "hash": "a3b820cb2511",
+   "nr": 1
+  },
+  {
+   "id": "app-buzzer-2",
+   "gruppe": "app_buzzer",
+   "text": "Jedes Team bekommt eine Taste – wer zuerst buzzert, darf antworten.",
+   "datei": "ton/app-buzzer-2.mp3",
+   "dauer": 3.56,
+   "hash": "55f1db9b7af2",
+   "nr": 2
+  },
+  {
+   "id": "app-buzzer-3",
+   "gruppe": "app_buzzer",
+   "text": "Punkte, Countdown und Sound inklusive.",
+   "datei": "ton/app-buzzer-3.mp3",
+   "dauer": 2.27,
+   "hash": "852f5801b74b",
+   "nr": 3
+  },
+  {
+   "id": "app-fotobox-1",
+   "gruppe": "app_fotobox",
+   "text": "Keine Fotobox für die Feier? Dann probier FLARESSA Fotobox!",
+   "datei": "ton/app-fotobox-1.mp3",
+   "dauer": 3.48,
+   "hash": "611cef493ba5",
+   "nr": 1
+  },
+  {
+   "id": "app-fotobox-2",
+   "gruppe": "app_fotobox",
+   "text": "Tablet aufstellen, Knopf drücken, lächeln.",
+   "datei": "ton/app-fotobox-2.mp3",
+   "dauer": 2.45,
+   "hash": "74d94cfd0f5c",
+   "nr": 2
+  },
+  {
+   "id": "app-fotobox-3",
+   "gruppe": "app_fotobox",
+   "text": "Mit Rahmen, Collage und allen Fotos als ZIP.",
+   "datei": "ton/app-fotobox-3.mp3",
+   "dauer": 2.98,
+   "hash": "6356d66bb01c",
+   "nr": 3
   }
  ]
 }
