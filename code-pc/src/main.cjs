@@ -83,7 +83,12 @@ ipcMain.handle("ports", async () => {
   } catch (e) { hinweis = "einrichten"; }
   // was Windows/Linux selbst sieht, dazunehmen
   for (const s2 of sys) if (!liste.some(p => p.adresse === s2.adresse)) liste.push({ adresse: s2.adresse, name: s2.name, protokoll: "serial", board: istArduinoName(s2.name) ? (/ch34|wch/i.test(s2.name) ? "Nachbau (CH340)" : /arduino/i.test(s2.name) ? s2.name.replace(/\s*\(COM\d+\)/, "") : "USB-Seriell") : "", fqbn: /arduino uno/i.test(s2.name) ? "arduino:avr:uno" : /mega/i.test(s2.name) ? "arduino:avr:mega" : "" });
-  for (const p of liste) { const s2 = sys.find(x => x.adresse === p.adresse); if (s2) p.geraet = s2.name; }
+  for (const p of liste) {
+    const s2 = sys.find(x => x.adresse === p.adresse); if (!s2) continue;
+    p.geraet = s2.name;
+    // arduino-cli kennt Nachbauten (CH340 usw.) nicht – dann hilft der Name, den Windows anzeigt
+    if (!p.board && istArduinoName(s2.name)) { p.board = /ch34|wch/i.test(s2.name) ? "Nachbau (CH340)" : /arduino/i.test(s2.name) ? s2.name.replace(/\s*\(COM\d+\)/, "") : "USB-Seriell (vielleicht Arduino)"; if (/arduino uno/i.test(s2.name)) p.fqbn = "arduino:avr:uno"; }
+  }
   liste.sort((a, b) => (b.board ? 1 : 0) - (a.board ? 1 : 0));
   return { liste, hinweis, systemZahl: sys.length };
 });

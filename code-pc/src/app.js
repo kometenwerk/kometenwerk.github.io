@@ -51,12 +51,19 @@ function boardAnzeigen() {
   const p = ports.find(x => x.adresse === Z.port);
   $("#boardText").textContent = Z.board ? boardName(Z.board) + (Z.port ? "  ·  " + Z.port : "") : Z.port ? (p && p.board ? p.board : "Unbekannt") + "  ·  " + Z.port : "Board auswählen";
   $("#boardUsb").hidden = !Z.port;
-  $("#statusBoard").textContent = Z.board ? boardName(Z.board) + (Z.port ? " an " + Z.port : " [nicht verbunden]") : "Kein Board ausgewählt";
+  const keinArduino = Z.port && ports.length && p && !p.board;
+  $("#statusBoard").textContent = Z.board ? boardName(Z.board) + (Z.port ? " an " + Z.port + (keinArduino ? " (dort ist kein Arduino erkannt)" : "") : " [nicht verbunden]") : "Kein Board ausgewählt";
 }
+// Name eines Ports für die Liste: nur „Arduino …“, wenn dort wirklich einer erkannt wurde
+const geraetName = (p) => p.geraet && p.geraet !== p.adresse ? p.geraet.replace(/\s*\(COM\d+\)/, "") : "";
+const portName = (p) => p.board ? p.board : geraetName(p) || "Kein Arduino erkannt";
 async function portsSuchen(still) {
   if (!KC) return {};
   const r = await KC.ports(); ports = r.liste || [];
   if (ports.length && !ports.some(p => p.adresse === Z.port)) Z.port = ports[0].adresse;
+  // Ist am gewählten Port kein Arduino, aber an einem anderen schon? Dann den nehmen.
+  const jetzt = ports.find(p => p.adresse === Z.port), arduinos = ports.filter(p => p.board);
+  if (jetzt && !jetzt.board && arduinos.length === 1) { Z.port = arduinos[0].adresse; if (!still) toast("Arduino gefunden an " + Z.port); }
   if (!ports.length) Z.port = "";
   const erkannt = ports.find(p => p.adresse === Z.port && p.fqbn);
   if (erkannt && U.BOARDS.some(b => b[0] === erkannt.fqbn) && erkannt.fqbn !== Z.board) { Z.board = erkannt.fqbn; if (!still) toast("Erkannt: " + erkannt.board + " an " + erkannt.adresse); }
@@ -69,7 +76,10 @@ $("#bBoard").onclick = async () => {
   const l = $("#boardListe");
   if (!l.hidden) { l.hidden = true; return; }
   await portsSuchen(true);
-  l.innerHTML = (ports.length ? ports.map(p => '<button type="button" data-port="' + esc(p.adresse) + '" class="' + (p.adresse === Z.port ? "an" : "") + '"><span>' + esc(p.board || (Z.board ? boardName(Z.board) : "Unbekanntes Board")) + "</span><small>" + esc(p.adresse) + (p.geraet && p.geraet !== p.adresse ? " · " + esc(p.geraet.replace(/\s*\(COM\d+\)/, "")) : "") + "</small></button>").join("") : '<button type="button" disabled><span>Kein Board gefunden</span><small>Steck den Arduino per USB an.</small></button>') +
+  const mit = ports.filter(p => p.board), ohne = ports.filter(p => !p.board);
+  const knopf = (p) => '<button type="button" data-port="' + esc(p.adresse) + '" class="' + (p.adresse === Z.port ? "an " : "") + (p.board ? "" : "fremd") + '"><span>' + (p.board ? "✔ " : "") + esc(portName(p)) + "</span><small>" + esc(p.adresse) + (p.board && geraetName(p) ? " · " + esc(geraetName(p)) : "") + "</small></button>";
+  l.innerHTML = (mit.length ? mit.map(knopf).join("") : '<button type="button" disabled><span>Kein Arduino gefunden</span><small>Steck den Arduino per USB an und warte kurz.</small></button>') +
+    (ohne.length ? '<div class="liste-titel">Andere Anschlüsse (kein Arduino)</div>' + ohne.map(knopf).join("") : "") +
     '<hr><button type="button" data-anderes="1"><span>Anderes Board und Port wählen …</span></button>';
   l.hidden = false; $("#bBoard").setAttribute("aria-expanded", "true");
   l.querySelectorAll("[data-port]").forEach(b => b.onclick = () => { Z.port = b.dataset.port; const p = ports.find(x => x.adresse === Z.port); if (p && p.fqbn) Z.board = p.fqbn; l.hidden = true; if (!Z.board) { boardDialog(); return; } zustandMerken(); boardAnzeigen(); });
@@ -84,7 +94,7 @@ function boardDialog() {
   const zeichnen = () => {
     const q = $("#dBoardQ").value.toLowerCase();
     $("#dBoards").innerHTML = U.BOARDS.filter(b => b[1].toLowerCase().includes(q)).map(b => '<li><button type="button" data-b="' + b[0] + '" class="' + (b[0] === wahlB ? "an" : "") + '">' + esc(b[1]) + "</button></li>").join("");
-    $("#dPorts").innerHTML = ports.length ? ports.map(p => '<li><button type="button" data-p="' + esc(p.adresse) + '" class="' + (p.adresse === wahlP ? "an" : "") + '">' + esc(p.adresse) + (p.board ? " · " + esc(p.board) : p.geraet && p.geraet !== p.adresse ? " · " + esc(p.geraet.replace(/\s*\(COM\d+\)/, "")) : "") + " ⎓</button></li>").join("") : '<li class="leise">Kein Port gefunden. Arduino per USB anstecken und „Neu suchen“.</li>';
+    $("#dPorts").innerHTML = ports.length ? ports.map(p => '<li><button type="button" data-p="' + esc(p.adresse) + '" class="' + (p.adresse === wahlP ? "an" : "") + '">' + esc(p.adresse) + " · " + (p.board ? "✔ " : "") + esc(portName(p)) + "</button></li>").join("") : '<li class="leise">Kein Port gefunden. Arduino per USB anstecken und „Neu suchen“.</li>';
     $("#dBoards").querySelectorAll("[data-b]").forEach(b => b.onclick = () => { wahlB = b.dataset.b; zeichnen(); });
     $("#dPorts").querySelectorAll("[data-p]").forEach(b => b.onclick = () => { wahlP = b.dataset.p; zeichnen(); });
   };

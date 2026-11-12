@@ -241,3 +241,5 @@ body.unterricht .tab{border-top-color:var(--gelb)}
 .z-pins td{padding:4px 3px;border-bottom:1px solid var(--linie);vertical-align:top}
 .z-pins small{color:var(--leise)}
 .z-fuss{height:26px;display:flex;align-items:center;padding:0 12px;background:var(--leiste);font-size:12px}
+.board-liste .fremd span{color:var(--leise);font-weight:400}
+.board-liste .liste-titel{font-size:11px;color:var(--leise);padding:8px 12px 2px;letter-spacing:.03em}
