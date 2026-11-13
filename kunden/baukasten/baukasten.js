@@ -15,7 +15,8 @@
   var S = Object.assign({
     seite: Object.assign({ vorlage: "verein", adresse: "Hauptstraße 1, 12345 Musterdorf", tel: "", mail: "", bild: "", impName: "", impAnschrift: "", impVertreten: "" }, VORLAGEN.verein),
     angebot: { nr: "", kunde: "", kundeAdresse: "", datum: "", gueltig: "4 Wochen", posten: [{ text: "Webseite mit 3–5 Unterseiten (Entwurf, Umsetzung, Handy-Ansicht)", menge: 1, preis: 180 }, { text: "Einrichtung der Internet-Adresse (Domain) – Kosten der Domain zahlt der Kunde direkt beim Anbieter", menge: 1, preis: 20 }], hinweis: "Änderungen nach der Fertigstellung: 10 € pro Änderung oder 7 € im Monat für bis zu 3 Änderungen.", absender: "FIDELIA Digital (OMNIVIA Group)", absenderName: "", kleinunternehmer: true },
-    flyer: { art: "alles", format: "a4", preise: true }
+    flyer: { art: "alles", format: "a4", preise: true },
+    team: { name: "", alter: "", schule: "", mail: "", rollen: [], mithilfe: 30, allein: 50, zeit: "höchstens ein Nachmittag pro Woche, in Arbeitsphasen weniger", start: "", chef: "Nils Scherer" }
   }, KW.load(KEY, {}));
   var sichern = function () { KW.save(KEY, S); };
 
@@ -24,7 +25,7 @@
     b.onclick = function () {
       document.querySelectorAll("[data-tab]").forEach(function (x) { x.setAttribute("aria-selected", x === b ? "true" : "false"); });
       document.querySelectorAll(".b-tab").forEach(function (t) { t.hidden = t.id !== "tab-" + b.dataset.tab; });
-      ({ seite: seiteZeigen, angebot: angebotZeigen, flyer: flyerZeigen })[b.dataset.tab]();
+      ({ seite: seiteZeigen, angebot: angebotZeigen, flyer: flyerZeigen, gespraech: gespraechZeigen, vereinbarung: vereinbarungZeigen })[b.dataset.tab]();
     };
   });
 
@@ -206,5 +207,54 @@
     $("#flyerBlatt").innerHTML = fl.format === "a6" ? '<div class="a6-bogen">' + einer + einer + einer + einer + "</div>" : poster(x, qr, fl);
   }
 
-  seiteZeigen();
+  /* ================= 4. Mitmach-Gespräch (Checkliste) ================= */
+  var FRAGEN = [
+    ["Kennenlernen", ["Wer bist du, was machst du gern in der Freizeit?", "Was hast du schon gemacht (Programme, Fotos, Zeichnungen, Videos …)? Zeig mal!", "Warum willst du bei OMNIVIA mitmachen?"]],
+    ["Was du erklärst", ["Was OMNIVIA ist: Webseiten, Tablet-Hilfe, Apps für Feste – zeig ein, zwei Apps", "Wie ein Auftrag abläuft: Anfrage → Gespräch → Angebot → Arbeit → Bezahlung", "Wie geteilt wird: Anteil vom Auftrag (Mithilfe / allein) – bar mit Quittung, nachdem der Kunde bezahlt hat", "Die Regeln: Schule geht vor · Kundendaten bleiben geheim · kein Auftrag ohne Absprache · jederzeit aufhören möglich"]],
+    ["Was du fragst", ["Welche Aufgabe würdest du am liebsten machen?", "Wie viel Zeit hast du – auch in Arbeitsphasen?", "Wissen deine Eltern Bescheid? Sind sie einverstanden?", "Hast du noch Fragen an mich?"]],
+    ["Nach dem Gespräch", ["Passt es? Ehrlich zu dir selbst sein – lieber ein zuverlässiger Mitstreiter als drei unsichere", "Ja → Vereinbarung ausfüllen, ausdrucken, zu Hause unterschreiben lassen", "Nein → freundlich absagen und die Anfrage in der Team-App löschen"]]
+  ];
+  function gespraechZeigen() {
+    $("#tab-gespraech").innerHTML = '<div class="b-hinweis">Für das kurze Kennenlern-Gespräch mit jemandem, der über <a href="../../mitmachen/">kometenwerk.github.io/mitmachen</a> eine Anfrage geschickt hat. 10–15 Minuten reichen – am besten in der Schule oder wo ihr euch kennt.</div>' +
+      '<div class="row" style="gap:8px;margin:8px 0"><button type="button" class="btn" id="gDruck">🖨 Checkliste drucken</button><button type="button" class="btn" id="gLink">🔗 Mitmach-Link kopieren</button></div>' +
+      '<div class="papier a4 druck eng" id="gBlatt"><div class="kopf"><div><div style="font-size:20pt;font-weight:600;color:#7c2d92">Mitmach-Gespräch</div><div>OMNIVIA Group</div></div><div style="text-align:right">Name: ________________<br>Datum: ________________</div></div>' +
+      FRAGEN.map(function (g) { return "<h3>" + esc(g[0]) + "</h3>" + g[1].map(function (f) { return '<div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid #eee"><span style="flex:none">☐</span><span>' + esc(f) + "</span></div>"; }).join(""); }).join("") +
+      '<h3>Notizen</h3><div style="border:1px solid #ccc;border-radius:6px;height:60mm"></div></div>';
+    $("#gDruck").onclick = function () { window.print(); };
+    $("#gLink").onclick = function () { var l = "https://kometenwerk.github.io/mitmachen/"; (navigator.clipboard ? navigator.clipboard.writeText(l) : Promise.reject()).then(function () { KW.toast("Link kopiert – gib ihn an Leute aus Schule und Verein weiter."); }, function () { prompt("Link:", l); }); };
+  }
+
+  /* ================= 5. Mitmach-Vereinbarung ================= */
+  var ROLLEN = ["Kunden ansprechen und beraten", "Fotos & Texte", "Technik-Hilfe", "Programmieren", "Design"];
+  function vereinbarungZeigen() {
+    var v = S.team, t = $("#tab-vereinbarung");
+    t.innerHTML = '<div class="b-zwei"><div class="b-form card" style="padding:14px">' +
+      '<div class="b-hinweis">Erst nach dem Gespräch ausfüllen. Das ist eine <b>Absprache unter Schülern, kein Arbeitsvertrag</b>. Für Jugendliche gibt es Regeln, wie viel sie arbeiten dürfen – deshalb wenig Stunden, Schule zuerst, und die Eltern unterschreiben mit. Bei Fragen: Eltern fragen, ich bin keine Rechtsberatung.</div>' +
+      f("name", "Name des Mitstreiters", v.name) + f("alter", "Alter", v.alter) + f("schule", "Schule / Klasse", v.schule) + f("mail", "E-Mail", v.mail) +
+      '<h3>Aufgaben</h3>' + ROLLEN.map(function (r) { return '<label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" data-rolle="' + esc(r) + '"' + (v.rollen.indexOf(r) >= 0 ? " checked" : "") + "> " + esc(r) + "</label>"; }).join("") +
+      '<h3>Bezahlung</h3><div class="row" style="gap:10px;flex-wrap:wrap"><label>Bei Mithilfe <input class="inp" data-f="mithilfe" value="' + esc(v.mithilfe) + '" style="width:60px" inputmode="numeric"> %</label><label>Allein gemacht <input class="inp" data-f="allein" value="' + esc(v.allein) + '" style="width:60px" inputmode="numeric"> %</label></div>' +
+      f("zeit", "Wie viel Zeit", v.zeit) + f("start", "Ab wann", v.start, "date") + f("chef", "Dein Name (für OMNIVIA)", v.chef) +
+      '<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn primary" id="vDruck">🖨 Drucken / als PDF</button><button type="button" class="btn" id="vLeer">Leeren (neuer Mitstreiter)</button></div></div>' +
+      '<div><div class="papier a4 druck eng" id="vBlatt"></div></div></div>';
+    bindeFelder(t, v, vBlatt);
+    t.querySelectorAll("[data-rolle]").forEach(function (c) { c.onchange = function () { v.rollen = Array.prototype.map.call(t.querySelectorAll("[data-rolle]:checked"), function (e) { return e.dataset.rolle; }); sichern(); vBlatt(); }; });
+    $("#vDruck").onclick = function () { window.print(); };
+    $("#vLeer").onclick = function () { if (!confirm("Alle Felder leeren?")) return; S.team = { name: "", alter: "", schule: "", mail: "", rollen: [], mithilfe: v.mithilfe, allein: v.allein, zeit: v.zeit, start: "", chef: v.chef }; sichern(); vereinbarungZeigen(); };
+    vBlatt();
+  }
+  function vBlatt() {
+    var v = S.team, d = v.start ? new Date(v.start + "T12:00").toLocaleDateString("de-DE") : "________________", n = v.name || "________________";
+    $("#vBlatt").innerHTML = '<div class="kopf"><div><div style="font-size:20pt;font-weight:600;color:#7c2d92">Mitmach-Vereinbarung</div><div>OMNIVIA Group</div></div><div style="text-align:right">Leopoldstraße 28<br>79359 Riegel<br>kometenwerk.kontakt@gmail.com</div></div>' +
+      "<p>Zwischen <b>OMNIVIA Group</b>, vertreten durch <b>" + esc(v.chef || "________") + "</b>, und <b>" + esc(n) + "</b>" + (v.alter ? " (" + esc(v.alter) + " Jahre" + (v.schule ? ", " + esc(v.schule) : "") + ")" : "") + (v.mail ? ", E-Mail " + esc(v.mail) : "") + ".</p>" +
+      "<h3>1. Was " + esc(v.name || "der Mitstreiter") + " macht</h3><p>" + (v.rollen.length ? esc(v.rollen.join(", ")) : "________________________________") + ". Ab " + esc(d) + ".</p>" +
+      "<h3>2. Bezahlung</h3><p>Pro Auftrag gibt es einen Anteil vom Preis, den der Kunde zahlt:</p><ul><li><b>" + esc(v.mithilfe) + " %</b>, wenn " + esc(v.name || "der Mitstreiter") + " bei einem Auftrag mithilft,</li><li><b>" + esc(v.allein) + " %</b>, wenn " + esc(v.name || "der Mitstreiter") + " einen Auftrag allein erledigt.</li></ul><p>Vor jedem Auftrag wird kurz abgesprochen, welcher Fall gilt. Ausgezahlt wird bar mit Quittung, nachdem der Kunde bezahlt hat. Zahlt ein Kunde nicht, gibt es auch keinen Anteil. Druck- und Materialkosten werden vorher vom Preis abgezogen.</p>" +
+      "<h3>3. Zeit</h3><p>" + esc(v.zeit) + ". Die Schule geht immer vor – in Prüfungszeiten wird weniger oder gar nicht gearbeitet.</p>" +
+      "<h3>4. Regeln</h3><ul><li>Kein Auftrag und kein Kundenkontakt ohne Absprache mit OMNIVIA.</li><li>Daten von Kunden (Namen, Adressen, Fotos, Passwörter) bleiben geheim und werden nicht weitergegeben.</li><li>Zu fremden Kunden geht niemand allein – beim ersten Treffen ist ein Erwachsener dabei oder es findet an einem öffentlichen Ort statt.</li><li>Was für OMNIVIA gebaut wird, darf OMNIVIA zeigen und weiterverwenden; " + esc(v.name || "der Mitstreiter") + " darf es als eigene Arbeitsprobe zeigen.</li><li>Beide Seiten können jederzeit aufhören. Offene Anteile werden dann noch ausgezahlt.</li></ul>" +
+      '<p style="font-size:.85rem">Diese Vereinbarung ist eine Absprache unter Schülern und kein Arbeitsvertrag. Die Eltern beider Seiten wissen Bescheid und sind einverstanden.</p>' +
+      '<div class="unterschrift"><div>Ort, Datum, Unterschrift ' + esc(v.name || "Mitstreiter") + '</div><div>Unterschrift eines Elternteils von ' + esc(v.name || "Mitstreiter") + '</div></div><div class="unterschrift"><div>Unterschrift ' + esc(v.chef || "OMNIVIA") + '</div><div>Unterschrift eines Elternteils von ' + esc(v.chef || "OMNIVIA") + "</div></div>";
+  }
+
+  var start = (location.hash || "").slice(1);
+  var startKnopf = document.querySelector('[data-tab="' + start + '"]');
+  if (startKnopf) startKnopf.click(); else seiteZeigen();
 })();

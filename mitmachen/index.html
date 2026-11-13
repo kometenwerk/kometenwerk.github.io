@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="de" data-marke="omnivia">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mitmachen bei OMNIVIA</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Du willst bei OMNIVIA mitmachen? Schick eine kurze Anfrage – dann lernen wir uns kennen.">
+<meta name="theme-color" content="#1e293b">
+<link rel="icon" href="../shared/marken/omnivia-zeichen.webp" type="image/webp">
+<link rel="stylesheet" href="../shared/fonts/fonts.css">
+<link rel="stylesheet" href="../shared/kw.css">
+<style>
+:root{--app:#1e293b;--app-ink:#fff}
+.m-main{max-width:680px}
+.m-held{background:#1e293b;color:#fff;border-radius:18px;padding:22px;margin:6px 0 18px;position:relative;overflow:hidden}
+.m-held h2{margin:0 0 6px;font-size:1.6rem}
+.m-held p{margin:0;opacity:.92}
+.m-held img{position:absolute;right:-30px;bottom:-14px;width:200px;opacity:.13}
+.m-rollen{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:8px 0 6px}
+.m-rolle{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer;background:var(--card)}
+.m-rolle input{margin-top:4px}
+.m-rolle small{display:block;color:var(--muted);font-size:.82rem}
+.m-rolle:has(input:checked){border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+.m-zwei{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:520px){.m-zwei{grid-template-columns:1fr}}
+.field label{display:block;font-weight:600;font-size:.92rem;margin-bottom:3px}
+.field .inp{width:100%;box-sizing:border-box}
+.field small{color:var(--muted)}
+.m-check{display:flex;gap:10px;align-items:flex-start;margin:10px 0}
+.m-check input{margin-top:4px}
+.m-ablauf{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.m-ablauf div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;font-size:.88rem}
+.m-ablauf b{display:block;font-size:1.3rem}
+.m-falle{position:absolute;left:-9999px}
+.m-ok{border-left:4px solid var(--good);background:var(--card);padding:12px 14px;border-radius:10px;margin-top:14px}
+.m-fehler{border-left:4px solid #dc2626;background:var(--card);padding:12px 14px;border-radius:10px;margin-top:14px}
+.m-fehler pre{white-space:pre-wrap;font-size:.85rem}
+</style>
+</head>
+<body>
+<header class="kw-bar">
+  <a class="kw-home" href="../" aria-label="Zur Startseite der OMNIVIA Group"><img src="../shared/marken/omnivia-zeichen.webp" alt="" width="40" height="21" style="width:40px;height:auto;display:block"></a>
+  <h1>Mitmachen</h1>
+</header>
+<main class="kw-main m-main">
+  <div class="m-held"><img src="../shared/marken/omnivia-zeichen.webp" alt=""><h2>Mach mit bei OMNIVIA 🚀</h2><p>Wir sind Schüler, die Webseiten und Apps bauen und Leuten bei Technik helfen. Du willst dabei sein? Schick eine kurze Anfrage – dann lernen wir uns kennen.</p></div>
+
+  <div class="m-ablauf" aria-label="So läuft es ab"><div><b>1</b>Du schickst diese Anfrage</div><div><b>2</b>Wir treffen uns kurz und reden</div><div><b>3</b>Passt es, machen wir eine Vereinbarung – mit deinen Eltern</div></div>
+
+  <form id="form" novalidate>
+    <div class="m-zwei">
+      <div class="field"><label for="fName">Vorname</label><input class="inp" id="fName" autocomplete="given-name" maxlength="40" required></div>
+      <div class="field"><label for="fAlter">Alter</label><input class="inp" id="fAlter" inputmode="numeric" maxlength="2" required></div>
+    </div>
+    <div class="m-zwei">
+      <div class="field"><label for="fSchule">Schule</label><input class="inp" id="fSchule" maxlength="60" required></div>
+      <div class="field"><label for="fKlasse">Klasse</label><input class="inp" id="fKlasse" maxlength="10" placeholder="z. B. 9b" required></div>
+    </div>
+    <div class="field"><label for="fMail">E-Mail-Adresse</label><input class="inp" id="fMail" type="email" autocomplete="email" maxlength="100" required><small>Darüber melden wir uns wegen des Gesprächs.</small></div>
+
+    <fieldset style="border:0;padding:0;margin:14px 0 0"><legend style="font-weight:600">Was würdest du gern machen? (mehrere möglich)</legend>
+      <div class="m-rollen">
+        <label class="m-rolle"><input type="checkbox" name="rolle" value="Kunden">💬<span><b>Kunden</b><small>ansprechen und beraten</small></span></label>
+        <label class="m-rolle"><input type="checkbox" name="rolle" value="Fotos & Texte">📸<span><b>Fotos &amp; Texte</b><small>für Webseiten und Flyer</small></span></label>
+        <label class="m-rolle"><input type="checkbox" name="rolle" value="Technik-Hilfe">🛠️<span><b>Technik-Hilfe</b><small>Tablets einrichten, erklären</small></span></label>
+        <label class="m-rolle"><input type="checkbox" name="rolle" value="Programmieren">💻<span><b>Programmieren</b><small>Webseiten und Apps</small></span></label>
+        <label class="m-rolle"><input type="checkbox" name="rolle" value="Design">🎨<span><b>Design</b><small>Logos, Flyer, Aussehen</small></span></label>
+      </div>
+    </fieldset>
+    <div class="field"><label for="fWarum">Warum willst du mitmachen? Was kannst du schon?</label><textarea class="inp" id="fWarum" rows="3" maxlength="400"></textarea></div>
+    <div class="field"><label for="fZeit">Wann hättest du Zeit für ein kurzes Gespräch?</label><input class="inp" id="fZeit" maxlength="40" placeholder="z. B. große Pause, Di nach der Schule"></div>
+    <div class="field"><label for="fUmfang">Wie viel Zeit hättest du fürs Mitmachen?</label><select class="inp" id="fUmfang"><option>Ab und zu, bei einzelnen Aufträgen</option><option>Etwa ein Nachmittag pro Woche</option><option>Nur in den Ferien</option></select></div>
+    <label class="m-check"><input type="checkbox" id="fEltern"><span>Meine Eltern wissen, dass ich mich hier melde.</span></label>
+    <label class="m-check"><input type="checkbox" id="fDaten"><span>Meine Angaben dürfen gespeichert werden, damit OMNIVIA sich bei mir meldet. Passt es nicht, werden sie gelöscht. <a href="../datenschutz/">Datenschutz</a></span></label>
+    <input class="m-falle" id="fWeb" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <button class="btn primary" type="submit" id="senden" style="margin-top:8px">🙋 Anfrage schicken</button>
+    <div id="antwort" hidden></div>
+  </form>
+  <p class="muted" style="margin-top:22px;font-size:.88rem">Wichtig: Die Schule geht immer vor. Mitmachen ist freiwillig und du kannst jederzeit aufhören.</p>
+</main>
+<script src="../shared/kw.js"></script>
+<script src="mitmachen.js"></script>
+</body>
+</html>

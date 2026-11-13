@@ -3,5 +3,6 @@ Allow: /
 Disallow: /team/
 Disallow: /code-pc/
 Disallow: /kunden/baukasten/
+Disallow: /mitmachen/
 
 Sitemap: https://kometenwerk.github.io/sitemap.xml

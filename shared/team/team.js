@@ -630,17 +630,19 @@
     if (!l.length) h += '<div class="leer"><div class="gross">📥</div><b>Noch keine Anfragen.</b><span>Wenn jemand auf der Kunden-Seite ein Projekt anfragt, landet es hier' + (FIRMA === "omnivia" ? " – die Zentrale sieht die Anfragen aller Firmen." : ".") + "</span></div>";
     l.forEach(function (a) {
       var st = stat(a), fr = T.firmen[a.firma] || F, kontakt = istMail(a.kontakt) ? '<a href="mailto:' + esc(a.kontakt) + '">' + esc(a.kontakt) + "</a>" : esc(a.kontakt);
-      h += '<article class="kunde st-' + st + '"><div class="kunde-kopf"><b>' + esc(a.name) + '</b><span class="st">' + STATUS[st][0] + "</span>" +
+      var mit = a.anliegen === "Mitmachen";
+      h += '<article class="kunde st-' + st + '"><div class="kunde-kopf"><b>' + (mit ? "🙋 " : "") + esc(a.name) + '</b><span class="st">' + STATUS[st][0] + "</span>" +
         (FIRMA === "omnivia" ? '<span class="firma-chip" style="--c:' + fr.farbe + '">' + esc(fr.name) + "</span>" : "") + '<small>' + esc(datum(a.zeit)) + "</small></div>" +
-        '<dl><dt>Anliegen</dt><dd>' + esc(a.anliegen || "–") + (a.paket && a.paket !== "–" ? " · Paket „" + esc(a.paket) + "“" : "") + "</dd>" +
-        (a.bausteine ? "<dt>Bausteine</dt><dd>" + esc(a.bausteine) + "</dd>" : "") +
-        "<dt>Kontakt</dt><dd>" + kontakt + " · möchte: " + esc(a.gespraech || "–") + "</dd>" +
+        '<dl><dt>Anliegen</dt><dd>' + (mit ? "Will bei uns mitmachen" : esc(a.anliegen || "–") + (a.paket && a.paket !== "–" ? " · Paket „" + esc(a.paket) + "“" : "")) + "</dd>" +
+        (a.bausteine ? "<dt>" + (mit ? "Möchte machen" : "Bausteine") + "</dt><dd>" + esc(a.bausteine) + "</dd>" : "") +
+        "<dt>Kontakt</dt><dd>" + kontakt + (mit ? " · Zeit fürs Gespräch: " : " · möchte: ") + esc(a.gespraech || "–") + "</dd>" +
         (a.alt ? "<dt>Alte Seite</dt><dd>" + esc(a.alt) + "</dd>" : "") +
         (a.gefunden ? "<dt>Gefunden über</dt><dd>" + esc(a.gefunden) + "</dd>" : "") + "</dl>" +
         (a.text ? '<p class="kunde-text">' + esc(a.text) + "</p>" : "") +
         (a.bearbeitet ? '<p class="wer">bearbeitet von ' + esc(a.bearbeitet) + "</p>" : "") +
         '<div class="aktionen">' +
-        (st === "neu" ? '<button class="knopf klein haupt" type="button" data-kannehmen="' + esc(a.id) + '">✅ Annehmen &amp; planen</button>' : "") +
+        (st === "neu" ? '<button class="knopf klein haupt" type="button" data-kannehmen="' + esc(a.id) + '">' + (mit ? "📅 Gespräch ausmachen" : "✅ Annehmen &amp; planen") + "</button>" : "") +
+        (mit && st === "angenommen" ? '<a class="knopf klein" href="/kunden/baukasten/#vereinbarung">🤝 Vereinbarung</a>' : "") +
         (st === "neu" || st === "angenommen" ? '<button class="knopf klein" type="button" data-kantwort="' + esc(a.id) + '">✍️ Antwort-Entwurf</button>' : "") +
         (st === "angenommen" ? '<button class="knopf klein" type="button" data-kfertig="' + esc(a.id) + '">🏁 Projekt fertig</button>' : "") +
         (st === "neu" ? '<button class="knopf klein" type="button" data-kab="' + esc(a.id) + '">Ablehnen</button>' : "") +
@@ -653,6 +655,10 @@
   }
   function kundenStatus(id, st) { var u = {}; u["anfragen/" + id + "/status"] = st; u["anfragen/" + id + "/bearbeitet"] = ich.name; return B.update(u); }
   function annehmen(a) {
+    if (a.anliegen === "Mitmachen") { // Mitmach-Anfrage: kein Kundenprojekt, sondern Kennenlern-Gespräch
+      kundenStatus(a.id, "angenommen").then(function () { toast("Super! Schreib " + a.name + " und macht ein kurzes Gespräch aus. Die Checkliste dafür ist im Werkzeugkasten."); antwortEntwurf(a); }).catch(fehlerToast);
+      return;
+    }
     var text = "Kundenanfrage von " + a.name + ": " + (a.anliegen || "Projekt") + (a.paket && a.paket !== "–" ? ", Paket " + a.paket : "") +
       (a.bausteine ? ". Bausteine: " + a.bausteine : "") + (a.text ? ". Wunsch: " + a.text : "");
     kundenStatus(a.id, "angenommen").then(function () {
@@ -671,6 +677,9 @@
     }).catch(fehlerToast);
   }
   function entwurfVorlage(a) {
+    if (a.anliegen === "Mitmachen") return "Hallo " + a.name + ",\n\nschön, dass du bei OMNIVIA mitmachen willst! Lass uns kurz reden, damit wir uns kennenlernen und du siehst, was wir so machen." +
+      (a.gespraech && a.gespraech !== "egal" ? " Du hast geschrieben: „" + a.gespraech + "“ – passt das diese Woche?" : " Wann hast du diese Woche kurz Zeit, zum Beispiel in der Pause?") +
+      "\n\nBring gern mit, was du schon gemacht hast (Fotos, Programme, Zeichnungen …).\n\nViele Grüße\n" + ich.name + "\nOMNIVIA Group";
     var fr = T.firmen[a.firma] || F, g = String(a.gespraech || "");
     var wie = /telefon/i.test(g) ? "kurz am Telefon" : /pers/i.test(g) ? "bei einem persönlichen Treffen" : "erst einmal per E-Mail";
     return "Hallo " + a.name + ",\n\nvielen Dank für deine Anfrage bei " + fr.voll + "! Wir haben sie gelesen und freuen uns über dein Interesse an „" + (a.anliegen || "deinem Projekt") + "“." +
