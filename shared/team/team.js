@@ -23,6 +23,8 @@
   /* ---------- Speicher auf dem Gerät ---------- */
   function lade(k, std) { try { var v = localStorage.getItem(k); return v == null ? std : JSON.parse(v); } catch (e) { return std; } }
   function merke(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* egal */ } }
+  // KI-Team im Chat: standardmäßig AUS (die Browser-KI antwortet zu wirr). In „Team & Einstellungen“ wieder einschaltbar.
+  function kiTeamAn() { return lade("omni-team-ki-team", false) === true; }
 
   /* ---------- Rollen ---------- */
   var ROLLEN = {}; T.rollen.forEach(function (r) { ROLLEN[r.id] = r; });
@@ -202,7 +204,7 @@
       Object.keys(v || {}).forEach(function (k) { var a = v[k]; if (a && a.name && (FIRMA === "omnivia" || a.firma === FIRMA)) kunden[k] = a; });
       seiteZeichnen(); if (ansicht === "kunden") kundenZeichnen(); kopfZeichnen();
     }, null, function () { kundenGesperrt = true; seiteZeichnen(); if (ansicht === "kunden") kundenZeichnen(); });
-    KI.vorladen();
+    if (kiTeamAn()) KI.vorladen();
     // Thorstens Automatik: Studio im Hintergrund laden, damit er seine Tagesvideos machen kann
     if (lade("omni-studio-auto", false) && !DEMO) {
       if (!studioLaden) studioLaden = window.OMNI_STUDIO ? Promise.resolve() : ladeSkript(BASIS + "team/studio.js").catch(function (e) { studioLaden = null; throw e; });
@@ -213,6 +215,7 @@
     var u = {}; F.kanaele.forEach(function (n, i) { u["team/channels/" + K(n)] = { name: n, pos: i }; });
     B.update(u).then(function () {
       var l = rolle(F.leitung);
+      if (!kiTeamAn()) return B.push("team/msgs/" + K("allgemein"), { uid: uid, name: ich.name, text: "Willkommen im " + F.name + " Team! 🚀 Hier sprechen wir Aufträge ab. Neue Anfragen findest du links unter 📥 Anfragen.", t: B.zeit() });
       return B.push("team/msgs/" + K("allgemein"), { uid: uid, name: l.name, text: "Willkommen im " + F.name + " Team! 🚀 Ich bin " + l.name + ", " + l.rolle + ". Schreib @Name, um jemanden aus dem KI-Team anzusprechen, oder tipp auf „🧩 Auftrag“, wenn wir etwas gemeinsam planen sollen.", t: B.zeit(), rolle: l.id, ki: true });
     }).catch(fehlerToast);
   }
@@ -278,7 +281,8 @@
     h += '<button class="eintrag" type="button" data-a="studio"' + (ansicht === "studio" ? ' aria-current="true"' : "") + '><span class="hash">🎬</span><span class="name">Video-Studio</span>' + (window.OMNI_STUDIO && OMNI_STUDIO.laeuft() ? '<span class="neu" aria-label="nimmt auf"></span>' : "") + "</button>";
     var na = Object.keys(anfragen).length;
     h += '<button class="eintrag" type="button" data-a="team"><span class="hash">👥</span><span class="name">Team &amp; Einstellungen</span>' + (istAdmin() && na ? '<span class="zahl">' + na + "</span>" : "") + "</button>";
-    // KI-Team
+    // KI-Team (nur wenn eingeschaltet)
+    if (!kiTeamAn()) { var sc0 = $("seiteInhalt").scrollTop; $("seiteInhalt").innerHTML = h; $("seiteInhalt").scrollTop = sc0; return; }
     var eigene = firmenRollen(FIRMA);
     h += '<div class="gruppe">KI-Team · ' + eigene.length + '<button type="button" data-a="neueKi" aria-label="Neue KI einstellen" title="Neue KI einstellen">＋</button></div>';
     h += '<input class="suche" id="kiSuche" type="search" placeholder="KI suchen …" aria-label="KI suchen" value="' + esc(kiSuche) + '">';
@@ -335,7 +339,7 @@
       var r = istKiChat(aktiv) ? kiAusKey(aktiv) : null;
       v.innerHTML = '<div class="leer"><div class="gross">' + (r ? esc(r.em) : "💬") + "</div>" +
         (r ? "<b>Schreib " + esc(r.name) + " direkt an.</b><span>" + esc(r.rolle) + ". " + esc(r.name) + " antwortet dir hier persönlich.</span>"
-           : "<b>Noch keine Nachrichten.</b><span>Schreib die erste! Mit @Name holst du jemanden aus dem KI-Team dazu.</span>") + "</div>";
+           : "<b>Noch keine Nachrichten.</b><span>Schreib die erste!" + (kiTeamAn() ? " Mit @Name holst du jemanden aus dem KI-Team dazu." : "") + "</span>") + "</div>";
       return;
     }
     var h = "", vorher = null, tag = "";
@@ -404,6 +408,8 @@
   };
   $("tipps").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; ta.value = b.dataset.t; ta.focus(); hoehe(); vorschlagen(); });
   function tippsZeichnen() {
+    if (!kiTeamAn()) { $("tipps").innerHTML = ""; $("tipps").hidden = true; return; }
+    $("tipps").hidden = false;
     var l = rolle(F.leitung);
     var t = [["@" + l.name + " ", "@" + l.name + " fragen"], ["Auftrag: ", "🧩 Auftrag planen"], ["@Kai ", "@Kai testen lassen"]];
     if (rolle("tim")) t.push(["@Tim Plane ein kurzes YouTube-Video über ", "📺 @Tim Video planen"]);
@@ -415,6 +421,7 @@
     var key = aktiv, auftrag = alsAuftrag || /^auftrag\s*:/i.test(text);
     if (auftrag) text = text.replace(/^auftrag\s*:\s*/i, "").trim() || text;
     B.push("team/msgs/" + key, { uid: uid, name: ich.name, text: (auftrag ? "🧩 Auftrag: " : "") + text, t: B.zeit() }).then(function () {
+      if (!kiTeamAn()) return;
       if (auftrag) return auftragBesprechen(key, text);
       if (/^\s*111\s*$/.test(text)) return freigabe(key);
       var genannt = [], re = /@([A-Za-zÄÖÜäöüß]{2,})/g, m;
@@ -641,7 +648,7 @@
         (a.text ? '<p class="kunde-text">' + esc(a.text) + "</p>" : "") +
         (a.bearbeitet ? '<p class="wer">bearbeitet von ' + esc(a.bearbeitet) + "</p>" : "") +
         '<div class="aktionen">' +
-        (st === "neu" ? '<button class="knopf klein haupt" type="button" data-kannehmen="' + esc(a.id) + '">' + (mit ? "📅 Gespräch ausmachen" : "✅ Annehmen &amp; planen") + "</button>" : "") +
+        (st === "neu" ? '<button class="knopf klein haupt" type="button" data-kannehmen="' + esc(a.id) + '">' + (mit ? "📅 Gespräch ausmachen" : kiTeamAn() ? "✅ Annehmen &amp; planen" : "✅ Annehmen") + "</button>" : "") +
         (mit && st === "angenommen" ? '<a class="knopf klein" href="/kunden/baukasten/#vereinbarung">🤝 Vereinbarung</a>' : "") +
         (st === "neu" || st === "angenommen" ? '<button class="knopf klein" type="button" data-kantwort="' + esc(a.id) + '">✍️ Antwort-Entwurf</button>' : "") +
         (st === "angenommen" ? '<button class="knopf klein" type="button" data-kfertig="' + esc(a.id) + '">🏁 Projekt fertig</button>' : "") +
@@ -664,6 +671,7 @@
     kundenStatus(a.id, "angenommen").then(function () {
       return B.push("team/msgs/" + K("aufgaben"), { uid: uid, name: ich.name, text: ("Kundenprojekt: " + a.name + " – " + (a.anliegen || "")).slice(0, 300), t: B.zeit(), erledigt: false });
     }).then(function () {
+      if (!kiTeamAn()) { toast("Angenommen! Steht jetzt bei den Aufgaben. Schreib " + a.name + " – die Antwort-Vorlage hilft dir."); antwortEntwurf(a); return; }
       var key = kundenKanal(); oeffne(key);
       toast("Angenommen! Das Team plant jetzt in #" + ((kanaele[key] || {}).name || "allgemein") + ".");
       return auftragBesprechen(key, text.slice(0, 600));
@@ -671,6 +679,7 @@
   }
   function fertigMelden(a) {
     kundenStatus(a.id, "fertig").then(function () {
+      if (!kiTeamAn()) { toast("🎉 Fertig! Frag " + a.name + ", ob du das Projekt als Beispiel zeigen darfst – und lösch danach die Anfrage."); return; }
       var jana = rolle("jana"), key = kundenKanal(); oeffne(key);
       return B.push("team/msgs/" + key, { uid: uid, name: jana.name, rolle: "jana", ki: true, t: B.zeit(),
         text: "🎉 Das Projekt für " + a.name + " ist fertig – glückwunsch! Idee von der Werbung: Wenn " + a.name + " einverstanden ist, zeigen wir das Projekt als Beispiel auf unserer Website. Bitte vorher ausdrücklich um Erlaubnis fragen – ohne Ja kein Beispiel. Und die Anfrage selbst kannst du jetzt löschen." });
@@ -688,7 +697,7 @@
   }
   function antwortEntwurf(a) {
     var ella = rolle("ella"), mail = istMail(a.kontakt);
-    fenster('<div class="fenster"><h3>✍️ Antwort an ' + esc(a.name) + '</h3><p class="hinweis" id="ellaStatus">' + esc(ella.em + " " + ella.name) + ' hat einen Entwurf geschrieben. Lies ihn durch und ändere, was du willst.</p>' +
+    fenster('<div class="fenster"><h3>✍️ Antwort an ' + esc(a.name) + '</h3><p class="hinweis" id="ellaStatus">' + (kiTeamAn() ? esc(ella.em + " " + ella.name) + " hat einen Entwurf geschrieben." : "Hier ist eine Vorlage.") + ' Lies sie durch und ändere, was du willst.</p>' +
       '<div class="feld"><label for="entwurf">Text</label><textarea id="entwurf" rows="12">' + esc(entwurfVorlage(a)) + '</textarea></div>' +
       '<p class="hinweis">Abschicken musst du selbst – die KI schreibt Kunden nie von allein.' + (mail ? "" : " Kontakt ist eine Telefonnummer: " + esc(a.kontakt) + " – der Text hilft dir beim Anrufen.") + '</p>' +
       '<div class="reihe"><button class="knopf" type="button" data-zu>Schließen</button><span style="flex:1"></span><button class="knopf" type="button" id="entwurfKopie">📋 Kopieren</button>' +
@@ -696,6 +705,7 @@
     $("entwurfKopie").onclick = function () { var t = $("entwurf").value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { toast("Text kopiert."); }).catch(function () { toast("Kopieren ging nicht – markiere den Text von Hand."); }); };
     if ($("entwurfMail")) $("entwurfMail").onclick = function () { location.href = "mailto:" + a.kontakt.trim() + "?subject=" + encodeURIComponent("Deine Anfrage bei " + (T.firmen[a.firma] || F).voll) + "&body=" + encodeURIComponent($("entwurf").value); };
     // Mit Browser-KI schreibt Ella den Text persönlicher, sonst bleibt die Vorlage
+    if (!kiTeamAn()) return;
     KI.bereit().then(function (e) {
       if (!e || !$("entwurf")) return;
       $("ellaStatus").textContent = ella.em + " " + ella.name + " formuliert den Text gerade persönlicher …";
@@ -779,6 +789,7 @@
     h += '<div class="gruppe" style="margin:0">Mitglieder</div><div class="liste">' + Object.keys(mitglieder).map(function (k) { var m = mitglieder[k]; return '<div class="zeile"><span class="av mensch" style="width:30px;height:30px;border-radius:9px;background:' + farbe(k) + '">' + esc((m.name || "?").charAt(0).toUpperCase()) + '</span><span class="name">' + esc(m.name) + (k === uid ? " (du)" : "") + "</span><small>" + (m.rolle === "admin" ? "Chef" : "Mitglied") + "</small></div>"; }).join("") + "</div>";
     h += '<p class="hinweis">Mitglieder sind in allen fünf Team-Apps dieselben. Neue Leute öffnen eine Team-App, geben ihren Namen ein und du nimmst sie hier auf.</p>';
     var t = lade("omni-team-tempo", "gruendlich"), aus = lade("omni-team-ki-aus", false);
+    h += '<div class="gruppe" style="margin:0">KI-Team</div><label class="feld" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="kiTeamAn"' + (kiTeamAn() ? " checked" : "") + '> KI-Team im Chat anzeigen (antwortet auf @Namen und plant Aufträge)</label><p class="hinweis">Die KI läuft nur im Browser und schreibt oft Unsinn – deshalb ist sie normalerweise aus.</p>';
     h += '<div class="gruppe" style="margin:0">Browser-KI</div><div class="feld"><label for="kiTempo">Wie soll die KI antworten?</label><select id="kiTempo"><option value="gruendlich"' + (t === "gruendlich" && !aus ? " selected" : "") + '>Gründlich (besser, braucht ca. 1 GB Download)</option><option value="schnell"' + (t === "schnell" && !aus ? " selected" : "") + '>Schnell (kleiner, ca. 400 MB)</option><option value="aus"' + (aus ? " selected" : "") + '>Aus (Antworten nur aus den Steckbriefen)</option></select></div>' +
       (lade("omni-team-kein-gpu", false) ? '<p class="hinweis">Dieses Gerät kann die Browser-KI nicht ausführen (es fehlt WebGPU). Am besten klappt es am PC mit einem aktuellen Chrome oder Edge.</p>' : "");
     h += '<div class="gruppe" style="margin:0">YouTube</div><div class="feld"><label for="ytClientE">Google-Client-ID (Webanwendung)</label><input id="ytClientE" placeholder="123…-abc….apps.googleusercontent.com" autocomplete="off" spellcheck="false" value="' + esc(YT.clientId()) + '"></div>' +
@@ -798,6 +809,7 @@
       if (!ytSpeichern()) return;
       var n = $("meinName").value.trim(), v = $("kiTempo").value;
       if (v === "aus") merke("omni-team-ki-aus", true); else { merke("omni-team-ki-aus", false); merke("omni-team-tempo", v); }
+      var kiNeu = $("kiTeamAn").checked; if (kiNeu !== kiTeamAn()) { merke("omni-team-ki-team", kiNeu); tippsZeichnen(); seiteZeichnen(); if (kiNeu) KI.vorladen(); toast(kiNeu ? "KI-Team ist an." : "KI-Team ist aus."); }
       if (n && n !== ich.name) B.set("team/members/" + uid, { name: n, rolle: ich.rolle }).catch(fehlerToast);
       dlg.close();
     };
