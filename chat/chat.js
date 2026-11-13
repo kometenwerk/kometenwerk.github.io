@@ -417,26 +417,95 @@
   /* ---------- Liste ---------- */
   function letzte(cid) { var l = nachrichten[cid]; return l && l.length ? l[l.length - 1] : null; }
   function ungelesen(cid) { return (nachrichten[cid] || []).filter(function (n) { return n.von !== ich.cid && !n.gelesen; }).length; }
+  var zeigArchiv = false;
+  function stummAn(k) { return !!(k && k.stummBis && k.stummBis > Date.now()); }
+  function stummBisText(k) { return k.stummBis > 8e15 ? "immer" : "bis " + new Date(k.stummBis).toLocaleString("de-DE", { weekday: "short", hour: "2-digit", minute: "2-digit" }); }
   function liste() {
     if (!ich) return;
     sofieAnlegen();
     var q = ($("suche").value || "").trim().toLowerCase();
-    var ids = Object.keys(kontakte).filter(function (c) { return kontakte[c].status !== "entfernt" || (nachrichten[c] || []).length; });
-    $("sucheLeiste").hidden = ids.length < 6;
+    var alle = Object.keys(kontakte).filter(function (c) { return kontakte[c].status !== "entfernt" || (nachrichten[c] || []).length; });
+    $("sucheLeiste").hidden = alle.length < 6;
+    var archivN = alle.filter(function (c) { return kontakte[c].archiv; }).length;
+    if (!archivN) zeigArchiv = false;
+    var ids = alle.filter(function (c) { return !!kontakte[c].archiv === zeigArchiv || q; });
     ids = ids.filter(function (c) { return !q || kontakte[c].name.toLowerCase().indexOf(q) >= 0; });
-    ids.sort(function (a, b) { var x = letzte(a), y = letzte(b); return (y ? y.zeit : kontakte[b].seit || 0) - (x ? x.zeit : kontakte[a].seit || 0); });
+    ids.sort(function (a, b) {
+      var oa = kontakte[a].oben || 0, ob = kontakte[b].oben || 0; if (oa || ob) return ob - oa;
+      var x = letzte(a), y = letzte(b); return (y ? y.zeit : kontakte[b].seit || 0) - (x ? x.zeit : kontakte[a].seit || 0);
+    });
     var gesamt = 0;
-    $("chats").innerHTML = ids.length ? ids.map(function (cid) {
-      var k = kontakte[cid], n = letzte(cid), u = ungelesen(cid); gesamt += u;
+    alle.forEach(function (c) { if (!kontakte[c].archiv) gesamt += ungelesen(c); });
+    var kopf = zeigArchiv ? '<button class="chatzeile archivzeile" type="button" data-archiv="0">← Zurück zu allen Chats <span class="muted">· 🗄️ Archiv</span></button>'
+      : (archivN && !q ? '<button class="chatzeile archivzeile" type="button" data-archiv="1">🗄️ Archiviert <span class="muted">(' + archivN + ")</span></button>" : "");
+    $("chats").innerHTML = kopf + (ids.length ? ids.map(function (cid) {
+      var k = kontakte[cid], n = letzte(cid), u = ungelesen(cid);
+      var erw = (nachrichten[cid] || []).some(function (x) { return x.erwMich && !x.gelesen; });
       var vor = n ? (n.art === "info" ? "" : n.von === ich.cid ? "Du: " : k.gruppe ? nameVon(cid, n.von) + ": " : "") + vorschauText(n) : (k.status === "ok" ? (k.gruppe ? "Schreib der Gruppe 👋" : "Sag Hallo 👋") : "");
+      var vorHtml = k.entwurf && cid !== aktiv ? '<span class="entwurf">✏️ Entwurf:</span> ' + esc(k.entwurf.slice(0, 80)) : esc(vor);
       var schild = (k.gruppe ? '<span class="schild">Gruppe</span>' : "") + (k.status === "blockiert" ? '<span class="schild">blockiert</span>' : k.status === "entfernt" ? '<span class="schild">' + (k.gruppe ? "verlassen" : "nicht mehr verbunden") + "</span>" : "");
-      return '<button class="chatzeile' + (u ? " ungelesen" : "") + '" type="button" data-c="' + cid + '">' + ava(k) + '<span class="mitte"><span class="name">' + esc(k.name) + (k.geprueft ? ' <span title="Schlüssel geprüft" aria-label="geprüft">✅</span>' : "") + schild + '</span><span class="vor">' + esc(vor) + '</span></span><span class="rechts">' + (n ? esc(kurzZeit(n.zeit)) : "") + (u ? '<span class="zahl" aria-label="' + u + ' ungelesen">' + u + "</span>" : "") + "</span></button>";
-    }).join("") : '<div class="empty"><span class="gross" aria-hidden="true">👋</span><b>Noch keine Chats</b>Tippe auf ＋ und zeig deinen Kontakt-Code – oder scanne den von jemandem, den du kennst.</div>';
+      var zeichen = (k.oben ? '<span class="zeichen" aria-label="angeheftet">📌</span>' : "") + (stummAn(k) ? '<span class="zeichen" aria-label="stumm">🔕</span>' : "");
+      return '<button class="chatzeile' + (u ? " ungelesen" : "") + (stummAn(k) ? " leise" : "") + '" type="button" data-c="' + cid + '">' + ava(k) + '<span class="mitte"><span class="name">' + esc(k.name) + (k.geprueft ? ' <span title="Schlüssel geprüft" aria-label="geprüft">✅</span>' : "") + schild + '</span><span class="vor">' + vorHtml + '</span></span><span class="rechts">' + (n ? esc(kurzZeit(n.zeit)) : "") + '<span class="zeichenreihe">' + zeichen + (erw ? '<span class="zahl at-zahl" aria-label="Du wurdest erwähnt">@</span>' : "") + (u ? '<span class="zahl" aria-label="' + u + ' ungelesen">' + u + "</span>" : "") + "</span></span></button>";
+    }).join("") : (zeigArchiv ? "" : '<div class="empty"><span class="gross" aria-hidden="true">👋</span><b>Noch keine Chats</b>Tippe auf ＋ und zeig deinen Kontakt-Code – oder scanne den von jemandem, den du kennst.</div>'));
     document.title = (gesamt ? "(" + gesamt + ") " : "") + "FIDELIA Chat";
     installHinweis();
   }
   $("suche").oninput = liste;
-  $("chats").onclick = function (e) { var b = e.target.closest("[data-c]"); if (b) chatOeffnen(b.dataset.c); };
+  var langGedrueckt = false, langTimer = null;
+  $("chats").onclick = function (e) {
+    if (langGedrueckt) { langGedrueckt = false; return; }
+    var a = e.target.closest("[data-archiv]"); if (a) { zeigArchiv = a.dataset.archiv === "1"; liste(); return; }
+    var b = e.target.closest("[data-c]"); if (b) chatOeffnen(b.dataset.c);
+  };
+  // Lange drücken oder Rechtsklick: Anheften, Archivieren, Stummschalten
+  $("chats").addEventListener("contextmenu", function (e) { var b = e.target.closest("[data-c]"); if (!b) return; e.preventDefault(); clearTimeout(langTimer); chatOptionen(b.dataset.c); });
+  $("chats").addEventListener("pointerdown", function (e) {
+    var b = e.target.closest("[data-c]"); if (!b || e.pointerType === "mouse") return;
+    langGedrueckt = false; clearTimeout(langTimer);
+    langTimer = setTimeout(function () { langGedrueckt = true; if (navigator.vibrate) navigator.vibrate(15); chatOptionen(b.dataset.c); }, 550);
+  });
+  ["pointerup", "pointercancel", "pointermove"].forEach(function (t) { $("chats").addEventListener(t, function (e) { if (t !== "pointermove" || Math.abs(e.movementY) > 4) clearTimeout(langTimer); }); });
+
+  function optionenKnoepfe(k) {
+    return '<button class="btn" type="button" data-m="oben">' + (k.oben ? "📌 Nicht mehr anheften" : "📌 Oben anheften") + "</button>" +
+      '<button class="btn" type="button" data-m="archiv">' + (k.archiv ? "🗄️ Aus dem Archiv holen" : "🗄️ Archivieren") + "</button>" +
+      '<button class="btn" type="button" data-m="stumm">' + (stummAn(k) ? "🔔 Stumm ausschalten (" + esc(stummBisText(k)) + ")" : "🔕 Stummschalten") + "</button>";
+  }
+  function chatOptionen(cid) {
+    var k = kontakte[cid]; if (!k) return;
+    oeffne("<h2>" + esc(k.name) + '</h2><div class="menue">' + optionenKnoepfe(k) + '</div><div class="sheet-foot"><button class="btn" type="button" data-m="zu">Schließen</button></div>',
+      function (w) { w.onclick = function (e) { var b = e.target.closest("[data-m]"); if (!b) return; if (b.dataset.m === "zu") zu(); else optionAus(cid, b.dataset.m); }; });
+  }
+  async function optionAus(cid, m) {
+    var k = kontakte[cid]; if (!k) return;
+    if (m === "oben") {
+      if (k.oben) delete k.oben;
+      else {
+        if (Object.keys(kontakte).filter(function (c) { return kontakte[c].oben; }).length >= 3) { KW.toast("Du kannst höchstens 3 Chats anheften."); return; }
+        k.oben = Date.now(); delete k.archiv;
+      }
+    } else if (m === "archiv") {
+      if (k.archiv) delete k.archiv; else { k.archiv = true; delete k.oben; }
+      KW.toast(k.archiv ? "🗄️ Archiviert – du findest den Chat oben unter „Archiviert“." : "Wieder bei deinen Chats.");
+    } else if (m === "stumm") {
+      if (stummAn(k)) delete k.stummBis; else { stummFenster(cid); return; }
+    } else return;
+    await speichereKontakt(k); zu(); liste(); if (aktiv === cid) chatKopf();
+  }
+  function stummFenster(cid) {
+    var k = kontakte[cid];
+    oeffne('<h2>🔕 Stummschalten</h2><p class="muted">Kein Ton und keine Benachrichtigung für „' + esc(k.name) + '“. Nachrichten kommen trotzdem an.' + (k.gruppe ? " Wenn dich jemand mit @ erwähnt, bekommst du trotzdem Bescheid." : "") + "</p>" +
+      '<div class="menue"><button class="btn" type="button" data-s="28800">8 Stunden</button><button class="btn" type="button" data-s="604800">1 Woche</button><button class="btn" type="button" data-s="-1">Immer</button></div>' +
+      '<div class="sheet-foot"><button class="btn" type="button" data-s="">Abbrechen</button></div>',
+      function (w) {
+        w.onclick = async function (e) {
+          var b = e.target.closest("[data-s]"); if (!b) return;
+          if (!b.dataset.s) { zu(); return; }
+          var s = +b.dataset.s; k.stummBis = s < 0 ? 9e15 : Date.now() + s * 1000;
+          await speichereKontakt(k); zu(); liste(); if (aktiv === cid) chatKopf();
+        };
+      });
+  }
   function installHinweis() {
     var alleinst = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
     var weg = false; try { weg = localStorage.getItem("fchat-banner-weg") === "1"; } catch (e) { /* egal */ }
@@ -558,11 +627,14 @@
   function istGruppe(c) { return String(c).indexOf("g:") === 0; }
   function chatOeffnen(cid) {
     if (!kontakte[cid]) return;
-    zu(); aktiv = cid; antwortAuf = null; antwortZeigen(); seite("seiteChat"); chatKopf(); verlauf(true); gelesenMarkieren();
+    entwurfMerken();
+    zu(); aktiv = cid; antwortAuf = null; bearbeite = null; antwortZeigen(); sucheZu(true);
+    feld.value = kontakte[cid].entwurf || ""; feld.style.height = "auto"; if (feld.value) feld.style.height = Math.min(140, feld.scrollHeight) + "px"; knopfAnpassen(); $("atVorschlag").hidden = true;
+    seite("seiteChat"); chatKopf(); verlauf(true); gelesenMarkieren();
     history.pushState({ chat: cid }, "");
     if (matchMedia("(pointer:fine)").matches) $("text").focus();
   }
-  function chatZu() { aufnahmeStopp(false); aktiv = null; seite("seiteListe"); liste(); }
+  function chatZu() { aufnahmeStopp(false); entwurfMerken(); bearbeite = null; sucheZu(true); aktiv = null; feld.value = ""; seite("seiteListe"); liste(); }
   $("chatZurueck").onclick = function () { if (history.state && history.state.chat) history.back(); else chatZu(); };
   window.addEventListener("popstate", function () { if (bildAnsicht()) return; if (aktiv) chatZu(); });
   var TIMER = { 0: "aus", 3600: "1 Stunde", 86400: "1 Tag", 604800: "1 Woche" };
@@ -572,6 +644,8 @@
     $("chatName").textContent = k.name;
     var unter = k.gruppe ? Object.keys(k.mitglieder || {}).length + " Mitglieder" : (k.geprueft ? "✅ geprüft · " : "") + "🔒 verschlüsselt";
     if (k.timer) unter = "⏱️ " + TIMER[k.timer] + " · " + unter;
+    if (stummAn(k)) unter = "🔕 " + unter;
+    var tt = tipptText(aktiv); if (tt && k.status === "ok") unter = "✍️ " + tt;
     $("chatUnter").textContent = k.status === "blockiert" ? "blockiert" : k.status === "entfernt" ? (k.gruppe ? "nicht mehr in der Gruppe" : "nicht mehr verbunden") : unter;
     var gesperrt = k.status !== "ok";
     $("eingabe").hidden = gesperrt; $("gesperrt").hidden = !gesperrt;
@@ -587,40 +661,79 @@
   }
   function farbeVon(chat, cid) { var g = kontakte[chat], m = g && g.mitglieder && g.mitglieder[cid]; return (kontakte[cid] && kontakte[cid].farbe) || (m && m.farbe) || "#6d3fd6"; }
   function groesse(b) { return b > 1048576 ? (b / 1048576).toFixed(1).replace(".", ",") + " MB" : Math.max(1, Math.round(b / 1024)) + " KB"; }
-  function vorschauText(n) { return n.art === "bild" ? "📷 Foto" + (n.text ? ": " + n.text : "") : n.art === "ton" ? "🎤 Sprachnachricht" : n.art === "datei" ? "📄 " + (n.name || "Datei") : n.art === "info" ? n.text : n.text; }
+  function vorschauText(n) { if (n.geloescht) return "🚫 Nachricht gelöscht"; if (n.art === "umfrage") return "📊 " + n.text; if (n.art === "ort") return "📍 Standort"; return n.art === "bild" ? "📷 Foto" + (n.text ? ": " + n.text : "") : n.art === "ton" ? "🎤 Sprachnachricht" : n.art === "datei" ? "📄 " + (n.name || "Datei") : n.art === "info" ? n.text : n.text; }
   function dauerText(s) { s = Math.round(s || 0); return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2); }
 
   var gezeigt = {};
+  var DATEI_ART = { bild: 1, ton: 1, datei: 1 };
+  function reEsc(t) { return String(t).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+  function finde(chat, id) { return (nachrichten[chat] || []).filter(function (x) { return x.id === id; })[0]; }
+  function textHtml(t) {
+    var h = esc(t);
+    if (suchQ) return h.replace(new RegExp(reEsc(esc(suchQ)), "gi"), function (x) { return "<mark>" + x + "</mark>"; });
+    return h.replace(/@([\p{L}\p{N}_-]{2,30})/gu, '<b class="at">@$1</b>');
+  }
+  function passtSuche(n) {
+    if (!suchQ || n.art === "info" || n.geloescht) return !suchQ;
+    var q = suchQ.toLowerCase();
+    return (String(n.text || "") + " " + String(n.name || "") + " " + (n.opt || []).join(" ")).toLowerCase().indexOf(q) >= 0;
+  }
   function verlauf(nachUnten) {
     var el = $("verlauf"), unten = nachUnten || el.scrollHeight - el.scrollTop - el.clientHeight < 80;
     var k = kontakte[aktiv] || {};
-    var l = nachrichten[aktiv] || [], h = k.ki ? '<div class="info">🤖 Sofie ist eine KI aus deinem Kometen-Team. Eure Nachrichten bleiben auf deinem Gerät. Frag sie z. B. „Was steht diese Woche an?“</div>' : '<div class="info">🔒 Nachrichten in diesem Chat sind Ende-zu-Ende verschlüsselt. Nur ' + (k.gruppe ? "die Mitglieder" : "ihr beide") + " könnt sie lesen.</div>", tag = "";
+    var l = (nachrichten[aktiv] || []).filter(passtSuche), tag = "";
+    var h = suchQ ? '<div class="info">' + (l.length ? "🔍 " + l.length + " Treffer – antippen, um zur Nachricht zu springen" : "🔍 Keine Treffer für „" + esc(suchQ) + "“") + "</div>"
+      : k.ki ? '<div class="info">🤖 Sofie ist eine KI aus deinem Kometen-Team. Eure Nachrichten bleiben auf deinem Gerät. Frag sie z. B. „Was steht diese Woche an?“</div>' : '<div class="info">🔒 Nachrichten in diesem Chat sind Ende-zu-Ende verschlüsselt. Nur ' + (k.gruppe ? "die Mitglieder" : "ihr beide") + " könnt sie lesen.</div>";
+    if (suchQ) $("chatSucheZahl").textContent = l.length + " Treffer";
     var erstesMal = !gezeigt[aktiv]; gezeigt[aktiv] = gezeigt[aktiv] || {};
     l.forEach(function (n, i) {
       var t = tagText(n.zeit); if (t !== tag) { tag = t; h += '<div class="tag">' + esc(t) + "</div>"; }
       if (n.art === "info") { h += '<div class="info klein-info">' + esc(n.text) + "</div>"; return; }
-      var mein = n.von === ich.cid, nurEmoji = !n.art && !n.r && /^(\p{Extended_Pictographic}|\p{Emoji_Component}|‍|️){1,8}$/u.test(n.text) && !/^[0-9#*]+$/.test(n.text);
+      var mein = n.von === ich.cid, nurEmoji = !n.art && !n.r && !n.geloescht && /^(\p{Extended_Pictographic}|\p{Emoji_Component}|‍|️){1,8}$/u.test(n.text) && !/^[0-9#*]+$/.test(n.text);
       var vx = l[i - 1], nx = l[i + 1];
       var anfang = !vx || vx.von !== n.von || vx.art === "info" || n.zeit - vx.zeit > 300000 || tagText(vx.zeit) !== t;
       var ende = !nx || nx.von !== n.von || nx.art === "info" || nx.zeit - n.zeit > 300000 || tagText(nx.zeit) !== t;
       var neu = !erstesMal && !gezeigt[aktiv][n.id]; gezeigt[aktiv][n.id] = 1;
-      var st = mein ? (n.st === -1 ? "⚠️ " + esc(n.fehler || "nicht zugestellt") + " – antippen" : n.st === 0 ? '<span aria-label="wird gesendet">🕓</span>' : n.st === 1 ? '<span aria-label="gesendet">✓</span>' : n.st === 2 ? '<span aria-label="angekommen">✓✓</span>' : '<span class="st3" aria-label="gelesen">✓✓</span>') : "";
+      var st = mein && !n.geloescht ? (n.st === -1 ? "⚠️ " + esc(n.fehler || "nicht zugestellt") + " – antippen" : n.st === 0 ? '<span aria-label="wird gesendet">🕓</span>' : n.st === 1 ? '<span aria-label="gesendet">✓</span>' : n.st === 2 ? '<span aria-label="angekommen">✓✓</span>' : '<span class="st3" aria-label="gelesen">✓✓</span>') : "";
       var innen = "";
-      if (k.gruppe && !mein && anfang) innen += '<span class="absender" style="color:' + esc(farbeVon(aktiv, n.von)) + '">' + esc(nameVon(aktiv, n.von)) + "</span>";
-      if (n.r) innen += '<span class="zitat" data-zu="' + esc(n.r) + '"><b>' + esc(n.rv === ich.cid ? "Du" : nameVon(aktiv, n.rv)) + "</b>" + esc(String(n.rt || "").slice(0, 120)) + "</span>";
-      if (n.art === "bild") innen += '<span class="foto" data-datei="' + esc(n.datei) + '" style="aspect-ratio:' + (n.vh ? (1 / n.vh).toFixed(3) : "1") + '">' + (n.vorschau && bildSicher(n.vorschau) ? '<img class="unscharf" src="' + n.vorschau + '" alt="">' : "") + "</span>";
-      if (n.art === "datei") innen += '<span class="dok" data-datei="' + esc(n.datei) + '" data-name="' + esc(n.name || "Datei") + '"><span class="dok-i" aria-hidden="true">📄</span><span class="dok-t"><b>' + esc(n.name || "Datei") + "</b><small>" + groesse(n.groesse || 0) + " · antippen zum Öffnen</small></span></span>";
-      if (n.art === "ton") innen += '<span class="ton" data-datei="' + esc(n.datei) + '"><button type="button" class="spielen" aria-label="Abspielen">▶</button><span class="welle"><span class="lauf"></span></span><span class="zeit">' + dauerText(n.dauer) + "</span></span>";
-      if (n.text) innen += '<span class="txt">' + esc(n.text) + "</span>";
-      innen += '<span class="fuss">' + (n.weg ? "⏱️ " : "") + uhr(n.zeit) + (st ? " " + st : "") + "</span>";
-      var reak = n.reak ? Object.keys(n.reak).map(function (c) { return n.reak[c]; }).filter(Boolean) : [];
+      if (k.gruppe && !mein && (anfang || suchQ)) innen += '<span class="absender" style="color:' + esc(farbeVon(aktiv, n.von)) + '">' + esc(nameVon(aktiv, n.von)) + "</span>";
+      if (n.geloescht) innen += '<span class="txt geloescht">' + (mein ? "🚫 Du hast diese Nachricht gelöscht." : "🚫 Diese Nachricht wurde gelöscht.") + "</span>";
+      else {
+        if (n.fw) innen += '<span class="weiter">↪️ Weitergeleitet</span>';
+        if (n.r) innen += '<span class="zitat" data-zu="' + esc(n.r) + '"><b>' + esc(n.rv === ich.cid ? "Du" : nameVon(aktiv, n.rv)) + "</b>" + esc(String(n.rt || "").slice(0, 120)) + "</span>";
+        if (n.art === "bild") innen += '<span class="foto" data-datei="' + esc(n.datei) + '" style="aspect-ratio:' + (n.vh ? (1 / n.vh).toFixed(3) : "1") + '">' + (n.vorschau && bildSicher(n.vorschau) ? '<img class="unscharf" src="' + n.vorschau + '" alt="">' : "") + "</span>";
+        if (n.art === "datei") innen += '<span class="dok" data-datei="' + esc(n.datei) + '" data-name="' + esc(n.name || "Datei") + '"><span class="dok-i" aria-hidden="true">📄</span><span class="dok-t"><b>' + esc(n.name || "Datei") + "</b><small>" + groesse(n.groesse || 0) + " · antippen zum Öffnen</small></span></span>";
+        if (n.art === "ton") innen += '<span class="ton" data-datei="' + esc(n.datei) + '"><button type="button" class="spielen" aria-label="Abspielen">▶</button><span class="welle"><span class="lauf"></span></span><span class="zeit">' + dauerText(n.dauer) + "</span></span>";
+        if (n.art === "ort" && isFinite(n.lat) && isFinite(n.lon)) innen += '<a class="ort" href="../karten/#punkt=' + (+n.lat) + "," + (+n.lon) + '" target="_blank" rel="noopener"><span class="ort-i" aria-hidden="true">📍</span><span><b>Standort</b><small>Einmalig geteilt · auf OMNIVIA Karten öffnen</small></span></a>';
+        if (n.art === "umfrage") {
+          var sti = n.stimmen || {}, ges = Object.keys(sti).length, meine = sti[ich.cid];
+          innen += '<span class="umfrage"><b class="u-frage">📊 ' + textHtml(n.text) + "</b>" + (n.opt || []).map(function (o, j) {
+            var z = Object.keys(sti).filter(function (c) { return sti[c] === j; }).length, p = ges ? Math.round(z / ges * 100) : 0;
+            return '<button type="button" class="u-opt' + (meine === j ? " an" : "") + '" data-stimme="' + j + '" aria-pressed="' + (meine === j) + '"><span class="u-balken" style="width:' + p + '%"></span><span class="u-t">' + (meine === j ? "✅ " : "") + esc(o) + '</span><span class="u-z">' + z + "</span></button>";
+          }).join("") + '<small class="u-ges">' + ges + (ges === 1 ? " Stimme" : " Stimmen") + " · antippen zum Abstimmen</small></span>";
+        } else if (n.text) innen += '<span class="txt">' + textHtml(n.text) + "</span>";
+      }
+      innen += '<span class="fuss">' + (n.bearb && !n.geloescht ? '<span class="bearb">bearbeitet</span>' : "") + (n.weg ? "⏱️ " : "") + uhr(n.zeit) + (st ? " " + st : "") + "</span>";
+      var reak = n.reak && !n.geloescht ? Object.keys(n.reak).map(function (c) { return n.reak[c]; }).filter(Boolean) : [];
       if (reak.length) { var z = {}; reak.forEach(function (e) { z[e] = (z[e] || 0) + 1; }); innen += '<span class="reak">' + Object.keys(z).map(function (e) { return esc(e) + (z[e] > 1 ? "<small>" + z[e] + "</small>" : ""); }).join("") + "</span>"; }
-      h += '<div class="blase' + (mein ? " ich" : "") + (ende ? " ende" : "") + (neu ? " neu" : "") + (reak.length ? " mit-reak" : "") + (n.art ? " art-" + n.art : "") + (n.st === -1 ? " fehler" : "") + (nurEmoji ? " gross" : "") + '" data-id="' + esc(n.id) + '">' + innen + "</div>";
+      h += '<div class="blase' + (mein ? " ich" : "") + (ende || suchQ ? " ende" : "") + (neu ? " neu" : "") + (reak.length ? " mit-reak" : "") + (n.art ? " art-" + n.art : "") + (n.st === -1 ? " fehler" : "") + (nurEmoji ? " gross" : "") + (n.erwMich ? " erw" : "") + (n.geloescht ? " weg" : "") + '" data-id="' + esc(n.id) + '">' + innen + "</div>";
     });
     if (erstesMal) l.forEach(function (n) { gezeigt[aktiv][n.id] = 1; });
     el.innerHTML = h;
     el.querySelectorAll(".foto[data-datei]").forEach(fotoLaden);
     if (unten) el.scrollTop = el.scrollHeight;
+  }
+
+  /* Suche im Chat */
+  var suchQ = "";
+  function sucheZu(still) { suchQ = ""; $("chatSuche").hidden = true; $("chatSucheFeld").value = ""; if (!still) verlauf(true); }
+  $("chatSucheKnopf").onclick = function () { if (!$("chatSuche").hidden) { sucheZu(); return; } $("chatSuche").hidden = false; $("chatSucheZahl").textContent = ""; $("chatSucheFeld").focus(); };
+  $("chatSucheFeld").oninput = function () { suchQ = this.value.trim().slice(0, 60); if (!suchQ) $("chatSucheZahl").textContent = ""; verlauf(true); };
+  $("chatSucheFeld").onkeydown = function (e) { if (e.key === "Escape") sucheZu(); };
+  $("chatSucheZu").onclick = function () { sucheZu(); };
+  function springeZu(id) {
+    var z = $("verlauf").querySelector('[data-id="' + CSS.escape(id) + '"]'); if (!z) return;
+    z.scrollIntoView({ block: "center" }); z.classList.add("blink"); setTimeout(function () { z.classList.remove("blink"); }, 1400);
   }
 
   /* Dateien (Fotos, Sprachnachrichten): verschlüsselt, auf dem Handy gespeichert */
@@ -664,30 +777,74 @@
   var REAKTIONEN = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
   $("verlauf").onclick = function (e) {
     var zitat = e.target.closest(".zitat"); if (zitat) { var ziel = $("verlauf").querySelector('[data-id="' + CSS.escape(zitat.dataset.zu) + '"]'); if (ziel) { ziel.scrollIntoView({ block: "center", behavior: "smooth" }); ziel.classList.add("blink"); setTimeout(function () { ziel.classList.remove("blink"); }, 1200); } return; }
+    if (e.target.closest("a.ort")) return;
+    var stimme = e.target.closest("[data-stimme]");
+    if (stimme && !suchQ) { var un = finde(aktiv, stimme.closest(".blase").dataset.id); if (un) abstimmen(un, +stimme.dataset.stimme); return; }
+    if (suchQ) { var treffer = e.target.closest(".blase"); if (treffer) { var tid = treffer.dataset.id; sucheZu(); springeZu(tid); } return; }
     var ton = e.target.closest(".ton"); if (ton && e.target.closest(".spielen")) { tonSpielen(ton); return; }
     var foto = e.target.closest(".foto"); if (foto) { bildZeigen(foto.dataset.datei); return; }
     var dok = e.target.closest(".dok"); if (dok) { dateiUrl(dok.dataset.datei).then(function (u) { if (!u) { KW.toast("Die Datei wird noch geladen …"); return; } var a = document.createElement("a"); a.href = u; a.download = dok.dataset.name; document.body.appendChild(a); a.click(); a.remove(); }); return; }
     var b = e.target.closest(".blase"); if (!b) return;
-    var n = (nachrichten[aktiv] || []).filter(function (x) { return x.id === b.dataset.id; })[0]; if (!n) return;
-    if (n.st === -1) { n.st = 0; speichereNachricht(n); verlauf(); zustellen(n); return; }
+    var n = finde(aktiv, b.dataset.id); if (!n) return;
+    if (n.st === -1 && !n.geloescht) { n.st = 0; speichereNachricht(n); verlauf(); zustellen(n); return; }
     nachrichtMenue(n);
   };
   function nachrichtMenue(n) {
-    var meins = n.reak && n.reak[ich.cid], k = kontakte[aktiv], darf = k && k.status === "ok";
-    oeffne((darf ? '<div class="reak-wahl">' + REAKTIONEN.map(function (e) { return '<button type="button" data-r="' + e + '" aria-pressed="' + (meins === e) + '" aria-label="Reagieren mit ' + e + '">' + e + "</button>"; }).join("") + "</div>" : "") +
-      '<div class="menue">' + (darf ? '<button class="btn" type="button" data-m="antw">↩️ Antworten</button>' : "") + (n.text ? '<button class="btn" type="button" data-m="kopie">📋 Text kopieren</button>' : "") +
-      '<button class="btn danger" type="button" data-m="weg">🗑️ Bei mir löschen</button></div><div class="sheet-foot"><button class="btn" type="button" data-m="zu">Abbrechen</button></div>',
+    var meins = n.reak && n.reak[ich.cid], k = kontakte[aktiv], darf = k && k.status === "ok" && !n.geloescht;
+    var eigen = n.von === ich.cid && darf && !k.ki, alter = Date.now() - n.zeit;
+    var knoepfe = (darf ? '<button class="btn" type="button" data-m="antw">↩️ Antworten</button>' : "") +
+      (eigen && !n.art && n.st > 0 && alter < TAG ? '<button class="btn" type="button" data-m="bearb">✏️ Bearbeiten</button>' : "") +
+      (!n.geloescht && n.art !== "umfrage" ? '<button class="btn" type="button" data-m="weiter">↪️ Weiterleiten</button>' : "") +
+      (n.text && !n.geloescht ? '<button class="btn" type="button" data-m="kopie">📋 Text kopieren</button>' : "") +
+      (eigen && n.st > 0 && alter < 2 * TAG ? '<button class="btn danger" type="button" data-m="alle">🗑️ Für alle löschen</button>' : "") +
+      '<button class="btn danger" type="button" data-m="weg">🗑️ Bei mir löschen</button>';
+    oeffne((darf && !k.ki ? '<div class="reak-wahl">' + REAKTIONEN.map(function (e) { return '<button type="button" data-r="' + e + '" aria-pressed="' + (meins === e) + '" aria-label="Reagieren mit ' + e + '">' + e + "</button>"; }).join("") + "</div>" : "") +
+      '<div class="menue">' + knoepfe + '</div><div class="sheet-foot"><button class="btn" type="button" data-m="zu">Abbrechen</button></div>',
       function (w) {
         w.onclick = async function (e) {
           var r = e.target.closest("[data-r]");
           if (r) { zu(); reagieren(n, meins === r.dataset.r ? "" : r.dataset.r); return; }
           var m = e.target.closest("[data-m]"); if (!m) return;
           zu();
-          if (m.dataset.m === "antw") { antwortAuf = n; antwortZeigen(); feld.focus(); }
+          if (m.dataset.m === "antw") { bearbeite = null; antwortAuf = n; antwortZeigen(); feld.focus(); }
+          else if (m.dataset.m === "bearb") { entwurfMerken(); antwortAuf = null; bearbeite = n; feld.value = n.text; feld.style.height = "auto"; feld.style.height = Math.min(140, feld.scrollHeight) + "px"; antwortZeigen(); knopfAnpassen(); feld.focus(); }
+          else if (m.dataset.m === "weiter") weiterleitenFenster(n);
           else if (m.dataset.m === "kopie") navigator.clipboard && navigator.clipboard.writeText(n.text).then(function () { KW.toast("Kopiert."); });
+          else if (m.dataset.m === "alle") {
+            if (!confirm("Diese Nachricht für alle löschen? Wer sie schon gelesen hat, hat sie natürlich schon gesehen.")) return;
+            await alsGeloescht(n); await speichereNachricht(n); verlauf(); liste();
+            steuerSenden(n.chat, { typ: "loesch", ziel: n.id });
+          }
           else if (m.dataset.m === "weg") { await nachrichtWeg(n); verlauf(); liste(); }
         };
       });
+  }
+  async function alsGeloescht(n) {
+    if (n.datei) { await L.weg("dateien", n.datei).catch(function () {}); if (dateiUrls[n.datei]) { URL.revokeObjectURL(dateiUrls[n.datei]); delete dateiUrls[n.datei]; } }
+    ["art", "datei", "vorschau", "vh", "dauer", "name", "groesse", "opt", "stimmen", "lat", "lon", "reak", "r", "rv", "rt", "bearb", "fw", "dk", "div", "dct"].forEach(function (f) { delete n[f]; });
+    n.text = ""; n.geloescht = 1;
+  }
+  function weiterleitenFenster(n) {
+    var ids = Object.keys(kontakte).filter(function (c) { return kontakte[c].status === "ok" && !kontakte[c].ki; });
+    if (!ids.length) { KW.toast("Du hast noch keine Kontakte zum Weiterleiten."); return; }
+    ids.sort(function (a, b) { var x = letzte(a), y = letzte(b); return (y ? y.zeit : 0) - (x ? x.zeit : 0); });
+    oeffne('<h2>↪️ Weiterleiten an …</h2><div class="wahlliste">' + ids.map(function (c) { return '<button class="wahl knopfwahl" type="button" data-c="' + esc(c) + '">' + ava(kontakte[c], true) + "<span>" + esc(kontakte[c].name) + "</span></button>"; }).join("") +
+      '</div><div class="sheet-foot"><button class="btn" type="button" data-c="">Abbrechen</button></div>',
+      function (w) { w.onclick = function (e) { var b = e.target.closest("[data-c]"); if (!b) return; zu(); if (b.dataset.c) weiterleiten(n, b.dataset.c); }; });
+  }
+  async function weiterleiten(n, ziel) {
+    var teile = { text: n.text || "", fw: 1 };
+    if (n.art === "ort") { teile.art = "ort"; teile.lat = n.lat; teile.lon = n.lon; }
+    if (DATEI_ART[n.art]) {
+      var d = await L.hol("dateien", n.datei).catch(function () { return null; });
+      if (!d || !d.blob) { KW.toast("Die Datei ist noch nicht geladen – gleich nochmal."); return; }
+      teile.art = n.art; teile.datei = K.id(12);
+      ["vorschau", "vh", "dauer", "name", "groesse"].forEach(function (f) { if (n[f] != null) teile[f] = n[f]; });
+      await L.leg("dateien", { id: teile.datei, blob: d.blob });
+    }
+    chatOeffnen(ziel);
+    var neu = neueNachricht(teile); await speichereNachricht(neu); verlauf(true); zustellen(neu);
+    KW.toast("↪️ Weitergeleitet an " + kontakte[ziel].name + ".");
   }
   async function nachrichtWeg(n) {
     var l = nachrichten[n.chat] || [], i = l.indexOf(n); if (i >= 0) l.splice(i, 1);
@@ -699,9 +856,15 @@
     speichereNachricht(n); verlauf();
     steuerSenden(n.chat, { typ: "reak", ziel: n.id, e: emoji });
   }
-  var antwortAuf = null;
+  var antwortAuf = null, bearbeite = null;
   function antwortZeigen() {
     var el = $("antwort");
+    if (bearbeite) {
+      el.hidden = false;
+      el.innerHTML = '<span class="zitat"><b>✏️ Nachricht bearbeiten</b>' + esc(String(bearbeite.text).slice(0, 100)) + '</span><button type="button" class="kw-ico" aria-label="Bearbeiten abbrechen">✕</button>';
+      el.querySelector("button").onclick = function () { bearbeite = null; feld.value = (kontakte[aktiv] && kontakte[aktiv].entwurf) || ""; knopfAnpassen(); antwortZeigen(); };
+      return;
+    }
     if (!antwortAuf) { el.hidden = true; return; }
     el.hidden = false;
     el.innerHTML = '<span class="zitat"><b>' + esc(antwortAuf.von === ich.cid ? "Du" : nameVon(aktiv, antwortAuf.von)) + "</b>" + esc(vorschauText(antwortAuf).slice(0, 100)) + '</span><button type="button" class="kw-ico" aria-label="Antwort abbrechen">✕</button>';
@@ -711,7 +874,66 @@
   /* Schreiben und Senden */
   var feld = $("text");
   function knopfAnpassen() { var leer = !feld.value.trim(); $("senden").hidden = leer && !!window.MediaRecorder; $("mikro").hidden = !leer || !window.MediaRecorder; $("senden").disabled = leer; }
-  feld.addEventListener("input", function () { knopfAnpassen(); this.style.height = "auto"; this.style.height = Math.min(140, this.scrollHeight) + "px"; });
+  var entwurfTimer = null, letztesTippen = 0;
+  feld.addEventListener("input", function () {
+    knopfAnpassen(); this.style.height = "auto"; this.style.height = Math.min(140, this.scrollHeight) + "px";
+    clearTimeout(entwurfTimer); entwurfTimer = setTimeout(entwurfMerken, 800);
+    tippSignal(); atVorschlaege();
+  });
+  feld.addEventListener("click", atVorschlaege);
+  function entwurfMerken() {
+    clearTimeout(entwurfTimer);
+    if (!aktiv || bearbeite) return;
+    var k = kontakte[aktiv]; if (!k) return;
+    var t = feld.value.trim() ? feld.value.slice(0, 4000) : "";
+    if ((k.entwurf || "") === t) return;
+    if (t) k.entwurf = t; else delete k.entwurf;
+    speichereKontakt(k);
+  }
+  document.addEventListener("visibilitychange", function () { if (document.hidden) entwurfMerken(); });
+  window.addEventListener("pagehide", entwurfMerken);
+  // „… tippt gerade“ – höchstens alle 4 Sekunden, aus wenn Lesebestätigungen aus sind
+  function tippSignal() {
+    var k = kontakte[aktiv];
+    if (!B || !k || k.ki || k.status !== "ok" || ich.lesen === false || bearbeite || !feld.value.trim()) return;
+    var j = Date.now(); if (j - letztesTippen < 4000) return;
+    letztesTippen = j; steuerSenden(aktiv, { typ: "tippt" });
+  }
+  var tippt = {};
+  function tipptDa(chat, von) {
+    (tippt[chat] = tippt[chat] || {})[von] = Date.now() + 6000;
+    if (aktiv === chat) chatKopf();
+    setTimeout(function () { if (aktiv === chat) chatKopf(); }, 6200);
+  }
+  function tipptText(chat) {
+    var t = tippt[chat], j = Date.now(); if (!t) return "";
+    var wer = Object.keys(t).filter(function (c) { return t[c] > j; }); if (!wer.length) return "";
+    return kontakte[chat] && kontakte[chat].gruppe ? wer.slice(0, 2).map(function (c) { return nameVon(chat, c); }).join(", ") + " tippt …" : "tippt …";
+  }
+  // @Erwähnungen in Gruppen
+  function vorname(chat, c) { return nameVon(chat, c).trim().split(/\s+/)[0]; }
+  function atVorschlaege() {
+    var el = $("atVorschlag"), k = kontakte[aktiv];
+    if (!k || !k.gruppe || k.status !== "ok") { el.hidden = true; return; }
+    var m = feld.value.slice(0, feld.selectionStart).match(/(?:^|\s)@([\p{L}\p{N}_-]*)$/u);
+    if (!m) { el.hidden = true; return; }
+    var q = m[1].toLowerCase();
+    var wer = Object.keys(k.mitglieder || {}).filter(function (c) { return c !== ich.cid && nameVon(aktiv, c).toLowerCase().indexOf(q) === 0; }).slice(0, 5);
+    if (!wer.length) { el.hidden = true; return; }
+    el.hidden = false;
+    el.innerHTML = wer.map(function (c) { return '<button type="button" data-at="' + esc(c) + '">' + ava(kontakte[c] || k.mitglieder[c], true) + "<span>" + esc(nameVon(aktiv, c)) + "</span></button>"; }).join("");
+  }
+  $("atVorschlag").onclick = function (e) {
+    var b = e.target.closest("[data-at]"); if (!b) return;
+    var pos = feld.selectionStart, vor = feld.value.slice(0, pos).replace(/@[\p{L}\p{N}_-]*$/u, "@" + vorname(aktiv, b.dataset.at) + " ");
+    feld.value = vor + feld.value.slice(pos); feld.setSelectionRange(vor.length, vor.length); feld.focus();
+    this.hidden = true; knopfAnpassen();
+  };
+  function erwaehnte(chat, t) {
+    var k = kontakte[chat]; if (!k || !k.gruppe) return null;
+    var l = Object.keys(k.mitglieder || {}).filter(function (c) { return c !== ich.cid && new RegExp("@" + reEsc(vorname(chat, c)) + "(?![\\p{L}\\p{N}])", "iu").test(t); });
+    return l.length ? l : null;
+  }
   feld.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey && matchMedia("(pointer:fine)").matches) { e.preventDefault(); $("eingabe").requestSubmit(); } });
   knopfAnpassen();
   function neueNachricht(teile) {
@@ -722,12 +944,24 @@
     (nachrichten[aktiv] = nachrichten[aktiv] || []).push(n);
     return n;
   }
+  function feldLeeren() { feld.value = ""; feld.style.height = "auto"; knopfAnpassen(); $("atVorschlag").hidden = true; letztesTippen = 0; }
   $("eingabe").onsubmit = function (e) {
     e.preventDefault();
     var t = feld.value.trim(); if (!t || !aktiv) return;
-    if (!B && !(kontakte[aktiv] && kontakte[aktiv].ki)) { KW.toast("Noch keine Verbindung – gleich nochmal."); return; }
-    var n = neueNachricht({ text: t.slice(0, 4000) });
-    speichereNachricht(n); feld.value = ""; feld.style.height = "auto"; knopfAnpassen();
+    var k = kontakte[aktiv];
+    if (bearbeite) {
+      var b = bearbeite; bearbeite = null;
+      if (t !== b.text) {
+        b.text = t.slice(0, 4000); b.bearb = Date.now(); speichereNachricht(b);
+        if (!k.ki) steuerSenden(b.chat, { typ: "edit", ziel: b.id, t: b.text });
+      }
+      feld.value = k.entwurf || ""; knopfAnpassen(); antwortZeigen(); verlauf(); return;
+    }
+    if (!B && !(k && k.ki)) { KW.toast("Noch keine Verbindung – gleich nochmal."); return; }
+    var teile = { text: t.slice(0, 4000) }, erw = erwaehnte(aktiv, t); if (erw) teile.erw = erw;
+    var n = neueNachricht(teile);
+    if (k.entwurf) { delete k.entwurf; speichereKontakt(k); }
+    speichereNachricht(n); feldLeeren();
     verlauf(true); zustellen(n);
   };
 
@@ -759,8 +993,12 @@
     var inhalt = { t: n.text, z: n.zeit };
     if (n.r) { inhalt.r = n.r; inhalt.rv = n.rv; inhalt.rt = n.rt; }
     if (n.w) inhalt.w = n.w;
+    if (n.fw) inhalt.fw = 1;
+    if (n.erw) inhalt.at = n.erw;
+    if (n.art === "umfrage") { inhalt.art = "umfrage"; inhalt.opt = n.opt; }
+    if (n.art === "ort") { inhalt.art = "ort"; inhalt.lat = n.lat; inhalt.lon = n.lon; }
     try {
-      if (n.art) {
+      if (DATEI_ART[n.art]) {
         var d = await L.hol("dateien", n.datei);
         if (!d) throw new Error("Die Datei fehlt.");
         if (!n.dk) { var enc = await K.dateiZu(d.blob); n.dk = enc.k; n.div = enc.iv; n.dct = enc.ct; }
@@ -769,7 +1007,7 @@
       }
       for (var i = 0; i < an.length; i++) {
         try {
-          if (n.art) { var dz = { von: ich.cid, d: n.dct, zeit: B.TS }; if (kontakte[n.chat].gruppe) dz.g = n.chat.slice(2); await B.setz("datei/" + an[i].cid + "/" + n.datei, dz); }
+          if (DATEI_ART[n.art]) { var dz = { von: ich.cid, d: n.dct, zeit: B.TS }; if (kontakte[n.chat].gruppe) dz.g = n.chat.slice(2); await B.setz("datei/" + an[i].cid + "/" + n.datei, dz); }
           await schicken(n.chat, n.id, Object.assign({}, inhalt), an[i]);
         } catch (e) { fehler++; letzterFehler = e; }
       }
@@ -783,9 +1021,57 @@
 
   /* Fotos */
   $("anhang").onclick = function () {
-    oeffne('<h2>Was willst du schicken?</h2><div class="menue"><button class="btn" type="button" data-w="foto">📷 Foto</button><button class="btn" type="button" data-w="datei">📄 Datei (PDF, Dokument, …)</button></div><p class="muted klein">Alles wird verschlüsselt verschickt und nach dem Abholen vom Server gelöscht. Dateien bis 2 MB.</p><div class="sheet-foot"><button class="btn" type="button" data-w="zu">Abbrechen</button></div>',
-      function (w) { w.onclick = function (e) { var b = e.target.closest("[data-w]"); if (!b) return; zu(); if (b.dataset.w === "foto") $("fotoWahl").click(); else if (b.dataset.w === "datei") $("dateiWahl").click(); }; });
+    oeffne('<h2>Was willst du schicken?</h2><div class="menue"><button class="btn" type="button" data-w="foto">📷 Foto</button><button class="btn" type="button" data-w="datei">📄 Datei (PDF, Dokument, …)</button><button class="btn" type="button" data-w="umfrage">📊 Umfrage</button><button class="btn" type="button" data-w="ort">📍 Standort (einmalig)</button></div><p class="muted klein">Alles wird verschlüsselt verschickt und nach dem Abholen vom Server gelöscht. Dateien bis 2 MB.</p><div class="sheet-foot"><button class="btn" type="button" data-w="zu">Abbrechen</button></div>',
+      function (w) { w.onclick = function (e) { var b = e.target.closest("[data-w]"); if (!b) return; zu(); if (b.dataset.w === "foto") $("fotoWahl").click(); else if (b.dataset.w === "datei") $("dateiWahl").click(); else if (b.dataset.w === "umfrage") umfrageFenster(); else if (b.dataset.w === "ort") ortFenster(); }; });
   };
+  /* Umfragen */
+  function umfrageFenster() {
+    oeffne('<h2>📊 Neue Umfrage</h2><div class="field"><span>Frage</span><input class="inp" id="uFrage" maxlength="120" placeholder="z. B. Wann treffen wir uns?" autofocus></div><div class="field"><span>Antworten (2 bis 6)</span><div id="uOpt"></div></div><button class="btn small" type="button" id="uMehr">＋ Antwort</button><p class="fehler-text" id="uFehler" hidden></p>' +
+      '<div class="sheet-foot"><button class="btn" type="button" data-u="zu">Abbrechen</button><button class="btn primary" type="button" data-u="los">Senden</button></div>',
+      function (w) {
+        var opt = w.querySelector("#uOpt");
+        function feldDazu() { if (opt.children.length >= 6) return; var i = document.createElement("input"); i.className = "inp u-feld"; i.maxLength = 80; i.placeholder = "Antwort " + (opt.children.length + 1); i.setAttribute("aria-label", i.placeholder); opt.appendChild(i); w.querySelector("#uMehr").hidden = opt.children.length >= 6; }
+        feldDazu(); feldDazu();
+        w.querySelector("#uMehr").onclick = function () { feldDazu(); opt.lastChild.focus(); };
+        w.onclick = function (e) {
+          var b = e.target.closest("[data-u]"); if (!b) return;
+          if (b.dataset.u === "zu") { zu(); return; }
+          var f = w.querySelector("#uFrage").value.trim(), o = [].map.call(opt.children, function (i) { return i.value.trim(); }).filter(Boolean);
+          if (!f || o.length < 2) { var x = w.querySelector("#uFehler"); x.hidden = false; x.textContent = "Bitte eine Frage und mindestens 2 Antworten eingeben."; return; }
+          zu();
+          var n = neueNachricht({ art: "umfrage", text: f.slice(0, 120), opt: o.slice(0, 6), stimmen: {} });
+          speichereNachricht(n); verlauf(true); zustellen(n);
+        };
+      });
+  }
+  function abstimmen(n, i) {
+    var k = kontakte[n.chat]; if (!k || k.status !== "ok" || !n.opt || i < 0 || i >= n.opt.length) return;
+    n.stimmen = n.stimmen || {};
+    var neu = n.stimmen[ich.cid] === i ? -1 : i;
+    if (neu < 0) delete n.stimmen[ich.cid]; else n.stimmen[ich.cid] = neu;
+    speichereNachricht(n); verlauf();
+    steuerSenden(n.chat, { typ: "stimme", ziel: n.id, i: neu });
+  }
+  /* Standort: nur einmalig, nie live */
+  function ortFenster() {
+    if (!navigator.geolocation) { KW.toast("Dein Gerät kann den Standort nicht bestimmen."); return; }
+    oeffne('<h2>📍 Standort schicken</h2><p class="muted">Dein Standort wird <b>einmal</b> als Punkt verschickt und lässt sich auf OMNIVIA Karten öffnen. Er wird <b>nicht</b> live verfolgt.</p><p class="muted klein">Schick deinen Standort nur an Leute, die du wirklich kennst.</p>' +
+      '<div class="sheet-foot"><button class="btn" type="button" data-o="zu">Abbrechen</button><button class="btn primary" type="button" data-o="los">Standort senden</button></div>',
+      function (w) {
+        w.onclick = function (e) {
+          var b = e.target.closest("[data-o]"); if (!b) return;
+          if (b.dataset.o === "zu") { zu(); return; }
+          b.disabled = true; b.textContent = "Suche Standort …";
+          var chat = aktiv;
+          navigator.geolocation.getCurrentPosition(function (p) {
+            zu(); if (aktiv !== chat) return;
+            var n = neueNachricht({ art: "ort", lat: +p.coords.latitude.toFixed(5), lon: +p.coords.longitude.toFixed(5) });
+            speichereNachricht(n); verlauf(true); zustellen(n);
+          }, function () { zu(); KW.toast("Standort nicht verfügbar. Erlaube den Standort in den Einstellungen deines Browsers."); },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+        };
+      });
+  }
   $("dateiWahl").onchange = function () { var f = this.files && this.files[0]; this.value = ""; dateiSenden(f); };
   async function dateiSenden(f) {
     if (!f || !aktiv || !B) return;
@@ -899,13 +1185,20 @@
       if (g && inhalt.g !== g) throw new Error("Gruppe passt nicht");
       text = String(inhalt.t || "");
     } catch (e) { inhalt = null; text = "⚠️ Diese Nachricht konnte nicht entschlüsselt werden."; }
-    if (inhalt && inhalt.typ) { weg(); await steuerDa(m.von, chat, inhalt); return; }
+    if (inhalt && inhalt.typ) { weg(); await steuerDa(m.von, chat, inhalt, m); return; }
     if (g && (!gr || gr.status !== "ok" || !gr.mitglieder || !gr.mitglieder[m.von])) { weg(); return; }
     if ((nachrichten[chat] || []).some(function (x) { return x.id === key; })) { weg(); return; }
     var n = { id: key, chat: chat, von: m.von, text: text.slice(0, 4000), zeit: m.zeit || Date.now(), gelesen: false };
     if (inhalt) {
       if (typeof inhalt.r === "string") { n.r = inhalt.r; n.rv = String(inhalt.rv || ""); n.rt = String(inhalt.rt || "").slice(0, 120); }
       if (inhalt.w && TIMER[inhalt.w]) { n.w = inhalt.w; n.weg = Date.now() + inhalt.w * 1000; }
+      if (inhalt.fw) n.fw = 1;
+      if (g && Array.isArray(inhalt.at) && inhalt.at.indexOf(ich.cid) >= 0) n.erwMich = 1;
+      if (inhalt.art === "umfrage" && Array.isArray(inhalt.opt)) {
+        var uo = inhalt.opt.map(function (x) { return String(x || "").slice(0, 80); }).filter(Boolean).slice(0, 6);
+        if (uo.length >= 2) { n.art = "umfrage"; n.opt = uo; n.stimmen = {}; n.text = n.text.slice(0, 120); }
+      }
+      if (inhalt.art === "ort" && isFinite(+inhalt.lat) && isFinite(+inhalt.lon) && Math.abs(+inhalt.lat) <= 90 && Math.abs(+inhalt.lon) <= 180) { n.art = "ort"; n.lat = +(+inhalt.lat).toFixed(5); n.lon = +(+inhalt.lon).toFixed(5); }
       if ((inhalt.art === "bild" || inhalt.art === "ton" || inhalt.art === "datei") && /^[a-f0-9]{24}$/.test(inhalt.f || "")) {
         if (inhalt.art === "datei") { n.name = String(inhalt.name || "Datei").replace(/[\\/:*?"<>|]/g, "_").slice(0, 80); n.groesse = +inhalt.groesse || 0; }
         n.art = inhalt.art; n.datei = inhalt.f; n.vorschau = bildSicher(inhalt.vs) || null; n.vh = +inhalt.vh || null; n.dauer = +inhalt.dauer || 0;
@@ -916,9 +1209,10 @@
     nachrichten[chat].sort(function (a, b) { return a.zeit - b.zeit; });
     await speichereNachricht(n);
     weg();
+    if (tippt[chat]) delete tippt[chat][m.von];
     if (!g) B.setz("quittung/" + m.von + "/" + key, { von: ich.cid, a: 1 }).catch(function () {});
-    if (aktiv === chat) { verlauf(); gelesenMarkieren(); }
-    else { liste(); hinweis(chat, gr ? gr.name + " · " + nameVon(chat, m.von) : k.name, vorschauText(n).slice(0, 80)); }
+    if (aktiv === chat) { chatKopf(); verlauf(); gelesenMarkieren(); }
+    else { liste(); hinweis(chat, gr ? gr.name + " · " + nameVon(chat, m.von) : k.name, (n.erwMich ? "📣 " : "") + vorschauText(n).slice(0, 80), !!n.erwMich); }
   }
   async function dateiHolen(n, inhalt) {
     try {
@@ -931,7 +1225,8 @@
     } catch (e) { /* bleibt als Vorschau */ }
   }
   // Steuer-Nachrichten: Profil, Reaktion, Timer, Gruppe
-  async function steuerDa(von, chat, x) {
+  function darfIn(chat, von) { var c = kontakte[chat]; return !!c && c.status === "ok" && (!c.gruppe || !!(c.mitglieder && c.mitglieder[von])); }
+  async function steuerDa(von, chat, x, m) {
     var k = kontakte[von];
     if (x.typ === "profil" && k && !x.g) {
       if ((x.v || 0) >= (k.bildV || 0)) {
@@ -952,6 +1247,22 @@
       if (aktiv === chat) chatKopf();
     } else if (x.typ === "gruppe") await gruppeDa(von, x);
     else if (x.typ === "liste") await listeDa(von, chat, x);
+    else if (x.typ === "edit" || x.typ === "loesch") {
+      var e1 = finde(chat, x.ziel);
+      if (!e1 || e1.von !== von || e1.geloescht || !darfIn(chat, von)) return;
+      if (x.typ === "edit") { if (typeof x.t !== "string" || !x.t.trim() || e1.art) return; e1.text = x.t.slice(0, 4000); e1.bearb = Date.now(); }
+      else await alsGeloescht(e1);
+      await speichereNachricht(e1); if (aktiv === chat) verlauf(); else liste();
+    } else if (x.typ === "tippt") {
+      var zeit = m && typeof m.zeit === "number" ? m.zeit : 0;
+      if (darfIn(chat, von) && Math.abs(Date.now() - zeit) < 30000) tipptDa(chat, von);
+    } else if (x.typ === "stimme") {
+      var u = finde(chat, x.ziel);
+      if (!u || u.art !== "umfrage" || !darfIn(chat, von)) return;
+      u.stimmen = u.stimmen || {};
+      if (+x.i >= 0 && +x.i < u.opt.length) u.stimmen[von] = +x.i; else delete u.stimmen[von];
+      await speichereNachricht(u); if (aktiv === chat) verlauf();
+    }
   }
   function infoNachricht(chat, text) {
     var n = { id: "i" + K.id(8), chat: chat, von: "", art: "info", text: text, zeit: Date.now(), gelesen: true };
@@ -1163,11 +1474,12 @@
     oeffne('<div style="text-align:center">' + ava(g, false, true) + '<h2 style="margin:10px 0 2px">' + esc(g.name) + '</h2><p class="muted" style="margin:0 0 14px">' + ids.length + " Mitglieder" + (admin ? " · du bist Admin" : "") + "</p></div>" +
       '<div class="wahlliste">' + ids.map(function (x) { var m = g.mitglieder[x]; return '<div class="wahl">' + ava(x === ich.cid ? ich : (kontakte[x] || m), true) + "<span>" + esc(x === ich.cid ? "Du" : nameVon(c, x)) + (x === g.admin ? ' <span class="schild">Admin</span>' : "") + "</span>" + (admin && x !== ich.cid ? '<button class="btn small danger" type="button" data-raus="' + x + '">Entfernen</button>' : "") + "</div>"; }).join("") + "</div>" +
       (admin && dazu.length && g.status === "ok" ? '<div class="field" style="margin-top:12px"><span>Hinzufügen</span><div class="wahlliste">' + dazu.map(function (x) { var k = kontakte[x]; return '<div class="wahl">' + ava(k, true) + "<span>" + esc(k.name) + '</span><button class="btn small" type="button" data-rein="' + x + '">＋</button></div>'; }).join("") + "</div></div>" : "") +
-      '<div class="menue" style="margin-top:12px">' + (g.status === "ok" ? (admin ? '<button class="btn" type="button" data-m="timer">⏱️ Verschwindende Nachrichten: ' + TIMER[g.timer || 0] + "</button>" : "") + '<button class="btn danger" type="button" data-m="raus">🚪 Gruppe verlassen</button>' : "") + '<button class="btn danger" type="button" data-m="weg">🗑️ Chat bei mir löschen</button></div>' +
+      '<div class="menue" style="margin-top:12px">' + optionenKnoepfe(g) + (g.status === "ok" ? (admin ? '<button class="btn" type="button" data-m="timer">⏱️ Verschwindende Nachrichten: ' + TIMER[g.timer || 0] + "</button>" : "") + '<button class="btn danger" type="button" data-m="raus">🚪 Gruppe verlassen</button>' : "") + '<button class="btn danger" type="button" data-m="weg">🗑️ Chat bei mir löschen</button></div>' +
       '<div class="sheet-foot"><button class="btn primary" type="button" data-m="zu">Schließen</button></div>',
       function (w) {
         w.onclick = async function (e) {
           var b = e.target.closest("button"); if (!b) return;
+          if (["oben", "archiv", "stumm"].indexOf(b.dataset.m) >= 0) { await optionAus(c, b.dataset.m); return; }
           try {
             if (b.dataset.raus) { var raus = { cid: b.dataset.raus, ek: g.mitglieder[b.dataset.raus].ek }; infoNachricht(c, "Du hast " + nameVon(c, b.dataset.raus) + " entfernt."); delete g.mitglieder[b.dataset.raus]; g.v = Date.now(); await speichereKontakt(g); await gruppeVerteilen(c, [raus]); await B.weg("gruppen/" + c.slice(2) + "/m/" + raus.cid); zu(); gruppeFenster(c); chatKopf(); }
             else if (b.dataset.rein) { await B.setz("gruppen/" + c.slice(2) + "/m/" + b.dataset.rein, true); g.mitglieder[b.dataset.rein] = mitgliedEintrag(b.dataset.rein); g.v = Date.now(); await speichereKontakt(g); infoNachricht(c, "Du hast " + kontakte[b.dataset.rein].name + " hinzugefügt."); await gruppeVerteilen(c); zu(); gruppeFenster(c); chatKopf(); }
@@ -1215,6 +1527,7 @@
       '<div class="menue">' + (k.geprueft ? "" : '<button class="btn" type="button" data-m="pruef">✅ Zahlen sind gleich – als geprüft markieren</button>') +
       (k.status === "ok" ? '<button class="btn" type="button" data-m="block">🚫 Blockieren</button>' : k.status === "blockiert" ? '<button class="btn" type="button" data-m="frei">✅ Blockierung aufheben</button>' : "") +
       (k.status === "ok" ? '<button class="btn" type="button" data-m="timer">⏱️ Verschwindende Nachrichten: ' + TIMER[k.timer || 0] + "</button>" : "") +
+      optionenKnoepfe(k) +
       '<button class="btn" type="button" data-m="melden">🚩 Melden</button>' +
       '<button class="btn" type="button" data-m="leeren">🧹 Chat-Verlauf löschen</button>' +
       '<button class="btn danger" type="button" data-m="entfernen">🗑️ Kontakt entfernen</button></div>' +
@@ -1223,6 +1536,7 @@
         w.onclick = async function (e) {
           var b = e.target.closest("[data-m]"); if (!b) return;
           var m = b.dataset.m;
+          if (m === "oben" || m === "archiv" || m === "stumm") { await optionAus(cid, m); return; }
           if (m === "zu") zu();
           else if (m === "pruef") { k.geprueft = true; await speichereKontakt(k); zu(); chatKopf(); liste(); KW.toast("Als geprüft markiert ✅"); }
           else if (m === "block") { if (confirm(k.name + " blockieren? Dann kann " + k.name + " dir nichts mehr schicken.")) { zu(); blockieren(cid, true); } }
@@ -1358,8 +1672,9 @@
       [880, 1320].forEach(function (f, i) { var o = tonCtx.createOscillator(), g = tonCtx.createGain(); o.type = "sine"; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t + i * 0.09); g.gain.exponentialRampToValueAtTime(0.12, t + i * 0.09 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.09 + 0.25); o.connect(g); g.connect(tonCtx.destination); o.start(t + i * 0.09); o.stop(t + i * 0.09 + 0.3); });
     } catch (e) { /* egal */ }
   }
-  function hinweis(chat, titel, text) {
+  function hinweis(chat, titel, text, wichtig) {
     if (stumm()) return;
+    if (!wichtig && stummAn(kontakte[chat])) return;
     if (document.hidden) {
       if (ich.benachr && window.Notification && Notification.permission === "granted") {
         var opt = { body: text, tag: chat, icon: "icons/icon-192.png", badge: "icons/icon-192.png", data: { chat: chat } };

@@ -674,7 +674,13 @@ function linkLesen() {
   return true;
 }
 karteStarten();
-if (linkLesen()) { planerZeigen(); routeRechnen(); } else zeigeStart();
+// Geteilter Standort aus FIDELIA Chat: #punkt=lat,lon
+const geteilt = location.hash.match(/punkt=(-?\d{1,2}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)/);
+if (linkLesen()) { planerZeigen(); routeRechnen(); }
+else if (geteilt && Math.abs(+geteilt[1]) <= 90 && Math.abs(+geteilt[2]) <= 180) {
+  const p = { lat: +geteilt[1], lon: +geteilt[2], name: "📍 Geteilter Standort", unter: "Aus FIDELIA Chat" };
+  ortZeigen(p); karte?.flyTo({ center: [p.lon, p.lat], zoom: 16 });
+} else zeigeStart();
 datenBereit.then(() => { if (S.ansicht === "start") zeigeStart(); });
 verkehrHolen();
 setInterval(verkehrHolen, 10 * 60 * 1000);

@@ -217,6 +217,41 @@ body{display:flex;flex-direction:column;min-height:100dvh}
 .tag-wahl span{display:grid;place-items:center;width:46px;height:40px;border-radius:10px;border:2px solid var(--line);cursor:pointer;font-weight:600}
 .tag-wahl input:checked+span{background:var(--app);border-color:var(--app);color:#fff}
 .tag-wahl input:focus-visible+span{outline:3px solid var(--accent)}
+
+/* Neu: Suche, Bearbeiten, Umfragen, Standort, Erwähnungen, Archiv */
+.chatsuche{display:flex;gap:8px;align-items:center;max-width:840px;width:calc(100% - 20px);margin:8px auto 0;background:var(--card);border-radius:14px;padding:6px 6px 6px 10px;box-shadow:0 1px 6px rgba(0,0,0,.12)}
+.chatsuche .inp{flex:1;min-width:0}
+.chatsuche .kw-ico{width:34px;height:34px;border-radius:50%;border:0;background:var(--soft);cursor:pointer;flex:none}
+#verlauf mark{background:#ffd84a;color:#1a1a1a;border-radius:3px;padding:0 1px}
+.txt .at,.u-frage .at{color:var(--accent);font-weight:600}
+.blase.ich .txt .at{color:#ffd84a}
+.blase.erw{box-shadow:0 0 0 2px var(--accent)}
+.blase .weiter{display:block;font-size:.74rem;font-style:italic;opacity:.75;margin-bottom:2px}
+.blase .bearb{font-style:italic;margin-right:2px}
+.blase.weg .txt{font-style:italic;opacity:.75}
+.umfrage{display:flex;flex-direction:column;gap:6px;min-width:min(240px,62vw)}
+.u-frage{font-size:.98rem;margin-bottom:2px}
+.u-opt{position:relative;display:flex;justify-content:space-between;gap:8px;align-items:center;border:1px solid rgba(127,127,127,.35);background:rgba(127,127,127,.08);color:inherit;border-radius:10px;padding:8px 10px;cursor:pointer;overflow:hidden;font:inherit;text-align:left}
+.u-opt.an{border-color:currentColor;font-weight:600}
+.u-balken{position:absolute;inset:0 auto 0 0;background:rgba(127,127,127,.22);transition:width .3s}
+.blase.ich .u-balken{background:rgba(255,255,255,.22)}
+.u-t,.u-z{position:relative}
+.u-ges{opacity:.7;font-size:.72rem}
+.ort{display:flex;gap:10px;align-items:center;color:inherit;text-decoration:none;background:rgba(127,127,127,.12);border-radius:12px;padding:10px 12px;margin-bottom:2px}
+.ort-i{font-size:1.6rem}
+.ort b{display:block}.ort small{opacity:.75;font-size:.74rem}
+.at-vorschlag{display:flex;gap:6px;flex-wrap:wrap;max-width:840px;width:calc(100% - 20px);margin:0 auto;background:var(--card);border-radius:14px 14px 0 0;padding:8px}
+.at-vorschlag button{display:flex;gap:6px;align-items:center;border:0;background:var(--soft);color:var(--ink);border-radius:999px;padding:4px 10px 4px 4px;cursor:pointer;font:inherit}
+.chatzeile.archivzeile{justify-content:flex-start;font-weight:600;gap:6px}
+.chatzeile.leise .zahl:not(.at-zahl){background:var(--muted)}
+.chatzeile .zeichenreihe{display:flex;gap:4px;align-items:center;justify-content:flex-end;min-height:20px}
+.chatzeile .zeichen{font-size:.8rem}
+.at-zahl{background:var(--accent)}
+.entwurf{color:#c2410c;font-weight:600}
+.knopfwahl{width:100%;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;border-radius:12px}
+.knopfwahl:hover{background:var(--soft)}
+.u-feld{margin-top:6px}
+.fehler-text{color:#b8235a;font-size:.88rem}
 </style>
 </head>
 <body>
@@ -253,9 +288,12 @@ body{display:flex;flex-direction:column;min-height:100dvh}
   <div class="chatkopf">
     <button class="kw-ico" type="button" id="chatZurueck" aria-label="Zurück zur Liste">←</button>
     <button class="wer" type="button" id="chatWer" aria-label="Kontakt-Infos"><span id="chatAva"></span><span style="min-width:0"><b id="chatName"></b><small id="chatUnter"></small></span></button>
+    <button class="kw-ico" type="button" id="chatSucheKnopf" aria-label="Im Chat suchen">🔍</button>
     <button class="kw-ico" type="button" id="chatListen" aria-label="Gemeinsame Listen" hidden>📋</button>
   </div>
+  <div class="chatsuche" id="chatSuche" hidden><input class="inp" id="chatSucheFeld" type="search" placeholder="In diesem Chat suchen" aria-label="In diesem Chat suchen" autocomplete="off"><span class="muted klein" id="chatSucheZahl" aria-live="polite"></span><button class="kw-ico" type="button" id="chatSucheZu" aria-label="Suche schließen">✕</button></div>
   <div id="verlauf" aria-live="polite"></div>
+  <div class="at-vorschlag" id="atVorschlag" hidden></div>
   <div class="antwort" id="antwort" hidden></div>
   <form class="eingabe" id="eingabe" autocomplete="off">
     <button class="rund" type="button" id="anhang" aria-label="Foto oder Datei schicken">📎</button>
