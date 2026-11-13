@@ -52,7 +52,7 @@
 .pl-chip input:checked+span{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .pl-chip input:focus-visible+span,.pl-box input:focus-visible~span:last-child,.pl-wahl label:has(input:focus-visible){outline:3px solid #ff8a3c;outline-offset:2px}
 .pl-boxen{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
-.pl-box{position:relative;display:flex;align-items:center;gap:10px;min-height:56px;padding:10px 14px;border:1px solid var(--line);border-radius:14px;cursor:pointer;font-size:.94rem;transition:all .2s;background:var(--bg)}
+.pl-box{position:relative;display:flex;align-items:center;gap:10px;min-height:56px;padding:10px 30px 10px 14px;border:1px solid var(--line);border-radius:14px;cursor:pointer;font-size:.94rem;transition:all .2s;background:var(--bg)}
 .pl-box:hover{border-color:var(--muted)}
 .pl-box:has(input:checked){border-color:#ff8a3c;background:var(--accent-soft);box-shadow:inset 0 0 0 1px #ff8a3c}
 .pl-box:has(input:checked)::after{content:"✓";position:absolute;right:10px;top:8px;font-size:.8rem;font-weight:700;color:var(--accent-ink)}

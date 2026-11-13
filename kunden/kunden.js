@@ -24,8 +24,19 @@
     ["englisch", "🌍", "Auch auf Englisch", 2], ["selbst", "✏️", "Texte selbst ändern", 2],
     ["effekte", "🌠", "Besondere Effekte & Animationen", 2], ["domain", "🔗", "Hilfe bei eigener Adresse (Domain)", 1]
   ];
+  // Bei „Kleine Web-App“: unsere fertigen Apps statt Webseiten-Bausteinen (Preis = ungefährer Startpreis in €)
+  var APPKACHELN = [
+    ["speisekarte", "🍽️", "Speisekarte mit QR-Code", 40], ["turnier", "🏆", "Turnierplan mit Tabelle", 25],
+    ["buzzer", "🔔", "Quiz-Show mit Buzzern", 30], ["fotobox", "📸", "Fotobox für Feiern", 20],
+    ["einfach", "👵", "Tablet-Oberfläche für Oma und Opa", 30], ["termine", "📅", "Terminplan oder Anmeldeliste", 40],
+    ["idee", "💡", "Eigene Idee (bitte unten beschreiben)", 0]
+  ];
   var C = null, ONLINE = null, schritt = 1;
   var P = laden("kw-kunden-planer", null) || { art: "neu", wahl: { start: true, kontakt: true } };
+  if (!P.apps || typeof P.apps !== "object") P.apps = {};
+  function istApp() { return P.art === "app"; }
+  function liste() { return istApp() ? APPKACHELN : BAUSTEINE; }
+  function gewaehlt() { var w = istApp() ? P.apps : P.wahl; return liste().filter(function (b) { return w[b[0]]; }); }
 
   function sauber(c) {
     c = c && typeof c === "object" ? c : {};
@@ -73,22 +84,30 @@
     $("plArt").innerHTML = ANLIEGEN.map(function (a) {
       return '<label class="pl-chip"><input type="radio" name="plArt" value="' + a[0] + '"' + (P.art === a[0] ? " checked" : "") + '><span>' + a[1] + '</span></label>';
     }).join("");
-    $("plBoxen").innerHTML = BAUSTEINE.map(function (b) {
-      return '<label class="pl-box"><input type="checkbox" value="' + b[0] + '"' + (P.wahl[b[0]] ? " checked" : "") + '><span class="pl-em" aria-hidden="true">' + b[1] + '</span><span>' + esc(b[2]) + '</span></label>';
+    var w = istApp() ? P.apps : P.wahl;
+    var frage = document.querySelector('#plBoxen') && document.querySelector('#plBoxen').previousElementSibling;
+    if (frage && /können|Apps/.test(frage.textContent)) frage.textContent = istApp() ? "Welche Apps brauchst du?" : "Was soll deine Seite können?";
+    $("plBoxen").innerHTML = liste().map(function (b) {
+      return '<label class="pl-box"><input type="checkbox" value="' + b[0] + '"' + (w[b[0]] ? " checked" : "") + '><span class="pl-em" aria-hidden="true">' + b[1] + '</span><span>' + esc(b[2]) + '</span></label>';
     }).join("");
     ergebnis();
   }
   function ergebnis() {
-    var p = punkte(), i = empfehlung(), A = C.angebote, n = BAUSTEINE.filter(function (b) { return P.wahl[b[0]]; }).length;
-    $("plMeter").style.width = Math.min(100, 10 + p * 6) + "%";
-    if (P.art === "frage") $("plEmpf").innerHTML = "💬 Kein Problem – schick uns einfach deine Frage. Die Auswahl oben ist freiwillig.";
+    var p = punkte(), i = empfehlung(), A = C.angebote, n = gewaehlt().length;
+    $("plMeter").style.width = Math.min(100, 10 + (istApp() ? n * 18 : p * 6)) + "%";
+    if (istApp()) {
+      var summe = gewaehlt().reduce(function (s, b) { return s + b[3]; }, 0), idee = !!P.apps.idee;
+      $("plEmpf").innerHTML = !n ? "Wähl die Apps aus, die du brauchst – oder beschreib deine eigene Idee." :
+        "<b>" + n + (n === 1 ? " App" : " Apps") + " gewählt.</b> " + (summe ? "Ungefähr <b class=\"pl-paket\">ab " + summe + " €</b>" + (idee ? " plus deine eigene Idee" : "") : "Preis nach Gespräch") + " · Das erste Gespräch ist kostenlos.";
+    }
+    else if (P.art === "frage") $("plEmpf").innerHTML = "💬 Kein Problem – schick uns einfach deine Frage. Die Auswahl oben ist freiwillig.";
     else if (i < 0) $("plEmpf").textContent = n + " Bausteine gewählt.";
     else $("plEmpf").innerHTML = "<b>" + n + " Bausteine gewählt.</b> Passendes Paket: <b class=\"pl-paket\">" + esc(A[i].name) + "</b>";
     document.querySelectorAll(".paket").forEach(function (el) { el.classList.toggle("empfohlen", +el.dataset.i === i && P.art !== "frage"); });
     speichern("kw-kunden-planer", P);
   }
-  $("plArt").addEventListener("change", function (e) { if (e.target.name === "plArt") { P.art = e.target.value; ergebnis(); } });
-  $("plBoxen").addEventListener("change", function (e) { var t = e.target; if (t.type === "checkbox") { P.wahl[t.value] = t.checked; ergebnis(); } });
+  $("plArt").addEventListener("change", function (e) { if (e.target.name === "plArt") { var vorher = istApp(); P.art = e.target.value; if (vorher !== istApp()) planerZeigen(); else ergebnis(); } });
+  $("plBoxen").addEventListener("change", function (e) { var t = e.target; if (t.type === "checkbox") { (istApp() ? P.apps : P.wahl)[t.value] = t.checked; ergebnis(); } });
 
   function zuSchritt(s) {
     schritt = s;
@@ -118,13 +137,13 @@
   function anfrage() {
     var art = (document.querySelector('input[name="art"]:checked') || {}).value || "Telefon";
     var anl = (ANLIEGEN.filter(function (a) { return a[0] === P.art; })[0] || ANLIEGEN[0])[1].replace(/^\S+\s/, "");
-    var bs = BAUSTEINE.filter(function (b) { return P.wahl[b[0]]; }).map(function (b) { return b[2]; });
+    var bs = gewaehlt().map(function (b) { return b[2]; });
     var i = empfehlung(), paket = i >= 0 && P.art !== "frage" ? C.angebote[i].name : "–";
     var name = $("kName").value.trim(), alt = $("kAlt").value.trim(), text = $("kText").value.trim(), kontakt = $("kKontakt").value.trim(), gefunden = $("kGefunden").value;
     var betreff = "Projektanfrage: " + anl + (name ? " – " + name : "");
     var s = function (x) { return String(x).replace(/[|\n\r]/g, " ").trim(); };
     var body = "Hallo FIDELIA-Team,\n\nich interessiere mich für ein Projekt.\n\nAnliegen: " + anl + "\nPassendes Paket laut Planer: " + paket +
-      "\nGewünschte Bausteine: " + (bs.length ? bs.join(", ") : "–") + "\nName / Verein: " + (name || "–") + "\nKontakt: " + (kontakt || "–") + (alt ? "\nBisherige Website: " + alt : "") +
+      "\n" + (istApp() ? "Gewünschte Apps: " : "Gewünschte Bausteine: ") + (bs.length ? bs.join(", ") : "–") + "\nName / Verein: " + (name || "–") + "\nKontakt: " + (kontakt || "–") + (alt ? "\nBisherige Website: " + alt : "") +
       "\nGespräch am liebsten: " + art + (text ? "\n\nNachricht:\n" + text : "") + "\n\nViele Grüße\n\n---\nKW-TERMIN: - | " + s(anl) + " | " + s(name || "–") + " | " + s(art);
     return { betreff: betreff, body: body, bs: bs, paket: paket, anl: anl, art: art, name: name, kontakt: kontakt, alt: alt, text: text, gefunden: gefunden };
   }
@@ -133,7 +152,7 @@
     return '<h3>Deine Anfrage</h3><dl>' +
       '<dt>Anliegen</dt><dd>' + esc(a.anl) + '</dd>' +
       (a.paket !== "–" ? '<dt>Passendes Paket</dt><dd>' + esc(a.paket) + '</dd>' : "") +
-      '<dt>Bausteine</dt><dd>' + (a.bs.length ? a.bs.map(function (b) { return '<span class="pl-tag">' + esc(b) + '</span>'; }).join("") : "–") + '</dd>' +
+      '<dt>' + (istApp() ? "Apps" : "Bausteine") + '</dt><dd>' + (a.bs.length ? a.bs.map(function (b) { return '<span class="pl-tag">' + esc(b) + '</span>'; }).join("") : "–") + '</dd>' +
       '<dt>Name / Verein</dt><dd>' + esc(a.name || "–") + '</dd>' +
       '<dt>Kontakt</dt><dd>' + esc(a.kontakt || "–") + '</dd>' +
       '<dt>Gespräch</dt><dd>' + esc(a.art) + '</dd></dl>';
