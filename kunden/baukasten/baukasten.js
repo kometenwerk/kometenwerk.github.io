@@ -165,26 +165,52 @@
 
   /* ================= 3. Flyer ================= */
   var FLYER = {
-    alles: { ico: "💡", ic: ["🌐", "👵", "🛠️", "🍽️", "🎉"], farbe: "#101826", titel: "Ich helfe dir digital", unter: "Webseiten, Technik-Hilfe und Apps für Feste – aus der Region, geduldig erklärt, ohne Werbung und ohne Abo.", punkte: ["Webseite für Verein, Laden oder Ferienwohnung – ab 75 €", "Tablet für Oma und Opa einrichten – ab 30 €", "Technik-Hilfe & Nachhilfe – 12 € pro Stunde", "Speisekarte mit QR-Code – 40 €", "Turnier, Quiz-Show oder Fotobox fürs Fest – ab 20 €"], preis: "Das erste Gespräch ist kostenlos." },
-    webseite: { ico: "🌐", ic: ["⚡", "📱", "🛡️", "📅", "✏️"], farbe: "#7c2d92", titel: "Ihre eigene Webseite", unter: "Für Vereine, Läden, Ferienwohnungen und Handwerker – modern, schnell und fürs Handy gemacht.", punkte: ["Fertig in 1–3 Wochen", "Sieht auf Handy, Tablet und PC gut aus", "Keine Werbung, keine Tracker", "Termine, Öffnungszeiten, Kontakt – alles drin", "Änderungen später schnell erledigt"], preis: "Ab 75 € · erstes Gespräch kostenlos" },
-    technik: { ico: "🛠️", ic: ["📱", "💬", "🖼️", "🖨️", "📚"], farbe: "#0369a1", titel: "Technik-Hilfe & Nachhilfe", unter: "Handy, Tablet oder Computer streikt? Ich erkläre es geduldig und in Ruhe.", punkte: ["Handy und Tablet einrichten", "WhatsApp, E-Mail und Videoanrufe erklären", "Fotos sichern und ordnen", "Drucker und WLAN verbinden", "Nachhilfe in Informatik und Mathe"], preis: "12 € pro Stunde" },
-    feste: { ico: "🎉", ic: ["🍽️", "🏆", "🔔", "📸", "🚫"], farbe: "#b45309", titel: "Digital für Feste & Vereine", unter: "Speisekarte zum Scannen, Turnierplan auf dem Beamer, Quiz-Show mit Buzzern und Fotobox – ich richte alles ein.", punkte: ["Digitale Speisekarte mit QR-Aufstellern", "Turnier: Spielplan, Tabelle, Beamer", "Quiz-Show mit Buzzern für die Feier", "Fotobox auf dem Tablet", "Ohne Werbung, ohne Abo"], preis: "Ab 20 € pro Einsatz" },
-    tablet: { ico: "👵", ic: ["📲", "📞", "🖼️", "⏰", "🏠"], farbe: "#4d7c0f", titel: "Das Tablet für Oma und Opa", unter: "Große Knöpfe statt Durcheinander: Familie anrufen, Fotos ansehen, Wetter – ganz einfach.", punkte: ["Einrichtung mit FIDELIA Einfach", "Familie mit Foto – ein Tipp zum Anrufen", "Fotos der Enkel als Diashow", "Erinnerungen an Termine", "Persönliche Einweisung zu Hause"], preis: "Einrichtung ab 30 € (ca. 2 Stunden)" }
+    alles: { ico: "birne", ic: ["globus", "person", "werkzeug", "besteck", "stern"], farbe: "#101826", titel: "Ich helfe dir digital", unter: "Webseiten, Technik-Hilfe und Apps für Feste – aus der Region, geduldig erklärt, ohne Werbung und ohne Abo.", punkte: ["Webseite für Verein, Laden oder Ferienwohnung – ab 75 €", "Tablet für Oma und Opa einrichten – ab 30 €", "Technik-Hilfe & Nachhilfe – 12 € pro Stunde", "Speisekarte mit QR-Code – 40 €", "Turnier, Quiz-Show oder Fotobox fürs Fest – ab 20 €"], preis: "Das erste Gespräch ist kostenlos." },
+    webseite: { ico: "globus", ic: ["blitz", "tablet", "schild", "kalender", "stift"], farbe: "#7c2d92", titel: "Ihre eigene Webseite", unter: "Für Vereine, Läden, Ferienwohnungen und Handwerker – modern, schnell und fürs Handy gemacht.", punkte: ["Fertig in 1–3 Wochen", "Sieht auf Handy, Tablet und PC gut aus", "Keine Werbung, keine Tracker", "Termine, Öffnungszeiten, Kontakt – alles drin", "Änderungen später schnell erledigt"], preis: "Ab 75 € · erstes Gespräch kostenlos" },
+    technik: { ico: "werkzeug", ic: ["tablet", "nachricht", "bild", "drucker", "buch"], farbe: "#0369a1", titel: "Technik-Hilfe & Nachhilfe", unter: "Handy, Tablet oder Computer streikt? Ich erkläre es geduldig und in Ruhe.", punkte: ["Handy und Tablet einrichten", "WhatsApp, E-Mail und Videoanrufe erklären", "Fotos sichern und ordnen", "Drucker und WLAN verbinden", "Nachhilfe in Informatik und Mathe"], preis: "12 € pro Stunde" },
+    feste: { ico: "stern", ic: ["besteck", "pokal", "glocke", "kamera", "verbot"], farbe: "#b45309", titel: "Digital für Feste & Vereine", unter: "Speisekarte zum Scannen, Turnierplan auf dem Beamer, Quiz-Show mit Buzzern und Fotobox – ich richte alles ein.", punkte: ["Digitale Speisekarte mit QR-Aufstellern", "Turnier: Spielplan, Tabelle, Beamer", "Quiz-Show mit Buzzern für die Feier", "Fotobox auf dem Tablet", "Ohne Werbung, ohne Abo"], preis: "Ab 20 € pro Einsatz" },
+    tablet: { ico: "person", ic: ["tablet", "telefon", "bild", "uhr", "haus"], farbe: "#4d7c0f", titel: "Das Tablet für Oma und Opa", unter: "Große Knöpfe statt Durcheinander: Familie anrufen, Fotos ansehen, Wetter – ganz einfach.", punkte: ["Einrichtung mit FIDELIA Einfach", "Familie mit Foto – ein Tipp zum Anrufen", "Fotos der Enkel als Diashow", "Erinnerungen an Termine", "Persönliche Einweisung zu Hause"], preis: "Einrichtung ab 30 € (ca. 2 Stunden)" }
   };
+  // Schlichte Linien-Symbole (eigene Zeichnung, 24×24, Strich in der Plakatfarbe) statt bunter Emojis
+  var SYM = {
+    globus: '<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/>',
+    person: '<circle cx="12" cy="7.5" r="4"/><path d="M4 21v-.5a6.5 6.5 0 0 1 6.5-6.5h3a6.5 6.5 0 0 1 6.5 6.5v.5"/>',
+    werkzeug: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.8-.6-.6-2.8z"/>',
+    besteck: '<path d="M7 2v20M4.5 2v5.5a2.5 2.5 0 0 0 5 0V2M17 22V2c-2.5 2-3 6.5-1 9h1"/>',
+    stern: '<path d="M12 2.8l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 17l-5.8 3.3 1.4-6.4L2.7 9.5l6.5-.7z"/>',
+    birne: '<path d="M9 18h6M10 21.5h4M12 2.5a6.5 6.5 0 0 0-3.8 11.8c.5.4.8 1 .8 1.7V18h6v-2c0-.7.3-1.3.8-1.7A6.5 6.5 0 0 0 12 2.5z"/>',
+    blitz: '<path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12z"/>',
+    tablet: '<rect x="5" y="2" width="14" height="20" rx="2.5"/><path d="M10.5 18.5h3"/>',
+    schild: '<path d="M12 21.5s7.5-3.5 7.5-9.5V5.5L12 2.5 4.5 5.5V12c0 6 7.5 9.5 7.5 9.5z"/><path d="m9 12 2 2 4-4"/>',
+    kalender: '<rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M8 2.5v4M16 2.5v4M3 10h18"/>',
+    stift: '<path d="M16.5 3.5l4 4L8 20H4v-4z"/><path d="M14 6l4 4"/>',
+    nachricht: '<path d="M20.5 14.5a2 2 0 0 1-2 2H8l-4.5 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/>',
+    bild: '<rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.5" cy="8.5" r="1.8"/><path d="m21 15-5-5L5 21"/>',
+    drucker: '<path d="M6 9V2.5h12V9M6 18H4.5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h15a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H18"/><path d="M6 14h12v7.5H6z"/>',
+    buch: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2.5H6.5A2.5 2.5 0 0 0 4 5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/>',
+    pokal: '<path d="M8 3.5h8v5.5a4 4 0 0 1-8 0zM8 5.5H5a3 3 0 0 0 3 4.5M16 5.5h3a3 3 0 0 1-3 4.5M12 13v4M8.5 21h7M10 17h4v4h-4z"/>',
+    glocke: '<path d="M18 8.5a6 6 0 0 0-12 0c0 7-3 8.5-3 8.5h18s-3-1.5-3-8.5M13.7 20.5a2 2 0 0 1-3.4 0"/>',
+    kamera: '<path d="M22 18.5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-10a2 2 0 0 1 2-2h3.5l2-3h5l2 3H20a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.8"/>',
+    verbot: '<circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/>',
+    telefon: '<path d="M21.5 16.5v3a2 2 0 0 1-2.2 2A19.5 19.5 0 0 1 2.5 4.7 2 2 0 0 1 4.5 2.5h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.4 10.3a16 16 0 0 0 5.3 5.3l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>',
+    uhr: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5.5l3.5 2"/>',
+    haus: '<path d="M3 10.5 12 3l9 7.5V20a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 20z"/><path d="M9.5 21.5V14h5v7.5"/>'
+  };
+  function sym(name, farbe, groesse) { return SYM[name] ? '<svg viewBox="0 0 24 24" width="' + groesse + '" height="' + groesse + '" fill="none" stroke="' + farbe + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + SYM[name] + "</svg>" : ""; }
   function mischen(a, b, t) { // zwei Hex-Farben fest mischen (ohne Durchsichtigkeit – manche PDF-Programme zeigen die sonst falsch)
     var h = function (c) { var n = parseInt(c.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }, x = h(a), y = h(b);
     return "#" + x.map(function (v, i) { return Math.round(v + (y[i] - v) * t).toString(16).padStart(2, "0"); }).join("");
   }
   function poster(x, qr, fl) { // großes A4-Poster: mehr Gestaltung, aber ruhig
     var ZEICHEN = '<g fill="none" stroke-linecap="round" stroke-width="6.5"><path d="M6 8 H62 C110 8 118 62 168 64" stroke="#f2c46d"/><path d="M6 120 H62 C110 120 118 66 168 64" stroke="#f2c46d"/><path d="M6 34 H66 C100 34 110 62 150 64" stroke="#ffffff"/><path d="M6 94 H66 C100 94 110 66 150 64" stroke="#ffffff"/></g><path d="M138 60.5 L228 63 L234 64 L228 65 L138 67.5 Z" fill="#f2c46d"/>';
-    var deko = '<svg class="p-deko" viewBox="0 0 240 130" aria-hidden="true">' + ZEICHEN + '</svg>';
+    var deko = '<svg class="p-deko" viewBox="0 0 240 130" aria-hidden="true">' + ZEICHEN.replace(/#f2c46d|#ffffff/g, mischen(x.farbe, "#ffffff", 0.16)) + '</svg>';
     var zeilen = x.punkte.map(function (p, i) {
       var m = / – ((ab )?[\d,]+ €.*)$/.exec(p), text = m ? p.slice(0, m.index) : p;
-      return '<div class="p-z"><span class="p-ic" style="background:' + mischen(x.farbe, "#ffffff", 0.88) + '">' + (x.ic && x.ic[i] || "✔") + "</span><span>" + esc(text) + "</span>" + (m && fl.preise ? '<span class="p-preis">' + esc(m[1]) + "</span>" : "") + "</div>";
+      return '<div class="p-z"><span class="p-ic" style="background:' + mischen(x.farbe, "#ffffff", 0.88) + '">' + sym(x.ic && x.ic[i] || "stern", x.farbe === "#101826" ? "#1e3a8a" : x.farbe, "62%") + "</span><span>" + esc(text) + "</span>" + (m && fl.preise ? '<span class="p-preis">' + esc(m[1]) + "</span>" : "") + "</div>";
     }).join("");
     var schritte = [["1", "Melden", "per E-Mail oder QR-Code"], ["2", "Kostenlos besprechen", "was du brauchst"], ["3", "Fertig!", "ich richte alles ein"]].map(function (s) { return '<div class="p-s"><b style="background:' + x.farbe + '">' + s[0] + "</b><div><strong>" + s[1] + "</strong><small>" + s[2] + "</small></div></div>"; }).join("");
     var abreiss = fl.abreiss !== false ? '<div class="p-ab">' + [0, 1, 2, 3, 4, 5, 6, 7].map(function () { return "<div><span><b>Digitale Hilfe</b><br>kometenwerk.kontakt@gmail.com</span></div>"; }).join("") + "</div>" : "";
-    return '<div class="poster' + (abreiss ? "" : " ohne-ab") + '"><div class="p-kopf" style="background:' + x.farbe + ';background-image:linear-gradient(135deg,' + x.farbe + ',' + mischen(x.farbe, "#ffffff", 0.18) + ')">' + deko + '<div class="p-kt"><div class="marke"><svg class="p-mini" viewBox="0 0 240 130" aria-hidden="true">' + ZEICHEN + '</svg><span><b>OMNIVIA</b> Group · FIDELIA Digital</span></div><h2>' + esc(x.titel) + "</h2><p>" + esc(x.unter) + '</p></div><div class="p-gross" aria-hidden="true">' + (x.ico || "") + "</div></div>" +
+    return '<div class="poster' + (abreiss ? "" : " ohne-ab") + '"><div class="p-kopf" style="background:' + x.farbe + ';background-image:linear-gradient(135deg,' + x.farbe + ',' + mischen(x.farbe, "#ffffff", 0.18) + ')">' + deko + '<div class="p-kt"><div class="marke"><svg class="p-mini" viewBox="0 0 240 130" aria-hidden="true">' + ZEICHEN + '</svg><span><b>OMNIVIA</b> Group · FIDELIA Digital</span></div><h2>' + esc(x.titel) + "</h2><p>" + esc(x.unter) + '</p></div><div class="p-gross" aria-hidden="true">' + sym(x.ico, x.farbe, "56%") + "</div></div>" +
       '<div class="p-inhalt">' + zeilen + (fl.preise && x.preis ? '<div class="p-hinweis">' + esc(x.preis) + "</div>" : "") + '</div><div class="p-schritte">' + schritte + '</div><div class="p-kontakt">' + qr + '<div><div class="p-k1">Einfach melden</div><div class="p-k2">kometenwerk.kontakt@gmail.com</div><div class="p-k3">kometenwerk.github.io/kunden · ohne Werbung, ohne Abo</div></div></div>' + abreiss + "</div>";
   }
   function flyerZeigen() {
