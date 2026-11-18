@@ -1,13 +1,24 @@
-// Aufräumen: Hier lag aus Versehen der Offline-Speicher des Nachrichten-Hefts.
-// Diese Datei löscht ihn wieder und meldet sich dann selbst ab.
-// Das echte Nachrichten-Heft liegt unter /ND/ und hat seinen eigenen Speicher.
-self.addEventListener("install", function () { self.skipWaiting(); });
-self.addEventListener("activate", function (e) {
-  e.waitUntil((async function () {
-    var keys = await caches.keys();
-    await Promise.all(keys.filter(function (k) { return k.indexOf("heft-") === 0; }).map(function (k) { return caches.delete(k); }));
-    await self.registration.unregister();
-    var fenster = await self.clients.matchAll({ type: "window" });
-    fenster.forEach(function (c) { c.navigate(c.url); });
-  })());
+// Offline-Speicher für die Startseite der OMNIVIA Group (Startseite, Apps, Kunden, Impressum und die Apps zum Vorführen).
+// Räumt außerdem den alten, aus Versehen hier liegenden Speicher des Nachrichten-Hefts („heft-…“) auf.
+// Apps mit eigenem Offline-Speicher (z. B. /turnier/sw.js) übernehmen ihre Seiten selbst, sobald man sie einmal geöffnet hat.
+const V = "omnivia-start-2026-11-18";
+const SHELL = ["./", "./apps/", "./apps/bilder/beats-1.webp", "./apps/bilder/beats-2.webp", "./apps/bilder/fokus-1.webp", "./apps/bilder/fokus-2.webp", "./apps/bilder/hotel-freundlich-1.webp", "./apps/bilder/ki-1.webp", "./apps/bilder/krawallzoo-1.webp", "./apps/bilder/krawallzoo-2.webp", "./apps/bilder/krawallzoo-3.webp", "./apps/bilder/kueche-1.webp", "./apps/bilder/kueche-2.webp", "./apps/bilder/kueche-3.webp", "./apps/bilder/nachrichten-1.webp", "./apps/bilder/nachrichten-2.webp", "./apps/bilder/notizen-1.webp", "./apps/bilder/notizen-2.webp", "./apps/bilder/notizen-3.webp", "./apps/bilder/planer-1.webp", "./apps/bilder/planer-2.webp", "./apps/bilder/planer-3.webp", "./apps/bilder/podcast-1.webp", "./apps/bilder/quiz-1.webp", "./apps/bilder/quiz-2.webp", "./apps/bilder/quiz-3.webp", "./apps/bilder/suche-1.webp", "./apps/bilder/suche-2.webp", "./apps/bilder/taschengeld-1.webp", "./apps/bilder/taschengeld-2.webp", "./apps/bilder/taschengeld-3.webp", "./apps/bilder/werkstatt-1.webp", "./apps/bilder/werkstatt-2.webp", "./apps/bilder/werkstatt-3.webp", "./apps/bilder/wetter-1.webp", "./apps/bilder/wetter-2.webp", "./apps/bilder/wissen-1.webp", "./apps/bilder/wissen-2.webp", "./beats/icons/icon-192.png", "./buzzer/", "./buzzer/buzzer.css", "./buzzer/buzzer.js", "./buzzer/icons/icon-192.png", "./buzzer/manifest.webmanifest", "./chat/icons/icon-192.png", "./code/icon-192.png", "./datenschutz/", "./einfach/", "./einfach/einfach.css", "./einfach/einfach.js", "./einfach/icons/icon-192.png", "./einfach/manifest.webmanifest", "./events/icons/icon-192.png", "./feed/icons/icon-192.png", "./fokus/icons/icon-192.png", "./form/icons/icon-192.png", "./fotobox/", "./fotobox/fotobox.css", "./fotobox/fotobox.js", "./fotobox/icons/icon-192.png", "./fotobox/manifest.webmanifest", "./health/icons/icon-192.png", "./icons/kometenwerk.svg", "./icons/krawallzoo.png", "./icons/nachrichten.png", "./icons/podcast.png", "./icons/wetter.png", "./icons/wissen.png", "./impressum/", "./karten/icons/icon-192.png", "./ki/icons/icon-192.png", "./kueche/icons/icon-192.png", "./kunden/", "./kunden/einstellungen.json", "./kunden/kunden.css", "./kunden/kunden.js", "./notizen/icons/icon-192.png", "./pet/icons/icon-192.png", "./planer/icons/icon-192.png", "./quiz/icons/icon-192.png", "./ride/icons/icon-192.png", "./shared/apps.css", "./shared/fonts/fonts.css", "./shared/fonts/space-grotesk-latin-400-normal.woff2", "./shared/fonts/space-grotesk-latin-500-normal.woff2", "./shared/fonts/space-grotesk-latin-600-normal.woff2", "./shared/hilfe.js", "./shared/kw.css", "./shared/kw.js", "./shared/marken/aoris.webp", "./shared/marken/fidelia.webp", "./shared/marken/flaressa.webp", "./shared/marken/omnivia-zeichen.webp", "./shared/marken/omnivia.webp", "./shared/nav.css", "./shared/omnivia.css", "./shared/organigramm.js", "./shared/site.css", "./shared/site.js", "./shared/team/rollen.js", "./shared/ueber.css", "./shared/vendor/fflate-0.8.3/fflate.mjs", "./shared/vendor/qr/qrcode.js", "./speisekarte/", "./speisekarte/icons/icon-192.png", "./speisekarte/manifest.webmanifest", "./speisekarte/speisekarte.css", "./speisekarte/speisekarte.js", "./spiele/", "./spiele/arcade/icons/icon-192.png", "./spiele/horizonte/bilder/stadt-klein.webp", "./spiele/hotel-freundlich/icons/icon-192.png", "./spiele/inselstadt/bilder/horizonte-zeichen.svg", "./taschengeld/icons/icon-192.png", "./turnier/", "./turnier/icons/icon-192.png", "./turnier/manifest.webmanifest", "./turnier/turnier.css", "./turnier/turnier.js", "./werkstatt/icons/icon-192.png"];
+self.addEventListener("install", e => {
+  e.waitUntil(caches.open(V).then(c => Promise.all(SHELL.map(u => c.add(u).catch(() => null)))).then(() => self.skipWaiting()));
+});
+self.addEventListener("activate", e => {
+  e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => (x.startsWith("omnivia-start-") && x !== V) || x.startsWith("heft-")).map(x => caches.delete(x)))).then(() => self.clients.claim()));
+});
+self.addEventListener("fetch", e => {
+  const req = e.request; if (req.method !== "GET") return;
+  const url = new URL(req.url); if (url.origin !== location.origin) return;
+  if (url.pathname.startsWith("/ND/")) return; // Nachrichten-Heft hat seinen eigenen Speicher
+  const merken = r => { if (r && r.ok) { const c = r.clone(); caches.open(V).then(x => x.put(req, c)); } return r; };
+  // Seiten und Einstellungen: erst Internet (immer aktuell), ohne Internet aus dem Speicher
+  if (req.mode === "navigate" || url.pathname.endsWith(".json")) {
+    e.respondWith(fetch(req).then(merken).catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || caches.match("./"))));
+    return;
+  }
+  // Bilder, Schriften, Skripte: sofort aus dem Speicher, im Hintergrund auffrischen
+  e.respondWith(caches.match(req).then(hit => { const net = fetch(req).then(merken).catch(() => hit); return hit || net; }));
 });

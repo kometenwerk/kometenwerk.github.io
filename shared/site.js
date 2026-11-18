@@ -155,3 +155,11 @@
     c.addEventListener("pointerleave", function () { c.style.transform = ""; });
   });
 })();
+
+// Offline-Speicher für Startseite, Apps-Seite und die Vorführ-Apps (sw.js im Hauptordner)
+(function () {
+  "use strict";
+  if (!("serviceWorker" in navigator) || !/^https?:$/.test(location.protocol)) return;
+  if (location.protocol === "http:" && location.hostname !== "localhost") return;
+  window.addEventListener("load", function () { navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(function () {}); });
+})();
