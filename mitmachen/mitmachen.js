@@ -41,9 +41,9 @@
       })
       .catch(function () {
         laeuft = false; $("senden").disabled = false; $("senden").textContent = "🙋 Anfrage schicken";
-        var body = "Hallo,\n\nich möchte bei OMNIVIA mitmachen.\n\nName: " + name + "\nE-Mail: " + mail + "\nRollen: " + r.join(", ") + "\nGespräch: " + (wert("fZeit") || "egal") + "\n" + text;
+        var body = "Hallo,\n\nich möchte bei der OMNIVIA Group mitmachen.\n\nName: " + name + "\nE-Mail: " + mail + "\nRollen: " + r.join(", ") + "\nGespräch: " + (wert("fZeit") || "egal") + "\n" + text;
         zeigen("m-fehler", "<b>Das hat gerade nicht geklappt.</b><p>Schick deine Anfrage stattdessen per E-Mail an <b>" + esc(MAIL) + "</b>. Dein E-Mail-Programm sollte sich öffnen; sonst kopier diesen Text:</p><pre>" + esc(body) + "</pre>");
-        location.href = "mailto:" + MAIL + "?subject=" + encodeURIComponent("Mitmachen bei OMNIVIA") + "&body=" + encodeURIComponent(body);
+        location.href = "mailto:" + MAIL + "?subject=" + encodeURIComponent("Mitmachen bei der OMNIVIA Group") + "&body=" + encodeURIComponent(body);
       });
   });
 })();

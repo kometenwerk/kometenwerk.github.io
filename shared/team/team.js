@@ -686,7 +686,7 @@
     }).catch(fehlerToast);
   }
   function entwurfVorlage(a) {
-    if (a.anliegen === "Mitmachen") return "Hallo " + a.name + ",\n\nschön, dass du bei OMNIVIA mitmachen willst! Lass uns kurz reden, damit wir uns kennenlernen und du siehst, was wir so machen." +
+    if (a.anliegen === "Mitmachen") return "Hallo " + a.name + ",\n\nschön, dass du bei der OMNIVIA Group mitmachen willst! Lass uns kurz reden, damit wir uns kennenlernen und du siehst, was wir so machen." +
       (a.gespraech && a.gespraech !== "egal" ? " Du hast geschrieben: „" + a.gespraech + "“ – passt das diese Woche?" : " Wann hast du diese Woche kurz Zeit, zum Beispiel in der Pause?") +
       "\n\nBring gern mit, was du schon gemacht hast (Fotos, Programme, Zeichnungen …).\n\nViele Grüße\n" + ich.name + "\nOMNIVIA Group";
     var fr = T.firmen[a.firma] || F, g = String(a.gespraech || "");

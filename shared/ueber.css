@@ -237,3 +237,8 @@ a.hp-app:hover{border-color:var(--accent);transform:translateY(-2px)}
 .hp-team{max-width:760px;margin:0 auto;text-align:center}
 .hp-team .lead{margin:8px auto 18px}
 .hp-team .btns{justify-content:center}
+.hp-ziel{max-width:820px;margin:0 auto}
+.hp-ziel .h2{font-size:clamp(1.6rem,3.6vw,2.4rem);margin:4px 0 16px}
+.hp-ziel-text p{color:var(--muted);font-size:1.06rem;margin:0 0 12px;line-height:1.65}
+.hp-ziel-text b{color:var(--ink)}
+.hp-ziel-sec{padding-bottom:24px}
