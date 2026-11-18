@@ -384,7 +384,7 @@ $("#einLos").onclick = async () => {
   const ab = KC.beiEinrichten((t) => { $("#einLog").textContent += t; $("#einLog").scrollTop = 1e9; n++; $("#einFort").style.width = Math.min(95, 4 + n * 1.2) + "%"; });
   const r = await KC.einrichten(); ab();
   $("#einFort").style.width = r.ok ? "100%" : "0";
-  if (r.ok) { avrBereit = true; avrStatus(); $("#einLos").textContent = "FERTIG"; setTimeout(() => $("#dEinrichten").close(), 900); toast("Arduino AVR Boards installiert – jetzt kannst du überprüfen und hochladen."); portsSuchen(true); }
+  if (r.ok) { avrBereit = true; avrStatus(); $("#einLos").textContent = "FERTIG"; setTimeout(() => $("#dEinrichten").close(), 900); toast("Arduino AVR Boards" + (r.bibliotheken && r.bibliotheken.neu.length ? " und Bildschirm-Bibliotheken" : "") + " installiert – jetzt kannst du überprüfen und hochladen."); portsSuchen(true); }
   else { $("#einLos").disabled = false; $("#einLos").textContent = "NOCHMAL VERSUCHEN"; toast("Das hat nicht geklappt. Ist das Internet an?"); }
 };
 function avrStatus() { $("#avrStatus").textContent = avrBereit ? "✔ installiert" : "noch nicht installiert"; $("#bAvr").hidden = avrBereit; }
@@ -398,6 +398,11 @@ function avrStatus() { $("#avrStatus").textContent = avrBereit ? "✔ installier
   if (!st.cli) { avrBereit = false; ausgabeStart("arduino-cli fehlt – bitte Kometenwerk Code neu installieren."); }
   else if (!st.avr) { avrBereit = false; einrichtenZeigen(); }
   avrStatus();
+  // Fehlen Bibliotheken für Bildschirme (LCD, OLED, 7-Segment) & Co.? Dann still im Hintergrund nachholen (braucht einmal Internet)
+  if (st.cli && st.avr && KC.bibliothekStandard) setTimeout(async () => {
+    const b = await KC.bibliothekStandard();
+    if (b.neu && b.neu.length) toast("📚 Bibliotheken für Bildschirme installiert: " + b.neu.join(", "));
+  }, 3000);
   portsSuchen(true);
   setInterval(() => { if (!beschaeftigt && !monitorAn && document.visibilityState === "visible") portsSuchen(true); }, 4000);
   const start = await KC.startDatei(); if (start) sketchLaden(start);

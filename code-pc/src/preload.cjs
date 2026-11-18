@@ -4,6 +4,7 @@ const hoeren = (kanal) => (cb) => { const f = (_, d) => cb(d); ipcRenderer.on(ka
 contextBridge.exposeInMainWorld("KC", {
   einrichtenStatus: () => ipcRenderer.invoke("einrichten:status"),
   einrichten: () => ipcRenderer.invoke("einrichten:los"),
+  bibliothekStandard: () => ipcRenderer.invoke("bibliothek:standard"),
   ports: () => ipcRenderer.invoke("ports"),
   pruefen: (x) => ipcRenderer.invoke("pruefen", x),
   hochladen: (x) => ipcRenderer.invoke("hochladen", x),

@@ -58,7 +58,9 @@ ipcMain.handle("einrichten:los", async () => {
   const a = await cli(["core", "update-index"], "einrichten:zeile");
   if (a.code !== 0) return { ok: false, aus: a.aus };
   const b = await cli(["core", "install", "arduino:avr"], "einrichten:zeile");
-  return { ok: b.code === 0, aus: a.aus + b.aus };
+  if (b.code !== 0) return { ok: false, aus: a.aus + b.aus };
+  const c = await standardBibliotheken("einrichten:zeile");   // Bildschirme & Co. gleich mit
+  return { ok: true, aus: a.aus + b.aus, bibliotheken: c };
 });
 // Ports ohne arduino-cli finden (klappt auch, wenn „Einrichten“ noch nicht fertig ist, und zeigt Nachbauten mit CH340)
 function systemPorts() {
@@ -105,8 +107,36 @@ ipcMain.handle("hochladen", async (_, { name, code, fqbn, port }) => {
   const r = await cli(["compile", "--fqbn", fqbn, "--upload", "-p", port, "--warnings", "default", ordner], "ausgabe:zeile");
   return { ok: r.code === 0, aus: r.aus, datei: path.basename(ordner) + ".ino", warMonitor };
 });
-ipcMain.handle("bibliothek:installieren", async (_, name) => { const r = await cli(["lib", "install", name], "ausgabe:zeile"); return { ok: r.code === 0, aus: r.aus }; });
+// Ohne die Liste aller Bibliotheken (library_index.json) findet arduino-cli keine einzige → vorher holen
+let libIndexDa = false;
+async function libIndex(kanal) {
+  if (libIndexDa) return true;
+  const r = await cli(["lib", "update-index"], kanal);
+  libIndexDa = r.code === 0;
+  return libIndexDa;
+}
+// Was man im Unterricht und für Bildschirme meistens braucht (Abhängigkeiten wie „Adafruit BusIO“ kommen automatisch mit)
+const STANDARD_BIBLIOTHEKEN = ["LiquidCrystal", "LiquidCrystal I2C", "Adafruit SSD1306", "Adafruit GFX Library", "U8g2", "TM1637", "Servo"];
+async function installierteBibliotheken() {
+  const r = await cli(["lib", "list", "--format", "json"]);
+  try { const j = JSON.parse(r.json); return (j.installed_libraries || j || []).map(l => (l.library || l).name); } catch (e) { return []; }
+}
+async function standardBibliotheken(kanal) {
+  const da = await installierteBibliotheken();
+  const fehlt = STANDARD_BIBLIOTHEKEN.filter(n => da.indexOf(n) < 0);
+  if (!fehlt.length) return { ok: true, neu: [], fehlt: [] };
+  if (!(await libIndex(kanal))) return { ok: false, neu: [], fehlt };
+  const neu = [], nicht = [];
+  for (const n of fehlt) { const r = await cli(["lib", "install", n], kanal); (r.code === 0 ? neu : nicht).push(n); }
+  return { ok: !nicht.length, neu, fehlt: nicht };
+}
+ipcMain.handle("bibliothek:standard", async () => standardBibliotheken(null));
+ipcMain.handle("bibliothek:installieren", async (_, name) => {
+  if (!(await libIndex("ausgabe:zeile"))) return { ok: false, aus: "Die Liste der Bibliotheken konnte nicht geladen werden. Ist das Internet an?" };
+  const r = await cli(["lib", "install", name], "ausgabe:zeile"); return { ok: r.code === 0, aus: r.aus };
+});
 ipcMain.handle("bibliothek:suchen", async (_, wort) => {
+  await libIndex(null);
   const r = await cli(["lib", "search", wort, "--format", "json"]);
   try { const j = JSON.parse(r.json); return (j.libraries || []).slice(0, 20).map(l => ({ name: l.name, text: (l.latest || (l.releases && Object.values(l.releases)[0]) || {}).sentence || "" })); } catch (e) { return []; }
 });
