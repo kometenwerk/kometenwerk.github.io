@@ -204,3 +204,36 @@
 .neu-app h3{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .neu-st{font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--c);color:#fff}
 .neu-los{margin-top:auto;font-weight:600;color:var(--c)}
+
+/* ---------- Startseite (Nov. 2026): Apps-Übersicht, Oma-Kasten, Angebote, Team-Kasten ---------- */
+.hp-tabs{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:26px 0 20px}
+.hp-tabs button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:9px 16px;font-weight:600;cursor:pointer}
+.hp-tabs button span{color:var(--muted);font-weight:500;margin-left:4px}
+.hp-tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.hp-tabs button[aria-selected="true"] span{color:inherit;opacity:.7}
+.hp-apps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.hp-app{display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:var(--card);text-decoration:none;color:var(--ink);transition:border-color .15s,transform .15s;height:100%}
+a.hp-app:hover{border-color:var(--accent);transform:translateY(-2px)}
+.hp-app img,.hp-ico-leer{width:48px;height:48px;border-radius:12px;flex:none;object-fit:cover}
+.hp-ico-leer{display:flex;align-items:center;justify-content:center;font-size:26px;background:var(--bg)}
+.hp-t{display:flex;flex-direction:column;min-width:0}
+.hp-t b{font-weight:600;font-size:1rem;line-height:1.25}
+.hp-t small{color:var(--muted);font-size:.86rem;line-height:1.3}
+.hp-bald{opacity:.65}
+.hp-mehr{margin-top:24px}
+.hp-mehr .btn{margin:4px}
+.hp-oma-sec{padding-top:0}
+.hp-oma{display:flex;gap:32px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:28px;box-shadow:var(--shadow)}
+.hp-oma-bild img{width:120px;height:120px;border-radius:28px;display:block}
+.hp-oma .lead{margin:6px 0 18px}
+.hp-oma .h2{font-size:clamp(1.4rem,3vw,1.9rem)}
+@media (max-width:680px){.hp-oma{flex-direction:column;align-items:flex-start;padding:22px}.hp-oma-bild img{width:84px;height:84px;border-radius:20px}}
+.hp-angebote{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:28px}
+.hp-ang{display:flex;flex-direction:column;gap:6px;padding:22px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);text-decoration:none;color:var(--ink);box-shadow:var(--shadow)}
+.hp-ang:hover{border-color:var(--accent)}
+.hp-ang h3{margin:4px 0 0;font-size:1.1rem}
+.hp-ang p{margin:0;color:var(--muted);font-size:.93rem}
+.hp-ang-preis{align-self:flex-start;background:var(--accent);color:#101826;font-weight:600;border-radius:999px;padding:3px 12px;font-size:.9rem}
+.hp-team{max-width:760px;margin:0 auto;text-align:center}
+.hp-team .lead{margin:8px auto 18px}
+.hp-team .btns{justify-content:center}
