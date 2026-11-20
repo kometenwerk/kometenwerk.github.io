@@ -17,13 +17,14 @@ import * as F from "./formen.js";
 import * as Export from "./export.js";
 import * as KI from "./ki.js";
 import * as Extras from "./extras.js";
+import * as Noten from "./noten.js";
 
 const KW = window.KW, esc = KW.esc;
 const QUELLE = { heft: "✏️", scan: "📷", audio: "🎙️", zettel: "🗒️" };
 const FARBEN = ["#101826", "#1f4fd1", "#c93a3a", "#1a8f4c", "#7c3aed", "#e8730c"];
 const MARKER = ["#ffe14d", "#7cf29a", "#ff9ad5", "#7cd3ff", "#ffb35c"];
 const DICKE = [[0.3, "Fein"], [0.5, "Mittel"], [0.9, "Dick"], [1.6, "Extra"]];
-const STIFTE = [["kuli", "🖊️", "Kugelschreiber"], ["fueller", "✒️", "Füller"], ["bleistift", "✏️", "Bleistift"], ["marker", "🖍️", "Textmarker"], ["radierer", "🧽", "Radiergummi"], ["lasso", "➰", "Lasso"]];
+const STIFTE = [["kuli", "🖊️", "Kugelschreiber"], ["fueller", "✒️", "Füller"], ["bleistift", "✏️", "Bleistift"], ["marker", "🖍️", "Textmarker"], ["radierer", "🧽", "Radiergummi"], ["noten", "🎵", "Noten-Stempel"], ["lasso", "➰", "Lasso"]];
 
 function datum(iso) {
   const d = new Date(iso), heute = new Date();
@@ -38,6 +39,7 @@ const kachelMm = (s) => s.quer ? 210 : (s.bild && !s.quer && s.hoehe && s.hoehe 
 export function zeichneStrich(ctx, st, k) {
   const p = st.p;
   if (!p || !p.length) return;
+  if (st.art === "noten") { Noten.zeichne(ctx, st, k); return; }
   const art = st.art === "stift" ? "kuli" : st.art;
   ctx.save();
   ctx.lineCap = "round"; ctx.lineJoin = "round";
@@ -208,7 +210,7 @@ export function liste(A, el, fach) {
       (imKorb ? '<a class="btn small" href="#heft/*papierkorb">🗑️ ' + imKorb + '</a>' : "") +
       (fachWahl && fachWahl[0] !== "*" ? '<button type="button" class="btn small" id="fachDruck" title="Ganzes Fach drucken oder als PDF">🖨️ Fach</button>' + (A.einst.ki && A.einst.ki.art !== "aus" ? '<button type="button" class="btn small" id="lernzettel" title="Die KI fasst alle Seiten des Fachs auf einem Lernzettel zusammen">✨ Lernzettel</button>' : "") : "") +
       '<button type="button" class="btn small" id="pdfSammeln" title="Mehrere Seiten oder Scans zu einem PDF zusammenfassen">📄 PDF</button>' +
-      '<label class="btn small" title="Word-Datei oder FIDELIA-Datei öffnen">📥 Öffnen<input type="file" id="oeffnen" accept=".docx,.pptx,.xlsx,.png,.jpg,.jpeg,.svg,.fidelia,.json" hidden></label>' +
+      '<label class="btn small" title="PDF, Bild, Word-Datei oder FIDELIA-Datei öffnen – PDFs und Bilder werden Seiten zum Draufschreiben">📥 Öffnen<input type="file" id="oeffnen" accept=".pdf,.docx,.pptx,.xlsx,.png,.jpg,.jpeg,.gif,.webp,.svg,.fidelia,.json,application/pdf,image/*" hidden></label>' +
       '<button type="button" class="btn primary" id="neu">+ Neu</button></div>' +
       '<div class="suche"><input class="inp" type="search" id="q" placeholder="In allen Seiten suchen" aria-label="In allen Seiten suchen" value="' + esc(suche) + '"></div>' +
       '<div class="ordner" role="tablist" aria-label="Fach-Ordner">' +
@@ -508,9 +510,10 @@ export function seite(A, el, id) {
       '<span class="trenn"></span>' +
       (Z.typ === "radierer" ? '<label class="klein">Größe <select id="radGr">' + [1.5, 3, 6, 12].map(g => '<option value="' + g + '"' + (g === Z.radierGroesse ? " selected" : "") + '>' + g + ' mm</option>').join("") + '</select></label><small class="muted">' + (HE.radierer === "stueck" ? "radiert, wo du wischst" : "löscht ganze Striche") + '</small>' :
         Z.typ === "lasso" ? '<small class="muted">Kreise ein, was du verschieben, drehen, kopieren oder in Text umwandeln willst.</small>' :
+        (Z.typ === "noten" ? '<span class="noten-wahl" role="group" aria-label="Noten-Stempel">' + Noten.STEMPEL.map(n => '<button type="button" data-st="' + n[0] + '" title="' + n[2] + '" aria-label="' + n[2] + '" class="' + ((Z.stempel || "n4") === n[0] ? "an" : "") + (/^t\d/.test(n[0]) ? " txt" : "") + '">' + n[1] + '</button>').join("") + '</span><span class="trenn"></span>' : "") +
         farbenListe.map(f => '<button type="button" class="farbe' + (f === aktFarbe ? " an" : "") + '" data-farbe="' + f + '" style="background:' + f + '" aria-label="Farbe ' + f + '"></button>').join("") +
         '<label class="farbe eigene" title="Eigene Farbe"><input type="color" id="eigeneFarbe" value="' + esc(aktFarbe) + '" aria-label="Eigene Farbe">🎨</label>' +
-        (Z.typ !== "marker" ? '<select id="dicke" aria-label="Strichstärke">' + DICKE.map(d => '<option value="' + d[0] + '"' + (d[0] === Z.dicke ? " selected" : "") + '>' + d[1] + '</option>').join("") + '</select>' : "")) +
+        (Z.typ !== "marker" && Z.typ !== "noten" ? '<select id="dicke" aria-label="Strichstärke">' + DICKE.map(d => '<option value="' + d[0] + '"' + (d[0] === Z.dicke ? " selected" : "") + '>' + d[1] + '</option>').join("") + '</select>' : "")) +
       '<span class="trenn"></span>' +
       '<button type="button" id="formen" class="' + (Z.formen ? "an" : "") + '" title="Formen erkennen: am Ende kurz halten" aria-label="Formen erkennen">🔺</button>' +
       '<button type="button" id="lineal" class="' + (wz && wz.art === "lineal" ? "an" : "") + '" title="Lineal" aria-label="Lineal">📏</button>' +
@@ -518,6 +521,7 @@ export function seite(A, el, id) {
       '<button type="button" id="zirkel" class="' + (wz && wz.art === "zirkel" ? "an" : "") + '" title="Zirkel" aria-label="Zirkel">🧭</button>' +
       '<button type="button" id="finger" class="' + (Z.finger ? "an" : "") + '" title="Mit dem Finger malen" aria-label="Mit dem Finger malen">☝️</button>';
     sl.querySelectorAll("[data-typ]").forEach(b => b.onclick = () => { Z.typ = b.dataset.typ; auswahlWeg(); merken(); stiftLeiste(); leiste(); });
+    sl.querySelectorAll("[data-st]").forEach(b => b.onclick = () => { Z.stempel = b.dataset.st; merken(); stiftLeiste(); });
     sl.querySelectorAll("[data-farbe]").forEach(b => b.onclick = () => { if (Z.typ === "marker") Z.marker = b.dataset.farbe; else Z.farbe = b.dataset.farbe; merken(); stiftLeiste(); });
     const ef = sl.querySelector("#eigeneFarbe"); if (ef) ef.oninput = () => { if (Z.typ === "marker") Z.marker = ef.value; else Z.farbe = ef.value; merken(); };
     const di = sl.querySelector("#dicke"); if (di) di.onchange = () => { Z.dicke = Number(di.value); merken(); };
@@ -771,7 +775,7 @@ export function seite(A, el, id) {
     }
     return document.scrollingElement || document.documentElement;
   }
-  let fingerScroll = null, stiftNah = false, stiftZeit = 0;
+  let fingerScroll = null, stiftNah = false, stiftZeit = 0, notenTipp = false;
   // Handballen-Schutz: Solange der Stift in der Nähe ist (oder bis 1,5 s danach), zählen Finger/Hand gar nicht.
   const stiftAktiv = () => stiftNah || Date.now() - stiftZeit < 1500;
   ["pointerover", "pointermove", "pointerdown", "pointerup"].forEach(t => canvas.addEventListener(t, (e) => {
@@ -806,6 +810,16 @@ export function seite(A, el, id) {
     kante = null;
     const roh = punkt(e);
     const typ = stiftRadierer ? "radierer" : Z.typ;
+    if (typ === "noten") {
+      sichern();
+      const r = Noten.stempel(Z.stempel || "n4", roh[0], roh[1], { raster: s.raster, quer: s.quer, kachel: kachelMm(s), farbe: Z.farbe });
+      s.striche.push(r.st); allesZeichnen(); spaeter(); leiste();
+      if (!r.eingerastet && !notenTipp) {
+        notenTipp = true;
+        KW.toast(Noten.hatNotenlinien(s.raster) ? "Tipp: Tippe näher an die Notenlinien, dann rastet die Note ein." : "Tipp: Auf Notenpapier (📄 Papier → Noten) rasten die Noten genau auf den Linien ein.");
+      }
+      return;
+    }
     if (typ === "lasso") { lassoPoly = [roh]; strich = { lasso: true }; return; }
     sichern();
     if (typ === "radierer") { radiertGerade = radieren(roh); if (radiertGerade) allesZeichnen(); strich = { radierer: true }; return; }

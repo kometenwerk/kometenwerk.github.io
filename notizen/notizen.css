@@ -150,6 +150,10 @@ dialog.sheet.breit .sheet-in{max-width:760px}
 .blatt.stift-modus .rich{pointer-events:none}
 .blatt.stift-modus canvas{cursor:crosshair}
 .blatt.stift-modus[data-werkzeug="radierer"] canvas{cursor:cell}
+.blatt.stift-modus[data-werkzeug="noten"] canvas{cursor:copy}
+.noten-wahl{display:inline-flex;flex-wrap:wrap;gap:2px;align-items:center}
+.noten-wahl button{min-width:34px;height:34px;font-family:"Segoe UI Symbol","Noto Music","Apple Symbols",serif;font-size:1.5rem;line-height:1;padding:0 4px}
+.noten-wahl button.txt{font-size:.85rem;font-weight:700;font-family:Georgia,serif}
 .erkannt{margin:14px auto 0;max-width:860px;padding:10px 14px}
 .erkannt summary{cursor:pointer;font-weight:600}
 .erkannt textarea{margin-top:8px}

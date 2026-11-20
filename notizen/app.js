@@ -21,6 +21,7 @@ import * as KIH from "./ki-helfer.js";
 import * as Verkn from "./verknuepfen.js";
 import * as Tafel from "./tafel.js";
 import * as Code from "./code.js";
+import * as Importieren from "./import-seiten.js";
 
 const KW = window.KW, esc = KW.esc;
 
@@ -247,6 +248,7 @@ function markieren() {
 
 let aktuell = { modul: "start", param: "" }, aufraeumen = null;
 A.gehe = (ziel) => { if (location.hash === "#" + ziel) zeigen(); else location.hash = ziel; };
+Importieren.einfuegenAktivieren(A); // Strg+V: kopiertes Bild/PDF als neue Seite
 
 // Zeichnung aus Kometenwerk Code abholen (#holen/<port>/<token>): kommt von 127.0.0.1, also nur vom eigenen PC
 async function zeichnungHolen(port, token) {
