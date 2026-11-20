@@ -74,7 +74,7 @@
   document.getElementById("neu").onclick = function () { g.clearRect(0, 0, c.width, c.height); z.striche = 0; z.abbruch = 0; z.scroll = 0; zeigen(); };
   var ua = navigator.userAgent, browser = /Edg\//.test(ua) ? "Edge" : /Chrome\//.test(ua) ? "Chrome" : /Firefox\//.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : "anderer Browser";
   document.getElementById("geraet").textContent = "Browser: " + browser + " · " + (/Windows/.test(ua) ? "Windows" : /Mac/.test(ua) ? "Mac" : /Android/.test(ua) ? "Android" : /iPhone|iPad/.test(ua) ? "iPhone/iPad" : "anderes System") + " · Touchpunkte: " + (navigator.maxTouchPoints || 0) + " · installiert: " + (matchMedia("(display-mode: standalone)").matches ? "ja" : "nein");
-  if (window.caches) caches.keys().then(function (k) { var v = k.filter(function (x) { return x.indexOf("kw-notizen") === 0; }).sort().pop(); setz("wVersion", v ? (v.indexOf("stift2") > 0 ? "neu ✅" : "alt ❌") : "nicht installiert", v && v.indexOf("stift2") < 0 ? "rot" : ""); });
+  if (window.caches) caches.keys().then(function (k) { var v = k.filter(function (x) { return x.indexOf("kw-notizen") === 0; }).sort().pop(); setz("wVersion", v ? (v.indexOf("stift3") > 0 ? "neu ✅" : "alt ❌") : "nicht installiert", v && v.indexOf("stift3") < 0 ? "rot" : ""); });
   else setz("wVersion", "unbekannt");
   zeigen();
 })();

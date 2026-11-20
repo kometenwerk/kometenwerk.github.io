@@ -575,6 +575,7 @@ export function seite(A, el, id) {
   const abstand = (ts) => Math.hypot(ts[0].clientX - ts[1].clientX, ts[0].clientY - ts[1].clientY);
   blatt.addEventListener("touchstart", (e) => {
     if ([].some.call(e.changedTouches, t => t.touchType === "stylus")) return; // Stift ist kein Finger
+    if (Z.modus === "stift" && stiftAktiv()) { geste = null; pinch = null; return; } // Handballen beim Schreiben
     if (!geste) geste = { start: Date.now(), max: 0, bewegt: false, x: e.touches[0].clientX, y: e.touches[0].clientY, rand: false };
     geste.max = Math.max(geste.max, e.touches.length);
     if (e.touches.length === 1) { const r = rahmenEl.getBoundingClientRect(); geste.rand = e.touches[0].clientX - r.left < 26 || r.right - e.touches[0].clientX < 26; }
@@ -770,9 +771,18 @@ export function seite(A, el, id) {
     }
     return document.scrollingElement || document.documentElement;
   }
-  let fingerScroll = null;
+  let fingerScroll = null, stiftNah = false, stiftZeit = 0;
+  // Handballen-Schutz: Solange der Stift in der Nähe ist (oder bis 1,5 s danach), zählen Finger/Hand gar nicht.
+  const stiftAktiv = () => stiftNah || Date.now() - stiftZeit < 1500;
+  ["pointerover", "pointermove", "pointerdown", "pointerup"].forEach(t => canvas.addEventListener(t, (e) => {
+    if (e.pointerType !== "pen") return;
+    stiftNah = true; stiftZeit = Date.now();
+    if (fingerScroll) fingerScroll = null;
+  }, { passive: true }));
+  ["pointerleave", "pointerout"].forEach(t => canvas.addEventListener(t, (e) => { if (e.pointerType === "pen" && !e.buttons) { stiftNah = false; stiftZeit = Date.now(); } }, { passive: true }));
   canvas.addEventListener("pointerdown", (e) => {
     if (Z.modus !== "stift" || e.pointerType !== "touch" || (Z.finger && !stiftGesehen) || fingerScroll) return;
+    if (stiftAktiv() || (e.width > 40 && e.height > 40)) return; // Handballen liegt auf
     fingerScroll = { id: e.pointerId, x: e.clientX, y: e.clientY, senk: scrollFlaeche(rahmenEl) };
   });
   canvas.addEventListener("pointermove", (e) => {
