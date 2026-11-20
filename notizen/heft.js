@@ -310,6 +310,7 @@ export function seite(A, el, id) {
   if (!HE.marker && Z.typ === "marker") Z.typ = "kuli";
   if (HE.formen === false) Z.formen = false;
   let bildUrl = null, speicherTimer = null, rueck = [], vor = [], stiftGesehen = false, wz = null, auswahl = null;
+  let stiftNah = false, stiftOhneSchweben = KW.load("kw-notizen-stift-ohne-schweben", false);
   const B = breiteMm(s);
   let ansicht = s.bild ? (s.html && s.ansicht !== "foto" ? "text" : "foto") : "text";
   const merken = () => KW.save("kw-notizen-stift2", Z);
@@ -543,7 +544,7 @@ export function seite(A, el, id) {
     blatt.classList.toggle("stift-modus", Z.modus === "stift");
     blatt.dataset.werkzeug = Z.typ;
     rich.contentEditable = Z.modus === "tippen" ? "true" : "false";
-    canvas.style.touchAction = Z.modus === "stift" && Z.finger && !stiftGesehen ? "none" : "pan-x pan-y";
+    beruehrung();
     el.querySelector("#rueck").disabled = !rueck.length && Z.modus === "stift";
     el.querySelector("#vor").disabled = !vor.length && Z.modus === "stift";
   }
@@ -754,6 +755,27 @@ export function seite(A, el, id) {
     ctx.save(); ctx.setLineDash([4, 4]); ctx.strokeStyle = "#ff8a3c"; ctx.lineWidth = 1.5;
     ctx.beginPath(); lassoPoly.forEach((q, i) => i ? ctx.lineTo(q[0] * k, q[1] * k) : ctx.moveTo(q[0] * k, q[1] * k)); ctx.closePath(); ctx.stroke(); ctx.restore();
   }
+  /* Stift verschiebt das Blatt nie: Sobald der Stift über dem Blatt schwebt, ist Verschieben aus.
+     Finger dürfen weiter scrollen (außer sie malen selbst). Stifte ohne Schweben: nach dem ersten
+     abgebrochenen Strich bleibt Verschieben im Stift-Modus ganz aus. */
+  function beruehrung() {
+    const aus = Z.modus === "stift" && (stiftNah || stiftOhneSchweben || (Z.finger && !stiftGesehen));
+    const wert = aus ? "none" : "pan-x pan-y";
+    if (canvas.style.touchAction !== wert) canvas.style.touchAction = wert;
+  }
+  ["pointerover", "pointerenter", "pointermove"].forEach(t => canvas.addEventListener(t, (e) => {
+    if (e.pointerType === "pen" && !stiftNah) { stiftNah = true; beruehrung(); }
+  }, { passive: true }));
+  ["pointerleave", "pointerout"].forEach(t => canvas.addEventListener(t, (e) => {
+    if (e.pointerType === "pen" && stiftNah && !e.buttons) { stiftNah = false; beruehrung(); }
+  }, { passive: true }));
+  canvas.addEventListener("pointercancel", (e) => {
+    // Browser hat den Stift-Strich zum Verschieben übernommen → ab jetzt im Stift-Modus nie mehr verschieben
+    if (e.pointerType === "pen" && Z.modus === "stift" && !stiftOhneSchweben) {
+      stiftOhneSchweben = true; KW.save("kw-notizen-stift-ohne-schweben", true); beruehrung();
+      KW.toast("✏️ Der Stift verschiebt das Blatt jetzt nicht mehr. Scrollen: mit dem Mausrad oder oben den Stift abwählen.");
+    }
+  });
   canvas.addEventListener("pointerdown", (e) => {
     if (Z.modus !== "stift") return;
     if (e.pointerType === "pen" && !stiftGesehen) { stiftGesehen = true; if (Z.finger) { Z.finger = false; merken(); stiftLeiste(); KW.toast("Stift erkannt ✏️ – deine Hand malt jetzt nicht mehr mit."); } leiste(); }
