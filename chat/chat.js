@@ -76,12 +76,27 @@
     seite("seiteListe"); $("knopfEinst").hidden = false; liste(); stummAnzeigen();
     verbinden();
     teilenPruefen();
+    schreibenPruefen();
+  }
+  /* Von Sofie (Sprach-Assistentin am Laptop): #schreiben?an=Ben&t=Text
+     Öffnet den Chat und schreibt den Text ins Feld – abgeschickt wird NIE automatisch,
+     sondern nur mit Enter/Senden (Sofie drückt Enter erst nach deinem „Ja“). */
+  function schreibenPruefen() {
+    var m = location.hash.match(/^#schreiben\?(.*)$/); if (!m || !ich) return;
+    var q = new URLSearchParams(m[1]), an = (q.get("an") || "").trim().toLowerCase(), t = (q.get("t") || "").slice(0, 2000);
+    history.replaceState(null, "", location.pathname + location.search);
+    var treffer = Object.keys(kontakte).filter(function (c) { var k = kontakte[c]; return k.status === "ok" && !k.ki && k.name.toLowerCase() === an; });
+    if (!treffer.length) treffer = Object.keys(kontakte).filter(function (c) { var k = kontakte[c]; return k.status === "ok" && !k.ki && k.name.toLowerCase().indexOf(an) === 0; });
+    if (treffer.length !== 1) { KW.toast(treffer.length ? "Mehrere Kontakte heißen „" + an + "“ – bitte selbst auswählen." : "Keinen Kontakt „" + an + "“ gefunden."); return; }
+    chatOeffnen(treffer[0]);
+    feld.value = t; feld.style.height = "auto"; feld.style.height = Math.min(140, feld.scrollHeight) + "px"; knopfAnpassen(); feld.focus();
+    KW.toast("✍️ Von Sofie vorbereitet – mit Enter abschicken.");
   }
   function lesHash() {
     var m = location.hash.match(/k=([A-Za-z0-9_-]{16,32})\.([a-f0-9]{32})/);
     if (m) { einladung = { k: m[1], fp: m[2] }; history.replaceState(null, "", location.pathname + location.search); }
   }
-  window.addEventListener("hashchange", function () { lesHash(); if (einladung && ich && B) codeEinloesen(einladung); });
+  window.addEventListener("hashchange", function () { if (/^#schreiben\?/.test(location.hash)) { schreibenPruefen(); return; } lesHash(); if (einladung && ich && B) codeEinloesen(einladung); });
 
   async function server() {
     if (B) return B;

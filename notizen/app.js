@@ -318,7 +318,17 @@ function zeigen() {
   else if (modul === "folien" && !aktuell.param) r = Folien.liste(A, el);
   else if (modul === "folien") r = Folien.seite(A, el, aktuell.param);
   else if (modul === "scanner") r = Scanner.zeigen(A, el);
-  else if (modul === "planer") r = Planer.zeigen(A, el);
+  else if (modul === "planer") {
+    r = Planer.zeigen(A, el);
+    // Von Sofie (Sprach-Assistentin): #planer/neu?art=test&titel=…&datum=JJJJ-MM-TT → Eintrag vorausgefüllt, man bestätigt selbst
+    if (aktuell.param.startsWith("neu?")) {
+      const q = new URLSearchParams(aktuell.param.slice(4));
+      const art = ["hausaufgabe", "test", "gruppe"].includes(q.get("art")) ? q.get("art") : "hausaufgabe";
+      const datum = /^\d{4}-\d{2}-\d{2}$/.test(q.get("datum") || "") ? q.get("datum") : "";
+      history.replaceState(null, "", "#planer");
+      setTimeout(() => Planer.eintragen(A, { art, titel: (q.get("titel") || "").slice(0, 120), datum, fach: (q.get("fach") || "").slice(0, 40) }), 50);
+    }
+  }
   else if (modul === "lernen") r = Lernen.zeigen(A, el, aktuell.param);
   else if (modul === "audio") r = Audio.zeigen(A, el);
   else if (modul === "tafel") r = Tafel.seite(A, el, aktuell.param);
