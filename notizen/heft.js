@@ -310,7 +310,6 @@ export function seite(A, el, id) {
   if (!HE.marker && Z.typ === "marker") Z.typ = "kuli";
   if (HE.formen === false) Z.formen = false;
   let bildUrl = null, speicherTimer = null, rueck = [], vor = [], stiftGesehen = false, wz = null, auswahl = null;
-  let stiftNah = false, stiftOhneSchweben = KW.load("kw-notizen-stift-ohne-schweben", false);
   const B = breiteMm(s);
   let ansicht = s.bild ? (s.html && s.ansicht !== "foto" ? "text" : "foto") : "text";
   const merken = () => KW.save("kw-notizen-stift2", Z);
@@ -575,6 +574,7 @@ export function seite(A, el, id) {
   let pinch = null, geste = null;
   const abstand = (ts) => Math.hypot(ts[0].clientX - ts[1].clientX, ts[0].clientY - ts[1].clientY);
   blatt.addEventListener("touchstart", (e) => {
+    if ([].some.call(e.changedTouches, t => t.touchType === "stylus")) return; // Stift ist kein Finger
     if (!geste) geste = { start: Date.now(), max: 0, bewegt: false, x: e.touches[0].clientX, y: e.touches[0].clientY, rand: false };
     geste.max = Math.max(geste.max, e.touches.length);
     if (e.touches.length === 1) { const r = rahmenEl.getBoundingClientRect(); geste.rand = e.touches[0].clientX - r.left < 26 || r.right - e.touches[0].clientX < 26; }
@@ -584,12 +584,14 @@ export function seite(A, el, id) {
     }
   }, { passive: true });
   blatt.addEventListener("touchmove", (e) => {
+    if ([].some.call(e.changedTouches, t => t.touchType === "stylus")) return; // Stift ist kein Finger
     if (geste && Math.hypot(e.touches[0].clientX - geste.x, e.touches[0].clientY - geste.y) > 14) geste.bewegt = true;
     if (!pinch || e.touches.length !== 2) return;
     e.preventDefault();
     zoomSetzen(pinch.z * abstand(e.touches) / pinch.d);
   }, { passive: false });
   blatt.addEventListener("touchend", (e) => {
+    if ([].some.call(e.changedTouches, t => t.touchType === "stylus")) return; // Stift ist kein Finger
     if (e.touches.length < 2) pinch = null;
     if (e.touches.length || !geste) return;
     const g = geste; geste = null;
@@ -755,27 +757,32 @@ export function seite(A, el, id) {
     ctx.save(); ctx.setLineDash([4, 4]); ctx.strokeStyle = "#ff8a3c"; ctx.lineWidth = 1.5;
     ctx.beginPath(); lassoPoly.forEach((q, i) => i ? ctx.lineTo(q[0] * k, q[1] * k) : ctx.moveTo(q[0] * k, q[1] * k)); ctx.closePath(); ctx.stroke(); ctx.restore();
   }
-  /* Stift verschiebt das Blatt nie: Sobald der Stift über dem Blatt schwebt, ist Verschieben aus.
-     Finger dürfen weiter scrollen (außer sie malen selbst). Stifte ohne Schweben: nach dem ersten
-     abgebrochenen Strich bleibt Verschieben im Stift-Modus ganz aus. */
+  /* Im Stift-Modus darf der Browser das Blatt nie selbst verschieben (sonst rutscht es beim Schreiben
+     und Striche brechen ab). Finger, die nicht malen, scrollen wir deshalb selbst. */
   function beruehrung() {
-    const aus = Z.modus === "stift" && (stiftNah || stiftOhneSchweben || (Z.finger && !stiftGesehen));
-    const wert = aus ? "none" : "pan-x pan-y";
+    const wert = Z.modus === "stift" ? "none" : "pan-x pan-y";
     if (canvas.style.touchAction !== wert) canvas.style.touchAction = wert;
   }
-  ["pointerover", "pointerenter", "pointermove"].forEach(t => canvas.addEventListener(t, (e) => {
-    if (e.pointerType === "pen" && !stiftNah) { stiftNah = true; beruehrung(); }
-  }, { passive: true }));
-  ["pointerleave", "pointerout"].forEach(t => canvas.addEventListener(t, (e) => {
-    if (e.pointerType === "pen" && stiftNah && !e.buttons) { stiftNah = false; beruehrung(); }
-  }, { passive: true }));
-  canvas.addEventListener("pointercancel", (e) => {
-    // Browser hat den Stift-Strich zum Verschieben übernommen → ab jetzt im Stift-Modus nie mehr verschieben
-    if (e.pointerType === "pen" && Z.modus === "stift" && !stiftOhneSchweben) {
-      stiftOhneSchweben = true; KW.save("kw-notizen-stift-ohne-schweben", true); beruehrung();
-      KW.toast("✏️ Der Stift verschiebt das Blatt jetzt nicht mehr. Scrollen: mit dem Mausrad oder oben den Stift abwählen.");
+  function scrollFlaeche(el) {
+    for (let x = el.parentElement; x && x !== document.body; x = x.parentElement) {
+      const o = getComputedStyle(x).overflowY;
+      if ((o === "auto" || o === "scroll") && x.scrollHeight > x.clientHeight + 2) return x;
     }
+    return document.scrollingElement || document.documentElement;
+  }
+  let fingerScroll = null;
+  canvas.addEventListener("pointerdown", (e) => {
+    if (Z.modus !== "stift" || e.pointerType !== "touch" || (Z.finger && !stiftGesehen) || fingerScroll) return;
+    fingerScroll = { id: e.pointerId, x: e.clientX, y: e.clientY, senk: scrollFlaeche(rahmenEl) };
   });
+  canvas.addEventListener("pointermove", (e) => {
+    if (!fingerScroll || e.pointerId !== fingerScroll.id) return;
+    if (pinch) { fingerScroll = null; return; }
+    const dx = e.clientX - fingerScroll.x, dy = e.clientY - fingerScroll.y;
+    fingerScroll.x = e.clientX; fingerScroll.y = e.clientY;
+    fingerScroll.senk.scrollTop -= dy; rahmenEl.scrollLeft -= dx;
+  });
+  ["pointerup", "pointercancel"].forEach(t => canvas.addEventListener(t, (e) => { if (fingerScroll && e.pointerId === fingerScroll.id) fingerScroll = null; }));
   canvas.addEventListener("pointerdown", (e) => {
     if (Z.modus !== "stift") return;
     if (e.pointerType === "pen" && !stiftGesehen) { stiftGesehen = true; if (Z.finger) { Z.finger = false; merken(); stiftLeiste(); KW.toast("Stift erkannt ✏️ – deine Hand malt jetzt nicht mehr mit."); } leiste(); }
