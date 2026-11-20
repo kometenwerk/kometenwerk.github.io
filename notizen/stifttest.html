@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Stift-Test – FIDELIA Notizen</title>
+<style>
+  body{font-family:system-ui,sans-serif;margin:0;background:#f4f1ea;color:#1b2333}
+  header{background:#5a3e0c;color:#fff;padding:12px 16px;font-weight:700;font-size:1.1rem}
+  main{padding:12px 16px;max-width:1000px;margin:auto}
+  .feld{background:#fff;border:2px dashed #b88a2f;border-radius:12px;height:360px;touch-action:none;display:block;width:100%}
+  .werte{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin:12px 0}
+  .wert{background:#fff;border-radius:10px;padding:10px 12px;font-size:1.05rem}
+  .wert b{display:block;font-size:1.6rem}
+  .rot b{color:#c0262d}.gruen b{color:#16794a}
+  p{line-height:1.45}
+  .lang{height:900px;background:repeating-linear-gradient(#f4f1ea 0 40px,#ebe5d8 40px 80px);border-radius:10px;margin-top:12px;padding:10px}
+  button{font:inherit;padding:8px 14px;border-radius:10px;border:1px solid #b88a2f;background:#fff;cursor:pointer}
+</style>
+</head>
+<body>
+<header>✏️ Stift-Test</header>
+<main>
+  <p><b>Schreib mit dem Stift ein paar Wörter in das weiße Feld.</b> Danach mach ein Foto oder einen Screenshot von den Kästchen darunter und schick es Claude.</p>
+  <canvas class="feld" id="feld"></canvas>
+  <div class="werte">
+    <div class="wert" id="wTyp">Eingabe<b>–</b></div>
+    <div class="wert" id="wStriche">Striche<b>0</b></div>
+    <div class="wert" id="wAbbruch">Abgebrochen<b>0</b></div>
+    <div class="wert" id="wScroll">Seite verrutscht<b>nein</b></div>
+    <div class="wert" id="wSchweben">Stift schwebt<b>?</b></div>
+    <div class="wert" id="wTouch">Stift als Finger<b>?</b></div>
+    <div class="wert" id="wVersion">Notizen-Version<b>…</b></div>
+  </div>
+  <p class="klein" id="geraet"></p>
+  <button type="button" id="neu">Feld leeren</button>
+  <div class="lang">(Platzhalter, damit die Seite scrollen kann)</div>
+</main>
+<script>
+(function () {
+  "use strict";
+  var c = document.getElementById("feld"), g = c.getContext("2d");
+  var z = { typ: "–", striche: 0, abbruch: 0, scroll: 0, schweben: false, touchStift: false };
+  var strich = null, scrollStart = 0;
+  function groesse() { var r = c.getBoundingClientRect(); c.width = r.width * devicePixelRatio; c.height = r.height * devicePixelRatio; g.scale(devicePixelRatio, devicePixelRatio); g.lineCap = "round"; g.lineWidth = 2.5; g.strokeStyle = "#1b2a8a"; }
+  groesse();
+  function setz(id, text, klasse) { var el = document.getElementById(id); el.querySelector("b").textContent = text; el.className = "wert" + (klasse ? " " + klasse : ""); }
+  function zeigen() {
+    setz("wTyp", z.typ === "pen" ? "Stift ✅" : z.typ === "touch" ? "Finger 👆" : z.typ === "mouse" ? "Maus 🖱️" : z.typ, z.typ === "mouse" ? "rot" : "");
+    setz("wStriche", String(z.striche));
+    setz("wAbbruch", String(z.abbruch), z.abbruch ? "rot" : "gruen");
+    setz("wScroll", z.scroll ? "ja (" + z.scroll + "×)" : "nein", z.scroll ? "rot" : "gruen");
+    setz("wSchweben", z.schweben ? "ja" : "nein");
+    setz("wTouch", z.touchStift ? "ja" : "nein");
+  }
+  function pos(e) { var r = c.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+  c.addEventListener("pointerover", function (e) { if (e.pointerType === "pen" && !e.buttons) { z.schweben = true; zeigen(); } });
+  c.addEventListener("pointermove", function (e) {
+    if (e.pointerType === "pen" && !e.buttons && !z.schweben) { z.schweben = true; zeigen(); }
+    if (!strich || e.pointerId !== strich.id) return;
+    var p = pos(e); g.beginPath(); g.moveTo(strich.p[0], strich.p[1]); g.lineTo(p[0], p[1]); g.stroke(); strich.p = p;
+    if (Math.abs(window.scrollY - scrollStart) > 2) { z.scroll++; scrollStart = window.scrollY; zeigen(); }
+  });
+  c.addEventListener("pointerdown", function (e) {
+    z.typ = e.pointerType; strich = { id: e.pointerId, p: pos(e) }; scrollStart = window.scrollY;
+    try { c.setPointerCapture(e.pointerId); } catch (x) {}
+    e.preventDefault(); zeigen();
+  });
+  c.addEventListener("pointerup", function (e) { if (strich && e.pointerId === strich.id) { z.striche++; strich = null; zeigen(); } });
+  c.addEventListener("pointercancel", function (e) { if (strich && e.pointerId === strich.id) { z.abbruch++; strich = null; zeigen(); } });
+  c.addEventListener("touchstart", function (e) { if ([].some.call(e.changedTouches, function (t) { return t.touchType === "stylus"; })) { z.touchStift = true; zeigen(); } }, { passive: true });
+  window.addEventListener("scroll", function () { if (strich && Math.abs(window.scrollY - scrollStart) > 2) { z.scroll++; scrollStart = window.scrollY; zeigen(); } }, { passive: true });
+  document.getElementById("neu").onclick = function () { g.clearRect(0, 0, c.width, c.height); z.striche = 0; z.abbruch = 0; z.scroll = 0; zeigen(); };
+  var ua = navigator.userAgent, browser = /Edg\//.test(ua) ? "Edge" : /Chrome\//.test(ua) ? "Chrome" : /Firefox\//.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : "anderer Browser";
+  document.getElementById("geraet").textContent = "Browser: " + browser + " · " + (/Windows/.test(ua) ? "Windows" : /Mac/.test(ua) ? "Mac" : /Android/.test(ua) ? "Android" : /iPhone|iPad/.test(ua) ? "iPhone/iPad" : "anderes System") + " · Touchpunkte: " + (navigator.maxTouchPoints || 0) + " · installiert: " + (matchMedia("(display-mode: standalone)").matches ? "ja" : "nein");
+  if (window.caches) caches.keys().then(function (k) { var v = k.filter(function (x) { return x.indexOf("kw-notizen") === 0; }).sort().pop(); setz("wVersion", v ? (v.indexOf("stift2") > 0 ? "neu ✅" : "alt ❌") : "nicht installiert", v && v.indexOf("stift2") < 0 ? "rot" : ""); });
+  else setz("wVersion", "unbekannt");
+  zeigen();
+})();
+</script>
+</body>
+</html>
