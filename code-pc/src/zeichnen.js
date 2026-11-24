@@ -259,7 +259,7 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
     '<button type="button" class="z-k" data-a="drehen" title="Drehen (R)">⟳ Drehen</button><button type="button" class="z-k" data-a="loeschen" title="Löschen (Entf)">🗑 Löschen</button>' +
     '<button type="button" class="z-k" data-a="raster" title="Raster ein/aus">▦ Raster</button><button type="button" class="z-k" data-a="zoom-" title="Verkleinern">−</button><span class="z-zoom"></span><button type="button" class="z-k" data-a="zoom+" title="Vergrößern">+</button>' +
     (modus === "bauplan" ? '<button type="button" class="z-k" data-a="sf">Schriftfeld …</button>' : '<button type="button" class="z-k" data-a="titel">Überschrift …</button>') +
-    '<button type="button" class="z-k" data-a="png">PNG</button><button type="button" class="z-k" data-a="svg">SVG</button><button type="button" class="z-k" data-a="pdf">PDF</button><button type="button" class="z-k" data-a="druck">🖨 Drucken</button>' +
+    '<button type="button" class="z-k" data-a="png">PNG</button><button type="button" class="z-k" data-a="svg">SVG</button><button type="button" class="z-k" data-a="pdf">PDF</button><button type="button" class="z-k" data-a="druck">🖨 Drucken</button><button type="button" class="z-k" data-a="notizen" title="Zeichnung in FIDELIA Notizen ablegen (Fach NWT)">→ Notizen</button>' +
     '<button type="button" class="pill klein" data-a="zu">FERTIG</button></div>' +
     '<div class="z-haupt"><div class="z-palette"></div><div class="z-flaeche"><svg class="z-svg" xmlns="http://www.w3.org/2000/svg"></svg></div><div class="z-seite"><div class="z-eig"></div><div class="z-extra"></div></div></div>' +
     '<div class="z-fuss leise"></div>';
@@ -532,10 +532,21 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
     box.appendChild(d); d.showModal();
     d.querySelector("[data-ok]").onclick = () => { d.querySelectorAll("[data-s]").forEach(i => { sf[i.dataset.s] = i.value.trim(); }); if (sf.massstab && !/^\s*\d+(?:[.,]\d+)?\s*:\s*\d+(?:[.,]\d+)?\s*$/.test(sf.massstab)) toast("Maßstab bitte wie „1:2“ schreiben."); d.close(); d.remove(); merken(); malen(); };
   }
+  // prompt() gibt es in Electron nicht – deshalb ein eigener kleiner Dialog
+  function titelDialog() {
+    const d = document.createElement("dialog"); d.className = "dialog";
+    d.innerHTML = '<h2>Überschrift</h2><label class="z-feld breit"><span>Überschrift über der Zeichnung</span><input data-t value="' + esc(z.titel || "") + '"></label><div class="dialog-fuss"><button type="button" class="pill hell" data-ab>Abbrechen</button><button type="button" class="pill" data-ok>OK</button></div>';
+    box.appendChild(d); d.showModal();
+    const i = d.querySelector("[data-t]"); i.focus(); i.select();
+    const ok = () => { z.titel = i.value.trim(); d.close(); d.remove(); merken(); malen(); };
+    d.querySelector("[data-ok]").onclick = ok;
+    i.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); ok(); } };
+    d.querySelector("[data-ab]").onclick = () => { d.close(); d.remove(); };
+  }
   const AKT = {
     rueck: () => zurueck(-1), vor: () => zurueck(1), drehen: drehenAus, loeschen, raster: () => { raster = !raster; malen(); },
     "zoom+": () => { zoom *= 1.25; malen(); }, "zoom-": () => { zoom /= 1.25; malen(); },
-    sf: schriftfeldDialog, titel: () => { const t = prompt("Überschrift über der Zeichnung:", z.titel || ""); if (t != null) { z.titel = t.trim(); merken(); malen(); } },
+    sf: schriftfeldDialog, titel: titelDialog,
     png: () => exportieren("png"), svg: () => exportieren("svg"), notizen: () => exportieren("notizen"), pdf: () => exportieren("pdf"), druck: () => exportieren("druck"), zu: schliessen
   };
   box.querySelectorAll(".z-kopf [data-a]").forEach(b => b.onclick = () => AKT[b.dataset.a]());

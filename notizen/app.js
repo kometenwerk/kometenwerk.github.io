@@ -326,7 +326,7 @@ function zeigen() {
       const art = ["hausaufgabe", "test", "gruppe"].includes(q.get("art")) ? q.get("art") : "hausaufgabe";
       const datum = /^\d{4}-\d{2}-\d{2}$/.test(q.get("datum") || "") ? q.get("datum") : "";
       history.replaceState(null, "", "#planer");
-      setTimeout(() => Planer.eintragen(A, { art, titel: (q.get("titel") || "").slice(0, 120), datum, fach: (q.get("fach") || "").slice(0, 40) }), 50);
+      setTimeout(() => Planer.eintragen(A, { art, titel: (q.get("titel") || "").slice(0, 120), datum, fach: (q.get("fach") || "").slice(0, 40), fertig: () => { if (aktuell.modul === "planer") zeigen(); } }), 50);
     }
   }
   else if (modul === "lernen") r = Lernen.zeigen(A, el, aktuell.param);
