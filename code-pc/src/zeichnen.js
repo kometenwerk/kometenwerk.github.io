@@ -1,6 +1,7 @@
 // Kometenwerk Code · Zeichner für Schaltplan, Flussdiagramm und technische Zeichnung (Bauplan)
-// Du zeichnest selbst – das Programm erzeugt nichts automatisch. Es hilft nur beim Ausrichten (Raster, Einrasten),
-// beim Bemaßen und prüft beim Schaltplan, ob die Pins aus deinem Code auch im Plan verbunden sind.
+// Du zeichnest selbst. Das Programm hilft beim Ausrichten (Raster, Einrasten), beim Bemaßen und bei Lochmustern
+// und prüft beim Schaltplan, ob die Pins aus deinem Code auch im Plan verbunden sind.
+import { brettLayout, brettSvg } from "./bretter.js";
 
 const esc = (t) => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const r2 = (v) => Math.round(v * 100) / 100;
@@ -20,15 +21,27 @@ const neueId = () => "e" + (idZaehler++).toString(36);
 /* ================= Symbole ================= */
 const UNO_L = ["5V", "3.3V", "GND", "GND", "Vin", "A0", "A1", "A2", "A3", "A4", "A5"];
 const UNO_R = ["D13", "D12", "~D11", "~D10", "~D9", "D8", "D7", "~D6", "~D5", "D4", "~D3", "D2", "D1", "D0"];
+const UNO_ALT_PINS = [...UNO_L.map((n, i) => [0, 20 + i * 20, n]), ...UNO_R.map((n, i) => [140, 20 + i * 20, n.replace("~", "")])];
+const brettPins = (e) => brettLayout(SYM[e.typ].brett, e.ansicht).pins.map(([x, y, n]) => [x, y, n]);
+// Maße eines Boards je nach Ansicht (werden im Teil gespeichert, damit Drehen und Auswählen stimmen)
+function brettMasse(e) { if (e.typ === "arduino" && !e.v) return { w: 140, h: 300 }; const L = brettLayout(SYM[e.typ].brett, e.ansicht); return { w: L.w, h: L.h }; }
+export const BRETTER = new Set(["arduino", "nano", "mega"]);
+const brettFelder = (e) => [["text", "Beschriftung"], ["ansicht", "Ansicht", "wahl", [...(e.typ === "arduino" && !e.v ? [["alt", "Schaltzeichen (alte Form)"]] : []), ["symbol", "Schaltzeichen mit allen Pins"], ["echt", "Wie das echte Board"]]]];
+const modulPins = (liste, unten, gr = 8) => liste.map(([n, x]) => '<path d="M' + x + " " + unten + "v20" + '"/>' + T(x, unten - 4, n, 'font-size="' + gr + '" text-anchor="middle"')).join("");
 const T = (x, y, t, o = "") => '<text x="' + x + '" y="' + y + '" ' + o + ">" + esc(t) + "</text>";
 const mehrzeilig = (x, y, t, gr = 13) => { const z = String(t || "").split("\n"); return z.map((l, i) => T(x, y + (i - (z.length - 1) / 2) * gr * 1.2 + gr * 0.35, l, 'text-anchor="middle" font-size="' + gr + '"')).join(""); };
 
 export const SYM = {
   /* ---- Schaltplan (Einheit: Raster 10) ---- */
-  arduino: { modus: "schaltplan", name: "Arduino Uno", w: 140, h: 300,
-    pins: [...UNO_L.map((n, i) => [0, 20 + i * 20, n]), ...UNO_R.map((n, i) => [140, 20 + i * 20, n.replace("~", "")])],
-    svg: (e) => '<rect x="20" y="0" width="100" height="300" rx="4" class="dick"/>' + UNO_L.map((n, i) => '<path d="M0 ' + (20 + i * 20) + 'h20"/>' + T(24, 24 + i * 20, n, 'font-size="10"')).join("") +
+  arduino: { modus: "schaltplan", name: "Arduino Uno", brett: "uno", w: 140, h: 300,
+    pins: (e) => e.v ? brettPins(e) : UNO_ALT_PINS,
+    svg: (e) => e.v ? brettSvg("uno", e.ansicht, e.text) : '<rect x="20" y="0" width="100" height="300" rx="4" class="dick"/>' + UNO_L.map((n, i) => '<path d="M0 ' + (20 + i * 20) + 'h20"/>' + T(24, 24 + i * 20, n, 'font-size="10"')).join("") +
       UNO_R.map((n, i) => '<path d="M120 ' + (20 + i * 20) + 'h20"/>' + T(116, 24 + i * 20, n, 'font-size="10" text-anchor="end"')).join("") + T(70, 292, e.text || "Arduino Uno", 'font-size="11" text-anchor="middle" font-weight="600"'),
+    felder: brettFelder },
+  nano: { modus: "schaltplan", name: "Arduino Nano", brett: "nano", w: 140, h: 380, pins: (e) => brettPins(e), svg: (e) => brettSvg("nano", e.ansicht, e.text), felder: brettFelder },
+  mega: { modus: "schaltplan", name: "Arduino Mega", brett: "mega", w: 180, h: 980, pins: (e) => brettPins(e), svg: (e) => brettSvg("mega", e.ansicht, e.text), felder: brettFelder },
+  usb: { modus: "schaltplan", name: "PC / Laptop (USB-Kabel)", w: 80, h: 60, pins: [[80, 20, "USB"]],
+    svg: (e) => '<rect x="4" y="0" width="48" height="34" rx="2"/><rect x="9" y="5" width="38" height="24" style="stroke-width:1"/><path d="M0 40h56l-4 6H4z"/><path d="M56 20h24"/><rect x="62" y="16" width="10" height="8" class="voll"/>' + T(28, 58, e.text || "PC", 'font-size="10" text-anchor="middle"'),
     felder: [["text", "Beschriftung"]] },
   led: { modus: "schaltplan", name: "LED", w: 60, h: 20, pins: [[0, 10, "Anode (+)"], [60, 10, "Kathode (−)"]],
     svg: (e) => '<path d="M0 10h20M40 10h20"/><path d="M20 0v20l20-10z" class="voll"/><path d="M40 0v20" class="dick"/><path d="M30 -2l6 -8M36 -2l6 -8"/><path d="M36 -10l-3 1 2 2zM42 -10l-3 1 2 2z" class="voll"/>' + (e.text ? T(30, 34, e.text, 'font-size="11" text-anchor="middle"') : ""),
@@ -52,6 +65,55 @@ export const SYM = {
     svg: (e) => '<rect x="0" y="0" width="120" height="50" class="dick"/><rect x="10" y="8" width="100" height="24"/>' + T(60, 24, e.text || "LCD 16×2", 'font-size="11" text-anchor="middle"') +
       [["GND", 15], ["VCC", 45], ["SDA", 75], ["SCL", 105]].map(([n, x]) => '<path d="M' + x + ' 50v20"/>' + T(x, 45, n, 'font-size="8" text-anchor="middle"')).join(""),
     felder: [["text", "Beschriftung"]] },
+  oled: { modus: "schaltplan", name: "OLED-Display (I²C)", w: 120, h: 70, pins: [[30, 70, "GND"], [50, 70, "VCC"], [70, 70, "SCL"], [90, 70, "SDA"]],
+    svg: (e) => '<rect x="0" y="0" width="120" height="50" class="dick"/><rect x="14" y="6" width="92" height="28" class="voll"/>' + T(60, 24, e.text || "OLED 128×64", 'font-size="10" text-anchor="middle" style="fill:#fff"') + modulPins([["GND", 30], ["VCC", 50], ["SCL", 70], ["SDA", 90]], 50),
+    felder: [["text", "Beschriftung"]] },
+  segment7: { modus: "schaltplan", name: "7-Segment (TM1637)", w: 120, h: 70, pins: [[30, 70, "CLK"], [50, 70, "DIO"], [70, 70, "VCC"], [90, 70, "GND"]],
+    svg: (e) => '<rect x="0" y="0" width="120" height="50" class="dick"/>' + T(60, 30, "8.8:8.8", 'font-size="20" text-anchor="middle" font-weight="700"') + T(60, -4, e.text || "TM1637", 'font-size="10" text-anchor="middle"') + modulPins([["CLK", 30], ["DIO", 50], ["VCC", 70], ["GND", 90]], 50),
+    felder: [["text", "Beschriftung"]] },
+  ledstreifen: { modus: "schaltplan", name: "LED-Streifen (WS2812)", w: 150, h: 60, pins: [[0, 10, "5V"], [0, 30, "DIN"], [0, 50, "GND"]],
+    svg: (e) => '<path d="M0 10h20M0 30h20M0 50h20"/><rect x="20" y="0" width="130" height="60" class="dick"/>' + [0, 1, 2, 3].map(i => '<rect x="' + (62 + i * 22) + '" y="22" width="14" height="14"/><circle cx="' + (69 + i * 22) + '" cy="29" r="3" class="voll"/>').join("") +
+      T(24, 13, "+5V", 'font-size="8"') + T(24, 33, "DIN", 'font-size="8"') + T(24, 53, "GND", 'font-size="8"') + T(85, -4, e.text || "LED-Streifen", 'font-size="10" text-anchor="middle"'),
+    felder: [["text", "Beschriftung (z. B. 8 LEDs)"]] },
+  ultraschall: { modus: "schaltplan", name: "Ultraschall (HC-SR04)", w: 100, h: 70, pins: [[20, 70, "VCC"], [40, 70, "Trig"], [60, 70, "Echo"], [80, 70, "GND"]],
+    svg: (e) => '<rect x="0" y="0" width="100" height="50" class="dick"/><circle cx="27" cy="20" r="13"/><circle cx="73" cy="20" r="13"/><circle cx="27" cy="20" r="6"/><circle cx="73" cy="20" r="6"/>' + T(50, -4, e.text || "HC-SR04", 'font-size="10" text-anchor="middle"') + modulPins([["VCC", 20], ["Trig", 40], ["Echo", 60], ["GND", 80]], 50, 7),
+    felder: [["text", "Beschriftung"]] },
+  ldr: { modus: "schaltplan", name: "Lichtsensor (LDR)", w: 60, h: 20, pins: [[0, 10, "1"], [60, 10, "2"]],
+    svg: (e) => '<path d="M0 10h15M45 10h15"/><rect x="15" y="4" width="30" height="12"/><path d="M14 -14l8 10M24 -16l8 10"/><path d="M22 -4l-4 -1 2 -3zM32 -6l-4 -1 2 -3z" class="voll"/>' + T(30, 30, e.text || "LDR", 'font-size="11" text-anchor="middle"'),
+    felder: [["text", "Beschriftung"]] },
+  temp: { modus: "schaltplan", name: "Temperatursensor", w: 60, h: 70, pins: [[10, 70, "VCC"], [30, 70, "OUT"], [50, 70, "GND"]],
+    svg: (e) => '<rect x="0" y="0" width="60" height="50" class="dick"/><path d="M27 8v20a6 6 0 1 0 6 0V8a3 3 0 0 0-6 0z"/><circle cx="30" cy="33" r="3" class="voll"/>' + T(30, -4, e.text || "LM35 / DHT11", 'font-size="10" text-anchor="middle"') + modulPins([["VCC", 10], ["OUT", 30], ["GND", 50]], 50, 7),
+    felder: [["text", "Beschriftung"]] },
+  pir: { modus: "schaltplan", name: "Bewegungsmelder (PIR)", w: 60, h: 70, pins: [[10, 70, "VCC"], [30, 70, "OUT"], [50, 70, "GND"]],
+    svg: (e) => '<rect x="0" y="10" width="60" height="40" class="dick"/><path d="M12 10a18 16 0 0 1 36 0"/><path d="M18 6l6 -6M30 2v-8M42 6l-6 -6" style="stroke-width:1"/>' + T(30, 34, e.text || "PIR", 'font-size="10" text-anchor="middle"') + modulPins([["VCC", 10], ["OUT", 30], ["GND", 50]], 50, 7),
+    felder: [["text", "Beschriftung"]] },
+  servo: { modus: "schaltplan", name: "Servo", w: 60, h: 70, pins: [[10, 70, "Signal"], [30, 70, "+"], [50, 70, "−"]],
+    svg: (e) => '<rect x="0" y="0" width="60" height="50" class="dick"/><circle cx="30" cy="20" r="11"/>' + T(30, 24, "M", 'font-size="12" text-anchor="middle"') + '<path d="M30 9V-6M22 -6h16"/>' + T(64, 8, e.text || "Servo", 'font-size="10"') + modulPins([["S", 10], ["+", 30], ["−", 50]], 50, 8),
+    felder: [["text", "Beschriftung"]] },
+  schalter: { modus: "schaltplan", name: "Schalter (Kipp)", w: 60, h: 30, pins: [[0, 25, "1"], [60, 25, "2"]],
+    svg: (e) => '<path d="M0 25h16M44 25h16"/><circle cx="17" cy="25" r="1.6" class="voll"/><circle cx="43" cy="25" r="1.6" class="voll"/><path d="M17 25L42 12"/>' + (e.text ? T(30, 8, e.text, 'font-size="11" text-anchor="middle"') : ""),
+    felder: [["text", "Beschriftung"]] },
+  batterie: { modus: "schaltplan", name: "Batterie", w: 60, h: 40, pins: [[0, 20, "+"], [60, 20, "−"]],
+    svg: (e) => '<path d="M0 20h26M34 20h26M26 4v32"/><path d="M34 11v18" style="stroke-width:4"/>' + T(18, 6, "+", 'font-size="12"') + T(30, 50, e.text || "9 V", 'font-size="11" text-anchor="middle"'),
+    felder: [["text", "Spannung (z. B. 9 V)"]] },
+  diode: { modus: "schaltplan", name: "Diode", w: 60, h: 20, pins: [[0, 10, "Anode (+)"], [60, 10, "Kathode (−)"]],
+    svg: (e) => '<path d="M0 10h20M40 10h20"/><path d="M20 0v20l20-10z" class="voll"/><path d="M40 0v20" class="dick"/>' + (e.text ? T(30, 32, e.text, 'font-size="11" text-anchor="middle"') : ""),
+    felder: [["text", "Beschriftung (z. B. 1N4007)"]] },
+  kondensator: { modus: "schaltplan", name: "Kondensator", w: 60, h: 40,
+    pins: (e) => e.gepolt ? [[0, 20, "+"], [60, 20, "−"]] : [[0, 20, "1"], [60, 20, "2"]],
+    svg: (e) => '<path d="M0 20h26M34 20h26M26 6v28"/>' + (e.gepolt ? '<path d="M38 6a20 20 0 0 0 0 28"/>' + T(16, 10, "+", 'font-size="12"') : '<path d="M34 6v28"/>') + T(30, 50, e.text || (e.gepolt ? "100 µF" : "100 nF"), 'font-size="11" text-anchor="middle"'),
+    felder: [["text", "Wert"], ["gepolt", "Gepolt (Elko, mit + und −)", "janein"]] },
+  transistor: { modus: "schaltplan", name: "Transistor (NPN)", w: 60, h: 60, pins: [[0, 30, "B"], [40, 0, "C"], [40, 60, "E"]],
+    svg: (e) => '<circle cx="32" cy="30" r="20"/><path d="M0 30h24M24 18v24" /><path d="M24 18v24" class="dick"/><path d="M24 25L40 14V0M24 35L40 46V60"/><path d="M40 46l-7 -1 3 -5z" class="voll"/>' +
+      T(4, 24, "B", 'font-size="9"') + T(44, 10, "C", 'font-size="9"') + T(44, 56, "E", 'font-size="9"') + T(58, 34, e.text || "BC547", 'font-size="10"'),
+    felder: [["text", "Typ (z. B. BC547)"]] },
+  relais: { modus: "schaltplan", name: "Relais-Modul", w: 100, h: 100, pins: [[20, 0, "COM"], [50, 0, "NO"], [80, 0, "NC"], [20, 100, "IN"], [50, 100, "VCC"], [80, 100, "GND"]],
+    svg: (e) => '<path d="M20 0v20M50 0v20M80 0v20M20 80v20M50 80v20M80 80v20"/><rect x="0" y="20" width="100" height="60" class="dick"/><rect x="14" y="42" width="22" height="16"/><path d="M14 42l22 16" style="stroke-width:1"/><path d="M36 50h10" style="stroke-dasharray:3 2;stroke-width:1"/><path d="M50 62L64 40M64 40v-4M50 62v6"/>' +
+      T(20, 31, "COM", 'font-size="7" text-anchor="middle"') + T(50, 31, "NO", 'font-size="7" text-anchor="middle"') + T(80, 31, "NC", 'font-size="7" text-anchor="middle"') + T(20, 76, "IN", 'font-size="7" text-anchor="middle"') + T(50, 76, "VCC", 'font-size="7" text-anchor="middle"') + T(80, 76, "GND", 'font-size="7" text-anchor="middle"') + T(104, 54, e.text || "Relais", 'font-size="10"'),
+    felder: [["text", "Beschriftung"]] },
+  rgb: { modus: "schaltplan", name: "RGB-LED", w: 80, h: 60, pins: [[10, 60, "R"], [30, 60, "−"], [50, 60, "G"], [70, 60, "B"]],
+    svg: (e) => '<circle cx="40" cy="22" r="18"/>' + T(40, 26, "RGB", 'font-size="10" text-anchor="middle"') + '<path d="M10 60V44L28 34M30 60V40M50 60V44L46 39M70 60V44L52 34"/>' + [["R", 10], ["−", 30], ["G", 50], ["B", 70]].map(([n, x]) => T(x + 3, 56, n, 'font-size="8"')).join("") + '<path d="M54 2l6 -8M60 6l6 -8"/>' + (e.text ? T(40, -12, e.text, 'font-size="10" text-anchor="middle"') : ""),
+    felder: [["text", "Beschriftung (z. B. gemeinsame Kathode)"]] },
   masse: { modus: "schaltplan", name: "Masse (GND)", w: 20, h: 20, pins: [[10, 0, "GND"]], svg: () => '<path d="M10 0v10M0 10h20M4 14h12M8 18h4"/>' },
   plus: { modus: "schaltplan", name: "+5 V", w: 20, h: 20, pins: [[10, 20, "5V"]], svg: (e) => '<path d="M10 20V6M4 6h12"/>' + T(10, 2, e.text || "+5V", 'font-size="10" text-anchor="middle"'), felder: [["text", "Spannung"]] },
   knoten: { modus: "schaltplan", name: "Verbindungspunkt", w: 0, h: 0, pins: [[0, 0, "Knoten"]], svg: () => '<circle cx="0" cy="0" r="3" class="voll"/>' },
@@ -66,12 +128,16 @@ export const SYM = {
   verbinder: { modus: "fluss", name: "Verbindungsstelle", w: 30, h: 30, form: true, svg: (e) => '<circle cx="' + e.w / 2 + '" cy="' + e.h / 2 + '" r="' + e.w / 2 + '"/>' + mehrzeilig(e.w / 2, e.h / 2, e.text ?? "A", 12), felder: [["text", "Zeichen"]] },
 
   /* ---- Technische Zeichnung (Einheit: mm) ---- */
-  platte: { modus: "bauplan", name: "Platte / Umriss", w: 120, h: 80, form: true, svg: (e, k) => '<rect x="0" y="0" width="' + e.w + '" height="' + e.h + '" rx="' + (e.radius || 0) + '" style="stroke-width:' + r2(0.5 / k) + '"/>',
-    felder: [["x", "X links", "laenge"], ["y", "Y oben", "laenge"], ["w", "Breite", "laenge"], ["h", "Höhe", "laenge"], ["radius", "Eckenradius", "laenge"]] },
+  platte: { modus: "bauplan", name: "Platte / Umriss", w: 120, h: 80, form: true, svg: (e, k) => '<rect x="0" y="0" width="' + e.w + '" height="' + e.h + '" rx="' + (e.radius || 0) + '" style="stroke-width:' + r2(0.5 / k) + '"/>' + (e.mittellinien ? mittelkreuz(e.w / 2, e.h / 2, e.w / 2, e.h / 2, k) : ""),
+    felder: [["x", "X links (vom Blattrand)", "laenge"], ["y", "Y oben (vom Blattrand)", "laenge"], ["w", "Breite", "laenge"], ["h", "Höhe", "laenge"], ["radius", "Eckenradius", "laenge"], ["mittellinien", "Mittellinien", "janein"]] },
   ausschnitt: { modus: "bauplan", name: "Ausschnitt (z. B. Display)", w: 72, h: 25, form: true, svg: (e, k) => '<rect x="0" y="0" width="' + e.w + '" height="' + e.h + '" rx="' + (e.radius || 0) + '" style="stroke-width:' + r2(0.5 / k) + '"/>' + (e.mitte !== false ? mittelkreuz(e.w / 2, e.h / 2, e.w / 2, e.h / 2, k) : ""),
-    felder: [["x", "X links", "laenge"], ["y", "Y oben", "laenge"], ["w", "Breite", "laenge"], ["h", "Höhe", "laenge"], ["radius", "Eckenradius", "laenge"], ["mitte", "Mittellinien", "janein"]] },
-  bohrung: { modus: "bauplan", name: "Bohrung", w: 0, h: 0, d: 5, svg: (e, k) => '<circle cx="0" cy="0" r="' + e.d / 2 + '" style="stroke-width:' + r2(0.5 / k) + '"/>' + (e.mitte !== false ? mittelkreuz(0, 0, e.d / 2, e.d / 2, k) : "") + (e.dmass ? durchmesser(e, k) : ""),
-    felder: [["x", "Mitte X", "laenge"], ["y", "Mitte Y", "laenge"], ["d", "Durchmesser", "laenge"], ["mitte", "Mittellinien", "janein"], ["dmass", "⌀ bemaßen", "janein"]] }
+    felder: [["x", "X links (vom Blattrand)", "laenge"], ["y", "Y oben (vom Blattrand)", "laenge"], ["w", "Breite", "laenge"], ["h", "Höhe", "laenge"], ["radius", "Eckenradius", "laenge"], ["mitte", "Mittellinien", "janein"]] },
+  bohrung: { modus: "bauplan", name: "Bohrung", w: 0, h: 0, d: 5, svg: (e, k) => bohrSvg(e, k),
+    felder: (e) => [["art", "Art", "wahl", [["durch", "Durchgangsbohrung"], ["gewinde", "Gewinde (M3, M4 …)"], ["senk", "Senkbohrung (Senkkopfschraube)"], ["langloch", "Langloch"]]],
+      ["d", e.art === "gewinde" ? "Gewinde M… (Nenndurchmesser)" : e.art === "langloch" ? "Breite des Langlochs" : "Durchmesser", "laenge"],
+      ...(e.art === "senk" ? [["senkD", "Senkdurchmesser (oben)", "laenge"]] : []),
+      ...(e.art === "langloch" ? [["laenge", "Länge (Mitte bis Mitte)", "laenge"], ["richtung", "Richtung", "wahl", [["h", "waagerecht"], ["v", "senkrecht"]]]] : []),
+      ["x", "Mitte X (vom Blattrand)", "laenge"], ["y", "Mitte Y (vom Blattrand)", "laenge"], ["mitte", "Mittellinien", "janein"], ["dmass", e.art === "gewinde" ? "Gewinde beschriften" : "⌀ bemaßen", "janein"]] }
 };
 function mittelkreuz(cx, cy, rx, ry, k) {
   const u = 2 / k, s = 'class="mittel" style="stroke-width:' + r2(0.25 / k) + ";stroke-dasharray:" + [8, 1.5, 1, 1.5].map(v => r2(v / k)).join(" ") + '"';
@@ -81,8 +147,38 @@ function pfeilSpitze(x, y, wx, wy, k) {   // Spitze bei (x,y), zeigt in Richtung
   const l = 2.5 / k, b = 0.6 / k, bx = x - wx * l, by = y - wy * l;
   return '<path d="M' + r2(x) + " " + r2(y) + "L" + r2(bx - wy * b) + " " + r2(by + wx * b) + "L" + r2(bx + wy * b) + " " + r2(by - wx * b) + 'z" class="voll" style="stroke-width:0"/>';
 }
+// Ausdehnung einer Bohrung von der Mitte aus (Langloch ist breiter bzw. höher)
+export function bohrMass(e) {
+  const r = (e.art === "senk" ? (e.senkD || e.d * 2) : e.d) / 2, L = e.art === "langloch" ? (e.laenge || 10) / 2 : 0, v = e.richtung === "v";
+  return { rx: r + (v ? 0 : L), ry: r + (v ? L : 0), L, v, r };
+}
+function bohrText(e) {
+  if (e.art === "gewinde") return "M" + masszahl(e.d);
+  if (e.art === "senk") return "⌀" + masszahl(e.d) + " / ⌵⌀" + masszahl(e.senkD || e.d * 2) + "×90°";
+  if (e.art === "langloch") return masszahl(e.d) + " × " + masszahl((e.laenge || 10) + e.d);
+  return "⌀" + masszahl(e.d);
+}
+function bohrSvg(e, k) {
+  const s = (w) => 'style="stroke-width:' + r2(w / k) + '"', { L, v } = bohrMass(e), r = e.d / 2;
+  let o = "";
+  if (e.art === "langloch") {
+    o += v ? '<path d="M' + r2(-r) + " " + r2(-L) + "A" + r + " " + r + " 0 0 1 " + r + " " + r2(-L) + "V" + L + "A" + r + " " + r + " 0 0 1 " + r2(-r) + " " + L + 'z" ' + s(0.5) + "/>"
+      : '<path d="M' + r2(-L) + " " + r2(-r) + "H" + L + "A" + r + " " + r + " 0 0 1 " + L + " " + r + "H" + r2(-L) + "A" + r + " " + r + " 0 0 1 " + r2(-L) + " " + r2(-r) + 'z" ' + s(0.5) + "/>";
+    if (e.mitte !== false) o += v ? mittelkreuz(0, -L, r, r, k) + mittelkreuz(0, L, r, r, k) : mittelkreuz(-L, 0, r, r, k) + mittelkreuz(L, 0, r, r, k);
+  } else if (e.art === "gewinde") {
+    // Draufsicht nach Norm: Kernloch als Volllinie, Gewinde-Außendurchmesser als Dreiviertelkreis (schmal)
+    const rk = r2(r * 0.82);
+    o += '<circle cx="0" cy="0" r="' + rk + '" ' + s(0.5) + "/>" + '<path d="M' + r + " 0A" + r + " " + r + " 0 1 1 0 " + r2(-r) + '" ' + s(0.25) + "/>";
+    if (e.mitte !== false) o += mittelkreuz(0, 0, r, r, k);
+  } else {
+    o += '<circle cx="0" cy="0" r="' + r + '" ' + s(0.5) + "/>";
+    if (e.art === "senk") o += '<circle cx="0" cy="0" r="' + r2((e.senkD || e.d * 2) / 2) + '" ' + s(0.5) + "/>";
+    if (e.mitte !== false) { const m = bohrMass(e); o += mittelkreuz(0, 0, m.rx, m.ry, k); }
+  }
+  return o + (e.dmass ? durchmesser(e, k) : "");
+}
 function durchmesser(e, k) {
-  const r = e.d / 2, a = Math.PI / 4, px = Math.cos(a) * r, py = -Math.sin(a) * r, kx = px + 6 / k, ky = py - 6 / k, t = "⌀" + masszahl(e.d), tw = (t.length * 2.1 + 1) / k;
+  const { rx, L, v, r: rr } = bohrMass(e), r = e.art === "langloch" ? e.d / 2 : rr, a = Math.PI / 4, px = Math.cos(a) * r + (e.art === "langloch" && !v ? L : 0), py = -Math.sin(a) * r - (e.art === "langloch" && v ? L : 0), kx = px + 6 / k, ky = py - 6 / k, t = bohrText(e), tw = (t.length * 2.1 + 1) / k;
   return '<g style="stroke-width:' + r2(0.25 / k) + '"><path d="M' + r2(px) + " " + r2(py) + "L" + r2(kx) + " " + r2(ky) + "h" + r2(tw) + '"/>' + pfeilSpitze(px, py, -Math.cos(a), Math.sin(a), k) +
     '<text x="' + r2(kx + 0.5 / k) + '" y="' + r2(ky - 0.8 / k) + '" font-size="' + r2(3.5 / k) + '" class="txt">' + t + "</text></g>";
 }
@@ -97,7 +193,8 @@ export const LINIEN = {
 };
 
 const PALETTE = {
-  schaltplan: ["arduino", "led", "widerstand", "taster", "summer", "motor", "poti", "display", "masse", "plus", "knoten", "draht", "text"],
+  schaltplan: ["#Arduino", "arduino", "nano", "mega", "usb", "#Bauteile", "led", "rgb", "widerstand", "taster", "schalter", "poti", "diode", "kondensator", "transistor", "relais", "batterie",
+    "#Bewegung & Ton", "summer", "motor", "servo", "#Sensoren", "ultraschall", "ldr", "temp", "pir", "#Anzeigen", "display", "oled", "segment7", "ledstreifen", "#Verbinden", "masse", "plus", "knoten", "draht", "text"],
   fluss: ["start", "op", "verzweigung", "ea", "unter", "verbinder", "pfeil", "text"],
   bauplan: ["platte", "ausschnitt", "bohrung", "linie", "mass", "kette", "text"]
 };
@@ -112,9 +209,10 @@ function drehen(px, py, e) {          // lokaler Punkt → Welt (mit Drehung um 
 }
 function anschluesse(e) {             // [x, y, name]
   const s = SYM[e.typ]; if (!s) return [];
-  if (s.pins) return s.pins.map(([x, y, n]) => [...drehen(x, y, e), n]);
+  if (s.pins) return (typeof s.pins === "function" ? s.pins(e) : s.pins).map(([x, y, n]) => [...drehen(x, y, e), n]);
   if (s.modus === "fluss") { const w = e.w, h = e.h; return [[w / 2, 0, "oben"], [w / 2, h, "unten"], [0, h / 2, "links"], [w, h / 2, "rechts"]].map(([x, y, n]) => [r2(e.x + x), r2(e.y + y), n]); }
-  if (e.typ === "bohrung") { const r = e.d / 2; return [[e.x, e.y, "Mitte"], [e.x - r, e.y, "links"], [e.x + r, e.y, "rechts"], [e.x, e.y - r, "oben"], [e.x, e.y + r, "unten"]]; }
+  if (e.typ === "bohrung") { const { rx, ry, L, v } = bohrMass(e), a = [[e.x, e.y, "Mitte"], [e.x - rx, e.y, "links"], [e.x + rx, e.y, "rechts"], [e.x, e.y - ry, "oben"], [e.x, e.y + ry, "unten"]];
+    if (L) a.push(v ? [e.x, e.y - L, "Mitte oben"] : [e.x - L, e.y, "Mitte links"], v ? [e.x, e.y + L, "Mitte unten"] : [e.x + L, e.y, "Mitte rechts"]); return a.map(q => [r2(q[0]), r2(q[1]), q[2]]); }
   if (e.typ === "platte" || e.typ === "ausschnitt") { const { x, y, w, h } = e; return [[x, y], [x + w, y], [x, y + h], [x + w, y + h], [x + w / 2, y], [x + w / 2, y + h], [x, y + h / 2], [x + w, y + h / 2], [x + w / 2, y + h / 2]].map(p => [r2(p[0]), r2(p[1]), ""]); }
   return [];
 }
@@ -189,7 +287,7 @@ export function blattSvg(z, mitRaster) {
 }
 
 /* ================= SVG zum Speichern/Drucken ================= */
-const STIL = 'text{font-family:"Open Sans",Arial,sans-serif;fill:#000;stroke:none}.txt{fill:#000}path,rect,circle{fill:none;stroke:#000;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.dick{stroke-width:2}.voll{fill:#000}.draht{stroke-width:1.6}.sf rect{stroke-width:.35}.raster path{stroke:#e3e9ec;stroke-width:inherit}.raster{stroke-width:.15}.ansicht-hilfe path{stroke:#4ea1ff}';
+const STIL = 'text{font-family:"Open Sans",Arial,sans-serif;fill:#000;stroke:none}.txt{fill:#000}path,rect,circle{fill:none;stroke:#000;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.dick{stroke-width:2}.voll{fill:#000}.draht{stroke-width:1.6}.sf rect{stroke-width:.35}.raster path{stroke:#e3e9ec;stroke-width:inherit}.raster{stroke-width:.15}.ansicht-hilfe path{stroke:#4ea1ff}.fang path{stroke:#e8590c;stroke-width:inherit;stroke-dasharray:1.2 .8}.fang-t{fill:#e8590c;font-weight:700}.geist{opacity:.55}';
 export function svgText(modus, z) {
   EINH = (z && z.einheit) || "mm";
   if (modus === "bauplan") {
@@ -239,7 +337,7 @@ export function pinsAusCode(code) {
 export function verbundenePins(z) {
   const enden = []; for (const l of z.el || []) if (l.typ === "draht" && l.punkte) { enden.push(l.punkte[0], l.punkte[l.punkte.length - 1]); }
   const aus = new Set();
-  for (const e of z.el || []) if (e.typ === "arduino") for (const [x, y, n] of anschluesse(e)) if (enden.some(p => Math.abs(p[0] - x) < 0.6 && Math.abs(p[1] - y) < 0.6)) aus.add(n);
+  for (const e of z.el || []) if (BRETTER.has(e.typ)) for (const [x, y, n] of anschluesse(e)) if (enden.some(p => Math.abs(p[0] - x) < 0.6 && Math.abs(p[1] - y) < 0.6)) aus.add(n);
   return aus;
 }
 
@@ -269,16 +367,18 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
 
   // Palette
   const pal = box.querySelector(".z-palette");
-  pal.innerHTML = '<button type="button" data-w="auswahl" class="an">⬉ Auswählen</button>' + PALETTE[modus].map(t => '<button type="button" data-w="' + t + '">' + vorschau(t) + "<span>" + esc((SYM[t] || LINIEN[t]).name) + "</span></button>").join("");
+  pal.innerHTML = '<button type="button" data-w="auswahl" class="an">⬉ Auswählen</button>' + PALETTE[modus].map(t => t[0] === "#" ? '<div class="z-gruppe">' + esc(t.slice(1)) + "</div>" : '<button type="button" data-w="' + t + '">' + vorschau(t) + "<span>" + esc((SYM[t] || LINIEN[t]).name) + "</span></button>").join("");
   pal.querySelectorAll("[data-w]").forEach(b => b.onclick = () => werkzeugSetzen(b.dataset.w));
   function vorschau(t) {
     if (LINIEN[t]) return '<svg viewBox="0 0 40 20"><path d="M4 16L20 16L20 4L36 4" fill="none" stroke="currentColor" stroke-width="1.6"/>' + (t === "pfeil" || t === "mass" ? '<path d="M36 4l-5-3v6z" fill="currentColor"/>' : "") + "</svg>";
     const s = SYM[t]; if (t === "text") return '<svg viewBox="0 0 40 20"><text x="10" y="15" font-size="14" fill="currentColor">Aa</text></svg>';
-    const w = s.w || 10, h = s.h || 10, e = { typ: t, w, h, d: s.d || 5, x: 0, y: 0, mitte: false }, pad = s.modus === "bauplan" ? 4 : 8;
-    const bx = t === "bohrung" ? [-4, -4, 8, 8] : t === "knoten" ? [-5, -5, 10, 10] : [-pad, -pad - (t === "led" ? 10 : 0), w + 2 * pad, h + 2 * pad + (t === "led" ? 10 : 0)];
+    const e = { typ: t, w: s.w || 10, h: s.h || 10, d: s.d || 5, x: 0, y: 0, mitte: false, v: 2, ansicht: s.brett ? "echt" : "symbol" };
+    if (s.brett) Object.assign(e, brettMasse(e));
+    const w = e.w, h = e.h, pad = s.modus === "bauplan" ? 4 : 8, oben = ["led", "ldr", "rgb", "servo", "pir"].includes(t) ? 14 : 0;
+    const bx = t === "bohrung" ? [-4, -4, 8, 8] : t === "knoten" ? [-5, -5, 10, 10] : [-pad, -pad - oben, w + 2 * pad, h + 2 * pad + oben];
     return '<svg viewBox="' + bx.join(" ") + '" class="z-vor">' + s.svg(e, 1).replace(/<text[\s\S]*?<\/text>/g, "") + "</svg>";
   }
-  function werkzeugSetzen(w) { werkzeug = w; entwurf = null; pal.querySelectorAll("[data-w]").forEach(b => b.classList.toggle("an", b.dataset.w === w)); fussText(); malen(); }
+  function werkzeugSetzen(w) { werkzeug = w; entwurf = null; geist = null; fangLinien = []; pal.querySelectorAll("[data-w]").forEach(b => b.classList.toggle("an", b.dataset.w === w)); fussText(); malen(); }
   function fussText() {
     const t = { auswahl: "Klick auf ein Teil, um es auszuwählen und zu verschieben. Entf = löschen, R = drehen, Strg+D = verdoppeln.", draht: "Leitung: Klick auf einen Anschluss, dann weitere Punkte; Klick auf einen anderen Anschluss beendet sie. Esc bricht ab.", pfeil: "Pfeil: Klick am Startpunkt (z. B. unten an einem Kasten), dann weitere Punkte; Klick auf einen Anschluss oder Doppelklick beendet ihn.", linie: "Linie: Anfangs- und Endpunkt anklicken. Rastet an Ecken, Mitten und Bohrungen ein.", mass: "Bemaßung: 1. Punkt, 2. Punkt anklicken, dann mit dem dritten Klick festlegen, wo die Maßlinie liegt.", kette: "Maßkette: Punkte nacheinander anklicken (rastet an Kanten, Bohrungen, Mitten ein). Doppelklick dort, wo die Maßlinie liegen soll. Esc bricht ab." };
     fuss.textContent = t[werkzeug] || (SYM[werkzeug] ? "Klick auf die Fläche, um „" + SYM[werkzeug].name + "“ einzusetzen." : "");
@@ -295,6 +395,34 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
     return best ? { p: [best[0], best[1]], pin: true } : { p: [einrasten(p[0]), einrasten(p[1])], pin: false };
   }
 
+  /* ---- Einrasten von Bohrungen und Ausschnitten an Platten-Mitte, Kanten und anderen Bohrungen ---- */
+  let fangLinien = [], geist = null;
+  function bezugsPlatte(c, ohneId) {   // kleinste Platte, in der der Punkt liegt
+    const drin = z.el.filter(e => e.typ === "platte" && e.id !== ohneId && c[0] >= e.x - 0.01 && c[0] <= e.x + e.w + 0.01 && c[1] >= e.y - 0.01 && c[1] <= e.y + e.h + 0.01);
+    return drin.sort((a, b) => a.w * a.h - b.w * b.h)[0] || null;
+  }
+  // c = gewünschte Mitte; gibt die eingerastete Mitte zurück und merkt sich die Hilfslinien zum Anzeigen
+  function achsFang(c, ohneId) {
+    const rad = 3 / zoom / k() * 3.2, xs = [], ys = [];
+    for (const e of z.el) {
+      if (e.id === ohneId || e.punkte) continue;
+      if (e.typ === "platte" || e.typ === "ausschnitt") { xs.push([e.x + e.w / 2, "Mitte"], [e.x, "Kante"], [e.x + e.w, "Kante"]); ys.push([e.y + e.h / 2, "Mitte"], [e.y, "Kante"], [e.y + e.h, "Kante"]); }
+      if (e.typ === "bohrung") { xs.push([e.x, "Bohrung"]); ys.push([e.y, "Bohrung"]); }
+    }
+    const best = (v, liste) => { let b = null, bd = rad; for (const [w, art] of liste) { const d = Math.abs(w - v); if (d < bd - 1e-9 || (b && Math.abs(d - bd) < 1e-9 && art === "Mitte")) { bd = d; b = [w, art]; } } return b; };
+    const bx = best(c[0], xs), by = best(c[1], ys);
+    fangLinien = [];
+    const x = bx ? r2(bx[0]) : einrasten(c[0]), y = by ? r2(by[0]) : einrasten(c[1]);
+    if (bx) fangLinien.push({ x, art: bx[1] }); if (by) fangLinien.push({ y, art: by[1] });
+    return [x, y];
+  }
+  function fangLinienSvg(kk) {
+    if (!fangLinien.length) return "";
+    const B = blattMass(z), W = B.w / kk, H = B.h / kk;
+    return '<g class="fang" style="stroke-width:' + r2(0.3 / kk) + '">' + fangLinien.map(f => f.x != null ? '<path d="M' + f.x + " 0V" + H + '"/>' : '<path d="M0 ' + f.y + "H" + W + '"/>').join("") + "</g>" +
+      fangLinien.map(f => '<text class="fang-t" x="' + r2((f.x ?? 0) + 1.5 / kk) + '" y="' + r2((f.y ?? 0) - 1.5 / kk + (f.y == null ? 18 / kk : 0)) + '" font-size="' + r2(3 / kk) + '"' + (f.y != null ? ' dx="' + r2(28 / kk) + '"' : "") + ">" + esc(f.art === "Mitte" ? "Mitte" : f.art === "Kante" ? "Kante" : "wie Bohrung") + "</text>").join("");
+  }
+
   /* ---- Zeichnen ---- */
   function malen() {
     const kk = k(); EINH = z.einheit || "mm";
@@ -308,14 +436,19 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
     o += '<g transform="scale(' + kk + ')">';
     for (const e of z.el) {
       const inhalt = e.punkte ? linieSvg(e, kk, modus) : elementSvg(e, kk);
-      const treff = e.punkte ? '<path d="M' + e.punkte.map(q => q.join(" ")).join("L") + '" class="treffer" style="stroke-width:' + (modus === "bauplan" ? 3 / kk : 10) + '"/>' : trefferFlaeche(e, kk);
+      const tp = e.punkte && e.typ === "mass" ? massTrefferPunkte(e) : e.punkte;
+      const treff = e.punkte ? '<path d="M' + tp.map(q => q.join(" ")).join("L") + '" class="treffer" style="stroke-width:' + (modus === "bauplan" ? 3 / kk : 10) + '"/>' : trefferFlaeche(e, kk);
       o += '<g data-id="' + e.id + '" class="teil' + (e.id === auswahl ? " gewaehlt" : "") + '">' + treff + inhalt + "</g>";
     }
     // Hilfslinien für die Ansichten: Kanten des gewählten Teils über das ganze Blatt verlängert (werden nicht gedruckt)
     if (modus === "bauplan" && z.hilfslinien !== false) {
       const g2 = z.el.find(e => e.id === auswahl && !e.punkte && e.typ !== "text");
-      if (g2) { const B = blattMass(z), W = B.w / kk, H = B.h / kk, xs = g2.typ === "bohrung" ? [g2.x - g2.d / 2, g2.x, g2.x + g2.d / 2] : [g2.x, g2.x + g2.w], ys = g2.typ === "bohrung" ? [g2.y - g2.d / 2, g2.y, g2.y + g2.d / 2] : [g2.y, g2.y + g2.h];
+      if (g2) { const B = blattMass(z), W = B.w / kk, H = B.h / kk, bm = g2.typ === "bohrung" ? bohrMass(g2) : null, xs = bm ? [g2.x - bm.rx, g2.x, g2.x + bm.rx] : [g2.x, g2.x + g2.w], ys = bm ? [g2.y - bm.ry, g2.y, g2.y + bm.ry] : [g2.y, g2.y + g2.h];
         o += '<g class="ansicht-hilfe" style="stroke-width:' + r2(0.2 / kk) + ";stroke-dasharray:" + r2(2 / kk) + " " + r2(1.5 / kk) + '">' + xs.map(x2 => '<path d="M' + x2 + " 0V" + H + '"/>').join("") + ys.map(y2 => '<path d="M0 ' + y2 + "H" + W + '"/>').join("") + "</g>"; }
+    }
+    if (modus === "bauplan") {
+      if (geist) { const ge = Object.assign({ typ: "bohrung", d: SYM.bohrung.d, mitte: true }, geist); o += '<g class="geist" transform="translate(' + geist.x + " " + geist.y + ')">' + bohrSvg(ge, kk) + "</g>"; }
+      if (geist || (ziehen && ziehen.bewegt)) o += fangLinienSvg(kk);
     }
     // Anschlüsse zeigen, wenn man Linien zieht
     if (LINIEN[werkzeug] || (ziehen && ziehen.griff != null)) for (const e of z.el) if (!e.punkte) for (const q of anschluesse(e)) o += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="' + (modus === "bauplan" ? 0.8 / kk : 3.5) + '" class="anschluss"/>';
@@ -328,10 +461,18 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
     if (!eigenschaftenAus) eigenschaften();
     if (modus === "bauplan") { const ok = passtAufsBlatt(); fuss.classList.toggle("warnung", !ok); if (!ok) fuss.innerHTML = '⚠ Die Zeichnung ist größer als das Blatt oder liegt auf dem Schriftfeld. <button type="button" class="pill klein" id="zFit2">📐 EINPASSEN</button>'; else if (fuss.querySelector("#zFit2")) fussText(); const f2 = fuss.querySelector("#zFit2"); if (f2) f2.onclick = einpassen; }
   }
+  // Klickfläche eines Maßes = die Maßlinie selbst (nicht die Verbindung der Messpunkte, die oft über Bohrungen läuft)
+  function massTrefferPunkte(e) {
+    const [p1, p2] = e.punkte;
+    if (e.richtung === "h") return [[p1[0], e.lage], [p2[0], e.lage]];
+    if (e.richtung === "v") return [[e.lage, p1[1]], [e.lage, p2[1]]];
+    const dx = p2[0] - p1[0], dy = p2[1] - p1[1], L = Math.hypot(dx, dy) || 1, a = e.abstand ?? 10, nx = -dy / L * a, ny = dx / L * a;
+    return [[p1[0] + nx, p1[1] + ny], [p2[0] + nx, p2[1] + ny]];
+  }
   function punkteRaster(vb) { let s = ""; const st = 20; for (let x = Math.ceil(vb[0] / st) * st; x < vb[0] + vb[2]; x += st) s += '<path d="M' + x + " " + vb[1] + "V" + (vb[1] + vb[3]) + '"/>'; for (let y = Math.ceil(vb[1] / st) * st; y < vb[1] + vb[3]; y += st) s += '<path d="M' + vb[0] + " " + y + "H" + (vb[0] + vb[2]) + '"/>'; return s; }
   function trefferFlaeche(e, kk) {
     const s = SYM[e.typ];
-    if (e.typ === "bohrung") return '<circle cx="' + e.x + '" cy="' + e.y + '" r="' + Math.max(e.d / 2, 2) + '" class="treffer f"/>';
+    if (e.typ === "bohrung") { const { rx, ry } = bohrMass(e); return '<rect x="' + r2(e.x - Math.max(rx, 2)) + '" y="' + r2(e.y - Math.max(ry, 2)) + '" width="' + r2(2 * Math.max(rx, 2)) + '" height="' + r2(2 * Math.max(ry, 2)) + '" rx="' + Math.min(Math.max(rx, 2), Math.max(ry, 2)) + '" class="treffer f"/>'; }
     if (e.typ === "text") { const g = (e.groesse || 14) / kk; return '<rect x="' + e.x + '" y="' + (e.y - g) + '" width="' + Math.max(10, String(e.text || "Text").length * g * 0.6) + '" height="' + g * 1.3 + '" class="treffer f"/>'; }
     if (e.typ === "knoten") return '<circle cx="' + e.x + '" cy="' + e.y + '" r="7" class="treffer f"/>';
     const w = e.w ?? s.w, h = e.h ?? s.h;
@@ -347,7 +488,7 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
     for (const e of z.el) {
       if (e.punkte && e.richtung) { e.punkte.forEach(p => n(p[0], p[1])); if (e.richtung === "h") { n(e.punkte[0][0], e.lage - 6); n(e.punkte[1][0], e.lage + 3); } else { n(e.lage - 6, e.punkte[0][1]); n(e.lage + 3, e.punkte[1][1]); } }
       else if (e.punkte) { e.punkte.forEach(p => n(p[0], p[1])); if (e.typ === "mass" && e.punkte.length === 2) { const [p1, p2] = e.punkte, L = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) || 1, nx = -(p2[1] - p1[1]) / L, ny = (p2[0] - p1[0]) / L, ab = (e.abstand ?? 10) + Math.sign(e.abstand ?? 10) * 6; n(p1[0] + nx * ab, p1[1] + ny * ab); n(p2[0] + nx * ab, p2[1] + ny * ab); } }
-      else if (e.typ === "bohrung") { n(e.x - e.d / 2 - 3, e.y - e.d / 2 - 3); n(e.x + e.d / 2 + 3, e.y + e.d / 2 + 3); if (e.dmass) n(e.x + e.d / 2 + 20, e.y - e.d / 2 - 8); }
+      else if (e.typ === "bohrung") { const { rx, ry } = bohrMass(e); n(e.x - rx - 3, e.y - ry - 3); n(e.x + rx + 3, e.y + ry + 3); if (e.dmass) n(e.x + rx + 25, e.y - ry - 8); }
       else if (e.typ === "text") { n(e.x, e.y - 6); n(e.x + String(e.text || "").length * (e.groesse || 5) * 0.6, e.y); }
       else n(e.x, e.y), n(e.x + (e.w || 0), e.y + (e.h || 0));
     }
@@ -370,7 +511,9 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
   function eigenschaften() {
     const e = z.el.find(x => x.id === auswahl), ziel = box.querySelector(".z-eig");
     if (!e) { ziel.innerHTML = '<h3>Eigenschaften</h3><p class="leise">Nichts ausgewählt.</p>'; extra(); return; }
-    const def = SYM[e.typ] || LINIEN[e.typ], felder = e.typ === "mass" && e.richtung ? [["lage", "Lage der Maßlinie (" + (e.richtung === "h" ? "Y" : "X") + ")", "laenge"], ["text", "Maßzahl selbst eintragen (leer = gemessen)"]] : def.felder || [];
+    const def = SYM[e.typ] || LINIEN[e.typ];
+    let felder = e.typ === "mass" && e.richtung ? [["lage", "Lage der Maßlinie (" + (e.richtung === "h" ? "Y" : "X") + ")", "laenge"], ["text", "Maßzahl selbst eintragen (leer = gemessen)"]] : def.felder || [];
+    if (typeof felder === "function") felder = felder(e);
     ziel.innerHTML = "<h3>" + esc(def.name) + "</h3>" + felder.map(([k2, label, art, opt]) => '<label class="z-feld"><span>' + esc(label) + "</span>" +
       (art === "lang" ? '<textarea data-f="' + k2 + '" rows="2">' + esc(e[k2] ?? (SYM[e.typ] && SYM[e.typ].form ? "" : "")) + "</textarea>"
         : art === "janein" ? '<input type="checkbox" data-f="' + k2 + '"' + (e[k2] !== false && (e[k2] || k2 === "mitte") ? " checked" : "") + ">"
@@ -395,15 +538,107 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
         return;
       }
       f.onchange = f.oninput = () => {
+        const vorher = JSON.parse(JSON.stringify(e));
         const v = art === "janein" ? f.checked : art === "zahl" ? (f.value === "" ? undefined : Number(f.value)) : f.value;
         if (v === undefined) delete e[f.dataset.f]; else e[f.dataset.f] = v;
         if (art === "zahl" && ["w", "h", "d"].includes(f.dataset.f) && !(v > 0)) e[f.dataset.f] = f.dataset.f === "d" ? 1 : 10;
         if (f.dataset.f === "text" && e.typ === "mass" && !f.value) delete e.text;
+        if (f.dataset.f === "ansicht" && SYM[e.typ] && SYM[e.typ].brett) { if (v === "alt") { e.ansicht = vorher.ansicht; f.value = "alt"; return; } e.v = 2; Object.assign(e, brettMasse(e)); pinsUmhaengen(vorher, e); malen(); merken(); return; }
+        if (f.dataset.f === "gepolt") pinsUmhaengen(vorher, e, true);
+        if (e.typ === "bohrung" && (f.dataset.f === "art" || f.dataset.f === "richtung")) {
+          if (e.art === "senk" && !e.senkD) e.senkD = r2(e.d * 2); if (e.art === "langloch" && !e.laenge) e.laenge = 10; if (e.art === "gewinde" && e.d > 12) e.d = 3;
+          if (e.art === "gewinde" || e.art === "senk") e.dmass = true;
+          malen(); merken(); return; }
         malenOhneEig(); if (f.type !== "text" && f.tagName !== "TEXTAREA") merken();
       };
       f.onblur = () => merken();
     });
+    if (modus === "bauplan") lageBereich(e, ziel);
     extra();
+  }
+
+  /* ---- Lage auf der Platte, Mitte, Bemaßen und Lochmuster ---- */
+  function lageBereich(e, ziel) {
+    const div = document.createElement("div"); div.className = "z-lage";
+    if (e.typ === "platte") {
+      div.innerHTML = '<h3>Löcher</h3><button type="button" class="pill hell klein" data-l="ecken">⊞ Löcher in alle 4 Ecken …</button>';
+      ziel.appendChild(div); div.querySelector('[data-l="ecken"]').onclick = () => eckLoecher(e); return;
+    }
+    if (e.typ !== "bohrung" && e.typ !== "ausschnitt") return;
+    const c = e.typ === "bohrung" ? [e.x, e.y] : [e.x + e.w / 2, e.y + e.h / 2], P = bezugsPlatte(c);
+    if (!P) { div.innerHTML = '<h3>Lage auf der Platte</h3><p class="leise">Setz ' + (e.typ === "bohrung" ? "die Bohrung" : "den Ausschnitt") + ' auf eine Platte, dann kannst du die Abstände zu den Plattenkanten eingeben.</p>'; ziel.appendChild(div); return; }
+    // Bezug: bei der Bohrung die Mitte, beim Ausschnitt die linke obere Ecke
+    const bx = e.typ === "bohrung" ? e.x : e.x, by = e.typ === "bohrung" ? e.y : e.y;
+    const re = r2(P.x + P.w - (e.typ === "bohrung" ? e.x : e.x + e.w)), un = r2(P.y + P.h - (e.typ === "bohrung" ? e.y : e.y + e.h));
+    const wort = e.typ === "bohrung" ? "Mitte" : "Kante";
+    div.innerHTML = '<h3>Lage auf der Platte</h3>' +
+      '<label class="z-feld"><span>' + wort + ' von linker Plattenkante</span><span class="z-mass"><input data-r="x" inputmode="decimal" value="' + masszahl(bx - P.x) + '"><i>' + EINH + '</i></span></label>' +
+      '<label class="z-feld"><span>' + wort + ' von oberer Plattenkante</span><span class="z-mass"><input data-r="y" inputmode="decimal" value="' + masszahl(by - P.y) + '"><i>' + EINH + '</i></span></label>' +
+      '<p class="leise">Bis rechts: ' + masszahl(re) + " " + EINH + " · bis unten: " + masszahl(un) + " " + EINH + "</p>" +
+      '<div class="z-knoepfe"><button type="button" class="pill hell klein" data-l="mitte">⊕ In die Mitte</button><button type="button" class="pill hell klein" data-l="mh">↔ Waagerecht mittig</button><button type="button" class="pill hell klein" data-l="mv">↕ Senkrecht mittig</button>' +
+      (e.typ === "bohrung" ? '<button type="button" class="pill hell klein" data-l="mass">📏 Abstände bemaßen</button><button type="button" class="pill hell klein" data-l="reihe">⋯ Lochreihe …</button>' : "") + "</div>";
+    ziel.appendChild(div);
+    div.querySelectorAll("[data-r]").forEach(f => {
+      const nehmen = () => { const v = laengeLesen(f.value); if (!Number.isFinite(v)) { f.classList.add("falsch"); return; } f.classList.remove("falsch"); if (f.dataset.r === "x") e.x = r2(P.x + v); else e.y = r2(P.y + v); malenOhneEig(); };
+      f.oninput = nehmen; f.onchange = () => { nehmen(); merken(); malen(); }; f.onkeydown = (ev) => { if (ev.key === "Enter") { f.blur(); } };
+    });
+    const mitte = (h, v) => { if (h) e.x = r2(P.x + P.w / 2 - (e.typ === "bohrung" ? 0 : e.w / 2)); if (v) e.y = r2(P.y + P.h / 2 - (e.typ === "bohrung" ? 0 : e.h / 2)); merken(); malen(); };
+    div.querySelector('[data-l="mitte"]').onclick = () => mitte(true, true);
+    div.querySelector('[data-l="mh"]').onclick = () => mitte(true, false);
+    div.querySelector('[data-l="mv"]').onclick = () => mitte(false, true);
+    const ms = div.querySelector('[data-l="mass"]'); if (ms) ms.onclick = () => { abstaendeBemassen([e], P); merken(); malen(); toast("Abstände von der linken und oberen Plattenkante eingezeichnet. Einzelne Maße kannst du verschieben oder löschen."); };
+    const rh = div.querySelector('[data-l="reihe"]'); if (rh) rh.onclick = () => lochReihe(e, P);
+  }
+  // Maße von der linken und oberen Plattenkante zur Bohrungsmitte (nach Norm von einer Bezugskante aus)
+  function abstaendeBemassen(loecher, P) {
+    // als Kettenmaß: Kante → 1. Loch → 2. Loch … auf einer gemeinsamen Maßlinie (spart Platz)
+    const belegt = (r, lage) => z.el.some(m => m.typ === "mass" && m.richtung === r && Math.abs(m.lage - lage) < 3);
+    const kette = (r, werte, quer) => {
+      const w = [...new Set(werte.map(r2))].sort((a, b) => a - b), start = r === "h" ? P.x : P.y; if (!w.length) return;
+      let lage = r2((r === "h" ? P.y : P.x) - 8); while (belegt(r, lage)) lage = r2(lage - 7);
+      let vor = start;
+      for (const v of w) { if (Math.abs(v - vor) < 0.01) continue; const q = quer(v);
+        z.el.push({ id: neueId(), typ: "mass", richtung: r, lage, punkte: r === "h" ? [[vor, vor === start ? P.y : q], [v, q]] : [[vor === start ? P.x : q, vor], [q, v]] }); vor = v; }
+    };
+    kette("h", loecher.map(b => b.x), (x) => loecher.find(b => r2(b.x) === r2(x)).y);
+    kette("v", loecher.map(b => b.y), (y) => loecher.find(b => r2(b.y) === r2(y)).x);
+  }
+  // kleiner Eingabe-Dialog (prompt() gibt es in Electron nicht)
+  function frageDialog(titel, felder, text) {
+    return new Promise((fertig) => {
+      const d = document.createElement("dialog"); d.className = "dialog";
+      d.innerHTML = "<h2>" + esc(titel) + "</h2>" + (text ? '<p class="leise">' + esc(text) + "</p>" : "") + felder.map(([k2, l, wert, art]) => '<label class="z-feld breit"><span>' + esc(l) + "</span>" +
+        (art === "wahl" ? '<select data-q="' + k2 + '">' + wert.map(([v, tt]) => '<option value="' + v + '">' + esc(tt) + "</option>").join("") + "</select>" : art === "janein" ? '<input type="checkbox" data-q="' + k2 + '"' + (wert ? " checked" : "") + ">" : '<input data-q="' + k2 + '" value="' + esc(wert) + '">') + "</label>").join("") +
+        '<div class="dialog-fuss"><button type="button" class="pill hell" data-ab>Abbrechen</button><button type="button" class="pill" data-ok>OK</button></div>';
+      box.appendChild(d); d.showModal();
+      const zu = (w) => { d.close(); d.remove(); fertig(w); };
+      d.querySelector("[data-ab]").onclick = () => zu(null);
+      d.oncancel = (ev) => { ev.preventDefault(); zu(null); };
+      d.querySelector("[data-ok]").onclick = () => { const w = {}; d.querySelectorAll("[data-q]").forEach(i => { w[i.dataset.q] = i.type === "checkbox" ? i.checked : i.value; }); zu(w); };
+      d.querySelectorAll("input").forEach(i => i.onkeydown = (ev) => { if (ev.key === "Enter") { ev.preventDefault(); d.querySelector("[data-ok]").click(); } });
+    });
+  }
+  async function eckLoecher(P) {
+    const w = await frageDialog("Löcher in alle 4 Ecken", [["d", "Durchmesser", masszahl(3.5)], ["rand", "Abstand der Lochmitte von der Kante", masszahl(5)], ["mass", "Abstände bemaßen", true, "janein"]], "Zum Beispiel für Schrauben an einem Gehäusedeckel.");
+    if (!w) return;
+    const d = laengeLesen(w.d), a = laengeLesen(w.rand);
+    if (!(d > 0) || !(a > 0) || 2 * a >= Math.min(P.w, P.h)) { toast("Bitte gültige Werte eingeben – der Randabstand muss kleiner als die halbe Plattenbreite sein."); return; }
+    const neu = [[P.x + a, P.y + a], [P.x + P.w - a, P.y + a], [P.x + a, P.y + P.h - a], [P.x + P.w - a, P.y + P.h - a]].map(([x, y]) => ({ id: neueId(), typ: "bohrung", x: r2(x), y: r2(y), d }));
+    z.el.push(...neu); neu[0].dmass = true;
+    if (w.mass) abstaendeBemassen(neu, P);
+    merken(); malen(); toast("4 Bohrungen gesetzt.");
+  }
+  async function lochReihe(b, P) {
+    const w = await frageDialog("Lochreihe", [["n", "Anzahl Löcher insgesamt", "4"], ["ab", "Abstand von Mitte zu Mitte", masszahl(10)], ["r", "Richtung", [["r", "nach rechts →"], ["u", "nach unten ↓"], ["l", "nach links ←"], ["o", "nach oben ↑"]], "wahl"], ["mass", "Abstände bemaßen", false, "janein"]], "Die gewählte Bohrung ist das erste Loch. Die neuen Löcher bekommen denselben Durchmesser.");
+    if (!w) return;
+    const n = Math.round(Number(String(w.n).replace(",", "."))), ab = laengeLesen(w.ab);
+    if (!(n >= 2 && n <= 60) || !(ab > 0)) { toast("Bitte 2 bis 60 Löcher und einen Abstand größer als 0 eingeben."); return; }
+    const [dx, dy] = { r: [1, 0], u: [0, 1], l: [-1, 0], o: [0, -1] }[w.r];
+    const neu = [];
+    for (let i = 1; i < n; i++) { const c = JSON.parse(JSON.stringify(b)); c.id = neueId(); c.x = r2(b.x + dx * ab * i); c.y = r2(b.y + dy * ab * i); c.dmass = false; neu.push(c); }
+    z.el.push(...neu);
+    if (w.mass) abstaendeBemassen([b, ...neu], P);
+    merken(); malen(); toast(n + " Löcher in einer Reihe." + (neu.some(c => !bezugsPlatte([c.x, c.y])) ? " Achtung: Einige liegen außerhalb der Platte." : ""));
   }
   function malenOhneEig() { eigenschaftenAus = true; malen(); eigenschaftenAus = false; extra(); }
   function extra() {
@@ -416,9 +651,9 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
       const bl = x.querySelector("#zB"); if (bl) { bl.value = z.blatt || "A4"; bl.onchange = () => { z.blatt = bl.value; einpassenFenster(); merken(); malen(); }; }
       const hl = x.querySelector("#zH"); if (hl) hl.onchange = () => { z.hilfslinien = hl.checked; merken(); malen(); };
       return; }
-    const imCode = pinsAusCode(code ? code() : ""), imPlan = verbundenePins(z), hatUno = z.el.some(e => e.typ === "arduino");
+    const imCode = pinsAusCode(code ? code() : ""), imPlan = verbundenePins(z), hatUno = z.el.some(e => BRETTER.has(e.typ));
     let h = "<h3>Pins: Code ↔ Plan</h3>";
-    if (!hatUno) h += '<p class="leise">Setz einen Arduino Uno ein, dann vergleicht das Programm hier, ob die Pins aus deinem Code im Plan verbunden sind.</p>';
+    if (!hatUno) h += '<p class="leise">Setz einen Arduino ein, dann vergleicht das Programm hier, ob die Pins aus deinem Code im Plan verbunden sind.</p>';
     else {
       h += imCode.length ? '<table class="z-pins">' + imCode.map(p => "<tr><td><b>" + p.pin + "</b></td><td>" + esc(p.arten.join(", ")) + '<small> · Zeile ' + p.zeilen.join(", ") + "</small></td><td>" + (imPlan.has(p.pin) ? '<span class="ok-z">✔ im Plan</span>' : '<span class="nein-z">✖ fehlt im Plan</span>') + "</td></tr>").join("") + "</table>" : '<p class="leise">In deinem Code wird noch kein Pin benutzt.</p>';
       const nurPlan = [...imPlan].filter(p => /^[AD]\d+$/.test(p) && !imCode.some(c => c.pin === p));
@@ -448,7 +683,8 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
     if (SYM[werkzeug]) {
       const s = SYM[werkzeug], e = { id: neueId(), typ: werkzeug, x: einrasten(p[0] - (s.form && s.modus !== "bauplan" ? s.w / 2 : 0)), y: einrasten(p[1] - (s.form && s.modus !== "bauplan" ? s.h / 2 : 0)) };
       if (s.form) { e.w = s.w; e.h = s.h; }
-      if (werkzeug === "bohrung") e.d = s.d;
+      if (werkzeug === "bohrung") { e.d = s.d; [e.x, e.y] = achsFang(p); geist = null; fangLinien = []; }
+      if (s.brett) { e.v = 2; e.ansicht = "symbol"; Object.assign(e, brettMasse(e)); }
       if (werkzeug === "text") e.text = modus === "bauplan" ? "Draufsicht" : "Text";
       if (werkzeug === "text" && modus === "bauplan") e.groesse = 5;
       z.el.push(e); auswahl = e.id; merken(); werkzeugSetzen("auswahl"); return;
@@ -470,6 +706,7 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
   svg.addEventListener("pointermove", (ev) => {
     const p = punkt(ev);
     if (entwurf) { entwurf.maus = entwurf.typ === "mass" && entwurf.punkte.length === 2 ? p : fang(p).p; malen(); return; }
+    if (werkzeug === "bohrung" && modus === "bauplan") { const [x, y] = achsFang(p); geist = { x, y }; malen(); return; }
     if (!ziehen) return;
     const e = z.el.find(x => x.id === ziehen.id); if (!e) return;
     if (ziehen.griff != null) { e.punkte[ziehen.griff] = fang(p, e.id).p; malen(); return; }
@@ -477,10 +714,13 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
     ziehen.bewegt = true;
     if (e.punkte && e.richtung) { e.lage = einrasten(ziehen.orig.lage + (e.richtung === "h" ? dy : dx)); malen(); return; }
     if (e.punkte) e.punkte = ziehen.orig.punkte.map(q => [einrasten(q[0] + dx), einrasten(q[1] + dy)]);
+    else if (e.typ === "bohrung") { [e.x, e.y] = achsFang([ziehen.orig.x + dx, ziehen.orig.y + dy], e.id); }
+    else if (e.typ === "ausschnitt") { const [cx, cy] = achsFang([ziehen.orig.x + dx + e.w / 2, ziehen.orig.y + dy + e.h / 2], e.id); e.x = r2(cx - e.w / 2); e.y = r2(cy - e.h / 2); }
     else { e.x = einrasten(ziehen.orig.x + dx); e.y = einrasten(ziehen.orig.y + dy); drahtMitziehen(ziehen.orig, e); }
     malen();
   });
-  svg.addEventListener("pointerup", () => { if (ziehen) { ziehen = null; merken(); malen(); } });
+  svg.addEventListener("pointerup", () => { if (ziehen) { ziehen = null; fangLinien = []; merken(); malen(); } });
+  svg.addEventListener("pointerleave", () => { if (geist) { geist = null; fangLinien = []; malen(); } });
   svg.addEventListener("dblclick", (ev) => { if (entwurf && entwurf.typ === "kette") { ketteFertig(punkt(ev)); return; } if (entwurf && LINIEN[entwurf.typ].viele) fertigLinie(); });
   // Maßkette in einzelne Maße zerlegen: alle auf derselben Linie (waagerecht oder senkrecht – je nach den ersten beiden Punkten)
   function ketteFertig(maus) {
@@ -490,6 +730,18 @@ export function oeffnen(modus, daten, { speichern, code, KC, toast, name }) {
     const sortiert = p.slice().sort((a, b) => h ? a[0] - b[0] : a[1] - b[1]);
     for (let i = 0; i < sortiert.length - 1; i++) { const a = sortiert[i], b = sortiert[i + 1]; if ((h ? b[0] - a[0] : b[1] - a[1]) < 0.01) continue; z.el.push({ id: neueId(), typ: "mass", richtung: h ? "h" : "v", lage, punkte: [a, b] }); }
     entwurf = null; merken(); malen(); toast("Maßkette mit " + (sortiert.length - 1) + " Maßen.");
+  }
+  // Leitungen an einem Teil umhängen, wenn sich seine Pins verschieben (z. B. andere Ansicht) – zugeordnet über den Pin-Namen
+  function pinsUmhaengen(alt, neu, nachReihenfolge) {
+    const schl = (liste) => { const zaehl = {}; return liste.map((q, i) => nachReihenfolge ? String(i) : q[2] + "#" + (zaehl[q[2]] = (zaehl[q[2]] || 0) + 1)); };
+    const a = anschluesse(alt), b = anschluesse(neu), ka = schl(a), kb = schl(b);
+    for (const l of z.el) if (l.punkte && l.typ === "draht") for (const ende of [0, l.punkte.length - 1]) {
+      const alte = l.punkte[ende], i = a.findIndex(q => Math.abs(q[0] - alte[0]) < 0.6 && Math.abs(q[1] - alte[1]) < 0.6); if (i < 0) continue;
+      const j = kb.indexOf(ka[i]); if (j < 0) continue;
+      const nb = ende === 0 ? 1 : l.punkte.length - 2;
+      if (l.punkte.length > 2 && nb > 0 && nb < l.punkte.length - 1) { const n = l.punkte[nb]; if (Math.abs(n[1] - alte[1]) < 0.6) n[1] = b[j][1]; else if (Math.abs(n[0] - alte[0]) < 0.6) n[0] = b[j][0]; }
+      l.punkte[ende] = [b[j][0], b[j][1]];
+    }
   }
   // hängende Leitungen/Pfeile mitnehmen, wenn ein Teil verschoben wird
   function drahtMitziehen(alt, neu) {
